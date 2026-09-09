@@ -1,0 +1,13 @@
+$schema: https://api.gitbook.com/gitbook-docs.yaml
+
+site:
+  title: GameLab5 - Team Compass
+
+structure:
+  - type: space
+    key: project-documentation
+    title: Project Documentation
+    path: Documentation/GitBook
+    default: true
+    content:
+      directory: ./
