@@ -55,16 +55,6 @@
                     "interactions": "",
                     "initialStateCheck": false,
                     "priority": 0
-                },
-                {
-                    "name": "spawnWindow",
-                    "type": "Button",
-                    "id": "c5a2e7eb-da52-4497-adcc-8c255704f1e9",
-                    "expectedControlType": "",
-                    "processors": "",
-                    "interactions": "",
-                    "initialStateCheck": false,
-                    "priority": 0
                 }
             ],
             "bindings": [
@@ -120,17 +110,6 @@
                     "processors": "",
                     "groups": "",
                     "action": "Scroll",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
-                    "id": "a288e3c9-68e9-4a96-8b41-27af808d6548",
-                    "path": "<Keyboard>/w",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": "",
-                    "action": "spawnWindow",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }
