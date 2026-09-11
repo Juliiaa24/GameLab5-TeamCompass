@@ -1,7 +1,6 @@
-# Table of Contents
+# Summary
 
-- [Home](README.md)
-- [Game Overview](game-overview.md)
-- [Mechanics](mechanics.md)
-- [Controls](controls.md)
-- [Programming](programming.md)
+## Product
+
+* [Overview](README.md)
+  * [Getting started](getting-started.md)
