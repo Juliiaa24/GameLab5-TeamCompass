@@ -1,7 +1,7 @@
 /**
- * Author: DEVELOPERNAME
- * Date: CREATIONDATE
- * Description:
+ * Author: Diego
+ * Date: 11/09/26
+ * Description: Input manager script
 */
 
 using UnityEngine;
@@ -19,6 +19,9 @@ namespace ComputerLearning
         // Public Variables [Public Constant Variables, Public Component References, Public Variables]
 
         // Public Constant Variables
+        /**
+         * Instancia unica del InputManager
+         */
         public static InputManager Instance { get; private set; }
 
         // Public Component References
