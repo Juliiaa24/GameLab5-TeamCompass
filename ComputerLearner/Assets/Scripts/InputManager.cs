@@ -40,15 +40,20 @@ namespace ComputerLearning
 
 
         // Private Component References
-
+        [SerializeField] private Transform windowSpawner;
+        [SerializeField] private GameObject windowPrefab;
 
         // Private Variables
-
+        
+        //mouse
         [SerializeField] private InputActionReference mousePosition;
         [SerializeField] private InputActionReference mouseDelta;
         [SerializeField] private InputActionReference leftClick;
         [SerializeField] private InputActionReference rightClick;
         [SerializeField] private InputActionReference scroll;
+
+        //keyboard
+        [SerializeField] private InputActionReference spawnWindow;
 
         #endregion
 
@@ -97,6 +102,12 @@ namespace ComputerLearning
             {
                 //Debug.Log($"Scroll: {scrollValue.y}");
             }
+
+            if (spawnWindow.action.WasPressedThisFrame())
+            {
+                Instantiate(windowPrefab, windowSpawner);
+            }
+            
         }
 
         #endregion
