@@ -14,9 +14,7 @@ namespace ComputerLearning
     /// <summary>
     /// 
     /// </summary>
-    public class ResizeHandle : MonoBehaviour,
-    IBeginDragHandler,
-    IDragHandler
+    public class ResizeHandle : MonoBehaviour
     {
 
         #region Public Variables
