@@ -1,12 +1,14 @@
 $schema: https://api.gitbook.com/gitbook-docs.yaml
 
 site:
-  title: GameLab5 - Team Compass
+  title: Computer Learner
   structure:
     - type: space
       key: project-documentation
       title: Project Documentation
-      path: Documentation/GitBook
+      path: Documentation/Doxyfile
+      readme: README.md
+      summary: SUMMARY.md
       default: true
       content:
         directory: ./
