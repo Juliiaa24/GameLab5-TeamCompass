@@ -3,12 +3,13 @@ $schema: https://api.gitbook.com/gitbook-docs.yaml
 site:
   title: Computer Learner
   structure:
-    - type: space
-      key: project-documentation
-      title: Project Documentation
-      path: Documentation/Doxyfile
-      readme: README.md
-      summary: SUMMARY.md
-      default: true
-      content:
-        directory: ./
+    readme: README.md
+    summary: SUMMARY.md
+
+spaces:
+  - key: project-documentation
+    title: Project Documentation
+    path: Documentation/Doxyfile
+    default: true
+
+    
