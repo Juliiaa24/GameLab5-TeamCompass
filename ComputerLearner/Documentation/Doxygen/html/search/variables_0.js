@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['constant_5fdoc_0',['CONSTANT_DOC',['../class_computer_learner_1_1_doxygen.html#abaed539a47c95182e23e60d3ea62bdfd',1,'ComputerLearner::Doxygen']]]
+  ['contentarea_0',['contentArea',['../class_computer_learning_1_1_window.html#ae70d084ad2f281237c6ee31cb6629244',1,'ComputerLearning::Window']]]
 ];

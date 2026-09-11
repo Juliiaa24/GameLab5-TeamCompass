@@ -78,33 +78,29 @@ namespace ComputerLearning
 
         #region Public Methods
         // Public Methods accessible from other classes
-        public void ChangeToMain() { changeScene(SceneNames.Main); }
-        public void ChangeToMenu() { changeScene(SceneNames.Menu); }
+        public void ChangeToMain() { ChangeScene(SceneNames.Main); }
+        public void ChangeToMenu() { ChangeScene(SceneNames.Menu); }
 
         #endregion
 
         #region Private Methods
         // Private Methods accessible only from this class
 
-        private void changeScene(SceneNames scene)
+        private void ChangeScene(SceneNames scene)
         {
             switch (scene)
             {
                 case SceneNames.Menu:
-                    ChangeScene("Menu");
+                    SceneManager.LoadScene("Menu");
                     break;
                 case SceneNames.Main:
-                    ChangeScene("MainScene");
+                    SceneManager.LoadScene("MainScene");
                     break;
                 default:
                     break;
             }
         }
 
-        private void ChangeScene(string sceneName)
-        {
-            SceneManager.LoadScene(sceneName);
-        }
 
         #endregion
     }

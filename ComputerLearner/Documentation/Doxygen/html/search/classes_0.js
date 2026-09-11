@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['doxygen_0',['Doxygen',['../class_computer_learner_1_1_doxygen.html',1,'ComputerLearner']]]
+  ['draggableicon_0',['DraggableIcon',['../class_computer_learning_1_1_draggable_icon.html',1,'ComputerLearning']]]
 ];

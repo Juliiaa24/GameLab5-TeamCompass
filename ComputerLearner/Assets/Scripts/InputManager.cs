@@ -80,22 +80,22 @@ namespace ComputerLearning
 
             if (leftClick.action.WasPressedThisFrame())
             {
-                Debug.Log($"Left click at {position}");
+                //Debug.Log($"Left click at {position}");
             }
 
             if (rightClick.action.WasPressedThisFrame())
             {
-                Debug.Log($"Right click at {position}");
+                //Debug.Log($"Right click at {position}");
             }
 
             if (delta != Vector2.zero)
             {
-                Debug.Log($"Mouse delta: {delta}");
+                //Debug.Log($"Mouse delta: {delta}");
             }
 
             if (scrollValue != Vector2.zero)
             {
-                Debug.Log($"Scroll: {scrollValue.y}");
+                //Debug.Log($"Scroll: {scrollValue.y}");
             }
         }
 

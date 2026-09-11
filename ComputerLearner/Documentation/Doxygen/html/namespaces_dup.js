@@ -1,4 +1,4 @@
 var namespaces_dup =
 [
-    [ "ComputerLearner", "namespace_computer_learner.html", "namespace_computer_learner" ]
+    [ "ComputerLearning", "namespace_computer_learning.html", "namespace_computer_learning" ]
 ];
