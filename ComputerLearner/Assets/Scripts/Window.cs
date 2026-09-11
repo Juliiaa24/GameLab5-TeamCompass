@@ -5,13 +5,14 @@
 */
 
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 namespace ComputerLearning
 {
     /// <summary>
     /// 
     /// </summary>
-    public class Window : MonoBehaviour
+    public class Window : MonoBehaviour, IPointerDownHandler
     {
 
         #region Public Variables
@@ -36,9 +37,14 @@ namespace ComputerLearning
 
         // Private Component References
         [SerializeField] private RectTransform contentArea;
+        private RectTransform windowRectTransform;
 
         // Private Variables
-
+        private bool maximized = false;
+        private Vector2 lastAnchorMin = new Vector2 (0f, 0f);
+        private Vector2 lastAnchorMax = new Vector2(0f, 0f);
+        private Vector2 lastOffsetMin = new Vector2 (0f, 0f);
+        private Vector2 lastOffsetMax = new Vector2 (0f, 0f);
 
         #endregion
 
@@ -47,7 +53,7 @@ namespace ComputerLearning
 
         private void Start()
         {
-
+            windowRectTransform = GetComponent<RectTransform>();
         }
 
         private void Update()
@@ -76,6 +82,38 @@ namespace ComputerLearning
             rect.offsetMax = Vector2.zero;
         }
 
+        public void OnPointerDown(PointerEventData eventData)
+        {
+            transform.SetAsLastSibling();
+        }
+
+        public void toggleMaximize()
+        {
+            transform.SetAsLastSibling();
+            if (!maximized)
+            {
+                maximized = true;
+                lastAnchorMin = windowRectTransform.anchorMin;
+                windowRectTransform.anchorMin = Vector2.zero;
+
+                lastAnchorMax = windowRectTransform.anchorMax;
+                windowRectTransform.anchorMax = Vector2.one;
+
+                lastOffsetMin = windowRectTransform.offsetMin;
+                windowRectTransform.offsetMin = Vector2.zero;
+
+                lastOffsetMax = windowRectTransform.offsetMax;
+                windowRectTransform.offsetMax = Vector2.zero;
+            }
+            else
+            {
+                maximized = false;
+                windowRectTransform.anchorMin = lastAnchorMin;
+                windowRectTransform.anchorMax= lastAnchorMax;
+                windowRectTransform.offsetMin = lastOffsetMin;
+                windowRectTransform .offsetMax = lastOffsetMax;
+            }
+        }
         #endregion
 
         #region Private Methods
