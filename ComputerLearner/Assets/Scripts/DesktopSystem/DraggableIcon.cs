@@ -31,15 +31,12 @@ namespace ComputerLearning
         #region Private Variables
         // Private Variables [Private Constant Variables, Private Component References, Private Variables]
 
-        // Private Constant Variables
-
-
         // Private Component References
+        private IconGrid grid;
 
         // Private Variables
-        private IconGrid grid;
         private Vector3 initialPosition;
-        
+
 
         #endregion
 
@@ -48,29 +45,28 @@ namespace ComputerLearning
 
         private void Start()
         {
-            grid = this.GetComponentInParent<IconGrid>();
-            grid.Register(this.transform.position);
-        }
+            grid = GetComponentInParent<IconGrid>();
 
-        private void Update()
-        {
-
+            grid.Register(this);
         }
 
         public void OnPointerDown(PointerEventData eventData)
         {
-            initialPosition = this.transform.position;
+            initialPosition = transform.position;
+
+            grid.Unregister(this);
         }
 
         public void OnPointerUp(PointerEventData eventData)
         {
-
+            grid.TryPlaceIcon(this, eventData.position, initialPosition, eventData.enterEventCamera);
         }
 
         public void OnDrag(PointerEventData eventData)
         {
-            this.transform.position = eventData.position;
+            transform.position = eventData.position;
         }
+
 
         #endregion
 

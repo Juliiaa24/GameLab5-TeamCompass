@@ -2,12 +2,10 @@ $schema: https://api.gitbook.com/gitbook-docs.yaml
 
 site:
   title: Computer Learner
-  structure:
-    - readme: README.md
-    - summary: SUMMARY.md
 
 spaces:
   - key: project-documentation
     title: Project Documentation
     path: Documentation/GitBook
     default: true
+``
