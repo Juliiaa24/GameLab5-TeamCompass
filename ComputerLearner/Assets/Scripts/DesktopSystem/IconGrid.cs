@@ -4,53 +4,37 @@
  * Description:
 */
 
+using System;
 using System.Collections.Generic;
-using Unity.VectorGraphics;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
 namespace ComputerLearning
 {
-    /// <summary>
-    /// 
-    /// </summary>
     public class IconGrid : MonoBehaviour
     {
-
         #region Public Variables
-        // Public Variables [Public Constant Variables, Public Component References, Public Variables]
-
-        // Public Constant Variables
-
-
-        // Public Component References
-
-        // Public Variables
-
 
         #endregion
 
         #region Private Variables
-        // Private Variables [Private Constant Variables, Private Component References, Private Variables]
 
-        // Private Constant Variables
+        // Grid settings
         [SerializeField] private float INITIAL_POS_X = 0;
         [SerializeField] private float INITIAL_POS_Y = 0;
-        [SerializeField] private float ICON_SIZE = 60;
-        [SerializeField] private float SPACING = 10;
+        [SerializeField] private float ICON_SIZE = 120;
+        [SerializeField] private float SPACING = 30;
 
-
-        // Private Component References
+        // Component references
         private RectTransform rect;
 
-        // Private Variables
+        // Grid
         private DraggableIcon[,] grid;
-
 
         #endregion
 
         #region Unity Methods
-        // Unity Methods including (Awake, Start, Update, LateUpdate...)
 
         private void Awake()
         {
@@ -65,18 +49,25 @@ namespace ComputerLearning
             );
 
             grid = new DraggableIcon[sizeX, sizeY];
+
+            Debug.Log(
+                $"Grid Size {sizeX}, {sizeY}, " +
+                $"{rect.rect.width}, {rect.rect.height}"
+            );
         }
 
         #endregion
 
         #region Public Methods
+
         public void Register(DraggableIcon icon)
         {
             Vector2 localPosition = rect.InverseTransformPoint(
-         icon.transform.position
-     );
+                icon.transform.position
+            );
 
             Vector2Int gridPosition = GetGridPosition(localPosition);
+
             Debug.Log($"Icon position: {gridPosition}");
 
             if (!IsInsideGrid(gridPosition))
@@ -100,7 +91,8 @@ namespace ComputerLearning
             icon.transform.position = GetWorldPosition(gridPosition);
 
             Debug.Log(
-                $"Icon {icon.name} registered at: {gridPosition.x}, {gridPosition.y}"
+                $"Icon {icon.name} registered at: " +
+                $"{gridPosition.x}, {gridPosition.y}"
             );
         }
 
@@ -120,10 +112,10 @@ namespace ComputerLearning
         }
 
         public void TryPlaceIcon(
-        DraggableIcon icon,
-        Vector2 screenPosition,
-        Vector3 previousPosition,
-        Camera eventCamera)
+            DraggableIcon icon,
+            Vector2 screenPosition,
+            Vector3 previousPosition,
+            Camera eventCamera)
         {
             Vector2 localPosition;
 
@@ -134,36 +126,49 @@ namespace ComputerLearning
                 out localPosition
             );
 
-            Vector2Int targetPosition = GetGridPosition(localPosition);
+            Vector2Int targetPosition =
+                GetGridPosition(localPosition);
 
-            Vector2Int freePosition = FindClosestFreePosition(targetPosition);
+            Vector2Int freePosition =
+                FindClosestFreePosition(targetPosition);
 
             if (freePosition.x == -1)
             {
                 // No hay ningún espacio libre
                 icon.transform.position = previousPosition;
-                Register(icon);
                 return;
             }
 
             grid[freePosition.x, freePosition.y] = icon;
 
-            icon.transform.position = GetWorldPosition(freePosition);
+            icon.transform.position =
+                GetWorldPosition(freePosition);
 
             Debug.Log(
-                $"Icon placed at: {freePosition.x}, {freePosition.y}"
+                $"Icon placed at: " +
+                $"{freePosition.x}, {freePosition.y}"
             );
         }
-
 
         #endregion
 
         #region Private Methods
-        // Private Methods accessible only from this class
+
         private Vector2Int GetGridPosition(Vector2 localPosition)
         {
-            float x = localPosition.x - INITIAL_POS_X;
-            float y = -localPosition.y - Mathf.Abs(INITIAL_POS_Y);
+            /*
+             * RectTransform coordinates have their origin
+             * in the center.
+             *
+             * We convert them so that the top-left corner
+             * of the panel becomes (0, 0).
+             */
+
+            float x = localPosition.x - rect.rect.xMin;
+            float y = rect.rect.yMax - localPosition.y;
+
+            x -= INITIAL_POS_X;
+            y -= INITIAL_POS_Y;
 
             int gridX = Mathf.FloorToInt(
                 x / (ICON_SIZE + SPACING)
@@ -186,20 +191,33 @@ namespace ComputerLearning
 
         private Vector3 GetWorldPosition(Vector2Int position)
         {
-            float x = INITIAL_POS_X +
-                      position.x * (ICON_SIZE + SPACING);
+            /*
+             * Start from the top-left corner of the RectTransform.
+             */
 
-            float y = INITIAL_POS_Y -
-                      position.y * (ICON_SIZE + SPACING);
+            float x =
+                rect.rect.xMin +
+                INITIAL_POS_X +
+                position.x * (ICON_SIZE + SPACING) +
+                ICON_SIZE / 2f;
+
+            float y =
+                rect.rect.yMax -
+                INITIAL_POS_Y -
+                position.y * (ICON_SIZE + SPACING) -
+                ICON_SIZE / 2f;
 
             Vector2 localPosition = new Vector2(x, y);
 
             return rect.TransformPoint(localPosition);
         }
 
-        private Vector2Int FindClosestFreePosition(Vector2Int targetPosition)
+        private Vector2Int FindClosestFreePosition(
+            Vector2Int targetPosition)
         {
-            Vector2Int closestPosition = new Vector2Int(-1, -1);
+            Vector2Int closestPosition =
+                new Vector2Int(-1, -1);
+
             float closestDistance = float.MaxValue;
 
             for (int x = 0; x < grid.GetLength(0); x++)
@@ -209,14 +227,16 @@ namespace ComputerLearning
                     if (grid[x, y] != null)
                         continue;
 
-                    Vector2Int position = new Vector2Int(x, y);
+                    Vector2Int position =
+                        new Vector2Int(x, y);
 
-                    float distance = Vector2Int.Distance(
-                        targetPosition,
-                        position
-                    );
+                    float distance =
+                        Vector2Int.Distance(
+                            targetPosition,
+                            position
+                        );
 
-                    if (distance < closestDistance)
+                    if (distance < closestDistance && IsInsideGrid(position))
                     {
                         closestDistance = distance;
                         closestPosition = position;

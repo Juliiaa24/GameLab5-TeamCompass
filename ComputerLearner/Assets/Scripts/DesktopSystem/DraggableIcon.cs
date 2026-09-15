@@ -1,6 +1,6 @@
 /**
- * Author: DEVELOPERNAME
- * Date: CREATIONDATE
+ * Author: Julia Vera
+ * Date: 14/09/2026
  * Description:
 */
 
@@ -12,7 +12,7 @@ namespace ComputerLearning
     /// <summary>
     /// Class to drag the desktop icons
     /// </summary>
-    public class DraggableIcon : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, IDragHandler
+    public class DraggableIcon : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, IDragHandler, IPointerClickHandler
     {
 
         #region Public Variables
@@ -53,7 +53,6 @@ namespace ComputerLearning
         public void OnPointerDown(PointerEventData eventData)
         {
             initialPosition = transform.position;
-
             grid.Unregister(this);
         }
 
@@ -67,6 +66,13 @@ namespace ComputerLearning
             transform.position = eventData.position;
         }
 
+        public void OnPointerClick(PointerEventData eventData)
+        {
+            if (eventData.clickCount == 2)
+            {
+                // Aquí instancia de la ventana
+            }
+        }
 
         #endregion
 
