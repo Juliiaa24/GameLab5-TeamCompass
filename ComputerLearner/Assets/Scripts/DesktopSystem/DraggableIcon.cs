@@ -20,12 +20,9 @@ namespace ComputerLearning
 
         // Public Constant Variables
 
-
         // Public Component References
 
         // Public Variables
-
-
         #endregion
 
         #region Private Variables
@@ -33,10 +30,11 @@ namespace ComputerLearning
 
         // Private Component References
         private IconGrid grid;
+        [SerializeField] private GameObject windowPrefab;
+        private Transform canvas;
 
         // Private Variables
         private Vector3 initialPosition;
-
 
         #endregion
 
@@ -48,6 +46,8 @@ namespace ComputerLearning
             grid = GetComponentInParent<IconGrid>();
 
             grid.Register(this);
+
+            canvas = transform.parent.parent.transform;
         }
 
         public void OnPointerDown(PointerEventData eventData)
@@ -71,6 +71,7 @@ namespace ComputerLearning
             if (eventData.clickCount == 2)
             {
                 // Aquí instancia de la ventana
+                Instantiate(windowPrefab, canvas);
             }
         }
 
