@@ -1379,6 +1379,7 @@ GameObject:
   - component: {fileID: 7856789032711888155}
   - component: {fileID: 8987724043541710691}
   - component: {fileID: 2375581589242122526}
+  - component: {fileID: 707083516260752454}
   m_Layer: 5
   m_Name: Minimize
   m_TagString: Untagged
@@ -1444,6 +1445,19 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!114 &707083516260752454
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8610977820816869635}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 19083aaab0639c1429f9d752e8b472f5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ComputerLearning.Minimize
+  window: {fileID: 168255811264083141}
 --- !u!1 &8915664146889674220
 GameObject:
   m_ObjectHideFlags: 0

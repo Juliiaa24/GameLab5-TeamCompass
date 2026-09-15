@@ -5,7 +5,7 @@
 */
 
 using UnityEngine;
-using UnityEngine.EventSystems; 
+using UnityEngine.EventSystems;
 
 namespace ComputerLearning
 {
@@ -31,11 +31,12 @@ namespace ComputerLearning
         // Private Component References
         private IconGrid grid;
         [SerializeField] private GameObject windowPrefab;
+        private GameObject appWindow;
         private Transform canvas;
 
         // Private Variables
         private Vector3 initialPosition;
-
+        private bool windowOpen = false;
         #endregion
 
         #region Unity Methods
@@ -70,8 +71,17 @@ namespace ComputerLearning
         {
             if (eventData.clickCount == 2)
             {
-                // Aquí instancia de la ventana
-                Instantiate(windowPrefab, canvas);
+                if (appWindow == null)
+                    windowOpen = false;
+                if (windowOpen) {
+                    appWindow.SetActive(true);
+                }
+                else
+                {
+                    appWindow = Instantiate(windowPrefab, canvas);
+                    windowOpen = true;
+                }
+                
             }
         }
 
@@ -90,3 +100,4 @@ namespace ComputerLearning
         #endregion
     }
 }
+

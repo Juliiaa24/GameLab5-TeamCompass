@@ -114,6 +114,11 @@ namespace ComputerLearning
                 windowRectTransform .offsetMax = lastOffsetMax;
             }
         }
+
+        public void Minimize()
+        {
+            gameObject.SetActive(false);
+        }
         #endregion
 
         #region Private Methods
