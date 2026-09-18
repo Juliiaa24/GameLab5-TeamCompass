@@ -342,7 +342,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 87384bfafb18187409aca4c54e1c8de4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ComputerLearning.MouseInput
-  windowSpawner: {fileID: 0}
+  windowSpawner: {fileID: 1652979087}
   windowPrefab: {fileID: 242377210234752804, guid: 0e4a41ca73db6a54fa7c2d386fa55f52, type: 3}
   mousePosition: {fileID: 6851230762957456539, guid: c67348dabcbd5aa46979792420880344, type: 3}
   mouseDelta: {fileID: -3339136904951773473, guid: c67348dabcbd5aa46979792420880344, type: 3}
