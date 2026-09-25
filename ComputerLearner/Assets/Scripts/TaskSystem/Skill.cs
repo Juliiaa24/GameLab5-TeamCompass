@@ -5,13 +5,25 @@
 */
 
 using UnityEngine;
-
 namespace ComputerLearning
 {
     /// <summary>
-    /// 
+    /// Enum that stores the names of every existing skill to be used as index on the skill map
     /// </summary>
-    public class #SCRIPTNAME# : MonoBehaviour
+    enum Skills
+    {
+        MOVE = 0,
+        CLICK,
+        HOLD,
+        DROP,
+        SCROLL,
+        NUM_SKILLS
+    }
+
+    /// <summary>
+    /// Abstract class skill, it contains a tutorial, a method to show said tutorial and
+    /// </summary>
+    public abstract class Skill : MonoBehaviour
     {
 
         #region Public Variables
@@ -23,7 +35,7 @@ namespace ComputerLearning
         #endregion
 
         #region Protected Variables
-
+        [SerializeField] protected Tutorial tutorial;
         #endregion
 
         #region Unity Methods
@@ -43,7 +55,10 @@ namespace ComputerLearning
 
         #region Public Methods
         // Public Methods accessible from other classes
+        public void ShowTutorial()
+        {
 
+        }
 
         #endregion
 
