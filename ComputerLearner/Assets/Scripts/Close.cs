@@ -62,7 +62,10 @@ namespace ComputerLearning
         // Public Methods accessible from other classes
         public void OnPointerClick(PointerEventData eventData)
         {
-            Destroy(window);
+            if (eventData.button != PointerEventData.InputButton.Left || window == null) return;
+            Window controller = window.GetComponent<Window>();
+            if (controller != null) controller.CloseWindow();
+            else Destroy(window);
         }
 
         #endregion

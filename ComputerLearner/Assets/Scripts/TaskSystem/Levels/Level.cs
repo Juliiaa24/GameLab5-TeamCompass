@@ -1,86 +1,87 @@
 /**
- * Author: DIEGO
+ * Author: Diego
  * Date: 25/09/26
- * Description: Level abstarct class
+ * Description: A level contains the tasks required for its completion.
 */
-
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
 namespace ComputerLearning
 {
-    enum LevelID
+    public enum LevelID
     {
-        LEVEL1 = 0,
-        LEVEL2,
-        LEVEL3,
-        LEVEL4,
-        LEVEL5,
-        LEVEL6,
-        LEVEL7,
-        LEVEL8,
-        LEVEL9,
-        LEVEL10,
-        LEVEL11,
-        LEVEL12,
-        LEVEL13,
-        LEVEL14,
-        LEVEL15,
-        LEVEL16,
-        LEVEL17,
-        LEVEL18,
-        LEVEL19,
-        NUM_LEVELS
+        LEVEL1 = 0, LEVEL2, LEVEL3, LEVEL4, LEVEL5, LEVEL6, LEVEL7, LEVEL8,
+        LEVEL9, LEVEL10, LEVEL11, LEVEL12, LEVEL13, LEVEL14, LEVEL15,
+        LEVEL16, LEVEL17, LEVEL18, LEVEL19, NUM_LEVELS
     }
-    /// <summary>
-    /// 
-    /// </summary>
+
     public abstract class Level : MonoBehaviour
     {
         #region Public Variables
-
+        public LevelID ID => levelID;
+        public IReadOnlyList<Task> Tasks => tasks;
+        public bool IsRunning { get; private set; }
+        public int CompletedTaskCount
+        {
+            get
+            {
+                int count = 0;
+                foreach (Task task in tasks)
+                    if (task != null && task.IsCompleted()) count++;
+                return count;
+            }
+        }
+        public event Action<Level> StateChanged;
         #endregion
 
         #region Private Variables
-        
+        [SerializeField] private LevelID levelID;
         #endregion
 
         #region Protected Variables
-        protected List<Task> tasks;
-        protected bool levelCompleted = false;
+        [SerializeField] protected List<Task> tasks = new List<Task>();
+        protected bool levelCompleted;
         #endregion
 
         #region Unity Methods
-        // Unity Methods including (Awake, Start, Update, LateUpdate...)
-
-        private void Start()
+        protected virtual void OnDestroy()
         {
-
+            if (LevelManager.Instance != null) LevelManager.Instance.UnregisterLevel(this);
         }
-
-        private void Update()
-        {
-
-        }
-
         #endregion
 
         #region Public Methods
-        // Public Methods accessible from other classes
         public bool IsCompleted() { return levelCompleted; }
 
-        #endregion
+        public void BeginLevel()
+        {
+            if (TaskManager.Instance == null) return;
+            levelCompleted = false;
+            IsRunning = false;
+            foreach (Task task in tasks) TaskManager.Instance.BeginTask(task);
+            IsRunning = true;
+            StateChanged?.Invoke(this);
+        }
 
-        #region Private Methods
-        // Private Methods accessible only from this class
+        public void Evaluate()
+        {
+            if (!IsRunning) return;
+            if (tasks.Count > 0 && CompletedTaskCount == tasks.Count)
+            {
+                levelCompleted = true;
+                IsRunning = false;
+            }
+            StateChanged?.Invoke(this);
+        }
 
-
-        #endregion
-
-        #region Protected Methods
-        // Protected Methods accessible only from child class
-
-
+        public void CancelLevel()
+        {
+            IsRunning = false;
+            foreach (Task task in tasks)
+                if (task != null && task.IsRunning) task.CancelTask();
+            StateChanged?.Invoke(this);
+        }
         #endregion
     }
 }

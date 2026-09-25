@@ -1,245 +1,109 @@
 /**
- * Author: DEVELOPERNAME
- * Date: CREATIONDATE
- * Description:
+ * Author: Diego
+ * Date: 25/09/26
+ * Description: Place desktop icons on a grid that follows the available Canvas area.
 */
-
-using System;
 using System.Collections.Generic;
-using Unity.VisualScripting;
 using UnityEngine;
-using UnityEngine.EventSystems;
 
 namespace ComputerLearning
 {
     public class IconGrid : MonoBehaviour
     {
-        #region Public Variables
-
-        #endregion
-
         #region Private Variables
-
-        // Grid settings
         [SerializeField] private float INITIAL_POS_X = 0;
         [SerializeField] private float INITIAL_POS_Y = 0;
         [SerializeField] private float ICON_SIZE = 120;
         [SerializeField] private float SPACING = 30;
-
-        // Component references
         private RectTransform rect;
-
-        // Grid
         private DraggableIcon[,] grid;
-
+        private readonly List<DraggableIcon> registered = new List<DraggableIcon>();
         #endregion
 
         #region Unity Methods
-
-        private void Awake()
-        {
-            rect = GetComponent<RectTransform>();
-
-            int sizeX = Mathf.FloorToInt(
-                rect.rect.width / (ICON_SIZE + SPACING)
-            );
-
-            int sizeY = Mathf.FloorToInt(
-                rect.rect.height / (ICON_SIZE + SPACING)
-            );
-
-            grid = new DraggableIcon[sizeX, sizeY];
-
-            Debug.Log(
-                $"Grid Size {sizeX}, {sizeY}, " +
-                $"{rect.rect.width}, {rect.rect.height}"
-            );
-        }
-
+        private void Awake() { EnsureGrid(); }
+        private void OnRectTransformDimensionsChange() { EnsureGrid(); }
         #endregion
 
         #region Public Methods
-
         public void Register(DraggableIcon icon)
         {
-            Vector2 localPosition = rect.InverseTransformPoint(
-                icon.transform.position
-            );
-
-            Vector2Int gridPosition = GetGridPosition(localPosition);
-
-            Debug.Log($"Icon position: {gridPosition}");
-
-            if (!IsInsideGrid(gridPosition))
-            {
-                Debug.LogWarning(
-                    $"Icon {icon.name} is outside the grid."
-                );
-                return;
-            }
-
-            if (grid[gridPosition.x, gridPosition.y] != null)
-            {
-                Debug.LogWarning(
-                    $"Grid position {gridPosition.x}, {gridPosition.y} is already occupied."
-                );
-                return;
-            }
-
-            grid[gridPosition.x, gridPosition.y] = icon;
-
-            icon.transform.position = GetWorldPosition(gridPosition);
-
-            Debug.Log(
-                $"Icon {icon.name} registered at: " +
-                $"{gridPosition.x}, {gridPosition.y}"
-            );
+            EnsureGrid();
+            if (icon == null || registered.Contains(icon)) return;
+            registered.Add(icon);
+            Place(icon, GetGridPosition(rect.InverseTransformPoint(icon.transform.position)));
         }
 
         public void Unregister(DraggableIcon icon)
         {
+            registered.Remove(icon);
+            if (grid == null) return;
             for (int x = 0; x < grid.GetLength(0); x++)
-            {
                 for (int y = 0; y < grid.GetLength(1); y++)
-                {
-                    if (grid[x, y] == icon)
-                    {
-                        grid[x, y] = null;
-                        return;
-                    }
-                }
-            }
+                    if (grid[x, y] == icon) grid[x, y] = null;
         }
 
-        public void TryPlaceIcon(
-            DraggableIcon icon,
-            Vector2 screenPosition,
-            Vector3 previousPosition,
-            Camera eventCamera)
+        public void TryPlaceIcon(DraggableIcon icon, Vector2 screenPosition, Vector3 previousPosition, Camera eventCamera)
         {
-            Vector2 localPosition;
-
-            RectTransformUtility.ScreenPointToLocalPointInRectangle(
-                rect,
-                screenPosition,
-                eventCamera,
-                out localPosition
-            );
-
-            Vector2Int targetPosition =
-                GetGridPosition(localPosition);
-
-            Vector2Int freePosition =
-                FindClosestFreePosition(targetPosition);
-
-            if (freePosition.x == -1)
+            EnsureGrid();
+            if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(rect, screenPosition, eventCamera, out Vector2 local))
             {
-                // No hay ningún espacio libre
                 icon.transform.position = previousPosition;
+                Register(icon);
                 return;
             }
-
-            grid[freePosition.x, freePosition.y] = icon;
-
-            icon.transform.position =
-                GetWorldPosition(freePosition);
-
-            Debug.Log(
-                $"Icon placed at: " +
-                $"{freePosition.x}, {freePosition.y}"
-            );
+            Unregister(icon);
+            registered.Add(icon);
+            if (!Place(icon, GetGridPosition(local)))
+            {
+                icon.transform.position = previousPosition;
+                Place(icon, GetGridPosition(rect.InverseTransformPoint(previousPosition)));
+            }
         }
-
         #endregion
 
         #region Private Methods
-
-        private Vector2Int GetGridPosition(Vector2 localPosition)
+        private void EnsureGrid()
         {
-
-            float x = localPosition.x - rect.rect.xMin;
-            float y = rect.rect.yMax - localPosition.y;
-
-            x -= INITIAL_POS_X;
-            y -= INITIAL_POS_Y;
-
-            int gridX = Mathf.FloorToInt(
-                x / (ICON_SIZE + SPACING)
-            );
-
-            int gridY = Mathf.FloorToInt(
-                y / (ICON_SIZE + SPACING)
-            );
-
-            return new Vector2Int(gridX, gridY);
+            if (rect == null) rect = GetComponent<RectTransform>();
+            if (rect == null) return;
+            float step = Mathf.Max(1f, ICON_SIZE + SPACING);
+            int width = Mathf.Max(1, Mathf.FloorToInt((rect.rect.width - INITIAL_POS_X + SPACING) / step));
+            int height = Mathf.Max(1, Mathf.FloorToInt((rect.rect.height - INITIAL_POS_Y + SPACING) / step));
+            if (grid != null && grid.GetLength(0) == width && grid.GetLength(1) == height) return;
+            grid = new DraggableIcon[width, height];
+            foreach (DraggableIcon icon in registered)
+                if (icon != null) Place(icon, GetGridPosition(rect.InverseTransformPoint(icon.transform.position)));
         }
 
-        private bool IsInsideGrid(Vector2Int position)
+        private Vector2Int GetGridPosition(Vector2 local)
         {
-            return position.x >= 0 &&
-                   position.x < grid.GetLength(0) &&
-                   position.y >= 0 &&
-                   position.y < grid.GetLength(1);
+            float step = Mathf.Max(1f, ICON_SIZE + SPACING);
+            return new Vector2Int(Mathf.FloorToInt((local.x - rect.rect.xMin - INITIAL_POS_X) / step),
+                Mathf.FloorToInt((rect.rect.yMax - local.y - INITIAL_POS_Y) / step));
         }
 
-        private Vector3 GetWorldPosition(Vector2Int position)
+        private bool Place(DraggableIcon icon, Vector2Int target)
         {
-            /*
-             * Start from the top-left corner of the RectTransform.
-             */
-
-            float x =
-                rect.rect.xMin +
-                INITIAL_POS_X +
-                position.x * (ICON_SIZE + SPACING) +
-                ICON_SIZE / 2f;
-
-            float y =
-                rect.rect.yMax -
-                INITIAL_POS_Y -
-                position.y * (ICON_SIZE + SPACING) -
-                ICON_SIZE / 2f;
-
-            Vector2 localPosition = new Vector2(x, y);
-
-            return rect.TransformPoint(localPosition);
-        }
-
-        private Vector2Int FindClosestFreePosition(
-            Vector2Int targetPosition)
-        {
-            Vector2Int closestPosition =
-                new Vector2Int(-1, -1);
-
-            float closestDistance = float.MaxValue;
-
+            Vector2Int closest = new Vector2Int(-1, -1);
+            float distance = float.MaxValue;
             for (int x = 0; x < grid.GetLength(0); x++)
-            {
                 for (int y = 0; y < grid.GetLength(1); y++)
                 {
-                    if (grid[x, y] != null)
-                        continue;
-
-                    Vector2Int position =
-                        new Vector2Int(x, y);
-
-                    float distance =
-                        Vector2Int.Distance(
-                            targetPosition,
-                            position
-                        );
-
-                    if (distance < closestDistance && IsInsideGrid(position))
-                    {
-                        closestDistance = distance;
-                        closestPosition = position;
-                    }
+                    if (grid[x, y] != null) continue;
+                    float candidate = (new Vector2Int(x, y) - target).sqrMagnitude;
+                    if (candidate >= distance) continue;
+                    distance = candidate;
+                    closest = new Vector2Int(x, y);
                 }
-            }
-
-            return closestPosition;
+            if (closest.x < 0) return false;
+            grid[closest.x, closest.y] = icon;
+            float step = Mathf.Max(1f, ICON_SIZE + SPACING);
+            icon.transform.position = rect.TransformPoint(new Vector2(
+                rect.rect.xMin + INITIAL_POS_X + closest.x * step + ICON_SIZE * 0.5f,
+                rect.rect.yMax - INITIAL_POS_Y - closest.y * step - ICON_SIZE * 0.5f));
+            return true;
         }
-
         #endregion
     }
 }

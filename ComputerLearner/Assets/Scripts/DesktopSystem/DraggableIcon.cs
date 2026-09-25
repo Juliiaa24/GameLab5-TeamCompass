@@ -1,95 +1,88 @@
 /**
  * Author: Julia Vera
  * Date: 14/09/2026
- * Description:
+ * Description: Draggable desktop icon with one window instance per icon.
 */
-
 using UnityEngine;
 using UnityEngine.EventSystems;
 
 namespace ComputerLearning
 {
-    /// <summary>
-    /// Class to drag the desktop icons
-    /// </summary>
     public class DraggableIcon : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, IDragHandler, IPointerClickHandler
     {
-
         #region Public Variables
-
+        public Window AppWindow => appWindow;
         #endregion
 
         #region Private Variables
-
         private IconGrid grid;
         [SerializeField] private GameObject windowPrefab;
-        private GameObject appWindow;
-        private Transform canvas;
-
+        private Window appWindow;
+        private WindowManager manager;
         private Vector3 initialPosition;
-        private bool windowOpen = false;
+        private bool dragging;
         #endregion
 
         #region Unity Methods
-        // Unity Methods including (Awake, Start, Update, LateUpdate...)
-
         private void Start()
         {
             grid = GetComponentInParent<IconGrid>();
-
-            grid.Register(this);
-
-            canvas = transform.parent.parent.transform;
+            if (grid != null) grid.Register(this);
+            manager = GetComponentInParent<WindowManager>();
         }
 
+        private void OnDestroy()
+        {
+            if (grid != null) grid.Unregister(this);
+        }
+        #endregion
+
+        #region Public Methods
         public void OnPointerDown(PointerEventData eventData)
         {
+            if (eventData.button != PointerEventData.InputButton.Left) return;
             initialPosition = transform.position;
-            grid.Unregister(this);
+            dragging = false;
+            if (grid != null) grid.Unregister(this);
             transform.SetAsLastSibling();
         }
 
         public void OnPointerUp(PointerEventData eventData)
         {
-            grid.TryPlaceIcon(this, eventData.position, initialPosition, eventData.enterEventCamera);
+            if (eventData.button != PointerEventData.InputButton.Left) return;
+            if (grid != null)
+                grid.TryPlaceIcon(this, eventData.position, initialPosition, eventData.pressEventCamera);
         }
 
         public void OnDrag(PointerEventData eventData)
         {
-            transform.position = eventData.position;
+            if (eventData.button != PointerEventData.InputButton.Left) return;
+            dragging = true;
+            if (RectTransformUtility.ScreenPointToWorldPointInRectangle(
+                transform.parent as RectTransform, eventData.position, eventData.pressEventCamera, out Vector3 point))
+                transform.position = point;
         }
 
         public void OnPointerClick(PointerEventData eventData)
         {
-            if (eventData.clickCount == 2)
-            {
-                if (appWindow == null)
-                    windowOpen = false;
-                if (windowOpen) {
-                    appWindow.SetActive(true);
-                }
-                else
-                {
-                    appWindow = Instantiate(windowPrefab, canvas);
-                    windowOpen = true;
-                }
-                
-            }
+            if (!dragging && eventData.button == PointerEventData.InputButton.Left && eventData.clickCount == 2)
+                OpenApplication();
         }
 
-        #endregion
-
-        #region Public Methods
-        // Public Methods accessible from other classes
-
-
-        #endregion
-
-        #region Private Methods
-        // Private Methods accessible only from this class
-
-
+        public void OpenApplication()
+        {
+            if (manager == null) manager = GetComponentInParent<WindowManager>();
+            if (manager != null)
+                appWindow = manager.OpenWindow(windowPrefab, appWindow);
+            else if (appWindow != null && !appWindow.IsClosed)
+                appWindow.Restore();
+            else if (windowPrefab != null)
+            {
+                // Compatibility with older scenes that have not added a manager yet.
+                Canvas canvas = GetComponentInParent<Canvas>();
+                if (canvas != null) appWindow = Instantiate(windowPrefab, canvas.transform).GetComponent<Window>();
+            }
+        }
         #endregion
     }
 }
-

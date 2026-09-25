@@ -57,7 +57,7 @@ namespace ComputerLearning
 
         public void OnPointerClick(PointerEventData eventData)
         {
-            window.Minimize();
+            if (eventData.button == PointerEventData.InputButton.Left && window != null) window.Minimize();
         }
 
         #endregion

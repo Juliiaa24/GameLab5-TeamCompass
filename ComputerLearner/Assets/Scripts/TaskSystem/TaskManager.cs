@@ -1,76 +1,77 @@
 /**
- * Author: Julia Vera 
- * Date: 25/09/2026
- * Description: Manager that checks if tasks have been completed
+ * Author: Julia Vera
+ * Date: 25/09/26
+ * Description: Observe tasks and deliver their results to skills and levels.
 */
-
+using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace ComputerLearning
 {
-    /// <summary>
-    /// Checks if tasks have been completed
-    /// </summary>
+    [DefaultExecutionOrder(-90)]
     public class TaskManager : MonoBehaviour
     {
-
         #region Public Variables
-        // Public Variables [Public Constant Variables, Public Component References, Public Variables]
-
-        // Public Constant Variables
-
-
-        // Public Component References
-
-
-        // Public Variables
-
-
+        public static TaskManager Instance { get; private set; }
+        public event Action<Task> TaskProgressChanged;
+        public event Action<Task> TaskCompleted;
         #endregion
 
         #region Private Variables
-        // Private Variables [Private Constant Variables, Private Component References, Private Variables]
-
-        // Private Constant Variables
-
-
-        // Private Component References
-
-
-        // Private Variables
-
-
-        #endregion
-
-        #region Protected Variables
-
+        private readonly HashSet<Task> tasks = new HashSet<Task>();
         #endregion
 
         #region Unity Methods
-        // Unity Methods including (Awake, Start, Update, LateUpdate...)
-
-        private void Start()
+        private void Awake()
         {
-
+            if (Instance != null && Instance != this) { Destroy(gameObject); return; }
+            Instance = this;
+            transform.SetParent(null);
+            DontDestroyOnLoad(gameObject);
         }
 
-        private void Update()
+        private void OnDestroy()
         {
-
+            foreach (Task task in tasks)
+            {
+                if (task == null) continue;
+                task.ProgressChanged -= OnProgress;
+                task.Completed -= OnCompleted;
+            }
+            if (Instance == this) Instance = null;
         }
-
         #endregion
 
         #region Public Methods
-        // Public Methods accessible from other classes
+        public void BeginTask(Task task)
+        {
+            if (task == null) return;
+            if (tasks.Add(task))
+            {
+                task.ProgressChanged += OnProgress;
+                task.Completed += OnCompleted;
+            }
+            task.BeginTask();
+        }
 
-
+        public void UnregisterTask(Task task)
+        {
+            if (!tasks.Remove(task)) return;
+            task.ProgressChanged -= OnProgress;
+            task.Completed -= OnCompleted;
+        }
         #endregion
 
         #region Private Methods
-        // Private Methods accessible only from this class
+        private void OnProgress(Task task) { TaskProgressChanged?.Invoke(task); }
 
-
+        private void OnCompleted(Task task)
+        {
+            if (!task.Check()) return;
+            if (SkillManager.Instance != null) SkillManager.Instance.ProcessResult(task);
+            TaskCompleted?.Invoke(task);
+        }
         #endregion
     }
 }

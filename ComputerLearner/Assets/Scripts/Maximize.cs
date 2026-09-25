@@ -46,7 +46,7 @@ namespace ComputerLearning
 
         public void OnPointerClick(PointerEventData eventData)
         {
-            window.toggleMaximize();
+            if (eventData.button == PointerEventData.InputButton.Left && window != null) window.toggleMaximize();
         }
 
         #endregion

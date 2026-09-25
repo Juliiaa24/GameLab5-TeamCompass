@@ -1,68 +1,43 @@
 /**
- * Author: DEVELOPERNAME
- * Date: CREATIONDATE
- * Description:
+ * Author: Diego
+ * Date: 25/09/26
+ * Description: Skill identity, tutorial and successful task results.
 */
-
+using System;
 using UnityEngine;
+
 namespace ComputerLearning
 {
-    /// <summary>
-    /// Enum that stores the names of every existing skill to be used as index on the skill map
-    /// </summary>
-    enum SkillID
+    public enum SkillID
     {
-        MOVE = 0,
-        CLICK,
-        HOLD,
-        DROP,
-        SCROLL,
-        NUM_SKILLS
+        MOVE = 0, CLICK, HOLD, DROP, SCROLL, NUM_SKILLS
     }
 
-    /// <summary>
-    /// Abstract class skill, it contains a tutorial, a method t
-    /// </summary>
     public abstract class Skill : MonoBehaviour
     {
-
         #region Public Variables
-
+        public SkillID ID => skillID;
+        public int CompletedTasks { get; private set; }
+        public event Action<Skill> ProgressChanged;
         #endregion
 
         #region Private Variables
-
+        [SerializeField] private SkillID skillID;
         #endregion
 
         #region Protected Variables
         [SerializeField] protected Tutorial tutorial;
         #endregion
 
-        #region Unity Methods
-        // Unity Methods including (Awake, Start, Update, LateUpdate...)
-
-        private void Start()
-        {
-
-        }
-
-        private void Update()
-        {
-
-        }
-
-        #endregion
-
         #region Public Methods
-        // Public Methods accessible from other classes
         public abstract void ShowTutorial();
 
-        #endregion
-
-        #region Private Methods
-        // Private Methods accessible only from this class
-
-
+        public virtual void ReceiveResult(Task task)
+        {
+            if (task == null || !task.IsCompleted()) return;
+            CompletedTasks++;
+            ProgressChanged?.Invoke(this);
+        }
         #endregion
     }
 }

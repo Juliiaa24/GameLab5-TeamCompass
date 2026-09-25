@@ -50,6 +50,8 @@ namespace ComputerLearning
         // Private Component References
         [SerializeField] private RectTransform window;
         private RectTransform parentRect;
+        private Window controller;
+        private bool resizing;
 
 
         // Private Variables
@@ -67,7 +69,9 @@ namespace ComputerLearning
 
         private void Awake()
         {
+            if (window == null) return;
             parentRect = window.parent as RectTransform;
+            controller = window.GetComponent<Window>();
         }
         private void Start()
         {
@@ -86,11 +90,17 @@ namespace ComputerLearning
 
         public void OnBeginDrag(PointerEventData eventData)
         {
-            // Guardamos dónde empezó el ratón,
+            resizing = false;
+            if (window == null || eventData.button != PointerEventData.InputButton.Left) return;
+            controller?.BringToFront();
+            if (controller != null && controller.IsMaximized) return;
+            parentRect = window.parent as RectTransform;
+            resizing = true;
+            // Guardamos dï¿½nde empezï¿½ el ratï¿½n,
             // pero en coordenadas del padre de la ventana.
             RectTransformUtility.ScreenPointToLocalPointInRectangle(
                 parentRect,
-                eventData.position,
+                eventData.pressPosition,
                 eventData.pressEventCamera,
                 out startPointerPosition
             );
@@ -107,6 +117,7 @@ namespace ComputerLearning
 
         public void OnDrag(PointerEventData eventData)
         {
+            if (!resizing || window == null || (controller != null && controller.IsMaximized)) return;
             RectTransformUtility.ScreenPointToLocalPointInRectangle(
                 parentRect,
                 eventData.position,
@@ -121,7 +132,7 @@ namespace ComputerLearning
             float top = startTop;
             float bottom = startBottom;
 
-            // Movemos únicamente los lados que controla este handle.
+            // Movemos ï¿½nicamente los lados que controla este handle.
 
             if (HasDirection(ResizeDirection.Left))
                 left += delta.x;
@@ -136,7 +147,7 @@ namespace ComputerLearning
                 bottom += delta.y;
 
 
-            // Tamaño mínimo horizontal
+            // Tamaï¿½o mï¿½nimo horizontal
             if (right - left < minSize.x)
             {
                 if (HasDirection(ResizeDirection.Left))
@@ -145,7 +156,7 @@ namespace ComputerLearning
                     right = left + minSize.x;
             }
 
-            // Tamaño mínimo vertical
+            // Tamaï¿½o mï¿½nimo vertical
             if (top - bottom < minSize.y)
             {
                 if (HasDirection(ResizeDirection.Bottom))
@@ -158,7 +169,7 @@ namespace ComputerLearning
             float width = right - left;
             float height = top - bottom;
 
-            // Cambiamos tamaño.
+            // Cambiamos tamaï¿½o.
             window.SetSizeWithCurrentAnchors(
                 RectTransform.Axis.Horizontal,
                 width
@@ -177,6 +188,7 @@ namespace ComputerLearning
             newPosition.y = bottom + height * window.pivot.y;
 
             window.localPosition = newPosition;
+            controller?.KeepTitleVisible();
         }
 
         #endregion

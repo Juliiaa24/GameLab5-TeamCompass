@@ -38,6 +38,7 @@ namespace ComputerLearning
 
         //keyboard
         [SerializeField] private InputActionReference spawnWindow;
+        private bool ownsSpawnAction;
 
         #endregion
 
@@ -53,7 +54,12 @@ namespace ComputerLearning
             }
 
             Instance = this;
-            DontDestroyOnLoad(gameObject);
+            // Input references belong to this scene; do not retain destroyed Canvas references.
+        }
+
+        private void OnDestroy()
+        {
+            if (Instance == this) Instance = null;
         }
 
         private void Start()
@@ -63,35 +69,12 @@ namespace ComputerLearning
 
         private void Update()
         {
-            Vector2 position = mousePosition.action.ReadValue<Vector2>();
-            Vector2 delta = mouseDelta.action.ReadValue<Vector2>();
-            Vector2 scrollValue = scroll.action.ReadValue<Vector2>();
-
-            if (leftClick.action.WasPressedThisFrame())
+            if (spawnWindow != null && spawnWindow.action != null && spawnWindow.action.WasPressedThisFrame())
             {
-                //Debug.Log($"Left click at {position}");
+                WindowManager manager = WindowManager.Instance;
+                if (manager != null) manager.OpenWindow(windowPrefab);
+                else if (windowPrefab != null && windowSpawner != null) Instantiate(windowPrefab, windowSpawner);
             }
-
-            if (rightClick.action.WasPressedThisFrame())
-            {
-                //Debug.Log($"Right click at {position}");
-            }
-
-            if (delta != Vector2.zero)
-            {
-                //Debug.Log($"Mouse delta: {delta}");
-            }
-
-            if (scrollValue != Vector2.zero)
-            {
-                //Debug.Log($"Scroll: {scrollValue.y}");
-            }
-
-            if (spawnWindow.action.WasPressedThisFrame())
-            {
-                Instantiate(windowPrefab, windowSpawner);
-            }
-            
         }
 
         #endregion
@@ -107,20 +90,17 @@ namespace ComputerLearning
 
         private void OnEnable()
         {
-            mousePosition.action.Enable();
-            mouseDelta.action.Enable();
-            leftClick.action.Enable();
-            rightClick.action.Enable();
-            scroll.action.Enable();
+            if (spawnWindow != null && spawnWindow.action != null)
+            {
+                ownsSpawnAction = !spawnWindow.action.enabled;
+                spawnWindow.action.Enable();
+            }
         }
 
         private void OnDisable()
         {
-            mousePosition.action.Disable();
-            mouseDelta.action.Disable();
-            leftClick.action.Disable();
-            rightClick.action.Disable();
-            scroll.action.Disable();
+            if (ownsSpawnAction && spawnWindow != null && spawnWindow.action != null)
+                spawnWindow.action.Disable();
         }
 
         #endregion
