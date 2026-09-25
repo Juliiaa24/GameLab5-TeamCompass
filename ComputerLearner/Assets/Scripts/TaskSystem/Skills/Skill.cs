@@ -4,6 +4,7 @@
  * Description:
 */
 
+using System;
 using UnityEngine;
 namespace ComputerLearning
 {
@@ -23,6 +24,7 @@ namespace ComputerLearning
     /// <summary>
     /// Abstract class skill, it contains a tutorial, a method t
     /// </summary>
+    [Serializable]
     public abstract class Skill : MonoBehaviour
     {
 

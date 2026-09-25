@@ -4,6 +4,7 @@
  * Description:
 */
 
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -12,6 +13,7 @@ namespace ComputerLearning
     /// <summary>
     /// A individual task the player has to perform with skills associated to it
     /// </summary>
+    [Serializable] 
     public abstract class Task : MonoBehaviour
     {
 
@@ -36,7 +38,7 @@ namespace ComputerLearning
         public bool IsCompleted() { return completed; }
 
         public abstract bool Check();
-        public abstract bool Feedback();
+        public abstract void Feedback();
 
         #endregion
 

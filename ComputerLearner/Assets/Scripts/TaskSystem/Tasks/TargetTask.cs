@@ -1,6 +1,6 @@
 /**
- * Author: DEVELOPERNAME
- * Date: CREATIONDATE
+ * Author: Julia Vera
+ * Date: 25/09
  * Description:
 */
 
@@ -20,7 +20,7 @@ namespace ComputerLearning
         #endregion
 
         #region Private Variables
-        
+        Animator animator;
 
         #endregion
 
@@ -33,7 +33,7 @@ namespace ComputerLearning
 
         private void Start()
         {
-
+            animator = GetComponent<Animator>();
         }
 
         private void Update()
@@ -49,9 +49,16 @@ namespace ComputerLearning
         {
             return completed;
         }
-        public override bool Feedback()
+        public override void Feedback()
         {
-            return false;
+            Debug.Log("FeedBack");
+            completed = false;
+            if(animator != null) animator.Play("Explosion");
+        }
+
+        public void OnAnimationEnd()
+        {
+            Destroy(gameObject);
         }
 
         #endregion
@@ -61,6 +68,7 @@ namespace ComputerLearning
         public void OnPointerClick(PointerEventData eventData)
         {
             completed = true;
+            Debug.Log("TargetClicked");
         }
 
         #endregion

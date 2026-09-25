@@ -1,46 +1,24 @@
 /**
  * Author: DEVELOPERNAME
- * Date: 25/09
- * Description: Tutorial to demonstrate how to perform a task (video)
+ * Date: CREATIONDATE
+ * Description:
 */
 
-using System;
 using UnityEngine;
 
 namespace ComputerLearning
 {
     /// <summary>
-    /// Tutorial to demonstrate how to perform a task
+    /// 
     /// </summary>
-    [Serializable]
-    public class Tutorial : MonoBehaviour
+    public class Level1 : Level
     {
 
         #region Public Variables
-        // Public Variables [Public Constant Variables, Public Component References, Public Variables]
-
-        // Public Constant Variables
-
-
-        // Public Component References
-
-
-        // Public Variables
-
 
         #endregion
 
         #region Private Variables
-        // Private Variables [Private Constant Variables, Private Component References, Private Variables]
-
-        // Private Constant Variables
-
-
-        // Private Component References
-
-
-        // Private Variables
-
 
         #endregion
 
@@ -71,6 +49,12 @@ namespace ComputerLearning
 
         #region Private Methods
         // Private Methods accessible only from this class
+
+
+        #endregion
+
+        #region Protected Methods
+        // Protected Methods accessible only from child class
 
 
         #endregion

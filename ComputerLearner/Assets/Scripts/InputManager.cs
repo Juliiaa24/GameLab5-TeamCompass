@@ -17,7 +17,7 @@ namespace ComputerLearning
 
         #region Public Variables
         /**
-         * Instancia unica del InputManager
+         * Unique Instance of InputManager
          */
         public static InputManager Instance { get; private set; }
 

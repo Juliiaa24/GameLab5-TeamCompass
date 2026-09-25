@@ -4,6 +4,7 @@
  * Description: Level abstarct class
 */
 
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -33,8 +34,9 @@ namespace ComputerLearning
         NUM_LEVELS
     }
     /// <summary>
-    /// 
+    /// Level with the task that the player needs to complete
     /// </summary>
+    [Serializable]
     public abstract class Level : MonoBehaviour
     {
         #region Public Variables
@@ -42,11 +44,11 @@ namespace ComputerLearning
         #endregion
 
         #region Private Variables
-        
         #endregion
 
         #region Protected Variables
-        protected List<Task> tasks;
+        protected Task[] tasks;
+        protected int tasksCount;
         protected bool levelCompleted = false;
         #endregion
 
@@ -68,6 +70,27 @@ namespace ComputerLearning
         #region Public Methods
         // Public Methods accessible from other classes
         public bool IsCompleted() { return levelCompleted; }
+        public void CheckTasks()
+        {
+            if (!levelCompleted)
+            {
+                foreach (var task in tasks)
+                {
+                    if (tasksCount <= 0) levelCompleted = true;
+                    if (task.Check())
+                    {
+                        task.Feedback();
+                        tasksCount--;
+                    }
+                }
+            }
+            else Managers.Lm().ChangeLevel();
+        }
+        public void RegisterTasks()
+        {
+            tasks = GetComponentsInChildren<Task>();
+            tasksCount = tasks.Length;
+        }
 
         #endregion
 

@@ -6,6 +6,7 @@
 
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace ComputerLearning
 {
@@ -20,7 +21,10 @@ namespace ComputerLearning
         #endregion
 
         #region Private Variables
-        private Dictionary<LevelID, Level> levels;
+
+        [SerializeField] private List<Level> levels;
+        private Level currentLevel;
+
         #endregion
 
         #region Protected Variables
@@ -44,7 +48,9 @@ namespace ComputerLearning
 
         private void Start()
         {
-
+            currentLevel = levels[0];
+            currentLevel.RegisterTasks();
+            Debug.Log("FirstLevelRegistered");
         }
 
         private void Update()
@@ -56,7 +62,18 @@ namespace ComputerLearning
 
         #region Public Methods
         // Public Methods accessible from other classes
+        public void ChangeLevel()
+        {
+            levels.Remove(currentLevel);
+            if (levels.Count > 0)currentLevel = levels[0];
+            currentLevel.RegisterTasks();
+            Debug.Log("LevelRegistered");
+        }
 
+        public Level CurrentLevel()
+        {
+            return currentLevel;
+        }
 
         #endregion
 
