@@ -1,6 +1,6 @@
 /**
- * Author: DEVELOPERNAME
- * Date: CREATIONDATE
+ * Author: Diego 
+ * Date: 11/09/26
  * Description:
 */
 
@@ -10,34 +10,18 @@ using UnityEngine.EventSystems;
 namespace ComputerLearning
 {
     /// <summary>
-    /// 
+    /// Extend the windows
     /// </summary>
     public class Maximize : MonoBehaviour, IPointerClickHandler
     {
 
         #region Public Variables
-        // Public Variables [Public Constant Variables, Public Component References, Public Variables]
-
-        // Public Constant Variables
-
-
-        // Public Component References
-
-
-        // Public Variables
-
 
         #endregion
 
         #region Private Variables
-        // Private Variables [Private Constant Variables, Private Component References, Private Variables]
 
-        // Private Constant Variables
-
-
-        // Private Component References
         [SerializeField] private Window window;
-        // Private Variables
 
 
         #endregion

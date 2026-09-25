@@ -17,17 +17,10 @@ namespace ComputerLearning
     {
 
         #region Public Variables
-        // Public Variables [Public Constant Variables, Public Component References, Public Variables]
 
-        // Public Constant Variables
         /** Instance of the SceneManager to apply the singleton method*/
         public static SceneSystem Instance { get; private set; }
 
-
-        // Public Component References
-
-
-        // Public Variables
         public enum SceneNames
         {
             Menu,
@@ -38,16 +31,6 @@ namespace ComputerLearning
         #endregion
 
         #region Private Variables
-        // Private Variables [Private Constant Variables, Private Component References, Private Variables]
-
-        // Private Constant Variables
-
-
-        // Private Component References
-
-
-        // Private Variables
-
 
         #endregion
 
