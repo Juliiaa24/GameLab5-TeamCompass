@@ -53,7 +53,7 @@ namespace ComputerLearning
         {
             Debug.Log("FeedBack");
             completed = false;
-            if(animator != null) animator.Play("Explosion");
+            if (animator != null) animator.Play("Explosion");
         }
 
         public void OnAnimationEnd()
