@@ -1,29 +1,53 @@
 /**
- * Author: DEVELOPERNAME
- * Date: CREATIONDATE
- * Description:
+ * Author: DIEGO
+ * Date: 25/09/26
+ * Description: Level abstarct class
 */
 
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace ComputerLearning
 {
+    enum LevelID
+    {
+        LEVEL1 = 0,
+        LEVEL2,
+        LEVEL3,
+        LEVEL4,
+        LEVEL5,
+        LEVEL6,
+        LEVEL7,
+        LEVEL8,
+        LEVEL9,
+        LEVEL10,
+        LEVEL11,
+        LEVEL12,
+        LEVEL13,
+        LEVEL14,
+        LEVEL15,
+        LEVEL16,
+        LEVEL17,
+        LEVEL18,
+        LEVEL19,
+        NUM_LEVELS
+    }
     /// <summary>
     /// 
     /// </summary>
-    public class Level : MonoBehaviour
+    public abstract class Level : MonoBehaviour
     {
-
         #region Public Variables
 
         #endregion
 
         #region Private Variables
-
+        
         #endregion
 
         #region Protected Variables
-
+        protected List<Task> tasks;
+        protected bool levelCompleted = false;
         #endregion
 
         #region Unity Methods
@@ -43,7 +67,7 @@ namespace ComputerLearning
 
         #region Public Methods
         // Public Methods accessible from other classes
-
+        public bool IsCompleted() { return levelCompleted; }
 
         #endregion
 

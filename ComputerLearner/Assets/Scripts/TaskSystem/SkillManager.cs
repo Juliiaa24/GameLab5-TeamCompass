@@ -1,7 +1,7 @@
 /**
- * Author: DEVELOPERNAME
- * Date: CREATIONDATE
- * Description:
+ * Author: DIEGO
+ * Date: 25/09/26
+ * Description: Skills manager
 */
 
 using System.Collections.Generic;

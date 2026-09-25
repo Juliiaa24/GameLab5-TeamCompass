@@ -1,10 +1,9 @@
 /**
- * Author: DIEGO
- * Date: 25/09/26
- * Description: Level Manager
+ * Author: DEVELOPERNAME
+ * Date: CREATIONDATE
+ * Description:
 */
 
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace ComputerLearning
@@ -12,15 +11,16 @@ namespace ComputerLearning
     /// <summary>
     /// 
     /// </summary>
-    public class LevelManager : MonoBehaviour
+    public class WindowManager : MonoBehaviour
     {
 
         #region Public Variables
-        public static LevelManager Instance { get; private set; }
+        public static WindowManager Instance { get; private set; }
+
         #endregion
 
         #region Private Variables
-        private Dictionary<LevelID, Level> levels;
+
         #endregion
 
         #region Protected Variables
@@ -29,18 +29,6 @@ namespace ComputerLearning
 
         #region Unity Methods
         // Unity Methods including (Awake, Start, Update, LateUpdate...)
-
-        private void Awake()
-        {
-            if (Instance != null && Instance != this)
-            {
-                Destroy(gameObject);
-                return;
-            }
-
-            Instance = this;
-            DontDestroyOnLoad(gameObject);
-        }
 
         private void Start()
         {
