@@ -52,5 +52,10 @@ namespace ComputerLearning
 
 
         #endregion
+        #region Protected Methods
+        // Protected Methods accessible only from child class
+
+
+        #endregion
     }
 }

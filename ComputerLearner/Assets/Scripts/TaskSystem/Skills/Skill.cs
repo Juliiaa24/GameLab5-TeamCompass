@@ -55,10 +55,7 @@ namespace ComputerLearning
 
         #region Public Methods
         // Public Methods accessible from other classes
-        public virtual void ShowTutorial()
-        {
-
-        }
+        public abstract void ShowTutorial();
 
         #endregion
 
