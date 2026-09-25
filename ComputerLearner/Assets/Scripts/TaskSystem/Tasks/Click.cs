@@ -1,44 +1,26 @@
 /**
  * Author: DEVELOPERNAME
- * Date: 25/09
- * Description: Tutorial to demonstrate how to perform a task (video)
+ * Date: CREATIONDATE
+ * Description:
 */
 
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 namespace ComputerLearning
 {
     /// <summary>
-    /// Tutorial to demonstrate how to perform a task
+    /// 
     /// </summary>
-    public class Tutorial : MonoBehaviour
+    public class TargetTask : Task, IPointerClickHandler
     {
 
         #region Public Variables
-        // Public Variables [Public Constant Variables, Public Component References, Public Variables]
-
-        // Public Constant Variables
-
-
-        // Public Component References
-
-
-        // Public Variables
-
 
         #endregion
 
         #region Private Variables
-        // Private Variables [Private Constant Variables, Private Component References, Private Variables]
-
-        // Private Constant Variables
-
-
-        // Private Component References
-
-
-        // Private Variables
-
+        
 
         #endregion
 
@@ -63,13 +45,23 @@ namespace ComputerLearning
 
         #region Public Methods
         // Public Methods accessible from other classes
-
+        public override bool Check()
+        {
+            return completed;
+        }
+        public override bool Feedback()
+        {
+            return false;
+        }
 
         #endregion
 
         #region Private Methods
         // Private Methods accessible only from this class
-
+        public void OnPointerClick(PointerEventData eventData)
+        {
+            completed = true;
+        }
 
         #endregion
     }

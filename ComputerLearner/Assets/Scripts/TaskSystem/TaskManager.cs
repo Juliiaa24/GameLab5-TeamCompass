@@ -1,7 +1,7 @@
 /**
- * Author: DEVELOPERNAME
- * Date: CREATIONDATE
- * Description:
+ * Author: Julia Vera 
+ * Date: 25/09/2026
+ * Description: Manager that checks if tasks have been completed
 */
 
 using UnityEngine;
@@ -9,7 +9,7 @@ using UnityEngine;
 namespace ComputerLearning
 {
     /// <summary>
-    /// 
+    /// Checks if tasks have been completed
     /// </summary>
     public class TaskManager : MonoBehaviour
     {
@@ -39,6 +39,10 @@ namespace ComputerLearning
 
         // Private Variables
 
+
+        #endregion
+
+        #region Protected Variables
 
         #endregion
 

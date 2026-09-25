@@ -156,13 +156,6 @@ namespace ComputerLearning
 
         private Vector2Int GetGridPosition(Vector2 localPosition)
         {
-            /*
-             * RectTransform coordinates have their origin
-             * in the center.
-             *
-             * We convert them so that the top-left corner
-             * of the panel becomes (0, 0).
-             */
 
             float x = localPosition.x - rect.rect.xMin;
             float y = rect.rect.yMax - localPosition.y;

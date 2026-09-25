@@ -10,40 +10,24 @@ using UnityEngine.InputSystem;
 namespace ComputerLearning
 {
     /// <summary>
-    /// 
+    /// Manage the input of the game
     /// </summary>
     public class InputManager : MonoBehaviour
     {
 
         #region Public Variables
-        // Public Variables [Public Constant Variables, Public Component References, Public Variables]
-
-        // Public Constant Variables
         /**
          * Instancia unica del InputManager
          */
         public static InputManager Instance { get; private set; }
 
-        // Public Component References
-
-
-        // Public Variables
-
 
         #endregion
 
         #region Private Variables
-        // Private Variables [Private Constant Variables, Private Component References, Private Variables]
 
-
-        // Private Constant Variables
-
-
-        // Private Component References
         [SerializeField] private Transform windowSpawner;
         [SerializeField] private GameObject windowPrefab;
-
-        // Private Variables
         
         //mouse
         [SerializeField] private InputActionReference mousePosition;

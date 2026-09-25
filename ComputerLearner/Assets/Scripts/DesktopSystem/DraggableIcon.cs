@@ -16,25 +16,16 @@ namespace ComputerLearning
     {
 
         #region Public Variables
-        // Public Variables [Public Constant Variables, Public Component References, Public Variables]
 
-        // Public Constant Variables
-
-        // Public Component References
-
-        // Public Variables
         #endregion
 
         #region Private Variables
-        // Private Variables [Private Constant Variables, Private Component References, Private Variables]
 
-        // Private Component References
         private IconGrid grid;
         [SerializeField] private GameObject windowPrefab;
         private GameObject appWindow;
         private Transform canvas;
 
-        // Private Variables
         private Vector3 initialPosition;
         private bool windowOpen = false;
         #endregion
