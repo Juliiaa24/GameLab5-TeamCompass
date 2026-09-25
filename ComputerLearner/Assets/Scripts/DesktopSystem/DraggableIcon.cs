@@ -55,6 +55,7 @@ namespace ComputerLearning
         {
             initialPosition = transform.position;
             grid.Unregister(this);
+            transform.SetAsLastSibling();
         }
 
         public void OnPointerUp(PointerEventData eventData)
