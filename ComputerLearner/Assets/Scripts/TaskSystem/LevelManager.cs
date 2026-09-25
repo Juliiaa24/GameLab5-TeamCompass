@@ -11,7 +11,7 @@ namespace ComputerLearning
     /// <summary>
     /// 
     /// </summary>
-    public class #SCRIPTNAME# : MonoBehaviour
+    public class LevelManager : MonoBehaviour
     {
 
         #region Public Variables

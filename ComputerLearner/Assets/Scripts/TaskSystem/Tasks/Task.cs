@@ -25,7 +25,7 @@ namespace ComputerLearning
 
         #region Protected Variables
         protected Tutorial tutorial;
-        protected Dictionary<SkillID, Skill> skillMap;
+        //protected Dictionary<SkillID, Skill> skillMap;
 
         protected bool completed;
 

@@ -4,6 +4,7 @@
  * Description:
 */
 
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace ComputerLearning
@@ -11,14 +12,18 @@ namespace ComputerLearning
     /// <summary>
     /// 
     /// </summary>
-    public class #SCRIPTNAME# : MonoBehaviour
+    public class SkillManager : MonoBehaviour
     {
-
         #region Public Variables
-
+        /**
+         * Unique Instance of the SkillManager 
+         */
+        public static SkillManager Instance { get; private set; }
         #endregion
 
         #region Private Variables
+        
+        private Dictionary<SkillID, Skill> allSkills;
 
         #endregion
 
@@ -29,6 +34,17 @@ namespace ComputerLearning
         #region Unity Methods
         // Unity Methods including (Awake, Start, Update, LateUpdate...)
 
+        private void Awake()
+        {
+            if (Instance != null && Instance != this)
+            {
+                Destroy(gameObject);
+                return;
+            }
+
+            Instance = this;
+            DontDestroyOnLoad(gameObject);
+        }
         private void Start()
         {
 
@@ -43,8 +59,6 @@ namespace ComputerLearning
 
         #region Public Methods
         // Public Methods accessible from other classes
-
-
         #endregion
 
         #region Private Methods
