@@ -18,11 +18,13 @@ namespace ComputerLearning
         public IReadOnlyList<Window> Windows => windows;
         public Window ActiveWindow { get; private set; }
         public RectTransform WindowsContainer => windowsContainer;
+
         public event Action WindowsChanged;
         #endregion
 
         #region Private Variables
         [SerializeField] private RectTransform windowsContainer;
+
         private readonly List<Window> windows = new List<Window>();
         #endregion
 
@@ -45,10 +47,14 @@ namespace ComputerLearning
                 existing.Restore();
                 return existing;
             }
+
             if (prefab == null || prefab.GetComponent<Window>() == null) return null;
+
             Window window = Instantiate(prefab, windowsContainer != null ? windowsContainer : transform)
                 .GetComponent<Window>();
+
             RegisterWindow(window);
+
             window.Restore();
             return window;
         }
@@ -56,6 +62,7 @@ namespace ComputerLearning
         public void RegisterWindow(Window window)
         {
             if (window == null || window.IsClosed || windows.Contains(window)) return;
+
             windows.Add(window);
             window.StateChanged += OnWindowChanged;
             window.SetManager(this);
