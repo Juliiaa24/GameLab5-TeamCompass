@@ -54,6 +54,7 @@ namespace ComputerLearning
             Debug.Log("FeedBack");
             completed = false;
             if (animator != null) animator.Play("Explosion");
+            else Destroy(gameObject);
         }
 
         public void OnAnimationEnd()
