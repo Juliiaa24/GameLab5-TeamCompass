@@ -9,7 +9,6 @@ using UnityEngine;
 
 namespace ComputerLearning
 {
-    [DefaultExecutionOrder(-80)]
     public class LevelManager : MonoBehaviour
     {
         #region Public Variables
