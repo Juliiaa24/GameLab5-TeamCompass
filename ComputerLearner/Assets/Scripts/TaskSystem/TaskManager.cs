@@ -9,7 +9,6 @@ using UnityEngine;
 
 namespace ComputerLearning
 {
-    [DefaultExecutionOrder(-90)]
     public class TaskManager : MonoBehaviour
     {
         #region Public Variables
