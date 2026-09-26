@@ -37,7 +37,6 @@ namespace ComputerLearning
 
         private void Start()
         {
-            progressBar = GetComponentInChildren<Image>();
             progressBar.fillAmount = 0;
         }
 
