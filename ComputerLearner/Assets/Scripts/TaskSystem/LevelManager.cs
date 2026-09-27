@@ -5,6 +5,7 @@
 */
 
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -24,6 +25,7 @@ namespace ComputerLearning
 
         [SerializeField] private List<Level> levels;
         [SerializeField] private Level currentLevel;
+        private List<bool> completedLevels = Enumerable.Repeat(false, (int)LevelID.NUM_LEVELS).ToList();
 
         #endregion
 
@@ -62,19 +64,16 @@ namespace ComputerLearning
 
         #region Public Methods
         // Public Methods accessible from other classes
-        public void ChangeLevel()
+        public bool CompleteLevel(LevelID level)
         {
-            //levels.Remove(currentLevel);
-            //if (levels.Count > 0) currentLevel = levels[0];
-            //currentLevel.RegisterTasks();
-            Debug.Log("LevelRegistered");
+            return completedLevels[(int)level] = true;
         }
 
         public Level StartLevel(LevelID id)
         {
             if (currentLevel != null) currentLevel.ResetLevel();
             int level = (int)id;
-            if (level < levels.Count)
+            if (level < levels.Count && !completedLevels[(int)id])
             {
                 currentLevel = Instantiate(levels[level]);
                 currentLevel.RegisterTasks();
@@ -84,11 +83,15 @@ namespace ComputerLearning
                 Debug.Log("LevelID no valido"); 
                 return null;
             }
-            
         }
         public Level CurrentLevel()
         {
             return currentLevel;
+        }
+
+        public void CloseLevel()
+        {
+            currentLevel = null;
         }
 
         #endregion

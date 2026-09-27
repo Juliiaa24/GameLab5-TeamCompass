@@ -65,6 +65,12 @@ namespace ComputerLearning
 
         }
 
+        private void OnDestroy()
+        {
+            ResetLevel();
+            Managers.Lm().CloseLevel();   
+        }
+
         #endregion
 
         #region Public Methods
@@ -85,7 +91,10 @@ namespace ComputerLearning
                     }
                 }
             }
-            else Managers.Lm().ChangeLevel();
+            else
+            {
+
+            }
         }
         public void RegisterTasks()
         {
