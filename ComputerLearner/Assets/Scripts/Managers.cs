@@ -53,6 +53,14 @@ namespace ComputerLearning
         {
             return SceneSystem.Instance;
         }
+        /// <summary>
+        /// WindowManager
+        /// </summary>
+        /// <returns></returns>
+        public static WindowManager Wm()
+        {
+            return WindowManager.Instance;
+        }
        
     }
     

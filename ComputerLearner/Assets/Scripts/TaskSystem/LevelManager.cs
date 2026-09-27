@@ -78,6 +78,7 @@ namespace ComputerLearning
                 Debug.Log($"nivel: {id}, empezado");
                 currentLevel = Instantiate(levels[level]);
                 currentLevel.RegisterTasks();
+                currentLevel.ShowTutorial();
                 return currentLevel;
             }
             else { 

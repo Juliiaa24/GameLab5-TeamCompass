@@ -38,6 +38,7 @@ namespace ComputerLearning
 
         #region Protected Variables
         [SerializeField] protected Tutorial tutorial;
+        [SerializeField] protected GameObject tutorialPrefab;
         #endregion
 
         #region Unity Methods
@@ -58,6 +59,7 @@ namespace ComputerLearning
         #region Public Methods
         // Public Methods accessible from other classes
         public abstract void ShowTutorial();
+        public GameObject getTutorial() {  return tutorialPrefab; }
 
         #endregion
 

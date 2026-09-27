@@ -87,7 +87,7 @@ namespace ComputerLearning
             if (appWindow != null && appLevel != LevelID.NUM_LEVELS)
             {
                 GameObject level = Managers.Lm().StartLevel(appLevel)?.gameObject;
-                if (level)
+                if (level != null)
                 {
                     appWindow.SetContent(level);
                 }

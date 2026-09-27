@@ -20,7 +20,7 @@ namespace ComputerLearning
         #endregion
 
         #region Private Variables
-        private bool onPlay = false;
+        private bool played;
         #endregion
 
         #region Protected Variables
@@ -30,16 +30,19 @@ namespace ComputerLearning
         #region Unity Methods
         // Unity Methods including (Awake, Start, Update, LateUpdate...)
 
+        private void Awake()
+        {
+            //player = gameObject.GetComponent<VideoPlayer>();
+            //if (player != null) Debug.LogWarning("No VideoPlayer Attached to the tutorial");
+        }
         private void Start()
         {
-            player = GetComponent<VideoPlayer>();
-            if (player != null) Debug.LogWarning("No VideoPlayer Attached to the tutorial");
         }
 
         private void Update()
         {
-            Debug.Log(player.isPlaying);
-            if (onPlay && !player.isPlaying)
+            Debug.Log(played + "<- On Play | Playing ->" + player.isPlaying);
+            if (played && !player.isPlaying)
             {
                OnEnd();
             }
@@ -51,12 +54,12 @@ namespace ComputerLearning
         // Public Methods accessible from other classes
         public override void Play()
         {
-            player.Play();
-            Debug.Log("Now Playing" + player.isPlaying);
-            onPlay = true;
+            played = true;
+            Debug.Log("Play Tutorial");
         }
         public override void OnEnd()
         {
+            Debug.Log("Finished");
             Destroy(gameObject);
         }
 

@@ -28,7 +28,7 @@ namespace ComputerLearning
         #endregion
 
         #region Protected Variables
-        protected VideoPlayer player;
+        [SerializeField] protected VideoPlayer player;
 
         #endregion
 

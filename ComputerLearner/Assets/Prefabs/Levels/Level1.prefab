@@ -106,6 +106,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ComputerLearning.Level1
   tasks:
   - {fileID: 5905431184729684936}
+  skills:
+  - {fileID: 4242394593112207864, guid: 7b71b27786c93c446a0a37e9c7e9d39b, type: 3}
+  tutorialWindow: {fileID: 242377210234752804, guid: 0e4a41ca73db6a54fa7c2d386fa55f52, type: 3}
+  id: 0
 --- !u!1001 &7645622467171482142
 PrefabInstance:
   m_ObjectHideFlags: 0

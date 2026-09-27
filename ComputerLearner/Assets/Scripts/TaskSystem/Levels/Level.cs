@@ -50,6 +50,8 @@ namespace ComputerLearning
         [SerializeField]protected Task[] tasks;
         protected int tasksCount;
         protected bool levelCompleted = false;
+        [SerializeField] protected List<Skill> skills;
+        [SerializeField] protected GameObject tutorialWindow;
         [SerializeField] protected LevelID id;
         #endregion
 
@@ -76,6 +78,16 @@ namespace ComputerLearning
 
         #region Public Methods
         // Public Methods accessible from other classes
+        public virtual void ShowTutorial()
+        {
+            Debug.Log("ShowTutorial");
+            Window window = Managers.Wm().OpenWindow(tutorialWindow);
+            foreach (var skill in skills) 
+            {
+                window.SetContent(Instantiate(skill.getTutorial()));
+                skill.ShowTutorial();
+            }
+        }
         public bool IsCompleted() { return levelCompleted; }
         public void CheckTasks()
         {
