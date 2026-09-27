@@ -45,8 +45,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8ae5bf317ee25da42999f7927cdcb21a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ComputerLearning.SkillManager
-  skillDefinitions:
-  - {fileID: 5297066680299535613}
 --- !u!1 &1767019054012238009
 GameObject:
   m_ObjectHideFlags: 0
@@ -91,6 +89,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f46cfbcc0d7dbd24583c6a01afa20524, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ComputerLearning.LevelManager
+  levels: []
 --- !u!1 &3189400347974175455
 GameObject:
   m_ObjectHideFlags: 0
@@ -169,7 +168,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9e4a05003e8de854b8bb30462ce1ef63, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ComputerLearning.ClickSkill
-  skillID: 1
   tutorial: {fileID: 0}
 --- !u!1 &8486427409290289233
 GameObject:
@@ -180,7 +178,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 5946776358301371226}
-  - component: {fileID: 8135318427823235876}
   m_Layer: 0
   m_Name: TaskManager
   m_TagString: Untagged
@@ -203,15 +200,3 @@ Transform:
   m_Children: []
   m_Father: {fileID: 7329099294983002349}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &8135318427823235876
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8486427409290289233}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 62a5f66b0c611af4aa4af0665f84dbf1, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ComputerLearning.TaskManager
