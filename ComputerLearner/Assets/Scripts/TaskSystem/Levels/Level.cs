@@ -53,6 +53,7 @@ namespace ComputerLearning
         [SerializeField] protected List<Skill> skills;
         [SerializeField] protected GameObject tutorialWindow;
         [SerializeField] protected LevelID id;
+        [SerializeField] protected string levelName;
         #endregion
 
         #region Unity Methods
@@ -81,7 +82,8 @@ namespace ComputerLearning
         public virtual void ShowTutorial()
         {
             Debug.Log("ShowTutorial");
-            Window window = Managers.Wm().OpenWindow(tutorialWindow);
+            Window window = Managers.Wm().OpenWindow(tutorialWindow, null, "Tutorial");
+            Managers.Wm().FocusWindow(window);
             foreach (var skill in skills) 
             {
                 window.SetContent(Instantiate(skill.getTutorial()));

@@ -62,7 +62,9 @@ namespace ComputerLearning
         public override void OnEnd()
         {
             Debug.Log("Finished");
-            Destroy(gameObject);
+            played = false;
+            Window window = GetComponentInParent<Window>();
+            if (window != null) window.CloseWindow();
         }
 
         #endregion

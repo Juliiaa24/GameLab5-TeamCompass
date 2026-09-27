@@ -86,10 +86,12 @@ namespace ComputerLearning
 
             if (appWindow != null && appLevel != LevelID.NUM_LEVELS)
             {
+                if (!appWindow.IsMaximized) appWindow.toggleMaximize();
                 GameObject level = Managers.Lm().StartLevel(appLevel)?.gameObject;
                 if (level != null)
                 {
                     appWindow.SetContent(level);
+                    appWindow.setTitle(level.GetComponent<Level>().name);
                 }
             }
         }

@@ -160,6 +160,16 @@ namespace ComputerLearning
             windowRectTransform.localPosition = position;
         }
 
+        public void setTitle(string title)
+        {
+            windowTitle = title;
+        }
+
+        public void setIcon(Sprite icon)
+        {
+            windowIcon = icon;
+        }
+
         internal void SetManager(WindowManager value) { manager = value; }
         #endregion
 

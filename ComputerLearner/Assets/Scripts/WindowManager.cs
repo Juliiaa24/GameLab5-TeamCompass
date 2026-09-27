@@ -5,6 +5,7 @@
 */
 using System;
 using System.Collections.Generic;
+using System.Reflection.Metadata;
 using UnityEngine;
 
 namespace ComputerLearning
@@ -40,7 +41,7 @@ namespace ComputerLearning
         #endregion
 
         #region Public Methods
-        public Window OpenWindow(GameObject prefab, Window existing = null)
+        public Window OpenWindow(GameObject prefab, Window existing = null, string title = "window")
         {
             if (existing != null && !existing.IsClosed)
             {
@@ -52,6 +53,7 @@ namespace ComputerLearning
 
             Window window = Instantiate(prefab, windowsContainer != null ? windowsContainer : transform)
                 .GetComponent<Window>();
+            window.setTitle(title);
 
             RegisterWindow(window);
 

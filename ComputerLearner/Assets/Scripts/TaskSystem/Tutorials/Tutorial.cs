@@ -18,8 +18,7 @@ namespace ComputerLearning
     {
 
         #region Public Variables
-       
-
+        
         #endregion
 
         #region Private Variables

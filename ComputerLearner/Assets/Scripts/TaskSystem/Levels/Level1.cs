@@ -31,7 +31,7 @@ namespace ComputerLearning
 
         private void Start()
         {
-
+            levelName = "Level 1";
         }
 
         private void Update()
