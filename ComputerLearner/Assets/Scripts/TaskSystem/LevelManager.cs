@@ -91,6 +91,12 @@ namespace ComputerLearning
             return currentLevel;
         }
 
+        public void ResetProgress()
+        {
+            currentLevel = null;
+            for (int i = 0; i < completedLevels.Count; i++) completedLevels[i] = false;
+        }
+
         public void CloseLevel()
         {
             currentLevel = null;

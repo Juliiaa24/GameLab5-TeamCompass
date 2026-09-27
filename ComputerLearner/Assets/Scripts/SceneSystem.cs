@@ -45,7 +45,11 @@ namespace ComputerLearning
             }
 
             Instance = this;
-            DontDestroyOnLoad(gameObject);
+        }
+
+        private void OnDestroy()
+        {
+            if (Instance == this) Instance = null;
         }
         private void Start()
         {
@@ -71,6 +75,7 @@ namespace ComputerLearning
 
         private void ChangeScene(SceneNames scene)
         {
+            if (LevelManager.Instance != null) LevelManager.Instance.ResetProgress();
             switch (scene)
             {
                 case SceneNames.Menu:
