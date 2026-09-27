@@ -14,7 +14,7 @@ GameObject:
   - component: {fileID: 6429415501051018958}
   - component: {fileID: 5862127162926176490}
   m_Layer: 5
-  m_Name: ClickTutorial
+  m_Name: HoverTutorial
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -82,7 +82,7 @@ VideoPlayer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5666781445820042716}
   m_Enabled: 1
-  m_VideoClip: {fileID: 32900000, guid: 6f1ad6bd95198f44fac3f4ff34a1f504, type: 3}
+  m_VideoClip: {fileID: 32900000, guid: 74c80a7a3fc13d842bd2bc62616065f3, type: 3}
   m_TargetCameraAlpha: 1
   m_TargetCamera3DLayout: 0
   m_TargetCamera: {fileID: 0}

@@ -108,7 +108,7 @@ namespace ComputerLearning
             }
             else
             {
-                Managers.Lm().CompleteLevel(id);
+                OnEnd();
             }
         }
         public void RegisterTasks()
@@ -133,7 +133,10 @@ namespace ComputerLearning
 
         #region Protected Methods
         // Protected Methods accessible only from child class
-
+        protected virtual void OnEnd()
+        {
+            Managers.Lm().CompleteLevel(id);
+        }
 
         #endregion
     }
