@@ -84,8 +84,13 @@ namespace ComputerLearning
                 if (canvas != null) appWindow = Instantiate(windowPrefab, canvas.transform).GetComponent<Window>();
             }
 
-            if (appWindow != null && appLevel != LevelID.NUM_LEVELS){
-                appWindow.SetContent(Managers.Lm().StartLevel(appLevel).gameObject);
+            if (appWindow != null && appLevel != LevelID.NUM_LEVELS)
+            {
+                GameObject level = Managers.Lm().StartLevel(appLevel)?.gameObject;
+                if (level)
+                {
+                    appWindow.SetContent(level);
+                }
             }
         }
         #endregion

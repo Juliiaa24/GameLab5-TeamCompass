@@ -75,6 +75,7 @@ namespace ComputerLearning
             int level = (int)id;
             if (level < levels.Count && !completedLevels[(int)id])
             {
+                Debug.Log($"nivel: {id}, empezado");
                 currentLevel = Instantiate(levels[level]);
                 currentLevel.RegisterTasks();
                 return currentLevel;

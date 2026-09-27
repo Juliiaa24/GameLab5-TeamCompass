@@ -50,6 +50,7 @@ namespace ComputerLearning
         [SerializeField]protected Task[] tasks;
         protected int tasksCount;
         protected bool levelCompleted = false;
+        [SerializeField] protected LevelID id;
         #endregion
 
         #region Unity Methods
@@ -93,7 +94,7 @@ namespace ComputerLearning
             }
             else
             {
-
+                Managers.Lm().CompleteLevel(id);
             }
         }
         public void RegisterTasks()
