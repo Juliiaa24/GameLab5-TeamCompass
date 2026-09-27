@@ -6,6 +6,7 @@
 
 using System;
 using UnityEngine;
+using UnityEngine.Video;
 
 namespace ComputerLearning
 {
@@ -13,38 +14,21 @@ namespace ComputerLearning
     /// Tutorial to demonstrate how to perform a task
     /// </summary>
     [Serializable]
-    public class Tutorial : MonoBehaviour
+    public abstract class Tutorial : MonoBehaviour
     {
 
         #region Public Variables
-        // Public Variables [Public Constant Variables, Public Component References, Public Variables]
-
-        // Public Constant Variables
-
-
-        // Public Component References
-
-
-        // Public Variables
-
+       
 
         #endregion
 
         #region Private Variables
-        // Private Variables [Private Constant Variables, Private Component References, Private Variables]
-
-        // Private Constant Variables
-
-
-        // Private Component References
-
-
-        // Private Variables
 
 
         #endregion
 
         #region Protected Variables
+        protected VideoPlayer player;
 
         #endregion
 
@@ -53,7 +37,8 @@ namespace ComputerLearning
 
         private void Start()
         {
-
+            //player = GetComponent<VideoPlayer>();
+            //if (player != null) Debug.LogWarning("No VideoPlayer Attached to the tutorial");
         }
 
         private void Update()
@@ -65,7 +50,8 @@ namespace ComputerLearning
 
         #region Public Methods
         // Public Methods accessible from other classes
-
+        public abstract void Play();
+        public abstract void OnEnd();
 
         #endregion
 

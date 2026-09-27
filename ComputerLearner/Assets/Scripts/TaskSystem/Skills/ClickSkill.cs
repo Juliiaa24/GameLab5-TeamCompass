@@ -10,7 +10,9 @@ namespace ComputerLearning
         #region Public Methods
         public override void ShowTutorial()
         {
-            if (tutorial != null) tutorial.gameObject.SetActive(true);
+            if (tutorial != null) { tutorial.gameObject.SetActive(true);
+                tutorial.Play();
+            }
         }
         #endregion
     }
