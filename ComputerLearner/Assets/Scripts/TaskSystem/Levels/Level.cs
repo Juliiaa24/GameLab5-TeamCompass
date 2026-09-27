@@ -1,87 +1,109 @@
 /**
- * Author: Diego
+ * Author: DIEGO
  * Date: 25/09/26
- * Description: A level contains the tasks required for its completion.
+ * Description: Level abstarct class
 */
+
 using System;
 using System.Collections.Generic;
 using UnityEngine;
 
 namespace ComputerLearning
 {
-    public enum LevelID
+    enum LevelID
     {
-        LEVEL1 = 0, LEVEL2, LEVEL3, LEVEL4, LEVEL5, LEVEL6, LEVEL7, LEVEL8,
-        LEVEL9, LEVEL10, LEVEL11, LEVEL12, LEVEL13, LEVEL14, LEVEL15,
-        LEVEL16, LEVEL17, LEVEL18, LEVEL19, NUM_LEVELS
+        LEVEL1 = 0,
+        LEVEL2,
+        LEVEL3,
+        LEVEL4,
+        LEVEL5,
+        LEVEL6,
+        LEVEL7,
+        LEVEL8,
+        LEVEL9,
+        LEVEL10,
+        LEVEL11,
+        LEVEL12,
+        LEVEL13,
+        LEVEL14,
+        LEVEL15,
+        LEVEL16,
+        LEVEL17,
+        LEVEL18,
+        LEVEL19,
+        NUM_LEVELS
     }
-
+    /// <summary>
+    /// Level with the task that the player needs to complete
+    /// </summary>
+    [Serializable]
     public abstract class Level : MonoBehaviour
     {
         #region Public Variables
-        public LevelID ID => levelID;
-        public IReadOnlyList<Task> Tasks => tasks;
-        public bool IsRunning { get; private set; }
-        public int CompletedTaskCount
-        {
-            get
-            {
-                int count = 0;
-                foreach (Task task in tasks)
-                    if (task != null && task.IsCompleted()) count++;
-                return count;
-            }
-        }
-        public event Action<Level> StateChanged;
+
         #endregion
 
         #region Private Variables
-        [SerializeField] private LevelID levelID;
         #endregion
 
         #region Protected Variables
-        [SerializeField] protected List<Task> tasks = new List<Task>();
-        protected bool levelCompleted;
+        protected Task[] tasks;
+        protected int tasksCount;
+        protected bool levelCompleted = false;
         #endregion
 
         #region Unity Methods
-        protected virtual void OnDestroy()
+        // Unity Methods including (Awake, Start, Update, LateUpdate...)
+
+        private void Start()
         {
-            if (LevelManager.Instance != null) LevelManager.Instance.UnregisterLevel(this);
+
         }
+
+        private void Update()
+        {
+
+        }
+
         #endregion
 
         #region Public Methods
+        // Public Methods accessible from other classes
         public bool IsCompleted() { return levelCompleted; }
-
-        public void BeginLevel()
+        public void CheckTasks()
         {
-            if (TaskManager.Instance == null) return;
-            levelCompleted = false;
-            IsRunning = false;
-            foreach (Task task in tasks) TaskManager.Instance.BeginTask(task);
-            IsRunning = true;
-            StateChanged?.Invoke(this);
-        }
-
-        public void Evaluate()
-        {
-            if (!IsRunning) return;
-            if (tasks.Count > 0 && CompletedTaskCount == tasks.Count)
+            if (!levelCompleted)
             {
-                levelCompleted = true;
-                IsRunning = false;
+                foreach (var task in tasks)
+                {
+                    if (tasksCount <= 0) levelCompleted = true;
+                    if (task.Check())
+                    {
+                        task.Feedback();
+                        tasksCount--;
+                    }
+                }
             }
-            StateChanged?.Invoke(this);
+            else Managers.Lm().ChangeLevel();
+        }
+        public void RegisterTasks()
+        {
+            tasks = GetComponentsInChildren<Task>();
+            tasksCount = tasks.Length;
         }
 
-        public void CancelLevel()
-        {
-            IsRunning = false;
-            foreach (Task task in tasks)
-                if (task != null && task.IsRunning) task.CancelTask();
-            StateChanged?.Invoke(this);
-        }
+        #endregion
+
+        #region Private Methods
+        // Private Methods accessible only from this class
+
+
+        #endregion
+
+        #region Protected Methods
+        // Protected Methods accessible only from child class
+
+
         #endregion
     }
 }

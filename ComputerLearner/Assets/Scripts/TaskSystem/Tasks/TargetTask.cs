@@ -1,50 +1,77 @@
 /**
- * Author: Diego
- * Date: 25/09/26
- * Description: Configurable target-click task, using the existing Task contract.
+ * Author: Julia Vera
+ * Date: 25/09
+ * Description:
 */
+
 using UnityEngine;
 using UnityEngine.EventSystems;
 
 namespace ComputerLearning
 {
+    /// <summary>
+    /// 
+    /// </summary>
     public class TargetTask : Task, IPointerClickHandler
     {
+
         #region Public Variables
-        public override int CurrentProgress => hits;
-        public override int RequiredProgress => Mathf.Max(1, requiredTargets);
+
         #endregion
 
         #region Private Variables
-        [SerializeField, Min(1)] private int requiredTargets = 5;
-        private int hits;
+        Animator animator;
+
+        #endregion
+
+        #region Protected Variables
+
+        #endregion
+
+        #region Unity Methods
+        // Unity Methods including (Awake, Start, Update, LateUpdate...)
+
+        private void Start()
+        {
+            animator = GetComponent<Animator>();
+        }
+
+        private void Update()
+        {
+
+        }
+
         #endregion
 
         #region Public Methods
-        public override bool Check() { return completed; }
-        public override bool Feedback() { return completed; }
-
-        public override void BeginTask()
+        // Public Methods accessible from other classes
+        public override bool Check()
         {
-            hits = 0;
-            base.BeginTask();
+            return completed;
+        }
+        public override void Feedback()
+        {
+            Debug.Log("FeedBack");
+            completed = false;
+            if (animator != null) animator.Play("Explosion");
+            else Destroy(gameObject);
         }
 
-        public bool RegisterHit()
+        public void OnAnimationEnd()
         {
-            if (!IsRunning || completed) return false;
-            hits++;
-            if (hits >= RequiredProgress) CompleteTask();
-            else NotifyProgress();
-            return true;
+            Destroy(gameObject);
         }
 
-        // Preserve the original direct-click task behaviour for existing standalone targets.
+        #endregion
+
+        #region Private Methods
+        // Private Methods accessible only from this class
         public void OnPointerClick(PointerEventData eventData)
         {
-            if (eventData.button == PointerEventData.InputButton.Left &&
-                GetComponent<ClickTargetExercise>() == null) RegisterHit();
+            completed = true;
+            Debug.Log("TargetClicked");
         }
+
         #endregion
     }
 }
