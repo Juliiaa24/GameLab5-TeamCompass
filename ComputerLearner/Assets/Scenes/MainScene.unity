@@ -294,7 +294,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8798812805578167657, guid: 0e4a41ca73db6a54fa7c2d386fa55f52, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 35980.53
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8798812805578167657, guid: 0e4a41ca73db6a54fa7c2d386fa55f52, type: 3}
       propertyPath: m_LocalRotation.w
@@ -314,11 +314,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8798812805578167657, guid: 0e4a41ca73db6a54fa7c2d386fa55f52, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: -3379.887
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8798812805578167657, guid: 0e4a41ca73db6a54fa7c2d386fa55f52, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: -572
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8798812805578167657, guid: 0e4a41ca73db6a54fa7c2d386fa55f52, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
@@ -807,6 +807,14 @@ PrefabInstance:
       propertyPath: windowManager
       value: 
       objectReference: {fileID: 1652979088}
+    - target: {fileID: 8173722957690787105, guid: 60a9e92780e80e842921532766567dcd, type: 3}
+      propertyPath: m_fontColor32.rgba
+      value: 4292925071
+      objectReference: {fileID: 0}
+    - target: {fileID: 8173722957690787105, guid: 60a9e92780e80e842921532766567dcd, type: 3}
+      propertyPath: m_TextStyleHashCode
+      value: -1183493901
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -1131,6 +1139,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 81950322277228351, guid: e50bef35f453b1941a27297b08d0fe8b, type: 3}
+      propertyPath: 'levels.Array.data[0]'
+      value: 
+      objectReference: {fileID: 1903459402}
     - target: {fileID: 3189400347974175455, guid: e50bef35f453b1941a27297b08d0fe8b, type: 3}
       propertyPath: m_Name
       value: ProgressionManagers
@@ -1594,6 +1606,17 @@ RectTransform:
   m_CorrespondingSourceObject: {fileID: 8374302953853189464, guid: 12cf906e1f9547245b63a2ae07cba663, type: 3}
   m_PrefabInstance: {fileID: 1903459400}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &1903459402 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 1755493941716740091, guid: 12cf906e1f9547245b63a2ae07cba663, type: 3}
+  m_PrefabInstance: {fileID: 1903459400}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c67d1bcf9a1f49d4c93688d44b3146a7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ComputerLearning.Level1
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

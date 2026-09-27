@@ -17,6 +17,7 @@ namespace ComputerLearning
         #region Private Variables
         private IconGrid grid;
         [SerializeField] private GameObject windowPrefab;
+        [SerializeField] private LevelID appLevel = LevelID.NUM_LEVELS;
         private Window appWindow;
         private WindowManager manager;
         private Vector3 initialPosition;
@@ -81,6 +82,10 @@ namespace ComputerLearning
                 // Compatibility with older scenes that have not added a manager yet.
                 Canvas canvas = GetComponentInParent<Canvas>();
                 if (canvas != null) appWindow = Instantiate(windowPrefab, canvas.transform).GetComponent<Window>();
+            }
+
+            if (appWindow != null && appLevel != LevelID.NUM_LEVELS){
+                appWindow.SetContent(Managers.Lm().StartLevel(appLevel).gameObject);
             }
         }
         #endregion

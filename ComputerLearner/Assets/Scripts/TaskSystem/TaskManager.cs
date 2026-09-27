@@ -52,7 +52,7 @@ namespace ComputerLearning
 
         private void Update()
         {
-            Managers.Lm().CurrentLevel().CheckTasks();
+            Managers.Lm().CurrentLevel()?.CheckTasks();
         }
 
         #endregion

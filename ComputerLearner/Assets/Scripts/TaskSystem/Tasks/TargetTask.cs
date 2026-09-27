@@ -47,6 +47,7 @@ namespace ComputerLearning
         // Public Methods accessible from other classes
         public override bool Check()
         {
+            //Debug.Log(completed);
             return completed;
         }
         public override void Feedback()

@@ -41,7 +41,7 @@ namespace ComputerLearning
         private void Awake()
         {
             windowRectTransform = GetComponent<RectTransform>();
-            if (contentPrefab != null) SetContent(contentPrefab);
+            if (contentPrefab != null) SetContent(Instantiate(contentPrefab));
             InstallFocusRelays();
         }
 
@@ -68,11 +68,12 @@ namespace ComputerLearning
         #endregion
 
         #region Public Methods
-        public void SetContent(GameObject prefab)
+        public void SetContent(GameObject content)
         {
-            if (prefab == null || contentArea == null) return;
+            if (content == null || contentArea == null) return;
             if (Content != null) { Content.SetActive(false); Destroy(Content); }
-            Content = Instantiate(prefab, contentArea);
+            Content = content;
+            Content.transform.SetParent(contentArea);
             RectTransform rect = Content.GetComponent<RectTransform>();
             if (rect != null)
             {

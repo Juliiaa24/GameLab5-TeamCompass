@@ -10,7 +10,7 @@ using UnityEngine;
 
 namespace ComputerLearning
 {
-    enum LevelID
+    public enum LevelID
     {
         LEVEL1 = 0,
         LEVEL2,
@@ -47,7 +47,7 @@ namespace ComputerLearning
         #endregion
 
         #region Protected Variables
-        protected Task[] tasks;
+        [SerializeField]protected Task[] tasks;
         protected int tasksCount;
         protected bool levelCompleted = false;
         #endregion
@@ -72,6 +72,7 @@ namespace ComputerLearning
         public bool IsCompleted() { return levelCompleted; }
         public void CheckTasks()
         {
+            
             if (!levelCompleted)
             {
                 foreach (var task in tasks)
@@ -90,6 +91,12 @@ namespace ComputerLearning
         {
             tasks = GetComponentsInChildren<Task>();
             tasksCount = tasks.Length;
+        }
+        public void ResetLevel()
+        {
+            Array.Clear(tasks, 0, tasksCount);
+            tasksCount = 0;
+            levelCompleted = false;
         }
 
         #endregion

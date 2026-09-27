@@ -104,6 +104,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c67d1bcf9a1f49d4c93688d44b3146a7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ComputerLearning.Level1
+  tasks:
+  - {fileID: 5905431184729684936}
 --- !u!1001 &7645622467171482142
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -201,6 +203,17 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 83778887503007b4982275e047d80564, type: 3}
+--- !u!114 &5905431184729684936 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 4318665619363054038, guid: 83778887503007b4982275e047d80564, type: 3}
+  m_PrefabInstance: {fileID: 7645622467171482142}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4375118c2a95a354d81d033170f68229, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ComputerLearning.TargetTask
 --- !u!224 &7159477585699608151 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 666857988404767817, guid: 83778887503007b4982275e047d80564, type: 3}

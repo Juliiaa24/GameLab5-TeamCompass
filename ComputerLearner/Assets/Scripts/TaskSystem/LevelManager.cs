@@ -23,7 +23,7 @@ namespace ComputerLearning
         #region Private Variables
 
         [SerializeField] private List<Level> levels;
-        private Level currentLevel;
+        [SerializeField] private Level currentLevel;
 
         #endregion
 
@@ -48,9 +48,9 @@ namespace ComputerLearning
 
         private void Start()
         {
-            currentLevel = levels[0];
-            currentLevel.RegisterTasks();
-            Debug.Log("FirstLevelRegistered");
+            //currentLevel = levels[0];
+            //currentLevel.RegisterTasks();
+            //Debug.Log("FirstLevelRegistered");
         }
 
         private void Update()
@@ -64,12 +64,28 @@ namespace ComputerLearning
         // Public Methods accessible from other classes
         public void ChangeLevel()
         {
-            levels.Remove(currentLevel);
-            if (levels.Count > 0)currentLevel = levels[0];
-            currentLevel.RegisterTasks();
+            //levels.Remove(currentLevel);
+            //if (levels.Count > 0) currentLevel = levels[0];
+            //currentLevel.RegisterTasks();
             Debug.Log("LevelRegistered");
         }
 
+        public Level StartLevel(LevelID id)
+        {
+            if (currentLevel != null) currentLevel.ResetLevel();
+            int level = (int)id;
+            if (level < levels.Count)
+            {
+                currentLevel = Instantiate(levels[level]);
+                currentLevel.RegisterTasks();
+                return currentLevel;
+            }
+            else { 
+                Debug.Log("LevelID no valido"); 
+                return null;
+            }
+            
+        }
         public Level CurrentLevel()
         {
             return currentLevel;
