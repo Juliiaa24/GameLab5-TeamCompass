@@ -41,8 +41,9 @@ namespace ComputerLearning
 
         private void Update()
         {
-            Debug.Log(played + "<- On Play | Playing ->" + player.isPlaying);
-            if (played && !player.isPlaying)
+            if (player.isPlaying) played = true;
+            if (played && !player.isPlaying && player.frameCount > 0
+                && player.frame >= (long)player.frameCount - 1)
             {
                OnEnd();
             }
@@ -54,7 +55,8 @@ namespace ComputerLearning
         // Public Methods accessible from other classes
         public override void Play()
         {
-            played = true;
+            played = false;
+            player.Play();
             Debug.Log("Play Tutorial");
         }
         public override void OnEnd()

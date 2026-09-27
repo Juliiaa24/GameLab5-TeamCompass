@@ -85,7 +85,7 @@ namespace ComputerLearning
             foreach (var skill in skills) 
             {
                 window.SetContent(Instantiate(skill.getTutorial()));
-                skill.ShowTutorial();
+                window.Content.GetComponent<Tutorial>().Play();
             }
         }
         public bool IsCompleted() { return levelCompleted; }
