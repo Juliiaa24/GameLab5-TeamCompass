@@ -2,12 +2,3 @@ $schema: https://api.gitbook.com/gitbook-docs.yaml
 
 site:
   title: Computer Learner
-  structure:
-    - type: space
-      key: space-docs
-      title: Computer Learner
-      path: .
-      default: true
-
-content:
-  directory: ./
