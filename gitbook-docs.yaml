@@ -3,24 +3,10 @@ site:
   title: ComputerLearner
   structure:
     - type: section
-      key: section-1
-      title: Computer Learner
-      path: computerlearner
-      description: A game that teaches children to use a computer. Mouse, keyboard and how to use real-life applications.
-      icon: computer-mouse
-      default: true
-      children:
-        - type: space
-          key: space-2
-          title: The Game
-          path: the-game
-          default: true
-          content:
-            directory: ./the-game
-    - type: section
       key: section-2
       title: The Game
       path: the-game
+      default: true
       children:
         - type: space
           key: space-1
