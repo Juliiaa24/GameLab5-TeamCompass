@@ -1,0 +1,36 @@
+# Doxyfile for Computer Learner
+# Paths are relative to the repository root.
+
+PROJECT_NAME           = "Computer Learner"
+PROJECT_BRIEF          = "Computer learning game for children aged 5-12. Game Lab 5: Games for Learning, Nord University."
+OUTPUT_DIRECTORY       = site/doxygen
+
+INPUT                  = ComputerLearner/Assets/Scripts
+FILE_PATTERNS          = *.cs
+RECURSIVE              = YES
+
+OUTPUT_LANGUAGE        = English
+EXTRACT_ALL            = YES
+EXTRACT_PRIVATE        = YES
+EXTRACT_STATIC         = NO
+HIDE_UNDOC_MEMBERS     = YES
+HIDE_UNDOC_CLASSES     = NO
+
+GENERATE_HTML          = YES
+GENERATE_LATEX         = NO
+HTML_TIMESTAMP         = NO
+
+MARKDOWN_SUPPORT       = YES
+AUTOLINK_SUPPORT       = YES
+TOC_INCLUDE_HEADINGS   = 6
+
+WARNINGS               = YES
+WARN_IF_UNDOCUMENTED   = YES
+WARN_IF_DOC_ERROR      = YES
+WARN_IF_INCOMPLETE_DOC = YES
+
+FULL_PATH_NAMES        = YES
+SHOW_USED_FILES        = YES
+SHOW_FILES             = YES
+SHOW_NAMESPACES        = YES
+GENERATE_TREEVIEW      = YES
