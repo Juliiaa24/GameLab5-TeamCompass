@@ -6,8 +6,5 @@ site:
     - type: space
       key: project-documentation
       title: Computer Learner
-      path: .
+      path: Documentation/GitBook
       default: true
-
-content:
-  directory: ./
