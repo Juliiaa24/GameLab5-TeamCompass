@@ -1,10 +1,14 @@
-$schema: https://api.gitbook.com/gitbook-docs.yaml
+$schema: https://api.gitbook.com/api/v1/gitbook-docs.yaml
 
 site:
   title: Computer Learner
-  structure:
-    - type: space
-      key: project-documentation
-      title: Computer Learner
-      path: Documentation/GitBook
-      default: true
+
+structure:
+  - type: space
+    key: project-documentation
+    title: Computer Learner
+    path: .
+    default: true
+
+content:
+  directory: ./
