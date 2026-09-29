@@ -8,7 +8,6 @@
 ## Project
 
 * [Project Overview](project-overview.md)
-* [Development](development.md)
 
 ## Documentation
 
