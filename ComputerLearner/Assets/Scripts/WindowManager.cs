@@ -41,7 +41,7 @@ namespace ComputerLearning
         #endregion
 
         #region Public Methods
-        public Window OpenWindow(GameObject prefab, Window existing = null, string title = "window")
+        public Window OpenWindow(GameObject prefab, Window existing = null, string title = null)
         {
             if (existing != null && !existing.IsClosed)
             {
@@ -53,7 +53,7 @@ namespace ComputerLearning
 
             Window window = Instantiate(prefab, windowsContainer != null ? windowsContainer : transform)
                 .GetComponent<Window>();
-            window.setTitle(title);
+            if (title != null) window.setTitle(title);
 
             RegisterWindow(window);
 

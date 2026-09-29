@@ -79,6 +79,8 @@ namespace ComputerLearning
 
         #region Public Methods
         // Public Methods accessible from other classes
+        public string LevelName => levelName;
+
         public virtual void ShowTutorial()
         {
             Debug.Log("ShowTutorial");
@@ -91,36 +93,56 @@ namespace ComputerLearning
             }
         }
         public bool IsCompleted() { return levelCompleted; }
+        private bool hasEnded = false;
+        protected float levelStartTime;
+        protected int initialTasksCount;
+
         public void CheckTasks()
         {
-            
+            if (hasEnded) return;
+
             if (!levelCompleted)
             {
                 foreach (var task in tasks)
                 {
-                    if (tasksCount <= 0) levelCompleted = true;
-                    if (task.Check())
+                    if (task != null && task.Check())
                     {
+                        OnTaskCompleted(task);
                         task.Feedback();
                         tasksCount--;
                     }
                 }
+                
+                if (tasksCount <= 0) 
+                {
+                    levelCompleted = true;
+                }
             }
-            else
+            
+            if (levelCompleted && !hasEnded)
             {
+                hasEnded = true;
                 OnEnd();
             }
         }
+
         public void RegisterTasks()
         {
             tasks = GetComponentsInChildren<Task>();
             tasksCount = tasks.Length;
+            initialTasksCount = tasks.Length;
+            levelStartTime = Time.time;
         }
+
         public void ResetLevel()
         {
-            Array.Clear(tasks, 0, tasksCount);
+            if (tasks != null)
+            {
+                Array.Clear(tasks, 0, Mathf.Min(tasksCount, tasks.Length));
+            }
             tasksCount = 0;
             levelCompleted = false;
+            hasEnded = false;
         }
 
         #endregion
@@ -128,13 +150,21 @@ namespace ComputerLearning
         #region Private Methods
         // Private Methods accessible only from this class
 
-
         #endregion
 
         #region Protected Methods
         // Protected Methods accessible only from child class
+        protected virtual void OnTaskCompleted(Task task)
+        {
+        }
+
+        protected virtual void EvaluateSkills()
+        {
+        }
+
         protected virtual void OnEnd()
         {
+            EvaluateSkills();
             Managers.Lm().CompleteLevel(id);
         }
 

@@ -17,14 +17,16 @@ namespace ComputerLearning
     {
 
         #region Public Variables
-
+        public int PrematureExits => prematureExits;
+        public float RequiredHoverTime => initialHoverTotalTime;
         #endregion
 
         #region Private Variables
         private float mouseOverTime;
         [SerializeField] private float mouseOverTotalTime = 5.0f ;
         [SerializeField] private Image progressBar;
-
+        private int prematureExits = 0;
+        private float initialHoverTotalTime;
 
         #endregion
 
@@ -34,6 +36,11 @@ namespace ComputerLearning
 
         #region Unity Methods
         // Unity Methods including (Awake, Start, Update, LateUpdate...)
+
+        private void Awake()
+        {
+            initialHoverTotalTime = mouseOverTotalTime;
+        }
 
         private void Start()
         {
@@ -49,7 +56,7 @@ namespace ComputerLearning
                 mouseOverTotalTime = 0;
                 completed = true;
             }
-            else if (mouseOverTime != 0)
+            else if (mouseOverTime != 0 && mouseOverTotalTime > 0)
             {
                 float elapsedTime = Time.time - mouseOverTime;
                 progressBar.fillAmount = elapsedTime / mouseOverTotalTime;
@@ -59,22 +66,20 @@ namespace ComputerLearning
 
         public void OnPointerEnter(PointerEventData eventData)
         {
-            if (mouseOverTime == 0)
+            if (mouseOverTime == 0 && !completed)
             {
                 progressBar.fillAmount = 0;
                 mouseOverTime = Time.time;
                 Debug.Log("MouseOver");
             }
-            //else if (mouseOverTime + mouseOverTotalTime > Time.time)
-            //{
-            //    Debug.Log(mouseOverTime + mouseOverTotalTime + "Time: " + Time.time);
-            //    mouseOverTotalTime = 0;
-            //    completed = true;
-            //}
         }
 
         public void OnPointerExit(PointerEventData eventData)
         {
+            if (mouseOverTime != 0 && !completed)
+            {
+                prematureExits++;
+            }
             mouseOverTime = 0;
             progressBar.fillAmount = 0;
         }

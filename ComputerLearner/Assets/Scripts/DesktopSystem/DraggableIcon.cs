@@ -91,7 +91,7 @@ namespace ComputerLearning
                 if (level != null)
                 {
                     appWindow.SetContent(level);
-                    appWindow.setTitle(level.GetComponent<Level>().name);
+                    appWindow.setTitle(level.GetComponent<Level>().LevelName);
                 }
             }
         }

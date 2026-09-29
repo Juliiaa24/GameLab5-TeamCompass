@@ -4,6 +4,7 @@
  * Description: Window prefab state, geometry and content.
 */
 using System;
+using System.Collections;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
@@ -35,12 +36,17 @@ namespace ComputerLearning
         private Vector2 lastAnchorMax;
         private Vector2 lastPosition;
         private Vector2 lastSize;
+
+        [Header("Animation Settings")]
+        [SerializeField] private float animationDuration = 0.2f;
+        private Coroutine animationCoroutine;
         #endregion
 
         #region Unity Methods
         private void Awake()
         {
             windowRectTransform = GetComponent<RectTransform>();
+            windowRectTransform.localScale = Vector3.zero; // Start small for open animation
             if (contentPrefab != null) SetContent(Instantiate(contentPrefab));
             InstallFocusRelays();
         }
@@ -51,6 +57,9 @@ namespace ComputerLearning
             if (manager != null) manager.RegisterWindow(this);
             BringToFront();
             StateChanged?.Invoke(this);
+
+            if (animationCoroutine != null) StopCoroutine(animationCoroutine);
+            animationCoroutine = StartCoroutine(AnimateScale(windowRectTransform.localScale, Vector3.one, null));
         }
 
         private void OnDisable() { StateChanged?.Invoke(this); }
@@ -73,7 +82,8 @@ namespace ComputerLearning
             if (content == null || contentArea == null) return;
             if (Content != null) { Content.SetActive(false); Destroy(Content); }
             Content = content;
-            Content.transform.SetParent(contentArea);
+            // IMPORTANTE: El false evita que Unity intente compensar la escala cuando la ventana está a 0
+            Content.transform.SetParent(contentArea, false); 
             RectTransform rect = Content.GetComponent<RectTransform>();
             if (rect != null)
             {
@@ -81,6 +91,7 @@ namespace ComputerLearning
                 rect.anchorMax = Vector2.one;
                 rect.offsetMin = Vector2.zero;
                 rect.offsetMax = Vector2.zero;
+                rect.localScale = Vector3.one; // Reseteamos la escala por seguridad
             }
             InstallFocusRelays();
         }
@@ -126,14 +137,26 @@ namespace ComputerLearning
 
         public void Minimize()
         {
-            if (!IsClosed) gameObject.SetActive(false);
+            if (IsClosed || IsMinimized) return;
+            if (animationCoroutine != null) StopCoroutine(animationCoroutine);
+            animationCoroutine = StartCoroutine(AnimateScale(windowRectTransform.localScale, Vector3.zero, () => gameObject.SetActive(false)));
         }
 
         public void Restore()
         {
             if (IsClosed) return;
+            
+            bool wasInactive = !gameObject.activeSelf;
             gameObject.SetActive(true);
-            BringToFront();
+            
+            // If it was already active (e.g., halfway minimizing or just clicking icon again),
+            // OnEnable won't fire, so we trigger the animation and bring to front manually.
+            if (!wasInactive)
+            {
+                BringToFront();
+                if (animationCoroutine != null) StopCoroutine(animationCoroutine);
+                animationCoroutine = StartCoroutine(AnimateScale(windowRectTransform.localScale, Vector3.one, null));
+            }
         }
 
         public void CloseWindow()
@@ -141,8 +164,12 @@ namespace ComputerLearning
             if (IsClosed) return;
             IsClosed = true;
             StateChanged?.Invoke(this);
-            gameObject.SetActive(false);
-            Destroy(gameObject);
+            if (animationCoroutine != null) StopCoroutine(animationCoroutine);
+            animationCoroutine = StartCoroutine(AnimateScale(windowRectTransform.localScale, Vector3.zero, () =>
+            {
+                gameObject.SetActive(false);
+                Destroy(gameObject);
+            }));
         }
 
         public void KeepTitleVisible()
@@ -163,6 +190,7 @@ namespace ComputerLearning
         public void setTitle(string title)
         {
             windowTitle = title;
+            StateChanged?.Invoke(this);
         }
 
         public void setIcon(Sprite icon)
@@ -184,6 +212,26 @@ namespace ComputerLearning
                 if (control.GetComponent<WindowFocusRelay>() == null)
                     control.gameObject.AddComponent<WindowFocusRelay>();
             }
+        }
+
+        private IEnumerator AnimateScale(Vector3 fromScale, Vector3 toScale, Action onComplete)
+        {
+            float elapsed = 0f;
+            windowRectTransform.localScale = fromScale;
+
+            while (elapsed < animationDuration)
+            {
+                elapsed += Time.deltaTime;
+                float t = Mathf.Clamp01(elapsed / animationDuration);
+                // Ease out cubic
+                t = 1f - Mathf.Pow(1f - t, 3f);
+                windowRectTransform.localScale = Vector3.Lerp(fromScale, toScale, t);
+                yield return null;
+            }
+
+            windowRectTransform.localScale = toScale;
+            onComplete?.Invoke();
+            animationCoroutine = null;
         }
         #endregion
     }
