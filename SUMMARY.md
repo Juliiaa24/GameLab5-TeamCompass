@@ -1,6 +1,15 @@
 # Summary
 
-## Product
+## Home
 
 * [Overview](README.md)
-  * [Getting started](getting-started.md)
+* [Getting Started](getting-started.md)
+
+## Project
+
+* [Project Overview](project-overview.md)
+* [Development](development.md)
+
+## Documentation
+
+* [Code Documentation](code-documentation.md)
