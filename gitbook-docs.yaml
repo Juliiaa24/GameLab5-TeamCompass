@@ -16,3 +16,16 @@ site:
           draft: true
           content:
             directory: ./the-game
+    - type: section
+      key: section-1
+      title: Documentation
+      path: documentation
+      children:
+        - type: space
+          key: space-2
+          title: Landing Page
+          path: landing-page
+          default: true
+          draft: true
+          content:
+            directory: ./documentation/landing-page
