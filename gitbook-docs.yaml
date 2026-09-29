@@ -4,8 +4,8 @@ site:
   title: Computer Learner
   structure:
     - type: space
-      key: project-documentation
-      title: Project Documentation
+      key: space-docs
+      title: Computer Learner
       path: .
       default: true
 
