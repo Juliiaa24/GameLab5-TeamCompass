@@ -4,15 +4,15 @@ site:
   structure:
     - type: section
       key: section-2
-      title: The Game
-      path: the-game
+      title: Computer Learner
+      path: Content
       default: true
       children:
         - type: space
           key: space-1
           title: The Game
-          path: the-game
+          path: Content
           default: true
           draft: true
           content:
-            directory: ./the-game
+            directory: ./Content
