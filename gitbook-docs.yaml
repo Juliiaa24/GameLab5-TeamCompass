@@ -15,4 +15,4 @@ site:
           default: true
           draft: true
           content:
-            directory: ./the-game
+            directory: null
