@@ -1,14 +1,18 @@
-$schema: https://api.gitbook.com/api/v1/gitbook-docs.yaml
-
+$schema: https://api.gitbook.com/gitbook-docs.yaml
 site:
-  title: Computer Learner
-
-structure:
-  - type: space
-    key: project-documentation
-    title: Computer Learner
-    path: .
-    default: true
-
-content:
-  directory: ./
+  title: ComputerLearner
+  structure:
+    - type: section
+      key: section-2
+      title: The Game
+      path: the-game
+      default: true
+      children:
+        - type: space
+          key: space-1
+          title: The Game
+          path: the-game
+          default: true
+          draft: true
+          content:
+            directory: ./the-game
