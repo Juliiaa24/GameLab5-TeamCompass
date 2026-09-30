@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fc237c1db950cf44b9cf2beddb88138f, type: 3}
+  m_Name: Hover_Lvl1_Easy
+  m_EditorClassIdentifier: Assembly-CSharp::ComputerLearning.HoverTaskDefinition
+  taskID: Hover_Lvl1_Easy
+  taskType: 1
+  skillID: Mouse_Hover
+  difficulty: 1
+  targetScale: 1.5
+  customPosition: {x: 0, y: 0}
+  hoverDuration: 1
+  isMoving: 0

@@ -17,7 +17,6 @@ namespace ComputerLearning
         #region Private Variables
         private IconGrid grid;
         [SerializeField] private GameObject windowPrefab;
-        [SerializeField] private LevelID appLevel = LevelID.NUM_LEVELS;
         private Window appWindow;
         private WindowManager manager;
         private Vector3 initialPosition;
@@ -84,16 +83,6 @@ namespace ComputerLearning
                 if (canvas != null) appWindow = Instantiate(windowPrefab, canvas.transform).GetComponent<Window>();
             }
 
-            if (appWindow != null && appLevel != LevelID.NUM_LEVELS)
-            {
-                if (!appWindow.IsMaximized) appWindow.toggleMaximize();
-                GameObject level = Managers.Lm().StartLevel(appLevel)?.gameObject;
-                if (level != null)
-                {
-                    appWindow.SetContent(level);
-                    appWindow.setTitle(level.GetComponent<Level>().LevelName);
-                }
-            }
         }
         #endregion
     }

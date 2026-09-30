@@ -14,30 +14,6 @@ namespace ComputerLearning
     public static class Managers
     {
         /// <summary>
-        /// Task Manager
-        /// </summary>
-        /// <returns></returns>
-        public static TaskManager Tm()
-        {
-            return TaskManager.Instance;
-        }
-        /// <summary>
-        /// LevelManager
-        /// </summary>
-        /// <returns></returns>
-        public static LevelManager Lm()
-        {
-            return LevelManager.Instance;
-        }
-        /// <summary>
-        /// SkillManager
-        /// </summary>
-        /// <returns></returns>
-        public static SkillManager Sm()
-        {
-            return SkillManager.Instance;
-        }
-        /// <summary>
         /// InputManager
         /// </summary>
         /// <returns></returns>
