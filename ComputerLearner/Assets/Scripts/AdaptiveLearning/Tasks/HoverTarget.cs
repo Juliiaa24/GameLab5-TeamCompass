@@ -82,8 +82,6 @@ namespace ComputerLearning
                 }
 
                 rectTransform.anchoredPosition = pos;
-                // Reset hover state when the target moves under the cursor
-                isHovering = false;
             }
 
             // ── Hover tracking ────────────────────────────────────────────

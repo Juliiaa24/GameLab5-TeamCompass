@@ -137,27 +137,26 @@ namespace ComputerLearning
             if (sm == null) { Debug.LogError("[LearningSessionManager] SkillManager not found!"); return; }
             if (tm == null) { Debug.LogError("[LearningSessionManager] TaskManager not found!"); return; }
 
-            // ── 1. Adaptive skill selection ────────────────────────────────
-            string skillId = SelectSkillAdaptively(sm);
-            if (skillId == null)
+            // ── 1. Adaptive skill selection with fallback ──────────────────
+            Dictionary<string, float> weights = sm.GetSkillWeights();
+            TaskDefinition def = null;
+            string skillId = null;
+            int difficulty = 1;
+
+            // Loop until we find a skill that actually has a task, or we run out of skills to try
+            while (weights.Count > 0 && def == null)
             {
-                Debug.LogError("[LearningSessionManager] No skills registered in SkillManager.");
-                EndSession();
-                return;
-            }
+                skillId = SelectSkillFromWeights(weights);
+                if (skillId == null) break;
 
-            // ── 2. Difficulty from current skill score ─────────────────────
-            int difficulty = sm.GetDifficulty(skillId);
+                difficulty = sm.GetDifficulty(skillId);
+                def = tm.SelectTask(skillId, difficulty);
 
-            // ── 3. Task selection ──────────────────────────────────────────
-            TaskDefinition def = tm.SelectTask(skillId, difficulty);
-
-            // Fallback: try any skill if the selected one has no available tasks
-            if (def == null)
-            {
-                Debug.LogWarning($"[LearningSessionManager] No task for '{skillId}' D{difficulty}, trying fallback skill.");
-                string fallbackSkill = SelectAnySkill(sm);
-                if (fallbackSkill != null) def = tm.SelectTask(fallbackSkill, sm.GetDifficulty(fallbackSkill));
+                if (def == null)
+                {
+                    Debug.LogWarning($"[LearningSessionManager] No tasks found for '{skillId}'. Trying another skill.");
+                    weights.Remove(skillId);
+                }
             }
 
             if (def == null)
@@ -233,10 +232,9 @@ namespace ComputerLearning
         /// Weak skills get higher weight → selected more often.
         /// Even a score-100 skill gets weight 1 for occasional review.
         /// </summary>
-        private string SelectSkillAdaptively(SkillManager sm)
+        private string SelectSkillFromWeights(Dictionary<string, float> weights)
         {
-            Dictionary<string, float> weights = sm.GetSkillWeights();
-            if (weights.Count == 0) return null;
+            if (weights == null || weights.Count == 0) return null;
 
             float total = 0f;
             foreach (float w in weights.Values) total += w;
@@ -252,13 +250,6 @@ namespace ComputerLearning
             string last = null;
             foreach (string key in weights.Keys) last = key;
             return last;
-        }
-
-        /// <summary>Returns any registered skill id (used as a final fallback).</summary>
-        private string SelectAnySkill(SkillManager sm)
-        {
-            foreach (string key in sm.AllStates.Keys) return key;
-            return null;
         }
         #endregion
     }
