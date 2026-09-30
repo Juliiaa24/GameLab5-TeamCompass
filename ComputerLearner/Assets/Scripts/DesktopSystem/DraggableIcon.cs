@@ -17,6 +17,7 @@ namespace ComputerLearning
         #region Private Variables
         private IconGrid grid;
         [SerializeField] private GameObject windowPrefab;
+        [SerializeField] private LevelDefinition levelDefinition; // The level to launch (optional)
         private Window appWindow;
         private WindowManager manager;
         private Vector3 initialPosition;
@@ -72,17 +73,50 @@ namespace ComputerLearning
         public void OpenApplication()
         {
             if (manager == null) manager = GetComponentInParent<WindowManager>();
+            
+            bool isNewWindow = false;
+            
             if (manager != null)
+            {
+                if (appWindow == null || appWindow.IsClosed) isNewWindow = true;
                 appWindow = manager.OpenWindow(windowPrefab, appWindow);
+            }
             else if (appWindow != null && !appWindow.IsClosed)
+            {
                 appWindow.Restore();
+            }
             else if (windowPrefab != null)
             {
-                // Compatibility with older scenes that have not added a manager yet.
+                // Compatibility with older scenes
                 Canvas canvas = GetComponentInParent<Canvas>();
-                if (canvas != null) appWindow = Instantiate(windowPrefab, canvas.transform).GetComponent<Window>();
+                if (canvas != null) 
+                {
+                    appWindow = Instantiate(windowPrefab, canvas.transform).GetComponent<Window>();
+                    isNewWindow = true;
+                }
             }
 
+            // If a new window was just created and we have a level definition, start it!
+            if (isNewWindow && appWindow != null && levelDefinition != null)
+            {
+                appWindow.setTitle(levelDefinition.displayName);
+                
+                // Maximize the window automatically
+                appWindow.toggleMaximize();
+
+                LevelRunner runner = appWindow.GetComponentInChildren<LevelRunner>();
+                if (runner == null)
+                {
+                    runner = appWindow.gameObject.AddComponent<LevelRunner>();
+                    Transform contentArea = appWindow.transform.Find("WindowContents");
+                    if (contentArea != null)
+                        runner.taskContentArea = contentArea.GetComponent<RectTransform>();
+                    else
+                        runner.taskContentArea = appWindow.GetComponent<RectTransform>();
+                }
+                
+                runner.StartLevel(levelDefinition);
+            }
         }
         #endregion
     }

@@ -572,52 +572,29 @@ Taskbar
 Avoid creating three completely independent systems.
 
 ==================================================
-19. TASK / SKILL / LEVEL SYSTEM
+19. TASK / SKILL / LEVEL SYSTEM (DATA-DRIVEN)
 
-A Task / Skill / Level architecture has been defined for the educational portion of the game.
+The educational portion of the game uses a Data-Driven architecture to separate logic from configuration.
 
-There are managers associated with this structure.
+Core concepts:
+* **Tasks (MonoBehaviours):** Reusable, event-driven mini-game elements (e.g. TargetTask). They detect input and emit events (OnComplete, OnError), but DO NOT contain level logic or grade evaluation.
+* **Skills (ScriptableObjects):** `SkillData` assets store the configuration for a skill (SkillID, tutorial prefab). They are purely data containers.
+* **Levels (ScriptableObjects + Generic Runner):** 
+  * `LevelData` assets define the recipe for a level (name, tasks to spawn, required amount, skills to evaluate).
+  * A single generic `LevelRunner` (or `LevelController`) MonoBehaviour sits on a generic window prefab. It reads the `LevelData`, spawns the tasks, listens to their events, and calculates the final grade.
 
-Approximately three hours were spent defining the:
-
-* Task manager.
-* Skill manager.
-* Level manager.
-
-When adding new minigames, try to integrate them into this existing system rather than replacing it.
-
-The exact implementation may evolve, so inspect the provided source code before making assumptions about class fields or APIs.
+When adding new minigames or levels, rely on creating new ScriptableObjects and reusing the generic `LevelRunner` instead of creating new `Level.cs` subclasses.
 
 ==================================================
-20. MINIGAME: CLICK TARGETS
+20. MINIGAME: CLICK TARGETS & MODULAR TASKS
 
-A minigame has been implemented / prototyped where the player clicks multiple targets.
+Tasks like clicking targets are implemented as modular, reusable components inside application windows.
 
-This should use the existing:
+A script like `TargetTask` inherits from a base `TaskBase` (or `Task`) and handles pointer clicks (e.g., `IPointerClickHandler`).
 
-* Tasks.
-* Skills.
-* Levels.
+Crucially, in the new Data-Driven architecture, `TargetTask` does NOT manage level progression. It simply detects the click, triggers visuals/sounds, and invokes an event (`OnTaskCompleted`). The generic `LevelRunner` listens to this event to spawn the next target or finish the level.
 
-The minigame appears inside an application window.
-
-The goal is for minigames to remain contained inside the window rather than behaving as completely separate scenes or systems.
-
-There is / has been a script called something similar to:
-
-TargetTask
-
-It inherits from Task.
-
-It also handles pointer clicks, for example:
-
-IPointerClickHandler
-
-Conceptually:
-
-public class TargetTask : Task, IPointerClickHandler
-
-The player clicks targets and progresses/completes the corresponding task.
+Minigames must always remain contained inside the window rather than behaving as completely separate scenes or systems.
 
 ==================================================
 21. TARGET MINIGAME LAYOUT
@@ -1110,11 +1087,11 @@ before proposing an isolated implementation.
 ==================================================
 43. RECENT UPDATES: SKILL EVALUATION & WINDOW ANIMATIONS
 
-* **Skill Evaluation Architecture (Level-Driven):**
-  * `Task` subclasses (`TargetTask`, `HoverTask`, etc.) act purely as **input detection tools** and expose raw interaction data (e.g., `HoverTask.PrematureExits`), rather than calculating grades themselves.
-  * `Level` subclasses (`Level1`, `Level2`, etc.) are tied to the specific `Skill` they teach and are responsible for evaluating it via `OnTaskCompleted(Task)` and `EvaluateSkills()` (called in `OnEnd()`).
-  * `Level1` teaches `SkillID.CLICK`: uses `IPointerClickHandler` on the level background to count `missedClicks` + completion time, and records the grade in `SkillManager`.
-  * `Level2` teaches `SkillID.MOVE`: collects `PrematureExits` and `RequiredHoverTime` from each completed `HoverTask` + completion time, and records the grade in `SkillManager`.
+* **Skill Evaluation Architecture (Data-Driven Refactor):**
+  * The project was recently refactored to remove hardcoded `Level1`, `Level2` classes.
+  * **Tasks** (`TargetTask`, `HoverTask`) remain purely as input detection tools and expose events/raw data (`OnCompleted`, `OnError`).
+  * **Levels** are now defined by `LevelData` ScriptableObjects. A single generic `LevelRunner` orchestrates the logic, reads the `LevelData`, instantiates tasks, tracks time/errors, and evaluates the skills when the level completes.
+  * Skills are assigned to levels via the Inspector using `SkillData` ScriptableObjects, eliminating empty "ghost prefabs" for skills.
 * **Skills Report Window:**
   * `SkillManager` stores grades per `SkillID` and `LevelID`, calculates averages (`GetAllAverageGrades()`), and fires a `GradesChanged` event.
   * `SkillsReportWindow` and `SkillGradeUI` display the grades inside a desktop window and auto-refresh via `GradesChanged`.
