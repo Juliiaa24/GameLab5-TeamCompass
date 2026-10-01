@@ -13,7 +13,8 @@ MonoBehaviour:
   m_Name: L_Level3
   m_EditorClassIdentifier: Assembly-CSharp::ComputerLearning.LevelDefinition
   levelId: level3
-  displayName: Nivel 3 - Combinado
+  displayName: Level 3 - Mixed
+  instructionText: "It's harvest time!\nCombine all your skills to take care of the garden."
   tasks:
   - {fileID: 11400000, guid: 3c5fa028ea1407644aa9c25d58ae8283, type: 2}
   - {fileID: 11400000, guid: 0ab9d5cc78ddfaf468420fb0847c9c28, type: 2}

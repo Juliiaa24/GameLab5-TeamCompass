@@ -58,7 +58,33 @@ namespace ComputerLearning
         private void OnApplicationQuit() { Save(); }
         #endregion
 
+        public bool HasSeenDesktopTour { get; private set; }
+        private List<string> unlockedLevels = new List<string> { "level1" }; // Level 1 always unlocked
+
         #region Public Methods
+        public System.Action<string> OnLevelUnlocked;
+
+        public bool IsLevelUnlocked(string levelId)
+        {
+            return unlockedLevels.Contains(levelId);
+        }
+
+        public void UnlockLevel(string levelId)
+        {
+            if (!unlockedLevels.Contains(levelId))
+            {
+                unlockedLevels.Add(levelId);
+                OnLevelUnlocked?.Invoke(levelId);
+                if (autoSaveAfterEachResult) Save();
+            }
+        }
+
+        public void SetHasSeenDesktopTour(bool seen)
+        {
+            HasSeenDesktopTour = seen;
+            if (autoSaveAfterEachResult) Save();
+        }
+
         /// <summary>
         /// Adds a TaskResult to the history.
         /// Saves immediately if autoSaveAfterEachResult is enabled.
@@ -117,7 +143,12 @@ namespace ComputerLearning
         {
             try
             {
-                var wrapper = new ProgressDataWrapper { results = taskHistory };
+                var wrapper = new ProgressDataWrapper 
+                { 
+                    results = taskHistory,
+                    unlockedLevels = this.unlockedLevels,
+                    hasSeenDesktopTour = this.HasSeenDesktopTour
+                };
                 string json = JsonUtility.ToJson(wrapper);
                 PlayerPrefs.SetString(SaveKey, json);
                 PlayerPrefs.Save();
@@ -139,6 +170,10 @@ namespace ComputerLearning
                 string json = PlayerPrefs.GetString(SaveKey);
                 var wrapper = JsonUtility.FromJson<ProgressDataWrapper>(json);
                 if (wrapper?.results != null) taskHistory = wrapper.results;
+                if (wrapper?.unlockedLevels != null && wrapper.unlockedLevels.Count > 0) 
+                    unlockedLevels = wrapper.unlockedLevels;
+                if (wrapper != null) HasSeenDesktopTour = wrapper.hasSeenDesktopTour;
+                
                 Debug.Log($"[ProgressData] Loaded {taskHistory.Count} task results.");
             }
             catch (Exception e)
@@ -154,6 +189,8 @@ namespace ComputerLearning
         public void ClearHistory()
         {
             taskHistory.Clear();
+            unlockedLevels = new List<string> { "level1" };
+            HasSeenDesktopTour = false;
             PlayerPrefs.DeleteKey(SaveKey);
             Debug.Log("[ProgressData] History cleared.");
         }
@@ -165,6 +202,8 @@ namespace ComputerLearning
         private class ProgressDataWrapper
         {
             public List<TaskResult> results;
+            public List<string> unlockedLevels;
+            public bool hasSeenDesktopTour;
         }
         #endregion
     }

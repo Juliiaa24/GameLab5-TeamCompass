@@ -163,6 +163,10 @@ namespace ComputerLearning
         {
             if (IsClosed) return;
             IsClosed = true;
+            
+            // Ocultar mascota si estaba señalando a esta ventana
+            VirtualMascot.HideMascot();
+
             StateChanged?.Invoke(this);
             if (animationCoroutine != null) StopCoroutine(animationCoroutine);
             animationCoroutine = StartCoroutine(AnimateScale(windowRectTransform.localScale, Vector3.zero, () =>

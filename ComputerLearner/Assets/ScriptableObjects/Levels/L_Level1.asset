@@ -13,7 +13,8 @@ MonoBehaviour:
   m_Name: L_Level1
   m_EditorClassIdentifier: Assembly-CSharp::ComputerLearning.LevelDefinition
   levelId: level1
-  displayName: Nivel 1 - Clicar
+  displayName: Level 1 - Click
+  instructionText: "LEFT CLICK on the water drops\nto water the garden plants."
   tasks:
   - {fileID: 11400000, guid: 71ed3f9ca5f9580479dca5ce233ad2ab, type: 2}
   - {fileID: 11400000, guid: 3c5fa028ea1407644aa9c25d58ae8283, type: 2}

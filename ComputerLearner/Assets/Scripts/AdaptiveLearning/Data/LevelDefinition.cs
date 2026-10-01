@@ -13,7 +13,19 @@ namespace ComputerLearning
         public string levelId;
         public string displayName;
         
-        [Tooltip("The tasks that make up this level, executed in order.")]
+        [TextArea(2, 5)]
+        [Tooltip("Text shown to the player in the didactic intro screen before starting the tasks.")]
+        public string instructionText;
+        
+        [Header("Adaptive Mode")]
+        [Tooltip("If true, the level ignores the fixed 'tasks' list and generates tasks dynamically.")]
+        public bool isAdaptive = false;
+        
+        [Tooltip("How many tasks to generate before completing the level (if isAdaptive is true).")]
+        public int adaptiveTaskCount = 5;
+
+        [Header("Fixed Mode Tasks")]
+        [Tooltip("The tasks that make up this level, executed in order (if isAdaptive is false).")]
         public List<TaskDefinition> tasks;
     }
 }

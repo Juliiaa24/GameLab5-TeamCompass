@@ -79,6 +79,7 @@ namespace ComputerLearning
 
             target.GetComponent<RectTransform>().anchoredPosition = new Vector2(x, y);
             target.OnHoverComplete += () => Complete(true);
+            target.OnFailedAttempt += () => RecordIntermediateResult(false);
         }
         #endregion
     }

@@ -23,6 +23,9 @@ namespace ComputerLearning
         #region Public Variables
         /// <summary>Fired when the player hovers for the full required duration.</summary>
         public event Action OnHoverComplete;
+        
+        /// <summary>Fired when the player exits the target before completion.</summary>
+        public event Action OnFailedAttempt;
         #endregion
 
         #region Private Variables
@@ -124,7 +127,16 @@ namespace ComputerLearning
         }
 
         public void OnPointerEnter(PointerEventData eventData) { isHovering = true; }
-        public void OnPointerExit(PointerEventData eventData)  { isHovering = false; }
+        
+        public void OnPointerExit(PointerEventData eventData)  
+        { 
+            isHovering = false; 
+            // If they started hovering but exited before it finished, it's an error.
+            if (!completed && hoverTime > 0.1f)
+            {
+                OnFailedAttempt?.Invoke();
+            }
+        }
         #endregion
     }
 }

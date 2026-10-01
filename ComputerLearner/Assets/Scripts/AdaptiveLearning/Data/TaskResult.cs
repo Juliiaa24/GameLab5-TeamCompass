@@ -19,6 +19,8 @@ namespace ComputerLearning
         #region Public Variables
         public string taskId;
         public string skillId;
+        public string levelId;
+        public string levelName;
         public int difficulty;
         public bool success;
         public int attempts;

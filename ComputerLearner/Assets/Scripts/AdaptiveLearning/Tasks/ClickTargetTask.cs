@@ -1,30 +1,14 @@
-/**
- * Author: Diego
- * Date: 30/09/26
- * Description: Task where the player clicks one or more targets to succeed.
- */
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
+using UnityEngine.EventSystems;
 
 namespace ComputerLearning
 {
-    /// <summary>
-    /// Spawns one or more ClickTarget elements and succeeds when the player clicks all of them.
-    ///
-    /// Configurable via TaskConfig:
-    ///   targetCount   – how many targets appear simultaneously
-    ///   targetSize    – diameter of each target in UI units
-    ///   isMoving      – whether targets bounce around the area
-    ///   moveSpeed     – speed of movement when isMoving is true
-    ///   timeLimit     – seconds before the task fails; 0 = unlimited
-    /// </summary>
-    public class ClickTargetTask : BaseTask
+    public class ClickTargetTask : BaseTask, IPointerClickHandler
     {
         #region Private Variables
-        [Tooltip("The ClickTarget prefab to instantiate for each target.")]
         [SerializeField] private ClickTarget targetPrefab;
-
-        [Tooltip("The RectTransform targets are placed inside. Usually assigned in the prefab.")]
         [SerializeField] private RectTransform spawnArea;
 
         private readonly List<ClickTarget> activeTargets = new List<ClickTarget>();
@@ -36,11 +20,20 @@ namespace ComputerLearning
         #endregion
 
         #region Unity Methods
+        protected override void Start()
+        {
+            base.Start();
+            Image img = GetComponent<Image>();
+            if (img == null) img = gameObject.AddComponent<Image>();
+            img.color = new Color(0,0,0,0);
+            img.raycastTarget = true;
+        }
+
         private void Update()
         {
             if (IsFinished || !timeLimitActive) return;
             elapsed += Time.deltaTime;
-            if (elapsed >= timeLimit) Complete(false); // Time ran out → failure
+            if (elapsed >= timeLimit) Complete(false);
         }
         #endregion
 
@@ -61,24 +54,20 @@ namespace ComputerLearning
         #endregion
 
         #region Private Methods
+        public void OnPointerClick(PointerEventData eventData)
+        {
+            if (IsFinished) return;
+            RecordIntermediateResult(false);
+        }
+
         private void SpawnTarget(TaskConfig cfg)
         {
-            if (targetPrefab == null)
-            {
-                Debug.LogError("[ClickTargetTask] targetPrefab is not assigned!");
-                return;
-            }
-            if (spawnArea == null)
-            {
-                Debug.LogError("[ClickTargetTask] spawnArea is not assigned!");
-                return;
-            }
+            if (targetPrefab == null || spawnArea == null) return;
 
             ClickTarget target = Instantiate(targetPrefab, spawnArea, false);
             target.SetParentRect(spawnArea);
             target.Configure(cfg.targetSize, cfg.isMoving, cfg.moveSpeed);
 
-            // Place at a random position within the spawn area, keeping the target fully visible
             Rect  area     = spawnArea.rect;
             float halfSize = cfg.targetSize * 0.5f;
 
@@ -87,7 +76,6 @@ namespace ComputerLearning
             float maxY = area.yMax - halfSize;
             float minY = area.yMin + halfSize;
 
-            // Guard against an area that is smaller than the target
             float x = (maxX > minX) ? Random.Range(minX, maxX) : 0f;
             float y = (maxY > minY) ? Random.Range(minY, maxY) : 0f;
 
@@ -100,11 +88,16 @@ namespace ComputerLearning
         {
             if (IsFinished) return;
 
+            RecordIntermediateResult(true);
+
             activeTargets.Remove(target);
             Destroy(target.gameObject);
             targetsRemaining--;
 
-            if (targetsRemaining <= 0) Complete(true);
+            if (targetsRemaining <= 0) 
+            {
+                FinishWithoutResult();
+            }
         }
         #endregion
     }

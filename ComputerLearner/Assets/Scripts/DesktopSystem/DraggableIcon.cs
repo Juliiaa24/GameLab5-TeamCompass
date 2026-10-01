@@ -18,9 +18,12 @@ namespace ComputerLearning
         private IconGrid grid;
         [SerializeField] private GameObject windowPrefab;
         [SerializeField] private LevelDefinition levelDefinition; // The level to launch (optional)
+        [SerializeField] private bool isLocked = false;
         private Window appWindow;
         private WindowManager manager;
         private Vector3 initialPosition;
+        private Vector3 originalScale;
+        private Color originalColor = Color.white;
         private bool dragging;
         #endregion
 
@@ -30,6 +33,47 @@ namespace ComputerLearning
             grid = GetComponentInParent<IconGrid>();
             if (grid != null) grid.Register(this);
             manager = GetComponentInParent<WindowManager>();
+            initialPosition = transform.position;
+            originalScale = transform.localScale;
+            
+            UnityEngine.UI.Image iconImg = GetComponent<UnityEngine.UI.Image>();
+            if (iconImg != null) originalColor = iconImg.color;
+            
+            // Check ProgressData to see if this level is unlocked
+            bool actuallyLocked = isLocked;
+            if (levelDefinition != null && ProgressData.Instance != null)
+            {
+                actuallyLocked = !ProgressData.Instance.IsLevelUnlocked(levelDefinition.levelId);
+            }
+
+            if (actuallyLocked)
+            {
+                if (iconImg != null) iconImg.color = new Color(0.3f, 0.3f, 0.3f, 0.8f);
+            }
+        }
+
+        private void Update()
+        {
+            bool actuallyLocked = isLocked;
+            if (levelDefinition != null && ProgressData.Instance != null)
+                actuallyLocked = !ProgressData.Instance.IsLevelUnlocked(levelDefinition.levelId);
+
+            // Update color dynamically
+            UnityEngine.UI.Image img = GetComponent<UnityEngine.UI.Image>();
+            if (img != null)
+            {
+                img.color = actuallyLocked ? new Color(0.5f, 0.5f, 0.5f, 0.5f) : originalColor;
+            }
+
+            if (!actuallyLocked && levelDefinition != null && (appWindow == null || appWindow.IsClosed))
+            {
+                float scale = 1f + Mathf.Sin(Time.time * 3f) * 0.05f;
+                transform.localScale = originalScale * scale;
+            }
+            else
+            {
+                transform.localScale = originalScale;
+            }
         }
 
         private void OnDestroy()
@@ -41,6 +85,11 @@ namespace ComputerLearning
         #region Public Methods
         public void OnPointerDown(PointerEventData eventData)
         {
+            bool actuallyLocked = isLocked;
+            if (levelDefinition != null && ProgressData.Instance != null)
+                actuallyLocked = !ProgressData.Instance.IsLevelUnlocked(levelDefinition.levelId);
+            if (actuallyLocked) return;
+
             if (eventData.button != PointerEventData.InputButton.Left) return;
             initialPosition = transform.position;
             dragging = false;
@@ -72,6 +121,13 @@ namespace ComputerLearning
 
         public void OpenApplication()
         {
+            bool actuallyLocked = isLocked;
+            if (levelDefinition != null && ProgressData.Instance != null)
+                actuallyLocked = !ProgressData.Instance.IsLevelUnlocked(levelDefinition.levelId);
+            if (actuallyLocked) return;
+
+            VirtualMascot.HideMascot();
+            
             if (manager == null) manager = GetComponentInParent<WindowManager>();
             
             bool isNewWindow = false;
@@ -94,6 +150,12 @@ namespace ComputerLearning
                     appWindow = Instantiate(windowPrefab, canvas.transform).GetComponent<Window>();
                     isNewWindow = true;
                 }
+            }
+
+            if (isNewWindow && appWindow != null && windowPrefab != null && windowPrefab.name.Contains("SkillsReport"))
+            {
+                if (appWindow.GetComponent<StatsUIBuilder>() == null)
+                    appWindow.gameObject.AddComponent<StatsUIBuilder>();
             }
 
             // If a new window was just created and we have a level definition, start it!

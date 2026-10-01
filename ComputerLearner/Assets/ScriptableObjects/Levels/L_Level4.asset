@@ -10,11 +10,14 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b4c922c8996808e458e05e428dbb8240, type: 3}
-  m_Name: L_Level2
+  m_Name: L_Level4
   m_EditorClassIdentifier: Assembly-CSharp::ComputerLearning.LevelDefinition
-  levelId: level2
-  displayName: Level 2 - Hover
-  instructionText: "Hover your mouse over the gray clouds\nto clear them and let the SUNLIGHT in."
-  tasks:
-  - {fileID: 11400000, guid: d27fff3bbb1c2ba43a68606442da8eed, type: 2}
-  - {fileID: 11400000, guid: 0ab9d5cc78ddfaf468420fb0847c9c28, type: 2}
+  levelId: level4
+  displayName: Level 4 (Adaptive)
+  instructionText: 'Welcome to the Adaptive Garden!
+
+    Here you will practice everything
+    you''ve learned.'
+  isAdaptive: 1
+  adaptiveTaskCount: 10
+  tasks: []
