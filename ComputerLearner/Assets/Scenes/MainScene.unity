@@ -143,9 +143,13 @@ PrefabInstance:
       propertyPath: levelDefinition
       value: 
       objectReference: {fileID: 11400000, guid: c40c513b5b1a8c34687e38d850544b3a, type: 2}
+    - target: {fileID: 4122927855988466812, guid: 0305366714b7ed046a56250c766b3bd0, type: 3}
+      propertyPath: m_Sprite
+      value: 
+      objectReference: {fileID: 21300000, guid: 72a5127f153e59a48846383052e40937, type: 3}
     - target: {fileID: 4589747606434197877, guid: 0305366714b7ed046a56250c766b3bd0, type: 3}
       propertyPath: m_Name
-      value: Application Icon (2)
+      value: Level3Icon
       objectReference: {fileID: 0}
     - target: {fileID: 8663166534906385179, guid: 0305366714b7ed046a56250c766b3bd0, type: 3}
       propertyPath: m_Pivot.x
@@ -250,7 +254,7 @@ PrefabInstance:
       objectReference: {fileID: 11400000, guid: b89a2efc3ac0ef247928bb29fc8e084b, type: 2}
     - target: {fileID: 4589747606434197877, guid: 0305366714b7ed046a56250c766b3bd0, type: 3}
       propertyPath: m_Name
-      value: Application Icon
+      value: Level1Icon
       objectReference: {fileID: 0}
     - target: {fileID: 8663166534906385179, guid: 0305366714b7ed046a56250c766b3bd0, type: 3}
       propertyPath: m_Pivot.x
@@ -960,8 +964,8 @@ RectTransform:
   - {fileID: 435338177}
   - {fileID: 1847796975}
   - {fileID: 1419848612}
-  - {fileID: 1812809516}
   - {fileID: 1281456583}
+  - {fileID: 1812809516}
   m_Father: {fileID: 1652979087}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -1204,6 +1208,10 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 11400000, guid: ed5099abe5487f24887349c0db277ead, type: 2}
     - target: {fileID: 4122927855988466812, guid: 0305366714b7ed046a56250c766b3bd0, type: 3}
+      propertyPath: m_Sprite
+      value: 
+      objectReference: {fileID: 21300000, guid: f36872743338e2e49afa18b80f72f80d, type: 3}
+    - target: {fileID: 4122927855988466812, guid: 0305366714b7ed046a56250c766b3bd0, type: 3}
       propertyPath: m_Color.a
       value: 1
       objectReference: {fileID: 0}
@@ -1221,7 +1229,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4589747606434197877, guid: 0305366714b7ed046a56250c766b3bd0, type: 3}
       propertyPath: m_Name
-      value: Application Icon (3)
+      value: Level4Icon
       objectReference: {fileID: 0}
     - target: {fileID: 8663166534906385179, guid: 0305366714b7ed046a56250c766b3bd0, type: 3}
       propertyPath: m_Pivot.x
@@ -1338,9 +1346,13 @@ PrefabInstance:
       propertyPath: levelDefinition
       value: 
       objectReference: {fileID: 11400000, guid: b16584c600842cc45ae7168326057489, type: 2}
+    - target: {fileID: 4122927855988466812, guid: 0305366714b7ed046a56250c766b3bd0, type: 3}
+      propertyPath: m_Sprite
+      value: 
+      objectReference: {fileID: 21300000, guid: df4539fdca1330e4a9cb3612663ae804, type: 3}
     - target: {fileID: 4589747606434197877, guid: 0305366714b7ed046a56250c766b3bd0, type: 3}
       propertyPath: m_Name
-      value: Application Icon (1)
+      value: Level2Icon
       objectReference: {fileID: 0}
     - target: {fileID: 8663166534906385179, guid: 0305366714b7ed046a56250c766b3bd0, type: 3}
       propertyPath: m_Pivot.x
@@ -1594,6 +1606,10 @@ PrefabInstance:
       propertyPath: windowPrefab
       value: 
       objectReference: {fileID: 4566292705979748117, guid: ee2d6c59e45c6e746843f109671aa65d, type: 3}
+    - target: {fileID: 4122927855988466812, guid: 0305366714b7ed046a56250c766b3bd0, type: 3}
+      propertyPath: m_Sprite
+      value: 
+      objectReference: {fileID: 21300000, guid: b1f5c0e1ff8a77e4595f90b2ee540fbc, type: 3}
     - target: {fileID: 4589747606434197877, guid: 0305366714b7ed046a56250c766b3bd0, type: 3}
       propertyPath: m_Name
       value: Stats Icon
