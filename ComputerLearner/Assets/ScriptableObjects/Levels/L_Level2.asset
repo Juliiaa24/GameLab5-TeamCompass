@@ -14,7 +14,16 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ComputerLearning.LevelDefinition
   levelId: level2
   displayName: Level 2 - Hover
-  instructionText: "Hover your mouse over the gray clouds\nto clear them and let the SUNLIGHT in."
+  instructionText: 'Hover your mouse over the gray clouds
+
+    to clear them and
+    let the SUNLIGHT in.'
+  isAdaptive: 0
+  adaptiveTaskCount: 5
   tasks:
   - {fileID: 11400000, guid: d27fff3bbb1c2ba43a68606442da8eed, type: 2}
   - {fileID: 11400000, guid: 0ab9d5cc78ddfaf468420fb0847c9c28, type: 2}
+  - {fileID: 11400000, guid: 516976cf1c4635d45be465bb384992c7, type: 2}
+  - {fileID: 11400000, guid: d27fff3bbb1c2ba43a68606442da8eed, type: 2}
+  - {fileID: 11400000, guid: 0ab9d5cc78ddfaf468420fb0847c9c28, type: 2}
+  - {fileID: 11400000, guid: 516976cf1c4635d45be465bb384992c7, type: 2}
