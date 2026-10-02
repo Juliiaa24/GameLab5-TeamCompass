@@ -12,6 +12,7 @@ namespace ComputerLearning
     {
         #region Public Variables
         public Window AppWindow => appWindow;
+        public LevelDefinition LevelDef => levelDefinition;
         #endregion
 
         #region Private Variables

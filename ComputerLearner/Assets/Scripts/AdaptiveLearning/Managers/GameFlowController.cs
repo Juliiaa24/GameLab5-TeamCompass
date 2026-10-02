@@ -31,9 +31,18 @@ namespace ComputerLearning
         [Tooltip("The RectTransform used as the parent for all spawned task prefabs. " +
                  "Typically a window's content RectTransform.")]
         [SerializeField] private RectTransform taskContentArea;
+
+        private LevelTutorialDialogs dialogs;
         #endregion
 
         #region Unity Methods
+        private void Awake()
+        {
+            TextAsset json = Resources.Load<TextAsset>("LevelTutorialDialogs");
+            if (json != null) dialogs = JsonUtility.FromJson<LevelTutorialDialogs>(json.text);
+            else dialogs = new LevelTutorialDialogs { point_to_level1 = "Let's tend the garden!\nDouble-click here to start." };
+        }
+
         private void Start()
         {
             // Subscribe to events before starting anything
@@ -110,15 +119,31 @@ namespace ComputerLearning
 
         private void OnTutorialCompleted()
         {
-            if (skipInitialTest)
+            // Point the mascot to the Level 1 icon so the child knows what to do next
+            GameObject level1Icon = GameObject.Find("Application Icon");
+            if (level1Icon == null) 
             {
-                Debug.Log("[GameFlowController] Initial test skipped.");
-                OnInitialTestCompleted();
+                var icons = UnityEngine.Object.FindObjectsByType<DraggableIcon>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+                foreach (var icon in icons)
+                {
+                    if (icon.LevelDef != null && icon.LevelDef.levelId == "level1")
+                    {
+                        level1Icon = icon.gameObject;
+                        break;
+                    }
+                }
+                if (level1Icon == null && icons.Length > 0) level1Icon = icons[0].gameObject;
             }
-            else
+
+            if (level1Icon != null)
             {
-                InitialTestManager.Instance?.StartTest();
+                VirtualMascot.Show(dialogs.point_to_level1, level1Icon.GetComponent<RectTransform>(), new Vector2(160, -80));
             }
+
+            // We intentionally do NOT automatically start InitialTestManager or LearningSessionManager here.
+            // If we do, they try to spawn tasks without a window, instantly fail, and trigger 
+            // a chain reaction that calls VirtualMascot.HideMascot() in the exact same frame!
+            // The LevelRunner inside the DraggableIcon will take over when the user double-clicks.
         }
 
         private void OnInitialTestCompleted()

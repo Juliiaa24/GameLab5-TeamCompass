@@ -7,6 +7,14 @@ namespace ComputerLearning
     /// Executes a specific LevelDefinition (sequence of tasks) inside a Window.
     /// Replaces the old Level1/Level2 hardcoded classes.
     /// </summary>
+    [System.Serializable]
+    public class LevelTutorialDialogs
+    {
+        public string point_to_level1;
+        public string level_ready_prompt;
+        public string level_completed;
+    }
+
     public class LevelRunner : MonoBehaviour
     {
         [Header("References")]
@@ -20,9 +28,17 @@ namespace ComputerLearning
         
         private BaseTask activeTask;
         private Window appWindow;
+        private LevelTutorialDialogs dialogs;
 
         private void Awake()
         {
+            TextAsset json = Resources.Load<TextAsset>("LevelTutorialDialogs");
+            if (json != null) dialogs = JsonUtility.FromJson<LevelTutorialDialogs>(json.text);
+            else dialogs = new LevelTutorialDialogs { 
+                point_to_level1 = "Let's tend the garden!\nDouble-click here to start.",
+                level_ready_prompt = "Read carefully and click here\nwhen you are ready!",
+                level_completed = "Garden cared for!\nClick the 'X' to close." 
+            };
             appWindow = GetComponentInParent<Window>();
         }
 
@@ -106,7 +122,7 @@ namespace ComputerLearning
             });
             
             // Call the mascot to point to the play button
-            VirtualMascot.Show("Read carefully and click here\nwhen you are ready!", btnRect, new Vector2(250, 50));
+            VirtualMascot.Show(dialogs.level_ready_prompt, btnRect, new Vector2(250, 50));
         }
 
         
@@ -131,7 +147,7 @@ namespace ComputerLearning
 
                 if (closeBtn != null)
                 {
-                    VirtualMascot.Show("Garden cared for!\nClick the 'X' to close.", closeBtn.GetComponent<RectTransform>(), new Vector2(-200, -80));
+                    VirtualMascot.Show(dialogs.level_completed, closeBtn.GetComponent<RectTransform>(), new Vector2(-200, -80));
                 }
                 else if (appWindow != null)
                 {

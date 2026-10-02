@@ -1160,6 +1160,22 @@ before proposing an isolated implementation.
 3. **Level Intros:** In LevelRunner.cs, before tasks begin, a dark green instruction screen appears. The Mascot points directly to the "TEND THE GARDEN!" play button to ensure the child knows where to click.
 4. **Level Outros:** When a level (or the adaptive session) finishes, LevelRunner.cs calls the Mascot to point directly to the Window's Close ('X') button, explicitly instructing the player to close the window.
 ==================================================
+49. DESKTOP TOUR REWORK & SCENE SEPARATION
+
+**Context:** The original Desktop Tour was hardcoded inside `IconGrid.cs` and used an invisible screen blocker, which collided with the new `TutorialManager` and adaptive level systems. The mascot logic was becoming tangled and causing race conditions on scene load.
+
+**Changes Implemented:**
+* **Scene Isolation & Interaction Flow:** Created `IntroTutorialScene` (automated via `TutorialSceneSetup.cs` editor script) to cleanly house the onboarding experience. The `DesktopTour.cs` script was rewritten into a state-machine coroutine that waits for real user interactions (open, drag, maximize, restore, minimize, close) instead of time-based delays. The initial "single click" step was removed to go straight to double-clicking.
+* **Smart Reminder System:** `DesktopTour.cs` now includes a `WaitWithReminder` system that gently repeats instructions if the child takes too long, and dynamically redirects the mascot to the taskbar if the window is accidentally minimized.
+* **JSON Externalization:** All tutorial and mascot strings have been moved to JSON files for easy localization and editing by designers. 
+  - `DesktopTourDialogs.json` stores the intro sequence strings.
+  - `LevelTutorialDialogs.json` stores the Level 1 / LevelRunner mascot strings ("Double click here", "Read carefully", "Close window").
+* **IconGrid Cleanup:** Removed the legacy hardcoded Desktop Tour and invisible `TourBlocker` from `IconGrid.cs`. It now exclusively handles level unlock notifications.
+* **GameFlowController Fix:** `GameFlowController` was inadvertently triggering `InitialTestManager` instantly after the `TutorialManager` panels closed. Because no window was open, the test immediately failed, triggering a chain reaction that instantly hid the Virtual Mascot. The automated startup of `InitialTestManager` was removed, allowing the mascot to securely point the child to the Level 1 icon so they can manually open the window via `DraggableIcon`.
+* **DraggableIcon & Mascot Safeties:** Modified `DraggableIcon.cs` to expose `LevelDef` via a property, and prevented it from auto-maximizing windows or hiding the mascot globally while `DesktopTour.IsTourRunning` is true. 
+* **Mascot Lifecycle & Bounds Fix:** Added `OnDestroy()` cleanup to `VirtualMascot.cs` to ensure the static `Instance` reference doesn't hold onto a destroyed object across scene loads. Additionally, clamped the mascot's target position to screen boundaries using `Mathf.Clamp` with `Screen.width/height` to prevent it from sliding off-screen when instructed to point outside the window bounds.
+
+==================================================
 END OF PROJECT CONTEXT
 
 
