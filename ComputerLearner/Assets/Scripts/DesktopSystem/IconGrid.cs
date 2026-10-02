@@ -22,6 +22,62 @@ namespace ComputerLearning
 
         #region Unity Methods
         private void Awake() { EnsureGrid(); }
+
+        private void OnEnable()
+        {
+            if (ProgressData.Instance != null)
+                ProgressData.Instance.OnLevelUnlocked += HandleLevelUnlocked;
+        }
+
+        private void OnDisable()
+        {
+            if (ProgressData.Instance != null)
+                ProgressData.Instance.OnLevelUnlocked -= HandleLevelUnlocked;
+        }
+
+        private void HandleLevelUnlocked(string levelId)
+        {
+            if (levelId == "level2")
+            {
+                GameObject icon = GameObject.Find("Application Icon (1)");
+                if (icon != null) VirtualMascot.Show("Level 2 is now unlocked!\nDouble-click here to continue.", icon.GetComponent<RectTransform>(), new Vector2(160, -80));
+            }
+            else if (levelId == "level3")
+            {
+                GameObject icon = GameObject.Find("Application Icon (2)");
+                if (icon != null) VirtualMascot.Show("Level 3 is ready!\nHarvest the garden.", icon.GetComponent<RectTransform>(), new Vector2(160, -80));
+            }
+            else if (levelId == "level4")
+            {
+                GameObject icon = GameObject.Find("Application Icon (3)");
+                if (icon != null) VirtualMascot.Show("Level 4 unlocked!\nTry Endless Practice.", icon.GetComponent<RectTransform>(), new Vector2(160, -80));
+            }
+        }
+        
+        private void Start()
+        {
+            // The desktop tour is now handled by IntroTutorialScene and DesktopTour.cs
+            // We just need to check if they have unlocked new levels on load
+            if (ProgressData.Instance != null)
+            {
+                if (ProgressData.Instance.IsLevelUnlocked("level2") && !ProgressData.Instance.IsLevelUnlocked("level3"))
+                {
+                    GameObject level2Icon = GameObject.Find("Application Icon (1)");
+                    if (level2Icon != null) VirtualMascot.Show("Level 2 is now unlocked!\nDouble-click here to continue.", level2Icon.GetComponent<RectTransform>(), new Vector2(160, -80));
+                }
+                else if (ProgressData.Instance.IsLevelUnlocked("level3") && !ProgressData.Instance.IsLevelUnlocked("level4"))
+                {
+                    GameObject level3Icon = GameObject.Find("Application Icon (2)");
+                    if (level3Icon != null) VirtualMascot.Show("Level 3 is ready!\nHarvest the garden.", level3Icon.GetComponent<RectTransform>(), new Vector2(160, -80));
+                }
+                else if (ProgressData.Instance.IsLevelUnlocked("level4"))
+                {
+                    GameObject level4Icon = GameObject.Find("Application Icon (3)");
+                    if (level4Icon != null) VirtualMascot.Show("Level 4 unlocked!\nTry Endless Practice.", level4Icon.GetComponent<RectTransform>(), new Vector2(160, -80));
+                }
+            }
+        }
+
         private void OnRectTransformDimensionsChange() { EnsureGrid(); }
         #endregion
 

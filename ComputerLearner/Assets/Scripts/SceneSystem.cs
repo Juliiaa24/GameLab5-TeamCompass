@@ -75,7 +75,6 @@ namespace ComputerLearning
 
         private void ChangeScene(SceneNames scene)
         {
-            if (LevelManager.Instance != null) LevelManager.Instance.ResetProgress();
             switch (scene)
             {
                 case SceneNames.Menu:

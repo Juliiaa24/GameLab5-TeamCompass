@@ -572,52 +572,29 @@ Taskbar
 Avoid creating three completely independent systems.
 
 ==================================================
-19. TASK / SKILL / LEVEL SYSTEM
+19. TASK / SKILL / LEVEL SYSTEM (DATA-DRIVEN)
 
-A Task / Skill / Level architecture has been defined for the educational portion of the game.
+The educational portion of the game uses a Data-Driven architecture to separate logic from configuration.
 
-There are managers associated with this structure.
+Core concepts:
+* **Tasks (MonoBehaviours):** Reusable, event-driven mini-game elements (e.g. TargetTask). They detect input and emit events (OnComplete, OnError), but DO NOT contain level logic or grade evaluation.
+* **Skills (ScriptableObjects):** `SkillData` assets store the configuration for a skill (SkillID, tutorial prefab). They are purely data containers.
+* **Levels (ScriptableObjects + Generic Runner):** 
+  * `LevelData` assets define the recipe for a level (name, tasks to spawn, required amount, skills to evaluate).
+  * A single generic `LevelRunner` (or `LevelController`) MonoBehaviour sits on a generic window prefab. It reads the `LevelData`, spawns the tasks, listens to their events, and calculates the final grade.
 
-Approximately three hours were spent defining the:
-
-* Task manager.
-* Skill manager.
-* Level manager.
-
-When adding new minigames, try to integrate them into this existing system rather than replacing it.
-
-The exact implementation may evolve, so inspect the provided source code before making assumptions about class fields or APIs.
+When adding new minigames or levels, rely on creating new ScriptableObjects and reusing the generic `LevelRunner` instead of creating new `Level.cs` subclasses.
 
 ==================================================
-20. MINIGAME: CLICK TARGETS
+20. MINIGAME: CLICK TARGETS & MODULAR TASKS
 
-A minigame has been implemented / prototyped where the player clicks multiple targets.
+Tasks like clicking targets are implemented as modular, reusable components inside application windows.
 
-This should use the existing:
+A script like `TargetTask` inherits from a base `TaskBase` (or `Task`) and handles pointer clicks (e.g., `IPointerClickHandler`).
 
-* Tasks.
-* Skills.
-* Levels.
+Crucially, in the new Data-Driven architecture, `TargetTask` does NOT manage level progression. It simply detects the click, triggers visuals/sounds, and invokes an event (`OnTaskCompleted`). The generic `LevelRunner` listens to this event to spawn the next target or finish the level.
 
-The minigame appears inside an application window.
-
-The goal is for minigames to remain contained inside the window rather than behaving as completely separate scenes or systems.
-
-There is / has been a script called something similar to:
-
-TargetTask
-
-It inherits from Task.
-
-It also handles pointer clicks, for example:
-
-IPointerClickHandler
-
-Conceptually:
-
-public class TargetTask : Task, IPointerClickHandler
-
-The player clicks targets and progresses/completes the corresponding task.
+Minigames must always remain contained inside the window rather than behaving as completely separate scenes or systems.
 
 ==================================================
 21. TARGET MINIGAME LAYOUT
@@ -1110,11 +1087,11 @@ before proposing an isolated implementation.
 ==================================================
 43. RECENT UPDATES: SKILL EVALUATION & WINDOW ANIMATIONS
 
-* **Skill Evaluation Architecture (Level-Driven):**
-  * `Task` subclasses (`TargetTask`, `HoverTask`, etc.) act purely as **input detection tools** and expose raw interaction data (e.g., `HoverTask.PrematureExits`), rather than calculating grades themselves.
-  * `Level` subclasses (`Level1`, `Level2`, etc.) are tied to the specific `Skill` they teach and are responsible for evaluating it via `OnTaskCompleted(Task)` and `EvaluateSkills()` (called in `OnEnd()`).
-  * `Level1` teaches `SkillID.CLICK`: uses `IPointerClickHandler` on the level background to count `missedClicks` + completion time, and records the grade in `SkillManager`.
-  * `Level2` teaches `SkillID.MOVE`: collects `PrematureExits` and `RequiredHoverTime` from each completed `HoverTask` + completion time, and records the grade in `SkillManager`.
+* **Skill Evaluation Architecture (Data-Driven Refactor):**
+  * The project was recently refactored to remove hardcoded `Level1`, `Level2` classes.
+  * **Tasks** (`TargetTask`, `HoverTask`) remain purely as input detection tools and expose events/raw data (`OnCompleted`, `OnError`).
+  * **Levels** are now defined by `LevelData` ScriptableObjects. A single generic `LevelRunner` orchestrates the logic, reads the `LevelData`, instantiates tasks, tracks time/errors, and evaluates the skills when the level completes.
+  * Skills are assigned to levels via the Inspector using `SkillData` ScriptableObjects, eliminating empty "ghost prefabs" for skills.
 * **Skills Report Window:**
   * `SkillManager` stores grades per `SkillID` and `LevelID`, calculates averages (`GetAllAverageGrades()`), and fires a `GradesChanged` event.
   * `SkillsReportWindow` and `SkillGradeUI` display the grades inside a desktop window and auto-refresh via `GradesChanged`.
@@ -1122,5 +1099,67 @@ before proposing an isolated implementation.
   * `Window` uses a Coroutine (`AnimateScale`) interpolating `windowRectTransform.localScale` with cubic ease-out on `OnEnable`, `Restore`, `Minimize`, and `CloseWindow`.
   * `Window.SetContent` uses `SetParent(contentArea, false)` and resets `localScale = Vector3.one` so child content does not distort when parented while the window is at scale 0.
 
+
+
+==================================================
+44. ARCHITECTURE UNIFICATION: ADAPTIVE LEARNING MERGED INTO LEVELRUNNER
+
+**Context:** The project previously had two parallel window execution architectures:
+1. LevelRunner.cs for fixed sequences (Levels 1, 2, 3) reading from LevelDefinition.cs.
+2. AdaptiveSessionStarter.cs / LearningSessionManager.cs for procedural generation (originally isolated in Test_AdaptiveLearning).
+
+**Changes Implemented:**
+* The parallel AdaptiveSessionStarter.cs has been completely deprecated to unify the project under a single architecture.
+* LevelDefinition.cs (ScriptableObject) was expanded with two new fields: isAdaptive (bool) and daptiveTaskCount (int).
+* LevelRunner.cs now natively handles procedural task generation. If isAdaptive == true, it completely ignores the fixed 	asks list. Instead, inside SpawnNextTask(), it copies the weighted roulette logic from the old session manager: it queries SkillManager.Instance.GetSkillWeights() to find the player's weakest skills, randomly selects one weighted by its deficiency, queries the difficulty, and asks TaskManager.Instance.SelectTask for an appropriate prefab.
+* **Level 4 Implementation:** A new asset L_Level4.asset was created, checked as isAdaptive = true, and configured with 10 tasks. In the MainScene, "Application Icon (3)" was renamed to "Level 4" and assigned this asset.
+* **Unified UI:** Because Level 4 now runs through LevelRunner.cs, it automatically inherits the same GenericLevelWindow.prefab, the same dark green intro tutorial screen ("TEND THE GARDEN!"), and the same closing logic ("Garden cared for! Click the X") as the rest of the game.
+
+==================================================
+45. GRANULAR TASK EVALUATION: CLICKTARGET & HOVERTARGET OVERHAUL
+
+**Context:** Previously, tasks only fired a single Complete(bool) at the end of their lifecycle. This caused statistical inaccuracies (e.g., clicking 1 correct target and missing 5 times only counted as '1 correct attempt' instead of tracking the misses).
+
+**Changes Implemented:**
+* BaseTask.cs exposes a RecordIntermediateResult(bool success) method which sends a TaskResult to SkillManager and ProgressData without destroying the task.
+* ClickTargetTask.cs was completely rewritten. It now implements IPointerClickHandler on its background/container. Every click on a valid target triggers RecordIntermediateResult(true), while every click on the background triggers RecordIntermediateResult(false). The task only calls FinishWithoutResult() when all targets are exhausted.
+* HoverTarget.cs and HoverTargetTask.cs were updated. If the player exits the bounds of a hover target before the fill timer completes, the script fires an OnFailedAttempt event, triggering RecordIntermediateResult(false) to properly penalize early exits in the stats.
+
+==================================================
+46. PROGRESSION EVENTS AND VIRTUAL MASCOT DYNAMIC POINTERS
+
+**Context:** The Virtual Mascot (VirtualMascot.cs) was only checking for newly unlocked levels inside IconGrid.Start(), meaning the user had to reload the desktop scene to see the mascot point to new icons.
+
+**Changes Implemented:**
+* ProgressData.cs now defines a public System.Action<string> OnLevelUnlocked; event. This is invoked the exact millisecond UnlockLevel(string) adds a new level to the tracked list.
+* IconGrid.cs handles the Desktop Tour. It was modified to subscribe to OnLevelUnlocked in OnEnable(). When the event fires (e.g., when the user closes Level 3 and it unlocks Level 4), IconGrid instantly finds the newly available icon by name (e.g., "Application Icon (3)") and commands VirtualMascot.Show() to point at it with a custom message.
+* **Desktop Tour Lock:** A transparent UI blocker (aycastTarget = true) is dynamically instantiated at the start of the initial IconGrid Mascot Tour coroutine and destroyed at the end. This prevents the user from clicking desktop icons prematurely while the Mascot is still explaining the UI.
+
+==================================================
+47. UI OVERHAUL: STATS WINDOW & TEXTMESHPRO
+
+**Context:** The legacy SkillsReportWindow used standard Unity UI Text which was blurry and displayed raw percentages.
+
+**Changes Implemented:**
+* All text elements in SkillGradeUI.prefab were migrated to TextMeshProUGUI for crisp rendering.
+* The UI logic was rewritten to group results hierachically. The view now dynamically generates collapsible/grouped entries that display: Skill -> Level ID -> [Successes / Fails / Total Attempts].
+* Due to the unified LevelRunner architecture (Section 44), all tasks, including Level 4's adaptive tasks, automatically inject their correct levelId and levelName into the TaskResult, meaning Level 4 now properly shows up as "Level 4 (Practice)" in the stats window rather than "unknown".
+==================================================
+48. VIRTUAL MASCOT SYSTEM (RECENT ADDITION)
+
+**Context:** A Virtual Mascot has been integrated throughout the project to guide the player, provide didactic feedback, and highlight UI elements dynamically. It acts as a global overlay.
+
+**Architecture and Usage:**
+* VirtualMascot.cs operates as a Singleton UI overlay. It is invoked statically via VirtualMascot.Show(string message, RectTransform target, Vector2 offset).
+* If the Mascot is not present in the scene, calling Show() will automatically instantiate the default Mascot prefab into the target's Canvas.
+* To dismiss it, scripts call VirtualMascot.HideMascot().
+
+**Current Integrations:**
+1. **Initial Desktop Tour:** Managed by IconGrid.cs. On the first boot, a Coroutine orchestrates the Mascot pointing sequentially to Level 1, the Stats icon, and back to Level 1. A transparent full-screen blocker (aycastTarget = true) is temporarily spawned to prevent the player from interacting with the desktop until the tour concludes.
+2. **Dynamic Unlocks:** IconGrid listens to ProgressData.Instance.OnLevelUnlocked. When a new level unlocks (e.g., Level 4), the Mascot automatically appears on the desktop pointing to the newly unlocked icon with a custom message.
+3. **Level Intros:** In LevelRunner.cs, before tasks begin, a dark green instruction screen appears. The Mascot points directly to the "TEND THE GARDEN!" play button to ensure the child knows where to click.
+4. **Level Outros:** When a level (or the adaptive session) finishes, LevelRunner.cs calls the Mascot to point directly to the Window's Close ('X') button, explicitly instructing the player to close the window.
 ==================================================
 END OF PROJECT CONTEXT
+
+

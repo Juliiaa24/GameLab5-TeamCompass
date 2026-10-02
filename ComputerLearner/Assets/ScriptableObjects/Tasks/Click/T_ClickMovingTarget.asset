@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d60bab515da37234c8a0fe5ba853f96f, type: 3}
+  m_Name: T_ClickMovingTarget
+  m_EditorClassIdentifier: Assembly-CSharp::ComputerLearning.TaskDefinition
+  taskId: click_d4_moving
+  displayName: Click Moving Target
+  primarySkill: {fileID: 11400000, guid: 1e6685ea66c4b504d9d6579ba392444b, type: 2}
+  difficulty: 4
+  taskPrefab: {fileID: 1227488921218951802, guid: 38e83ce5b722c1544aaade7393a9dc71, type: 3}
+  config:
+    targetSize: 120
+    targetCount: 1
+    isMoving: 1
+    moveSpeed: 100
+    timeLimit: 0
+    requiredHoverDuration: 1
+    maxAttempts: 0

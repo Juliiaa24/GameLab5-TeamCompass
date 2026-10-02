@@ -1,7 +1,7 @@
 /**
  * Author: DIEGO
  * Date: 25/09/26
- * Description: Skills manager
+ * Description: Central shortcut accessors for all manager singletons.
 */
 
 using UnityEngine;
@@ -9,59 +9,34 @@ using UnityEngine;
 namespace ComputerLearning
 {
     /// <summary>
-    /// 
+    /// Static convenience class — provides short accessors to every manager singleton.
+    /// Usage example:  Managers.Skill().GetScore("click")
     /// </summary>
     public static class Managers
     {
-        /// <summary>
-        /// Task Manager
-        /// </summary>
-        /// <returns></returns>
-        public static TaskManager Tm()
-        {
-            return TaskManager.Instance;
-        }
-        /// <summary>
-        /// LevelManager
-        /// </summary>
-        /// <returns></returns>
-        public static LevelManager Lm()
-        {
-            return LevelManager.Instance;
-        }
-        /// <summary>
-        /// SkillManager
-        /// </summary>
-        /// <returns></returns>
-        public static SkillManager Sm()
-        {
-            return SkillManager.Instance;
-        }
-        /// <summary>
-        /// InputManager
-        /// </summary>
-        /// <returns></returns>
-        public static InputManager Im()
-        {
-            return InputManager.Instance;
-        }
-        /// <summary>
-        /// SceneSystem
-        /// </summary>
-        /// <returns></returns>
-        public static SceneSystem Sy()
-        {
-            return SceneSystem.Instance;
-        }
-        /// <summary>
-        /// WindowManager
-        /// </summary>
-        /// <returns></returns>
-        public static WindowManager Wm()
-        {
-            return WindowManager.Instance;
-        }
-       
+        // ── Existing managers ─────────────────────────────────────────────
+
+        /// <summary>InputManager singleton.</summary>
+        public static InputManager Im() => InputManager.Instance;
+
+        /// <summary>SceneSystem singleton.</summary>
+        public static SceneSystem Sy() => SceneSystem.Instance;
+
+        /// <summary>WindowManager singleton.</summary>
+        public static WindowManager Wm() => WindowManager.Instance;
+
+        // ── Adaptive learning managers ────────────────────────────────────
+
+        /// <summary>SkillManager — scores, difficulty, selection weights.</summary>
+        public static SkillManager Skill() => SkillManager.Instance;
+
+        /// <summary>TaskManager — task selection and prefab spawning.</summary>
+        public static TaskManager Tasks() => TaskManager.Instance;
+
+        /// <summary>LearningSessionManager — adaptive session orchestration.</summary>
+        public static LearningSessionManager Session() => LearningSessionManager.Instance;
+
+        /// <summary>ProgressData — task history and JSON persistence.</summary>
+        public static ProgressData Progress() => ProgressData.Instance;
     }
-    
 }
