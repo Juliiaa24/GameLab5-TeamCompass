@@ -1,4 +1,4 @@
-GAME LAB PROJECT CONTEXT
+﻿GAME LAB PROJECT CONTEXT
 
 IMPORTANT INSTRUCTIONS FOR THE AI
 
@@ -97,7 +97,7 @@ A reference resolution of approximately:
 
 has been used.
 
-The Canvas uses Unity’s Canvas Scaler so the interface adapts to different resolutions.
+The Canvas uses Unityâ€™s Canvas Scaler so the interface adapts to different resolutions.
 
 Important:
 Some window resizing logic previously broke when the Canvas resolution / scaling configuration was changed.
@@ -119,7 +119,7 @@ Scripts should generally use:
 
 namespace ComputerLearning
 {
-…
+â€¦
 }
 
 There is an existing C# script template used for the project.
@@ -133,7 +133,7 @@ The template follows a structure similar to:
 * Description:
     */
 
-using …
+using â€¦
 
 namespace ComputerLearning
 {
@@ -216,7 +216,7 @@ offsetMin = Vector2.zero
 offsetMax = Vector2.zero
 
 However, remember:
-This stretches relative to the object’s parent, not automatically relative to the Canvas.
+This stretches relative to the objectâ€™s parent, not automatically relative to the Canvas.
 
 Therefore, content should be parented to the intended window content container before applying full-stretch anchors.
 
@@ -286,10 +286,10 @@ When explaining the system, explain:
 Example conceptual flow:
 
 Window changes state
-→ Window invokes an event
-→ WindowManager subscribed previously
-→ WindowManager receives callback
-→ WindowManager updates taskbar or window state
+â†’ Window invokes an event
+â†’ WindowManager subscribed previously
+â†’ WindowManager receives callback
+â†’ WindowManager updates taskbar or window state
 
 Avoid assuming I already fully understand event-driven programming.
 
@@ -340,7 +340,7 @@ There was previously a problem where the window only came to the front after rel
 
 Bring-to-front should ideally happen on pointer down / begin drag rather than waiting until pointer click completes.
 
-Dragging should respect the coordinate system of the window’s parent RectTransform.
+Dragging should respect the coordinate system of the windowâ€™s parent RectTransform.
 
 ==================================================
 11. RESIZE HANDLE SYSTEM
@@ -503,7 +503,7 @@ Content should adapt to the current window size.
 Usually:
 
 * Instantiate content.
-* Parent it to the window’s content RectTransform.
+* Parent it to the windowâ€™s content RectTransform.
 * Stretch it to fill that RectTransform.
 
 However, not every child inside the content should necessarily scale with the window.
@@ -556,18 +556,18 @@ Desktop icons are another existing system.
 
 Some of this was implemented by a teammate named Julia.
 
-The window system was merged with Julia’s desktop icon implementation.
+The window system was merged with Juliaâ€™s desktop icon implementation.
 
 Desired architecture:
 
 Desktop icon
-→ opens corresponding application/window
+â†’ opens corresponding application/window
 
 Window
-→ is managed by WindowManager
+â†’ is managed by WindowManager
 
 Taskbar
-→ reflects currently open applications/windows
+â†’ reflects currently open applications/windows
 
 Avoid creating three completely independent systems.
 
@@ -603,7 +603,7 @@ When the containing window resizes:
 
 Targets should remain appropriately positioned within the content area.
 
-They should not simply become smaller because the window’s parent RectTransform changes.
+They should not simply become smaller because the windowâ€™s parent RectTransform changes.
 
 Prefer:
 
@@ -667,7 +667,7 @@ When debugging animation speed, inspect:
 ==================================================
 24. INPUT SYSTEM
 
-The project uses Unity’s newer Input System package.
+The project uses Unityâ€™s newer Input System package.
 
 Mouse input is important because the game teaches computer use.
 
@@ -718,7 +718,7 @@ Do not implement complete text typing by manually checking every keyboard key un
 
 Sometimes it may be necessary to determine whether the pointer is currently interacting with UI.
 
-Unity’s EventSystem can be used.
+Unityâ€™s EventSystem can be used.
 
 For example conceptually:
 
@@ -774,7 +774,7 @@ Work already done / tracked includes approximately:
 * Windows moving and resizing: 3 hours.
 * Closing and maximizing windows while remembering previous state: 2 hours.
 * Final window tweaks and bug fixing: 2 hours.
-* Merge with Julia’s desktop icon implementation: 2 hours.
+* Merge with Juliaâ€™s desktop icon implementation: 2 hours.
 * Planning the TaskSystem: part of the same work session.
 * Defining Task / Skill / Level managers: 3 hours.
 
@@ -809,10 +809,10 @@ Do not assume I own every repository-level permission.
 
 Desired workflow:
 
-Task moves to “Review” in GitHub Projects
-→ automation detects the change
-→ Discord webhook posts a review notification
-→ one of the other team members can review it.
+Task moves to â€œReviewâ€ in GitHub Projects
+â†’ automation detects the change
+â†’ Discord webhook posts a review notification
+â†’ one of the other team members can review it.
 
 A variable / configuration called:
 
@@ -1206,3 +1206,19 @@ END OF PROJECT CONTEXT
 * **Raycast Blocking:** Added a script-enforced `CanvasGroup` in `Start()` with `blocksRaycasts = false` to guarantee the mascot and its speech bubble never block mouse clicks intended for the UI underneath it.
 ==================================================
 END OF PROJECT CONTEXT
+
+==================================================
+50. PRE-TUTORIAL ONBOARDING (NIVEL 1, 2, 3, 4 AUTO-SEQUENCE)
+
+**Contexto:** Los niÃ±os necesitaban niveles mÃ¡s sencillos (mover ratÃ³n, hover, click) antes de enfrentarse al Desktop Tour. El flujo ahora orquesta estos niveles de forma automÃ¡tica al iniciar por primera vez el juego.
+
+**ImplementaciÃ³n con DesktopManager:**
+- `DesktopManager.cs` tiene ahora un `Start()` que comprueba la variable `PlayerPrefs` `"AutoSequenceCompleted"`.
+- Si es 0, ejecuta la corrutina `AutoOnboardingSequence()`.
+- Esta corrutina spawnea los iconos iniciales, usa a la Virtual Mascot para apuntar a cada uno de ellos y llama automÃ¡ticamente a `OpenApplication()` sin que el niÃ±o tenga que hacer doble click.
+- El sistema de progreso (`ProgressData`) desbloquea a la fuerza cada nivel durante la secuencia para que sean jugables.
+- Se ha creado una nueva task `MoveMouseTask.cs` que pide al usuario que mueva el ratÃ³n por la pantalla una distancia concreta. Nota: usa el nuevo `UnityEngine.InputSystem` en lugar de `Input.mousePosition`.
+- Al terminar el Nivel 4 (Adaptativo), se guarda `"AutoSequenceCompleted"` como 1 y se carga la escena `IntroTutorialScene` (Desktop Tour).
+
+==================================================
+

@@ -161,27 +161,116 @@ namespace ComputerLearning
             return iconInstance;
         }
 
-        [ContextMenu("Spawn Initial Icons (Test)")]
-        private void SpawnInitialIcons()
+        private void Start()
         {
-            if (!Application.isPlaying)
+            if (PlayerPrefs.GetInt("AutoSequenceCompleted", 0) == 0)
             {
-                Debug.LogWarning("Please enter Play Mode to test spawning icons.");
-                return;
+                StartCoroutine(AutoOnboardingSequence());
             }
+            else
+            {
+                SpawnInitialIcons();
+            }
+        }
+
+        private System.Collections.IEnumerator AutoOnboardingSequence()
+        {
+            Debug.Log("[DesktopManager] Starting AutoOnboardingSequence.");
+            yield return new WaitForSeconds(1f); // wait for UI to settle
+
+            // Ensure the initial icons are spawned
+            List<GameObject> spawnedIcons = SpawnInitialIcons();
+            
+            // Expected sequence of LevelDefinitions
+            string[] levelSequence = { "level1", "level2", "level3", "level4" };
+            int foundIconsCount = 0;
+
+            foreach (string targetLevelId in levelSequence)
+            {
+                DraggableIcon targetIcon = null;
+                foreach (var iconObj in spawnedIcons)
+                {
+                    DraggableIcon draggable = iconObj.GetComponent<DraggableIcon>();
+                    if (draggable != null && draggable.LevelDef != null && draggable.LevelDef.levelId == targetLevelId)
+                    {
+                        targetIcon = draggable;
+                        break;
+                    }
+                }
+
+                if (targetIcon != null)
+                {
+                    foundIconsCount++;
+                    Debug.Log($"[DesktopManager] Icon {targetLevelId} found. Forcing unlock.");
+                    
+                    // Force unlock so OpenApplication doesn't block it
+                    if (ProgressData.Instance != null)
+                    {
+                        ProgressData.Instance.UnlockLevel(targetLevelId);
+                    }
+                    
+                    // Force the DraggableIcon itself to visually update and unlock!
+                    targetIcon.GetType().GetField("isLocked", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)?.SetValue(targetIcon, false);
+
+                    VirtualMascot.Show($"Time for {targetIcon.LevelDef.displayName}!", targetIcon.GetComponent<RectTransform>(), new Vector2(160, -80));
+                    yield return new WaitForSeconds(2.5f);
+
+                    VirtualMascot.HideMascot();
+                    Debug.Log($"[DesktopManager] Opening application for {targetLevelId}...");
+                    targetIcon.OpenApplication();
+
+                    if (targetIcon.AppWindow == null)
+                    {
+                        Debug.LogError($"[DesktopManager] AppWindow is NULL after OpenApplication for {targetLevelId}! The level is skipping!");
+                    }
+
+                    while (targetIcon.AppWindow != null && !targetIcon.AppWindow.IsClosed)
+                    {
+                        yield return null;
+                    }
+                    Debug.Log($"[DesktopManager] Finished waiting for {targetLevelId}. Moving to next.");
+                    yield return new WaitForSeconds(1f);
+                }
+                else
+                {
+                    Debug.LogError($"[DesktopManager] ERRORES: No se pudo encontrar el icono para {targetLevelId}. Asegurate de que esta configurado en el DesktopManager. La secuencia se va a abortar.");
+                }
+            }
+
+            if (foundIconsCount < 4)
+            {
+                Debug.LogError("[DesktopManager] SECUENCIA ABORTADA. No se encontraron los 4 iconos. Arregla los iconos antes de continuar.");
+                yield break;
+            }
+
+            Debug.Log("[DesktopManager] Sequence finished! Transitioning to IntroTutorialScene.");
+            // Sequence finished!
+            PlayerPrefs.SetInt("AutoSequenceCompleted", 1);
+            PlayerPrefs.SetInt("DesktopTourCompleted", 0);
+
+            // Transition to Desktop Tour
+            UnityEngine.SceneManagement.SceneManager.LoadScene("IntroTutorialScene");
+        }
+
+        [ContextMenu("Spawn Initial Icons (Test)")]
+        private List<GameObject> SpawnInitialIcons()
+        {
+            List<GameObject> spawned = new List<GameObject>();
 
             if (initialDesktopIcons == null || initialDesktopIcons.Count == 0)
             {
                 Debug.LogWarning("No initial icons configured in DesktopManager. Please add them in the Inspector.");
-                return;
+                return spawned;
             }
 
             foreach (var iconData in initialDesktopIcons)
             {
-                SpawnIcon(iconData);
+                GameObject icon = SpawnIcon(iconData);
+                if (icon != null) spawned.Add(icon);
             }
             
-            Debug.Log($"Spawned {initialDesktopIcons.Count} icons on the desktop!");
+            Debug.Log($"Spawned {spawned.Count} icons on the desktop!");
+            return spawned;
         }
         #endregion
     }
