@@ -15,10 +15,12 @@ namespace ComputerLearning
 
         [Header("Settings")]
         public float followSpeed = 6f;
-        public Vector2 defaultOffset = new Vector2(150, -100);
+        [Tooltip("The separation of the speech bubble from the mascot")]
+        public Vector2 speechBubbleOffset = new Vector2(80f, -40f);
+        [Tooltip("Should the mascot automatically flip its graphic if it is on the right side of the screen?")]
+        public bool autoFlipMascot = true;
 
         private RectTransform targetRect;
-        private Vector2 currentOffset;
         private float floatTimer;
 
         private void Awake()
@@ -41,45 +43,72 @@ namespace ComputerLearning
         private void Start()
         {
             if (mascotRect == null) mascotRect = GetComponent<RectTransform>();
+
+            // Make sure the mascot and its speech bubble NEVER block mouse clicks!
+            CanvasGroup cg = GetComponent<CanvasGroup>();
+            if (cg == null) cg = gameObject.AddComponent<CanvasGroup>();
+            cg.interactable = false;
+            cg.blocksRaycasts = false;
         }
 
         private void Update()
         {
             if (targetRect != null && targetRect.gameObject.activeInHierarchy)
             {
-                Vector3 basePos = targetRect.position;
+                // Get the true visual center of the target, regardless of where its pivot is set
+                Vector3[] corners = new Vector3[4];
+                targetRect.GetWorldCorners(corners);
+                Vector3 basePos = (corners[0] + corners[2]) / 2f;
                 
-                // Float animation
+                // Float animation (reduced so the tip stays on target)
                 floatTimer += Time.deltaTime;
-                float floatOffset = Mathf.Sin(floatTimer * 4f) * 10f; 
+                float floatOffset = Mathf.Sin(floatTimer * 4f) * 5f; 
                 
                 Canvas canvas = GetComponentInParent<Canvas>();
                 float scale = canvas != null ? canvas.scaleFactor : 1f;
                 
-                Vector3 finalTargetPos = basePos + new Vector3(currentOffset.x * scale, (currentOffset.y + floatOffset) * scale, 0);
+                // IGNORE currentOffset from old code, because now we act as a direct cursor
+                Vector3 finalTargetPos = basePos + new Vector3(0, floatOffset * scale, 0);
 
-                // Clamp to screen bounds to prevent going off-screen
-                float margin = 100f * scale; // Keep some margin from the edges
+                // Clamp to screen bounds to prevent going completely off-screen, 
+                // but keep margin very small so the tip can reach top/right buttons like the 'X'.
+                float margin = 5f * scale; 
                 finalTargetPos.x = Mathf.Clamp(finalTargetPos.x, margin, Screen.width - margin);
                 finalTargetPos.y = Mathf.Clamp(finalTargetPos.y, margin, Screen.height - margin);
 
                 mascotRect.position = Vector3.Lerp(mascotRect.position, finalTargetPos, Time.deltaTime * followSpeed);
 
-                // Auto-flip speech bubble if too close to right edge of screen
+                // Flip the mascot horizontally if it's on the right side of the screen
+                // We use Camera.main if possible, or screen pixels, to robustly determine side.
+                bool isOnRightSide = false;
+                if (autoFlipMascot)
+                {
+                    Vector3 screenPoint = RectTransformUtility.WorldToScreenPoint(null, mascotRect.position);
+                    isOnRightSide = screenPoint.x > Screen.width * 0.5f;
+                }
+
+                float flipScale = isOnRightSide ? -1f : 1f;
+                mascotRect.localScale = new Vector3(flipScale, 1f, 1f);
+
                 if (speechBubble != null)
                 {
+                    // Counter-flip the speech bubble so the text remains readable
+                    speechBubble.transform.localScale = new Vector3(flipScale, 1f, 1f);
+                    
                     RectTransform bubbleRect = speechBubble.GetComponent<RectTransform>();
-                    if (mascotRect.position.x > Screen.width * 0.6f)
+                    
+                    // Use the exposed variable instead of magic numbers
+                    bubbleRect.anchoredPosition = new Vector2(speechBubbleOffset.x, speechBubbleOffset.y);
+
+                    if (isOnRightSide)
                     {
-                        // Flip to left
-                        bubbleRect.pivot = new Vector2(1, 0.5f);
-                        bubbleRect.anchoredPosition = new Vector2(-60, 50);
+                        // Mascot body goes LEFT. Speech bubble is pushed LEFT.
+                        bubbleRect.pivot = new Vector2(1f, 1f);
                     }
                     else
                     {
-                        // Default to right
-                        bubbleRect.pivot = new Vector2(0, 0.5f);
-                        bubbleRect.anchoredPosition = new Vector2(60, 50);
+                        // Mascot body goes RIGHT. Speech bubble is pushed RIGHT.
+                        bubbleRect.pivot = new Vector2(0f, 1f);
                     }
                 }
             }
@@ -94,11 +123,16 @@ namespace ComputerLearning
         {
             if (Instance == null)
             {
-                Canvas canvas = target.GetComponentInParent<Canvas>();
-                if (canvas != null) CreateDefaultMascot(canvas.transform);
-                else return;
+                // Busca en la escena aunque esté desactivado
+                Instance = Object.FindFirstObjectByType<VirtualMascot>(FindObjectsInactive.Include);
+                
+                if (Instance == null)
+                {
+                    Debug.LogWarning("[VirtualMascot] Mascot not found in the scene! Ensure DesktopManager has spawned it.");
+                    return;
+                }
             }
-            Instance.ShowMessage(message, target, offset);
+            if (Instance != null) Instance.ShowMessage(message, target, offset);
         }
 
         public static void HideMascot()
@@ -106,52 +140,11 @@ namespace ComputerLearning
             if (Instance != null) Instance.Hide();
         }
 
-        private static void CreateDefaultMascot(Transform parentCanvas)
-        {
-            GameObject mascotObj = new GameObject("VirtualMascot", typeof(RectTransform), typeof(VirtualMascot));
-            mascotObj.transform.SetParent(parentCanvas, false);
-            VirtualMascot mascot = mascotObj.GetComponent<VirtualMascot>();
-            mascot.mascotRect = mascotObj.GetComponent<RectTransform>();
-            
-            // Mascot Image (cyan placeholder)
-            GameObject imgObj = new GameObject("MascotImage", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
-            imgObj.transform.SetParent(mascotObj.transform, false);
-            imgObj.GetComponent<RectTransform>().sizeDelta = new Vector2(100, 100);
-            Image img = imgObj.GetComponent<Image>();
-            img.color = new Color(0.2f, 0.8f, 0.9f); 
-            
-            // Speech Bubble
-            GameObject bubbleObj = new GameObject("SpeechBubble", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
-            bubbleObj.transform.SetParent(mascotObj.transform, false);
-            RectTransform bubbleRect = bubbleObj.GetComponent<RectTransform>();
-            bubbleRect.pivot = new Vector2(0, 0.5f);
-            bubbleRect.anchoredPosition = new Vector2(60, 50);
-            bubbleRect.sizeDelta = new Vector2(450, 160); // Increased width and height for readability
-            bubbleObj.GetComponent<Image>().color = Color.white;
-            mascot.speechBubble = bubbleObj;
-            
-            // Bubble Text
-            GameObject textObj = new GameObject("Text", typeof(RectTransform), typeof(CanvasRenderer), typeof(Text));
-            textObj.transform.SetParent(bubbleObj.transform, false);
-            RectTransform textRect = textObj.GetComponent<RectTransform>();
-            textRect.anchorMin = Vector2.zero; textRect.anchorMax = Vector2.one;
-            textRect.offsetMin = new Vector2(20, 20); textRect.offsetMax = new Vector2(-20, -20);
-            Text txt = textObj.GetComponent<Text>();
-            txt.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-            if (txt.font == null) txt.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
-            txt.color = Color.black;
-            txt.fontSize = 28; // Much bigger font
-            txt.alignment = TextAnchor.MiddleCenter;
-            mascot.speechText = txt;
-
-            Instance = mascot;
-        }
-
         public void ShowMessage(string message, RectTransform target, Vector2? offset = null)
         {
             gameObject.SetActive(true);
             targetRect = target;
-            currentOffset = offset ?? defaultOffset;
+            // The offset parameter is now ignored because the mascot acts as a direct cursor
 
             if (speechBubble != null && speechText != null)
             {

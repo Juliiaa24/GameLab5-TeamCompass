@@ -14,7 +14,18 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ComputerLearning.LevelDefinition
   levelId: level3
   displayName: Level 3 - Mixed
-  instructionText: "It's harvest time!\nCombine all your skills to take care of the garden."
+  instructionText: 'It''s harvest time!
+
+    Combine all your skills to take care
+    of the garden.'
+  isAdaptive: 0
+  adaptiveTaskCount: 5
   tasks:
   - {fileID: 11400000, guid: 3c5fa028ea1407644aa9c25d58ae8283, type: 2}
   - {fileID: 11400000, guid: 0ab9d5cc78ddfaf468420fb0847c9c28, type: 2}
+  - {fileID: 11400000, guid: 71ed3f9ca5f9580479dca5ce233ad2ab, type: 2}
+  - {fileID: 11400000, guid: 516976cf1c4635d45be465bb384992c7, type: 2}
+  - {fileID: 11400000, guid: 0ab9d5cc78ddfaf468420fb0847c9c28, type: 2}
+  - {fileID: 11400000, guid: 74e350ddd64358347a3684b1aa38ce1a, type: 2}
+  - {fileID: 11400000, guid: 0ab9d5cc78ddfaf468420fb0847c9c28, type: 2}
+  - {fileID: 11400000, guid: 3c5fa028ea1407644aa9c25d58ae8283, type: 2}

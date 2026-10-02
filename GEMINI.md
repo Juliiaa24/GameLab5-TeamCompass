@@ -1179,3 +1179,18 @@ before proposing an isolated implementation.
 END OF PROJECT CONTEXT
 
 
+
+==================================================
+50. DESKTOP MANAGER & DYNAMIC INSTANTIATION
+
+**Context:** Previously, the `VirtualMascot` was responsible for instantiating itself via `Resources.Load`, and Desktop Icons were manually placed in the scene. As the project scales to support dynamic creation of files, folders, minigames, and drawings, a centralized manager is required.
+
+**Changes Implemented:**
+* **DesktopManager.cs:** A new Singleton added to manage the desktop environment. It acts as the central spawner for dynamic desktop elements.
+* **Mascot Instantiation:** `DesktopManager` now holds a reference to `mascotPrefab` in the Inspector and instantiates it into the Desktop Canvas during `Awake()`, keeping it deactivated until needed. 
+* **VirtualMascot.cs Refactor:** The `VirtualMascot` script no longer uses `Resources.Load()` or self-instantiates. It maintains its Singleton pattern (`VirtualMascot.Show`) but expects the `DesktopManager` to have injected it into the scene.
+* **Dynamic Icon System:** `DesktopManager` can now spawn icons automatically on Start using the `initialDesktopIcons` list.
+* **Efficient UI Architecture:** Icons are no longer created by instantiating different prefabs. Instead, the manager always instantiates a `defaultIconPrefab` and swaps its `Sprite` and text name at runtime via `DesktopIconData`.
+* **Content Injection (BaseWindow):** All icons share a global `baseWindowPrefab`. `DesktopIconData` specifies a unique `contentPrefab` for each icon. When double-clicked, `DraggableIcon` opens the generic `BaseWindow` and injects the specific `contentPrefab` into it dynamically via `appWindow.SetContent()`.
+==================================================
+END OF PROJECT CONTEXT

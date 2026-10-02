@@ -18,6 +18,7 @@ namespace ComputerLearning
         #region Private Variables
         private IconGrid grid;
         [SerializeField] private GameObject windowPrefab;
+        [SerializeField] private GameObject contentPrefab;
         [SerializeField] private LevelDefinition levelDefinition; // The level to launch (optional)
         [SerializeField] private bool isLocked = false;
         private Window appWindow;
@@ -84,6 +85,14 @@ namespace ComputerLearning
         #endregion
 
         #region Public Methods
+        public void SetupDynamicIcon(GameObject winPrefab, GameObject contentPref, LevelDefinition levelDef, bool lockedState)
+        {
+            this.windowPrefab = winPrefab;
+            this.contentPrefab = contentPref;
+            this.levelDefinition = levelDef;
+            this.isLocked = lockedState;
+        }
+
         public void OnPointerDown(PointerEventData eventData)
         {
             bool actuallyLocked = isLocked;
@@ -156,10 +165,19 @@ namespace ComputerLearning
                 }
             }
 
-            if (isNewWindow && appWindow != null && windowPrefab != null && windowPrefab.name.Contains("SkillsReport"))
+            if (isNewWindow && appWindow != null)
             {
-                if (appWindow.GetComponent<StatsUIBuilder>() == null)
-                    appWindow.gameObject.AddComponent<StatsUIBuilder>();
+                // Inject the dynamic content if this icon was configured with one
+                if (contentPrefab != null)
+                {
+                    appWindow.SetContent(Instantiate(contentPrefab));
+                }
+                
+                if (windowPrefab != null && windowPrefab.name.Contains("SkillsReport"))
+                {
+                    if (appWindow.GetComponent<StatsUIBuilder>() == null)
+                        appWindow.gameObject.AddComponent<StatsUIBuilder>();
+                }
             }
 
             // If a new window was just created and we have a level definition, start it!
