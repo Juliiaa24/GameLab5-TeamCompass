@@ -33,6 +33,11 @@ namespace ComputerLearning
             }
         }
 
+        private void OnDestroy()
+        {
+            if (Instance == this) Instance = null;
+        }
+
         private void Start()
         {
             if (mascotRect == null) mascotRect = GetComponent<RectTransform>();
@@ -52,6 +57,11 @@ namespace ComputerLearning
                 float scale = canvas != null ? canvas.scaleFactor : 1f;
                 
                 Vector3 finalTargetPos = basePos + new Vector3(currentOffset.x * scale, (currentOffset.y + floatOffset) * scale, 0);
+
+                // Clamp to screen bounds to prevent going off-screen
+                float margin = 100f * scale; // Keep some margin from the edges
+                finalTargetPos.x = Mathf.Clamp(finalTargetPos.x, margin, Screen.width - margin);
+                finalTargetPos.y = Mathf.Clamp(finalTargetPos.y, margin, Screen.height - margin);
 
                 mascotRect.position = Vector3.Lerp(mascotRect.position, finalTargetPos, Time.deltaTime * followSpeed);
 

@@ -1,58 +1,314 @@
 using UnityEngine;
+using UnityEngine.EventSystems;
 using System.Collections;
+using System;
 
 namespace ComputerLearning
 {
+    [Serializable]
+    public class DesktopTourDialogs
+    {
+        public string step1_welcome;
+        public string step1_lookAround;
+        public string step2_desktop;
+        public string step2_apps;
+        public string step3_openApp;
+        public string step3_reminder;
+        public string step4_opened;
+        public string step5_window;
+        public string step5_move;
+        public string step6_drag;
+        public string step6_reminder;
+        public string step6_nice;
+        public string step7_maximize;
+        public string step7_reminder;
+        public string step7_wow;
+        public string step8_restore;
+        public string step8_reminder;
+        public string step8_perfect;
+        public string step9_minimize;
+        public string step9_reminder;
+        public string step10_lookTaskbar;
+        public string step10_clickTaskbar;
+        public string step10_reminder;
+        public string step10_found;
+        public string step11_close;
+        public string step11_reminder;
+        public string step12_great;
+        public string step12_ready;
+        public string error_minimized;
+    }
+
     public class DesktopTour : MonoBehaviour
     {
-    private IEnumerator Start()
-    {
-        // Give time for UI layout
-        yield return new WaitForSeconds(0.5f);
+        public event Action OnIntroductionCompleted;
+        public bool forcePlayTutorial = true; // Added for testing
+        
+        public static bool IsTourRunning { get; private set; }
+        
+        private DesktopTourDialogs dialogs;
 
-        // Find icons dynamically
-        GameObject level1Icon = GameObject.Find("Application Icon");
-        GameObject statsIcon = GameObject.Find("Stats Icon");
-
-        // Reparent Stats Icon if it was spawned at root (MCP workaround)
-        if (statsIcon != null && statsIcon.transform.parent == null)
+        private void LoadDialogs()
         {
-            GameObject panel = GameObject.Find("Panel");
-            if (panel != null)
+            TextAsset json = Resources.Load<TextAsset>("DesktopTourDialogs");
+            if (json != null) dialogs = JsonUtility.FromJson<DesktopTourDialogs>(json.text);
+            else dialogs = new DesktopTourDialogs(); // Fallback empty
+        }
+
+        private IEnumerator Start()
+        {
+            if (!forcePlayTutorial && PlayerPrefs.GetInt("DesktopTourCompleted", 0) == 1)
             {
-                statsIcon.transform.SetParent(panel.transform, false);
+                OnIntroductionCompleted?.Invoke();
+                yield break; 
+            }
+
+            IsTourRunning = true;
+            LoadDialogs();
+
+            // Give time for UI layout
+            yield return new WaitForSeconds(0.5f);
+
+            // Find the Application Icon explicitly first
+            GameObject level1Icon = GameObject.Find("Application Icon");
+            if (level1Icon == null) 
+            {
+                DraggableIcon firstIcon = UnityEngine.Object.FindAnyObjectByType<DraggableIcon>();
+                level1Icon = firstIcon != null ? firstIcon.gameObject : null;
+            }
+            
+            if (level1Icon == null) 
+            {
+                Debug.LogWarning("[DesktopTour] Could not find any DraggableIcon to start the tour!");
+                yield break;
+            }
+
+            RectTransform iconRect = level1Icon.GetComponent<RectTransform>();
+
+            // STEP 1 — Welcome
+            VirtualMascot.Show(dialogs.step1_welcome, iconRect, new Vector2(250, -50));
+            yield return new WaitForSeconds(3.0f);
+            
+            VirtualMascot.Show(dialogs.step1_lookAround, iconRect, new Vector2(250, -50));
+            yield return new WaitForSeconds(3.0f);
+
+            // STEP 2 — Desktop
+            GameObject desktopBg = GameObject.Find("DesktopBackground") ?? GameObject.Find("Canvas");
+            RectTransform desktopRect = desktopBg != null ? desktopBg.GetComponent<RectTransform>() : iconRect;
+            VirtualMascot.Show(dialogs.step2_desktop, desktopRect, new Vector2(0, 150));
+            yield return new WaitForSeconds(3.0f);
+
+            VirtualMascot.Show(dialogs.step2_apps, iconRect, new Vector2(160, -80));
+            yield return new WaitForSeconds(3.0f);
+
+            // STEP 3 — Open Application (Double Click)
+            VirtualMascot.Show(dialogs.step3_openApp, iconRect, new Vector2(160, -80));
+            DraggableIcon dragIcon = level1Icon.GetComponent<DraggableIcon>();
+            
+            yield return StartCoroutine(WaitWithReminder(() => dragIcon.AppWindow != null && !dragIcon.AppWindow.IsClosed, dialogs.step3_reminder, iconRect, new Vector2(160, -80)));
+            
+            Window targetWindow = dragIcon.AppWindow;
+
+            RectTransform windowRect = targetWindow.GetComponent<RectTransform>();
+            VirtualMascot.Show(dialogs.step4_opened, windowRect, new Vector2(250, 0));
+            yield return new WaitForSeconds(2.0f);
+
+            // STEP 5 — What is a window
+            if (IsWindowClosedEarly(targetWindow)) yield break;
+            VirtualMascot.Show(dialogs.step5_window, windowRect, new Vector2(250, 0));
+            yield return new WaitForSeconds(3.0f);
+
+            Transform titleBar = targetWindow.transform.Find("WindowTop");
+            RectTransform titleBarRect = titleBar != null ? titleBar.GetComponent<RectTransform>() : windowRect;
+            
+            VirtualMascot.Show(dialogs.step5_move, titleBarRect, new Vector2(250, -50));
+            yield return new WaitForSeconds(3.0f);
+
+            // STEP 6 — Move Window
+            if (IsWindowClosedEarly(targetWindow)) yield break;
+            VirtualMascot.Show(dialogs.step6_drag, titleBarRect, new Vector2(250, -50));
+            Vector3 startPos = targetWindow.transform.localPosition;
+            
+            yield return StartCoroutine(WaitWithReminder(
+                () => targetWindow == null || targetWindow.IsClosed || Vector3.Distance(startPos, targetWindow.transform.localPosition) > 20f, 
+                dialogs.step6_reminder, 
+                titleBarRect, 
+                new Vector2(250, -50),
+                targetWindow));
+                
+            if (IsWindowClosedEarly(targetWindow)) yield break;
+            
+            VirtualMascot.Show(dialogs.step6_nice, windowRect, new Vector2(250, 0));
+            yield return new WaitForSeconds(2.0f);
+
+            // STEP 7 — Maximize
+            Transform maximizeBtn = targetWindow.transform.Find("WindowTop/Buttons/Maximize");
+            RectTransform maxBtnRect = maximizeBtn != null ? maximizeBtn.GetComponent<RectTransform>() : titleBarRect;
+            
+            VirtualMascot.Show(dialogs.step7_maximize, maxBtnRect, new Vector2(-250, 50));
+            
+            yield return StartCoroutine(WaitWithReminder(
+                () => targetWindow == null || targetWindow.IsClosed || targetWindow.IsMaximized, 
+                dialogs.step7_reminder, 
+                maxBtnRect, 
+                new Vector2(-250, 50),
+                targetWindow));
+
+            if (IsWindowClosedEarly(targetWindow)) yield break;
+            
+            VirtualMascot.Show(dialogs.step7_wow, windowRect, new Vector2(0, -200));
+            yield return new WaitForSeconds(2.5f);
+
+            // STEP 8 — Restore
+            VirtualMascot.Show(dialogs.step8_restore, maxBtnRect, new Vector2(-250, 50));
+            
+            yield return StartCoroutine(WaitWithReminder(
+                () => targetWindow == null || targetWindow.IsClosed || !targetWindow.IsMaximized, 
+                dialogs.step8_reminder, 
+                maxBtnRect, 
+                new Vector2(-250, 50),
+                targetWindow));
+
+            if (IsWindowClosedEarly(targetWindow)) yield break;
+
+            VirtualMascot.Show(dialogs.step8_perfect, windowRect, new Vector2(250, 0));
+            yield return new WaitForSeconds(2.0f);
+
+            // STEP 9 — Minimize
+            Transform minimizeBtn = targetWindow.transform.Find("WindowTop/Buttons/Minimize");
+            RectTransform minBtnRect = minimizeBtn != null ? minimizeBtn.GetComponent<RectTransform>() : titleBarRect;
+
+            VirtualMascot.Show(dialogs.step9_minimize, minBtnRect, new Vector2(-250, 50));
+            
+            // Do NOT pass associatedWindow here, because getting minimized is the goal of this step!
+            yield return StartCoroutine(WaitWithReminder(
+                () => targetWindow == null || targetWindow.IsClosed || targetWindow.IsMinimized, 
+                dialogs.step9_reminder, 
+                minBtnRect, 
+                new Vector2(-250, 50)));
+                
+            if (IsWindowClosedEarly(targetWindow)) yield break;
+            
+            // Wait a brief moment for the minimize animation
+            yield return new WaitForSeconds(0.5f);
+
+            // STEP 10 — Taskbar
+            TaskbarWindowButton targetBtn = FindTaskbarButton(targetWindow);
+
+            if (targetBtn != null)
+            {
+                RectTransform targetBtnRect = targetBtn.GetComponent<RectTransform>();
+                VirtualMascot.Show(dialogs.step10_lookTaskbar, targetBtnRect, new Vector2(100, 200));
+                yield return new WaitForSeconds(3.0f);
+                
+                VirtualMascot.Show(dialogs.step10_clickTaskbar, targetBtnRect, new Vector2(100, 200));
+                
+                yield return StartCoroutine(WaitWithReminder(
+                    () => targetWindow == null || targetWindow.IsClosed || (!targetWindow.IsMinimized && targetWindow.IsFocused), 
+                    dialogs.step10_reminder, 
+                    targetBtnRect, 
+                    new Vector2(100, 200)));
+
+                if (IsWindowClosedEarly(targetWindow)) yield break;
+
+                VirtualMascot.Show(dialogs.step10_found, windowRect, new Vector2(250, 0));
+                yield return new WaitForSeconds(2.5f);
+            }
+
+            // STEP 11 — Close Window
+            Transform closeBtn = targetWindow.transform.Find("WindowTop/Buttons/Close");
+            RectTransform closeBtnRect = closeBtn != null ? closeBtn.GetComponent<RectTransform>() : titleBarRect;
+
+            VirtualMascot.Show(dialogs.step11_close, closeBtnRect, new Vector2(-250, 50));
+            
+            yield return StartCoroutine(WaitWithReminder(
+                () => targetWindow == null || targetWindow.IsClosed, 
+                dialogs.step11_reminder, 
+                closeBtnRect, 
+                new Vector2(-250, 50),
+                targetWindow));
+
+            VirtualMascot.Show(dialogs.step12_great, iconRect, new Vector2(160, -80));
+            yield return new WaitForSeconds(3.0f);
+
+            VirtualMascot.Show(dialogs.step12_ready, iconRect, new Vector2(160, -80));
+            yield return new WaitForSeconds(3.0f);
+            
+            VirtualMascot.HideMascot();
+
+            PlayerPrefs.SetInt("DesktopTourCompleted", 1);
+            PlayerPrefs.Save();
+
+            IsTourRunning = false;
+            OnIntroductionCompleted?.Invoke();
+
+            // Transition to the main game scene
+            UnityEngine.SceneManagement.SceneManager.LoadScene("MainScene");
+        }
+
+        private TaskbarWindowButton FindTaskbarButton(Window targetWindow)
+        {
+            TaskbarWindowButton[] taskbarButtons = UnityEngine.Object.FindObjectsByType<TaskbarWindowButton>(FindObjectsSortMode.None);
+            foreach(var btn in taskbarButtons) 
+            {
+                if (btn.TargetWindow == targetWindow) return btn;
+            }
+            return null;
+        }
+
+        private IEnumerator WaitWithReminder(Func<bool> condition, string reminderMessage, RectTransform target, Vector2 offset, Window associatedWindow = null)
+        {
+            float timer = 0f;
+            while (!condition())
+            {
+                // If they accidentally minimized the window while trying to do something else
+                if (associatedWindow != null && associatedWindow.IsMinimized)
+                {
+                    TaskbarWindowButton btn = FindTaskbarButton(associatedWindow);
+                    if (btn != null)
+                    {
+                        VirtualMascot.Show(dialogs.error_minimized, btn.GetComponent<RectTransform>(), new Vector2(100, 200));
+                        yield return new WaitUntil(() => !associatedWindow.IsMinimized);
+                        // Once restored, go back to pointing at the original target
+                        VirtualMascot.Show(reminderMessage, target, offset);
+                        timer = 0f;
+                    }
+                }
+
+                timer += Time.deltaTime;
+                if (timer > 6f)
+                {
+                    VirtualMascot.Show(reminderMessage, target, offset);
+                    timer = 0f;
+                }
+                yield return null;
             }
         }
 
-        // Wait a bit before starting the tour
-        yield return new WaitForSeconds(1.0f);
-
-        // 1. Point to Level 1
-        if (level1Icon != null)
+        private bool IsWindowClosedEarly(Window window)
         {
-            VirtualMascot.Show("Welcome!\nDouble-click this icon to play Level 1.", level1Icon.GetComponent<RectTransform>(), new Vector2(160, -80));
-        }
-
-        // Wait for 5 seconds
-        yield return new WaitForSeconds(5.0f);
-
-        // 2. Point to Stats
-        if (statsIcon != null)
-        {
-            VirtualMascot.Show("This is the Stats menu.\nHere you can see your learning progress!", statsIcon.GetComponent<RectTransform>(), new Vector2(160, -80));
-        }
-        else
-        {
-            Debug.LogWarning("[DesktopTour] Stats Icon not found on desktop!");
-        }
-
-        // Leave it pointing to stats for a bit, then hide, or point back to level 1
-        yield return new WaitForSeconds(5.0f);
-        
-        if (level1Icon != null)
-        {
-            VirtualMascot.Show("Let's tend the garden!\nOpen Level 1 to start.", level1Icon.GetComponent<RectTransform>(), new Vector2(160, -80));
+            if (window == null || window.IsClosed)
+            {
+                VirtualMascot.HideMascot();
+                IsTourRunning = false;
+                return true;
+            }
+            return false;
         }
     }
-}
+
+    public class InteractionTracker : MonoBehaviour, IPointerDownHandler, IPointerClickHandler
+    {
+        public bool Clicked { get; private set; }
+        
+        public void OnPointerDown(PointerEventData eventData) 
+        {
+            if (eventData.button == PointerEventData.InputButton.Left) Clicked = true; 
+        }
+        
+        public void OnPointerClick(PointerEventData eventData) 
+        {
+            if (eventData.button == PointerEventData.InputButton.Left) Clicked = true;
+        }
+    }
 }

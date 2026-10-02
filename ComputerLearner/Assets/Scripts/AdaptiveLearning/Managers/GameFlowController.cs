@@ -84,6 +84,19 @@ namespace ComputerLearning
 
         private void StartFlow()
         {
+            DesktopTour tour = UnityEngine.Object.FindFirstObjectByType<DesktopTour>();
+            if (tour != null && (tour.forcePlayTutorial || PlayerPrefs.GetInt("DesktopTourCompleted", 0) == 0))
+            {
+                tour.OnIntroductionCompleted += StartActualFlow;
+            }
+            else
+            {
+                StartActualFlow();
+            }
+        }
+
+        private void StartActualFlow()
+        {
             if (skipTutorial)
             {
                 Debug.Log("[GameFlowController] Tutorial skipped.");

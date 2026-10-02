@@ -126,7 +126,10 @@ namespace ComputerLearning
                 actuallyLocked = !ProgressData.Instance.IsLevelUnlocked(levelDefinition.levelId);
             if (actuallyLocked) return;
 
-            VirtualMascot.HideMascot();
+            if (!DesktopTour.IsTourRunning)
+            {
+                VirtualMascot.HideMascot();
+            }
             
             if (manager == null) manager = GetComponentInParent<WindowManager>();
             
@@ -164,7 +167,10 @@ namespace ComputerLearning
                 appWindow.setTitle(levelDefinition.displayName);
                 
                 // Maximize the window automatically
-                appWindow.toggleMaximize();
+                if (!DesktopTour.IsTourRunning)
+                {
+                    appWindow.toggleMaximize();
+                }
 
                 LevelRunner runner = appWindow.GetComponentInChildren<LevelRunner>();
                 if (runner == null)
@@ -177,7 +183,10 @@ namespace ComputerLearning
                         runner.taskContentArea = appWindow.GetComponent<RectTransform>();
                 }
                 
-                runner.StartLevel(levelDefinition);
+                if (!DesktopTour.IsTourRunning)
+                {
+                    runner.StartLevel(levelDefinition);
+                }
             }
         }
         #endregion
