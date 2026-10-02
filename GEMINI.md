@@ -1193,4 +1193,16 @@ END OF PROJECT CONTEXT
 * **Efficient UI Architecture:** Icons are no longer created by instantiating different prefabs. Instead, the manager always instantiates a `defaultIconPrefab` and swaps its `Sprite` and text name at runtime via `DesktopIconData`.
 * **Content Injection (BaseWindow):** All icons share a global `baseWindowPrefab`. `DesktopIconData` specifies a unique `contentPrefab` for each icon. When double-clicked, `DraggableIcon` opens the generic `BaseWindow` and injects the specific `contentPrefab` into it dynamically via `appWindow.SetContent()`.
 ==================================================
+==================================================
+51. VIRTUAL MASCOT VISUAL REFACTORING (CURSOR MODE)
+
+**Context:** The Virtual Mascot was originally programmed with hardcoded `Vector2` offsets and generic targeting, under the assumption it was a character floating nearby. The design shifted to a cursor-like mascot (a star where the top-left tip is the actual pointer), which required precision targeting, smart flipping, and click-through capabilities.
+
+**Changes Implemented:**
+* **True Center Targeting:** `VirtualMascot.cs` no longer relies on `targetRect.position` (which returns the UI Pivot, causing the mascot to point at the edges of objects like the 'X' button). It now calculates the exact visual center using `targetRect.GetWorldCorners()`.
+* **Ignored Legacy Offsets:** The mascot now ignores all legacy `Vector2` offsets passed by other scripts, acting as a direct precision cursor. The floating animation was reduced to keep the tip on target.
+* **Auto-Flip Architecture:** The mascot automatically mirrors its graphic (`localScale.x = -1`) when pointing at UI elements on the right half of the screen. This is calculated robustly using `RectTransformUtility.WorldToScreenPoint` to avoid Canvas scaling issues.
+* **Smart Speech Bubble Layout:** Instead of hardcoded magic numbers, the speech bubble's distance is exposed in the Inspector via `speechBubbleOffset`. The code automatically counter-flips the speech bubble's scale so the text remains readable. It also dynamically alters the bubble's `pivot` (Left/Right) depending on the mascot's flip state, ensuring the `ContentSizeFitter` always grows the text box *away* from the mascot, preventing overlap regardless of string length.
+* **Raycast Blocking:** Added a script-enforced `CanvasGroup` in `Start()` with `blocksRaycasts = false` to guarantee the mascot and its speech bubble never block mouse clicks intended for the UI underneath it.
+==================================================
 END OF PROJECT CONTEXT
