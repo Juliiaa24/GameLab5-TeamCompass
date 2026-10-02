@@ -165,7 +165,7 @@ namespace ComputerLearning
             IsClosed = true;
             
             // Ocultar mascota si estaba señalando a esta ventana
-            VirtualMascot.HideMascot();
+            VirtualMascot.HideMascotIfTargeting(transform);
 
             StateChanged?.Invoke(this);
             if (animationCoroutine != null) StopCoroutine(animationCoroutine);
@@ -240,3 +240,4 @@ namespace ComputerLearning
         #endregion
     }
 }
+

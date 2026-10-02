@@ -224,10 +224,47 @@ namespace ComputerLearning
                         Debug.LogError($"[DesktopManager] AppWindow is NULL after OpenApplication for {targetLevelId}! The level is skipping!");
                     }
 
-                    while (targetIcon.AppWindow != null && !targetIcon.AppWindow.IsClosed)
+                    bool movedToNext = false;
+                    int currentIndex = System.Array.IndexOf(levelSequence, targetLevelId);
+                    
+                    while (!movedToNext)
                     {
+                        // Wait for a VALID, OPEN window. 
+                        // If it's null OR it's the old closed one, wait here frame by frame.
+                        while (targetIcon.AppWindow == null || targetIcon.AppWindow.IsClosed)
+                        {
+                            yield return null;
+                        }
+
+                        // Wait for the window to be closed by the user
+                        while (targetIcon.AppWindow != null && !targetIcon.AppWindow.IsClosed)
+                        {
+                            yield return null;
+                        }
+
+                        // Give one frame for any OnDestroy / ProgressData updates to settle
                         yield return null;
+
+                        // Check again
+                        if (currentIndex < levelSequence.Length - 1)
+                        {
+                            string nextLevelId = levelSequence[currentIndex + 1];
+                            if (ProgressData.Instance != null && ProgressData.Instance.IsLevelUnlocked(nextLevelId))
+                            {
+                                movedToNext = true;
+                            }
+                        }
+                        else
+                        {
+                            movedToNext = true;
+                        }
+
+                        if (!movedToNext)
+                        {
+                            Debug.LogWarning($"[DesktopManager] User closed {targetLevelId} early. Waiting for them to retry.");
+                        }
                     }
+
                     Debug.Log($"[DesktopManager] Finished waiting for {targetLevelId}. Moving to next.");
                     yield return new WaitForSeconds(1f);
                 }

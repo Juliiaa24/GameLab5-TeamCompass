@@ -83,7 +83,8 @@ namespace ComputerLearning
                 bool isOnRightSide = false;
                 if (autoFlipMascot)
                 {
-                    Vector3 screenPoint = RectTransformUtility.WorldToScreenPoint(null, mascotRect.position);
+                    Camera cam = canvas != null ? canvas.worldCamera : null;
+                    Vector3 screenPoint = RectTransformUtility.WorldToScreenPoint(cam, mascotRect.position);
                     isOnRightSide = screenPoint.x > Screen.width * 0.5f;
                 }
 
@@ -98,7 +99,7 @@ namespace ComputerLearning
                     RectTransform bubbleRect = speechBubble.GetComponent<RectTransform>();
                     
                     // Use the exposed variable instead of magic numbers
-                    bubbleRect.anchoredPosition = new Vector2(speechBubbleOffset.x, speechBubbleOffset.y);
+                    Vector2 finalBubblePos = new Vector2(speechBubbleOffset.x, speechBubbleOffset.y);
 
                     if (isOnRightSide)
                     {
@@ -110,6 +111,41 @@ namespace ComputerLearning
                         // Mascot body goes RIGHT. Speech bubble is pushed RIGHT.
                         bubbleRect.pivot = new Vector2(0f, 1f);
                     }
+                    
+                    // Apply position temporarily to calculate world corners
+                    bubbleRect.anchoredPosition = finalBubblePos;
+                    
+                    // Force a layout update so the ContentSizeFitter calculates the correct size based on text
+                    UnityEngine.UI.LayoutRebuilder.ForceRebuildLayoutImmediate(bubbleRect);
+
+                    // Clamp vertically to screen bounds
+                    Vector3[] bubbleCorners = new Vector3[4];
+                    bubbleRect.GetWorldCorners(bubbleCorners);
+                    
+                    // Convert world corners to screen space to check bounds
+                    Camera cam = canvas != null ? canvas.worldCamera : null;
+                    Vector3 bottomEdge = RectTransformUtility.WorldToScreenPoint(cam, bubbleCorners[0]);
+                    Vector3 topEdge = RectTransformUtility.WorldToScreenPoint(cam, bubbleCorners[1]);
+                    
+                    float marginY = 10f;
+                    float currentScale = canvas != null ? canvas.scaleFactor : 1f;
+                    
+                    // If bubble goes below screen
+                    if (bottomEdge.y < marginY)
+                    {
+                        // Shift it up by the difference
+                        float difference = (marginY - bottomEdge.y) / currentScale;
+                        finalBubblePos.y += difference;
+                    }
+                    // If bubble goes above screen
+                    else if (topEdge.y > Screen.height - marginY)
+                    {
+                        // Shift it down by the difference
+                        float difference = (topEdge.y - (Screen.height - marginY)) / currentScale;
+                        finalBubblePos.y -= difference;
+                    }
+                    
+                    bubbleRect.anchoredPosition = finalBubblePos;
                 }
             }
             else if (targetRect != null && !targetRect.gameObject.activeInHierarchy)
@@ -138,6 +174,18 @@ namespace ComputerLearning
         public static void HideMascot()
         {
             if (Instance != null) Instance.Hide();
+        }
+
+        public static void HideMascotIfTargeting(Transform potentialParent)
+        {
+            if (Instance != null && Instance.targetRect != null)
+            {
+                // If the current target is the window itself, or a child of the window (like the X button)
+                if (Instance.targetRect.IsChildOf(potentialParent) || Instance.targetRect == potentialParent)
+                {
+                    Instance.Hide();
+                }
+            }
         }
 
         public void ShowMessage(string message, RectTransform target, Vector2? offset = null)

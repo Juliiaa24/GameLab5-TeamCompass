@@ -47,12 +47,39 @@ namespace ComputerLearning
         public static bool IsTourRunning { get; private set; }
         
         private DesktopTourDialogs dialogs;
+        private TutorialBlocker tutorialBlocker;
 
         private void LoadDialogs()
         {
             TextAsset json = Resources.Load<TextAsset>("DesktopTourDialogs");
             if (json != null) dialogs = JsonUtility.FromJson<DesktopTourDialogs>(json.text);
             else dialogs = new DesktopTourDialogs(); // Fallback empty
+        }
+
+        private void SetupTutorialBlocker()
+        {
+            if (TutorialBlocker.Instance != null)
+            {
+                tutorialBlocker = TutorialBlocker.Instance;
+                return;
+            }
+
+            GameObject canvas = GameObject.Find("Canvas");
+            if (canvas == null) return;
+
+            GameObject blockerObj = new GameObject("TutorialBlocker");
+            blockerObj.transform.SetParent(canvas.transform, false);
+            
+            // Stretch to full screen
+            RectTransform rt = blockerObj.AddComponent<RectTransform>();
+            rt.anchorMin = Vector2.zero;
+            rt.anchorMax = Vector2.one;
+            rt.offsetMin = Vector2.zero;
+            rt.offsetMax = Vector2.zero;
+            
+            tutorialBlocker = blockerObj.AddComponent<TutorialBlocker>();
+            // Keep it underneath the Virtual Mascot, but above everything else
+            blockerObj.transform.SetSiblingIndex(canvas.transform.childCount - 2); 
         }
 
         private IEnumerator Start()
@@ -65,6 +92,7 @@ namespace ComputerLearning
 
             IsTourRunning = true;
             LoadDialogs();
+            SetupTutorialBlocker();
 
             // Give time for UI layout
             yield return new WaitForSeconds(0.5f);
@@ -105,8 +133,12 @@ namespace ComputerLearning
             VirtualMascot.Show(dialogs.step3_openApp, iconRect, new Vector2(160, -80));
             DraggableIcon dragIcon = level1Icon.GetComponent<DraggableIcon>();
             
+            
+            tutorialBlocker?.SetAllowedTarget(iconRect);
             yield return StartCoroutine(WaitWithReminder(() => dragIcon.AppWindow != null && !dragIcon.AppWindow.IsClosed, dialogs.step3_reminder, iconRect, new Vector2(160, -80)));
             
+            
+            tutorialBlocker?.SetAllowedTarget(null);
             Window targetWindow = dragIcon.AppWindow;
 
             RectTransform windowRect = targetWindow.GetComponent<RectTransform>();
@@ -129,6 +161,8 @@ namespace ComputerLearning
             VirtualMascot.Show(dialogs.step6_drag, titleBarRect, new Vector2(250, -50));
             Vector3 startPos = targetWindow.transform.localPosition;
             
+            
+            tutorialBlocker?.SetAllowedTarget(titleBarRect);
             yield return StartCoroutine(WaitWithReminder(
                 () => targetWindow == null || targetWindow.IsClosed || Vector3.Distance(startPos, targetWindow.transform.localPosition) > 20f, 
                 dialogs.step6_reminder, 
@@ -136,6 +170,8 @@ namespace ComputerLearning
                 new Vector2(250, -50),
                 targetWindow));
                 
+            
+            tutorialBlocker?.SetAllowedTarget(null);
             if (IsWindowClosedEarly(targetWindow)) yield break;
             
             VirtualMascot.Show(dialogs.step6_nice, windowRect, new Vector2(250, 0));
@@ -147,6 +183,8 @@ namespace ComputerLearning
             
             VirtualMascot.Show(dialogs.step7_maximize, maxBtnRect, new Vector2(-250, 50));
             
+            
+            tutorialBlocker?.SetAllowedTarget(maxBtnRect);
             yield return StartCoroutine(WaitWithReminder(
                 () => targetWindow == null || targetWindow.IsClosed || targetWindow.IsMaximized, 
                 dialogs.step7_reminder, 
@@ -154,6 +192,8 @@ namespace ComputerLearning
                 new Vector2(-250, 50),
                 targetWindow));
 
+            
+            tutorialBlocker?.SetAllowedTarget(null);
             if (IsWindowClosedEarly(targetWindow)) yield break;
             
             VirtualMascot.Show(dialogs.step7_wow, windowRect, new Vector2(0, -200));
@@ -162,6 +202,8 @@ namespace ComputerLearning
             // STEP 8 — Restore
             VirtualMascot.Show(dialogs.step8_restore, maxBtnRect, new Vector2(-250, 50));
             
+            
+            tutorialBlocker?.SetAllowedTarget(maxBtnRect);
             yield return StartCoroutine(WaitWithReminder(
                 () => targetWindow == null || targetWindow.IsClosed || !targetWindow.IsMaximized, 
                 dialogs.step8_reminder, 
@@ -169,6 +211,8 @@ namespace ComputerLearning
                 new Vector2(-250, 50),
                 targetWindow));
 
+            
+            tutorialBlocker?.SetAllowedTarget(null);
             if (IsWindowClosedEarly(targetWindow)) yield break;
 
             VirtualMascot.Show(dialogs.step8_perfect, windowRect, new Vector2(250, 0));
@@ -180,6 +224,8 @@ namespace ComputerLearning
 
             VirtualMascot.Show(dialogs.step9_minimize, minBtnRect, new Vector2(-250, 50));
             
+            
+            tutorialBlocker?.SetAllowedTarget(minBtnRect);
             // Do NOT pass associatedWindow here, because getting minimized is the goal of this step!
             yield return StartCoroutine(WaitWithReminder(
                 () => targetWindow == null || targetWindow.IsClosed || targetWindow.IsMinimized, 
@@ -187,6 +233,8 @@ namespace ComputerLearning
                 minBtnRect, 
                 new Vector2(-250, 50)));
                 
+            
+            tutorialBlocker?.SetAllowedTarget(null);
             if (IsWindowClosedEarly(targetWindow)) yield break;
             
             // Wait a brief moment for the minimize animation
@@ -203,12 +251,16 @@ namespace ComputerLearning
                 
                 VirtualMascot.Show(dialogs.step10_clickTaskbar, targetBtnRect, new Vector2(100, 200));
                 
+                
+                tutorialBlocker?.SetAllowedTarget(targetBtnRect);
                 yield return StartCoroutine(WaitWithReminder(
                     () => targetWindow == null || targetWindow.IsClosed || (!targetWindow.IsMinimized && targetWindow.IsFocused), 
                     dialogs.step10_reminder, 
                     targetBtnRect, 
                     new Vector2(100, 200)));
 
+                tutorialBlocker?.SetAllowedTarget(null);
+                
                 if (IsWindowClosedEarly(targetWindow)) yield break;
 
                 VirtualMascot.Show(dialogs.step10_found, windowRect, new Vector2(250, 0));
@@ -221,6 +273,8 @@ namespace ComputerLearning
 
             VirtualMascot.Show(dialogs.step11_close, closeBtnRect, new Vector2(-250, 50));
             
+            
+            tutorialBlocker?.SetAllowedTarget(closeBtnRect);
             yield return StartCoroutine(WaitWithReminder(
                 () => targetWindow == null || targetWindow.IsClosed, 
                 dialogs.step11_reminder, 
@@ -228,6 +282,8 @@ namespace ComputerLearning
                 new Vector2(-250, 50),
                 targetWindow));
 
+            tutorialBlocker?.SetAllowedTarget(null);
+            
             VirtualMascot.Show(dialogs.step12_great, iconRect, new Vector2(160, -80));
             yield return new WaitForSeconds(3.0f);
 
@@ -312,3 +368,6 @@ namespace ComputerLearning
         }
     }
 }
+
+
+
