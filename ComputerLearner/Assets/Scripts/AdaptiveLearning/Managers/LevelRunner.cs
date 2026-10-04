@@ -289,7 +289,15 @@ namespace ComputerLearning
             if (activeTask != null)
             {
                 activeTask.OnTaskCompleted -= HandleTaskCompleted;
-                Destroy(activeTask.gameObject);
+                
+                // Find the actual prefab root that was spawned inside taskContentArea
+                Transform prefabRoot = activeTask.transform;
+                while (prefabRoot.parent != taskContentArea && prefabRoot.parent != null)
+                {
+                    prefabRoot = prefabRoot.parent;
+                }
+                Destroy(prefabRoot.gameObject);
+                
                 activeTask = null;
             }
 

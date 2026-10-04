@@ -1,4 +1,4 @@
-﻿GAME LAB PROJECT CONTEXT
+GAME LAB PROJECT CONTEXT
 
 IMPORTANT INSTRUCTIONS FOR THE AI
 
@@ -97,7 +97,7 @@ A reference resolution of approximately:
 
 has been used.
 
-The Canvas uses Unityâ€™s Canvas Scaler so the interface adapts to different resolutions.
+The Canvas uses Unity’s Canvas Scaler so the interface adapts to different resolutions.
 
 Important:
 Some window resizing logic previously broke when the Canvas resolution / scaling configuration was changed.
@@ -119,7 +119,7 @@ Scripts should generally use:
 
 namespace ComputerLearning
 {
-â€¦
+…
 }
 
 There is an existing C# script template used for the project.
@@ -133,7 +133,7 @@ The template follows a structure similar to:
 * Description:
     */
 
-using â€¦
+using …
 
 namespace ComputerLearning
 {
@@ -216,7 +216,7 @@ offsetMin = Vector2.zero
 offsetMax = Vector2.zero
 
 However, remember:
-This stretches relative to the objectâ€™s parent, not automatically relative to the Canvas.
+This stretches relative to the object’s parent, not automatically relative to the Canvas.
 
 Therefore, content should be parented to the intended window content container before applying full-stretch anchors.
 
@@ -286,10 +286,10 @@ When explaining the system, explain:
 Example conceptual flow:
 
 Window changes state
-â†’ Window invokes an event
-â†’ WindowManager subscribed previously
-â†’ WindowManager receives callback
-â†’ WindowManager updates taskbar or window state
+→ Window invokes an event
+→ WindowManager subscribed previously
+→ WindowManager receives callback
+→ WindowManager updates taskbar or window state
 
 Avoid assuming I already fully understand event-driven programming.
 
@@ -340,7 +340,7 @@ There was previously a problem where the window only came to the front after rel
 
 Bring-to-front should ideally happen on pointer down / begin drag rather than waiting until pointer click completes.
 
-Dragging should respect the coordinate system of the windowâ€™s parent RectTransform.
+Dragging should respect the coordinate system of the window’s parent RectTransform.
 
 ==================================================
 11. RESIZE HANDLE SYSTEM
@@ -503,7 +503,7 @@ Content should adapt to the current window size.
 Usually:
 
 * Instantiate content.
-* Parent it to the windowâ€™s content RectTransform.
+* Parent it to the window’s content RectTransform.
 * Stretch it to fill that RectTransform.
 
 However, not every child inside the content should necessarily scale with the window.
@@ -556,18 +556,18 @@ Desktop icons are another existing system.
 
 Some of this was implemented by a teammate named Julia.
 
-The window system was merged with Juliaâ€™s desktop icon implementation.
+The window system was merged with Julia’s desktop icon implementation.
 
 Desired architecture:
 
 Desktop icon
-â†’ opens corresponding application/window
+→ opens corresponding application/window
 
 Window
-â†’ is managed by WindowManager
+→ is managed by WindowManager
 
 Taskbar
-â†’ reflects currently open applications/windows
+→ reflects currently open applications/windows
 
 Avoid creating three completely independent systems.
 
@@ -603,7 +603,7 @@ When the containing window resizes:
 
 Targets should remain appropriately positioned within the content area.
 
-They should not simply become smaller because the windowâ€™s parent RectTransform changes.
+They should not simply become smaller because the window’s parent RectTransform changes.
 
 Prefer:
 
@@ -667,7 +667,7 @@ When debugging animation speed, inspect:
 ==================================================
 24. INPUT SYSTEM
 
-The project uses Unityâ€™s newer Input System package.
+The project uses Unity’s newer Input System package.
 
 Mouse input is important because the game teaches computer use.
 
@@ -718,7 +718,7 @@ Do not implement complete text typing by manually checking every keyboard key un
 
 Sometimes it may be necessary to determine whether the pointer is currently interacting with UI.
 
-Unityâ€™s EventSystem can be used.
+Unity’s EventSystem can be used.
 
 For example conceptually:
 
@@ -774,7 +774,7 @@ Work already done / tracked includes approximately:
 * Windows moving and resizing: 3 hours.
 * Closing and maximizing windows while remembering previous state: 2 hours.
 * Final window tweaks and bug fixing: 2 hours.
-* Merge with Juliaâ€™s desktop icon implementation: 2 hours.
+* Merge with Julia’s desktop icon implementation: 2 hours.
 * Planning the TaskSystem: part of the same work session.
 * Defining Task / Skill / Level managers: 3 hours.
 
@@ -809,10 +809,10 @@ Do not assume I own every repository-level permission.
 
 Desired workflow:
 
-Task moves to â€œReviewâ€ in GitHub Projects
-â†’ automation detects the change
-â†’ Discord webhook posts a review notification
-â†’ one of the other team members can review it.
+Task moves to “Review” in GitHub Projects
+→ automation detects the change
+→ Discord webhook posts a review notification
+→ one of the other team members can review it.
 
 A variable / configuration called:
 
@@ -1212,14 +1212,14 @@ END OF PROJECT CONTEXT
 ==================================================
 50. PRE-TUTORIAL ONBOARDING (NIVEL 1, 2, 3, 4 AUTO-SEQUENCE)
 
-**Contexto:** Los niÃ±os necesitaban niveles mÃ¡s sencillos (mover ratÃ³n, hover, click) antes de enfrentarse al Desktop Tour. El flujo ahora orquesta estos niveles de forma automÃ¡tica al iniciar por primera vez el juego.
+**Contexto:** Los niños necesitaban niveles más sencillos (mover ratón, hover, click) antes de enfrentarse al Desktop Tour. El flujo ahora orquesta estos niveles de forma automática al iniciar por primera vez el juego.
 
-**ImplementaciÃ³n con DesktopManager:**
+**Implementación con DesktopManager:**
 - `DesktopManager.cs` tiene ahora un `Start()` que comprueba la variable `PlayerPrefs` `"AutoSequenceCompleted"`.
 - Si es 0, ejecuta la corrutina `AutoOnboardingSequence()`.
-- Esta corrutina spawnea los iconos iniciales, usa a la Virtual Mascot para apuntar a cada uno de ellos y llama automÃ¡ticamente a `OpenApplication()` sin que el niÃ±o tenga que hacer doble click.
+- Esta corrutina spawnea los iconos iniciales, usa a la Virtual Mascot para apuntar a cada uno de ellos y llama automáticamente a `OpenApplication()` sin que el niño tenga que hacer doble click.
 - El sistema de progreso (`ProgressData`) desbloquea a la fuerza cada nivel durante la secuencia para que sean jugables.
-- Se ha creado una nueva task `MoveMouseTask.cs` que pide al usuario que mueva el ratÃ³n por la pantalla una distancia concreta. Nota: usa el nuevo `UnityEngine.InputSystem` en lugar de `Input.mousePosition`.
+- Se ha creado una nueva task `MoveMouseTask.cs` que pide al usuario que mueva el ratón por la pantalla una distancia concreta. Nota: usa el nuevo `UnityEngine.InputSystem` en lugar de `Input.mousePosition`.
 - Al terminar el Nivel 4 (Adaptativo), se guarda `"AutoSequenceCompleted"` como 1 y se carga la escena `IntroTutorialScene` (Desktop Tour).
 
 ==================================================
@@ -1236,7 +1236,152 @@ END OF PROJECT CONTEXT
 * **AutoOnboardingSequence Robustness:** The DesktopManager loop was previously bypassing gameplay checks and unlocking levels merely when a window closed. It was modified to wait and verify ProgressData.Instance.IsLevelUnlocked(nextLevelId). Crucially, if the user closes a window prematurely, the sequence no longer aborts (which broke the flow and failed to transition to IntroTutorialScene) nor does it create an infinite frame loop. Instead, the coroutine now safely uses yield return null to wait for the user to reopen the target application window and successfully complete the level.
 
 ==================================================
-53. REFINED ONBOARDING, NO MAGIC STRINGS & GARDEN THEME REMOVAL
+
+==================================================
+51. MOUSE SKILL DEFINITIONS ADDED
+
+**Context:** The educational design required explicit SkillDefinitions for advanced mouse interactions so they can be assigned to Tasks later in the curriculum.
+
+**Implementation:**
+- Added a `description` string field (with a `[TextArea]` attribute) to `SkillDefinition.cs` to allow designers to document the pedagogical purpose of each skill.
+- Created/Updated the following 4 new SkillDefinitions in `Assets/ScriptableObjects/Skills/`:
+  1. `SK_DoubleClick`: "The ability to perform two consecutive left clicks within a short time interval."
+  2. `SK_RightClick`: "The ability to perform a right mouse click to interact with an element or access additional options."
+  3. `SK_ClickHold`: "The ability to press and hold the left mouse button for a continuous period of time."
+  4. `SK_DragDrop`: "The ability to click and hold an object, move it to another location, and release it."
+
+==================================================
+
+==================================================
+52. CORE MOUSE TASK DEFINITIONS GENERATED
+
+**Context:** Now that the advanced mouse skills were defined, the `TaskDefinition` instances needed to be generated systematically so designers can begin assigning gameplay prefabs to them.
+
+**Implementation:**
+- Automatically generated 17 new `TaskDefinition` ScriptableObjects across 4 new directories within `Assets/ScriptableObjects/Tasks/`:
+  - `/DoubleClick`: 4 tasks (Difficulty 1 to 4) mapped to `SK_DoubleClick`.
+  - `/RightClick`: 4 tasks (Difficulty 1 to 4) mapped to `SK_RightClick`.
+  - `/ClickHold`: 4 tasks (Difficulty 1 to 4) mapped to `SK_ClickHold`.
+  - `/DragDrop`: 5 tasks (Difficulty 1 to 5) mapped to `SK_DragDrop`.
+- Each task correctly uses the existing `TaskDefinition.cs` script, with progressive target descriptions set in the `displayName` and linked perfectly to their primary skill via GUIDs. 
+- No actual prefabs or gameplay logic were implemented or modified; strictly the data architecture was set up as requested.
+
+==================================================
+
+==================================================
+53. GAMEPLAY TASK SCRIPTS & PREFABS IMPLEMENTED
+
+**Context:** The architecture required actual implementation of the new mouse tasks (`DoubleClickTask`, `RightClickTask`, `ClickHoldTask`, `DragDropTask`) and generation of their prefabs, linked to the `TaskDefinitions`.
+
+**Implementation:**
+- Implemented `DoubleClickTask.cs` (detects `eventData.clickCount == 2`).
+- Implemented `RightClickTask.cs` (detects `PointerEventData.InputButton.Right`).
+- Implemented `ClickHoldTask.cs` (uses `IPointerDownHandler`, `IPointerUpHandler`, and `Update` timer).
+- Implemented `DragDropTask.cs` (uses `IBeginDragHandler`, `IDragHandler`, `IEndDragHandler` to move a rect and snap to a drop target).
+- Created a `TaskPrefabGenerator` Editor tool to automatically construct the 4 prefabs (`Task_DoubleClick`, `Task_RightClick`, `Task_ClickHold`, `Task_DragDrop`) using basic primitives (Images) and dynamically link them into the `taskPrefab` field of all 17 previously created `TaskDefinition` instances.
+
+==================================================
+
+==================================================
+54. LEVELS 5 TO 9 CONFIGURED
+
+**Context:** The progression curve of the educational game required new fixed levels to systematically teach the advanced mouse skills, without interfering with the Level 4 Adaptive Session logic.
+
+**Implementation:**
+- Five new ScriptableObjects (`L_Level5` to `L_Level9`) were created in `Assets/ScriptableObjects/Levels/`.
+- All of them were strictly set to `isAdaptive = false`.
+- **Level 5 (Double Click):** Progresses through Double Click tasks from Difficulty 1 to 4.
+- **Level 6 (Right Click):** Progresses through Right Click tasks from Difficulty 1 to 4.
+- **Level 7 (Click & Hold):** Progresses through Click & Hold tasks from Difficulty 1 to 4.
+- **Level 8 (Drag & Drop):** Progresses through Drag & Drop tasks from Difficulty 1 to 5.
+- **Level 9 (Mixed Consolidation):** Combines tasks from Click, Double Click, Right Click, Drag & Drop, Hover, Click & Hold, and Move Mouse to force context switching.
+- **Level 4 Integrity Maintained:** `L_Level4.asset` and the adaptive runner architecture were deliberately untouched.
+
+==================================================
+
+==================================================
+55. LEVEL TESTER SCENE CREATOR
+
+**Context:** The team needed a way to instantly test any level (1 to 9) without playing through the forced auto-sequence or resetting `PlayerPrefs` every time.
+
+**Implementation:**
+- Created `LevelTestSceneCreator.cs` (Editor script) which provides a new menu item: `ComputerLearning -> Create Level Test Scene`.
+- Clicking this creates and saves a new `LevelTestScene.unity` containing a generic `Canvas` and a `LevelTester` component.
+- `LevelTester.cs` renders an in-game UI listing all available `LevelDefinition` assets.
+- Clicking a level in the UI dynamically instantiates the `windowPrefab`, injects the `LevelRunner`, automatically maximizes the window, and calls `runner.StartLevel(levelDef)` to simulate identical behaviour to `DraggableIcon.OpenApplication()`.
+
+==================================================
+
+==================================================
+56. TASK PREFAB ARCHITECTURE & CONTAINERS
+
+**Context:** Earlier task prefabs (like Double Click) appeared as giant green screens because TaskManager.SpawnTask forces the root instantiated GameObject to stretch to fill the 	askContentArea (nchorMin = 0, nchorMax = 1).
+If the BaseTask script and visual Image were on the root object, the target became impossible to miss (and broke visually).
+
+**Implementation:**
+- Built RebuildPrefabsWithContainers.cs to wrap all task visuals in a generic RectTransform container.
+- The **Container** stretches to fill the window.
+- The **Target** (child object) maintains its relative size and anchors to the center, housing the Image, text, and specific Task script (e.g., DoubleClickTask).
+- TaskManager.SpawnTask was modified to use go.GetComponentInChildren<BaseTask>() so it can find the script regardless of how deep the visual target is nested.
+- LevelRunner.HandleTaskCompleted was modified to destroy the entire prefab hierarchy (by searching up to 	askContentArea) instead of just ctiveTask.gameObject, preventing "orphaned" drop zones or containers from staying on screen.
+
+==================================================
+57. DATA-DRIVEN TASK CONFIGURATION
+
+**Context:** The newly added tasks (Double Click, Drag Drop, etc.) originally hardcoded their logic (speed, size, movement) based purely on TaskDefinition.difficulty. This bypassed the existing TaskConfig fields (isMoving, 	argetSize, 	argetCount), breaking the data-driven architecture.
+
+**Implementation:**
+- Restored data-driven control by making scripts read directly from TaskDefinition.config.
+- TaskTargetMovement.cs now reads config.isMoving and config.moveSpeed.
+- DragDropTask.cs and ClickHoldTask.cs scale their sizes based on config.targetSize.
+- Created an Editor tool UpdateTaskDataConfig.cs to mass-update the ScriptableObjects in Assets/Data/Tasks/, correctly assigning speeds, counts, and sizes based on difficulty, so they work correctly out of the box.
+
+==================================================
+58. DYNAMIC TASK MOVEMENT (TASKTARGETMOVEMENT)
+
+**Context:** Targets always spawned in the exact center, making the game repetitive. Harder levels needed targets to bounce around like the older ClickTargetTask.
+
+**Implementation:**
+- Created TaskTargetMovement.cs, attached to the Target GameObject inside the new prefabs.
+- **Random Spawning:** Regardless of whether they move or not, targets now spawn at a random coordinate within the window bounds.
+- **Bouncing:** If config.isMoving == true, the target travels in a random direction and bounces seamlessly off the RectTransform bounds of the window using Time.deltaTime.
+
+==================================================
+59. DRAG & DROP MULTIPLE PIECES
+
+**Context:** The Drag & Drop task needed to be more challenging in higher difficulties by having multiple items to drop into the same container.
+
+**Implementation:**
+- Separated Drag & Drop logic into a manager (DragDropTask.cs) and a draggable component (DraggablePiece.cs).
+- In SetupTask(), DragDropTask checks config.targetCount. If it's > 1, it clones the draggable piece programmatically.
+- Both the pieces and the Drop Zone spawn in randomized positions within the container bounds, dynamically ensuring they are spaced apart.
+- DragDropTask waits for all DraggablePiece components to report OnPieceDropped before calling Complete(true).
+
+==================================================
+60. CLICK & HOLD VISUAL FEEDBACK
+
+**Context:** The Click & Hold task was confusing without feedback and too difficult if it moved around.
+
+**Implementation:**
+- Disabled movement explicitly for ClickHoldTask (even if data requests it).
+- Shortened the hold time (0.5s to 1.5s max).
+- Added a FillImage to Task_ClickHold.prefab using Image.Type.Filled (Vertical, Bottom origin) with the default Unity Background sprite.
+- In ClickHoldTask.Update(), illImage.fillAmount is mathematically tied to currentHoldTime / requiredHoldTime.
+- If the user releases early (OnPointerUp) or leaves the box (OnPointerExit), the bar resets to 0 instantly and registers a failed attempt.
+
+==================================================
+61. DOUBLE CLICK INPUT BUG FIX
+
+**Context:** Unity's new Input System (InputSystemUIInputModule) notoriously fails to consistently register PointerEventData.clickCount == 2 in UI elements.
+
+**Implementation:**
+- Rewrote the double-click evaluation in DoubleClickTask.cs.
+- It now uses a custom DOUBLE_CLICK_THRESHOLD (set to 1.0 seconds for accessibility for children).
+- Tracks Time.time on the first left-click. If a second left-click occurs within the threshold, it triggers Complete(true).
+
+==================================================
+==================================================
+62. REFINED ONBOARDING, NO MAGIC STRINGS & GARDEN THEME REMOVAL
 
 **Context:** The initial automated onboarding still allowed the player to click outside the guided flow, felt too robotic, lacked visual feedback in Level 1, and the game text leaned heavily on an abandoned "Garden" theme. Furthermore, the codebase relied on brittle GameObject.Find lookups.
 

@@ -15,3 +15,4 @@ MonoBehaviour:
   skillId: drag_drop
   displayName: Drag Drop
   icon: {fileID: 0}
+  description: 'The ability to click and hold an object, move it to another location, and release it.'

@@ -1,0 +1,113 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &9153483348491107059
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4428457656248998586}
+  - component: {fileID: 4464574382375353232}
+  - component: {fileID: 287281179125001018}
+  - component: {fileID: 5715404564723926634}
+  - component: {fileID: 7645958056006233941}
+  m_Layer: 0
+  m_Name: Managers
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &4428457656248998586
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9153483348491107059}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 960, y: 540, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &4464574382375353232
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9153483348491107059}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 56bae01e13eb3d24f8d13d701b64b98f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ComputerLearning.SkillManager
+  allSkills:
+  - {fileID: 11400000, guid: 261e6039b09da8c459508544c2ed8371, type: 2}
+  - {fileID: 11400000, guid: 3df0d358dd8b7cc47a2e6f5ed6fce112, type: 2}
+  - {fileID: 11400000, guid: 2c69083b9984f4b46af4bacac21baabb, type: 2}
+  - {fileID: 11400000, guid: 6b2af8a403b126143a1c11a5042014a3, type: 2}
+  - {fileID: 11400000, guid: fe8c82e39a3c7154e92e6f8eb33f3542, type: 2}
+  - {fileID: 11400000, guid: 65a98522455500242862475f06a74c9d, type: 2}
+  - {fileID: 11400000, guid: f96e841b9cbd8604babeaac389aa207b, type: 2}
+  - {fileID: 11400000, guid: 1e6685ea66c4b504d9d6579ba392444b, type: 2}
+  difficultyConfig: {fileID: 11400000, guid: fbe1ae07c076ae14c905930ffc4e3e3e, type: 2}
+--- !u!114 &287281179125001018
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9153483348491107059}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2b4803c139dc9b64086a8e05a16440b2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ComputerLearning.TaskManager
+  allTaskDefinitions:
+  - {fileID: 11400000, guid: 71ed3f9ca5f9580479dca5ce233ad2ab, type: 2}
+  - {fileID: 11400000, guid: 3c5fa028ea1407644aa9c25d58ae8283, type: 2}
+  - {fileID: 11400000, guid: 6cfcb15d32314ce4083618be9f62b02f, type: 2}
+  - {fileID: 11400000, guid: e6907cc8f04e56e439d8d3bff39c5b3e, type: 2}
+  - {fileID: 11400000, guid: 74e350ddd64358347a3684b1aa38ce1a, type: 2}
+  - {fileID: 11400000, guid: d27fff3bbb1c2ba43a68606442da8eed, type: 2}
+  - {fileID: 11400000, guid: 0ab9d5cc78ddfaf468420fb0847c9c28, type: 2}
+  - {fileID: 11400000, guid: 228a4da9811d79e49bfc0cf2d4c72edc, type: 2}
+  - {fileID: 11400000, guid: 29c62e5bf5719cf4ca3855ce04d3d6ed, type: 2}
+  - {fileID: 11400000, guid: 516976cf1c4635d45be465bb384992c7, type: 2}
+--- !u!114 &5715404564723926634
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9153483348491107059}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c1cbe475d543b714aa4f6903e7ae1a3e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ComputerLearning.LearningSessionManager
+  sessionConfig:
+    maxTasks: 10
+    maxDurationSeconds: 300
+    minDistinctSkills: 2
+    antiRepetitionWindowSize: 5
+  taskContentArea: {fileID: 0}
+--- !u!114 &7645958056006233941
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9153483348491107059}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2c1d09445014fc445a61944145efa3bd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ComputerLearning.ProgressData
+  autoSaveAfterEachResult: 1
