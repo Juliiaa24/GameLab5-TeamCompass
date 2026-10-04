@@ -35,9 +35,9 @@ namespace ComputerLearning
             TextAsset json = Resources.Load<TextAsset>("LevelTutorialDialogs");
             if (json != null) dialogs = JsonUtility.FromJson<LevelTutorialDialogs>(json.text);
             else dialogs = new LevelTutorialDialogs { 
-                point_to_level1 = "Let's tend the garden!\nDouble-click here to start.",
+                point_to_level1 = "Let's begin!\nDouble-click here to start.",
                 level_ready_prompt = "Read carefully and click here\nwhen you are ready!",
-                level_completed = "Garden cared for!\nClick the 'X' to close." 
+                level_completed = "Great job!\nLevel Complete." 
             };
             appWindow = GetComponentInParent<Window>();
         }
@@ -78,7 +78,7 @@ namespace ComputerLearning
             RectTransform rect = panel.GetComponent<RectTransform>();
             rect.anchorMin = Vector2.zero; rect.anchorMax = Vector2.one;
             rect.offsetMin = Vector2.zero; rect.offsetMax = Vector2.zero;
-            panel.GetComponent<UnityEngine.UI.Image>().color = new Color(0.15f, 0.25f, 0.15f, 0.95f); // Dark green garden
+            panel.GetComponent<UnityEngine.UI.Image>().color = new Color(0.15f, 0.25f, 0.35f, 0.95f); // Dark blueish background
 
             // Instruction Text
             GameObject textObj = new GameObject("InstructionText", typeof(RectTransform), typeof(CanvasRenderer), typeof(UnityEngine.UI.Text));
@@ -94,37 +94,74 @@ namespace ComputerLearning
             text.alignment = TextAnchor.MiddleCenter;
             text.color = Color.white;
 
-            // Play Button
-            GameObject btnObj = new GameObject("PlayButton", typeof(RectTransform), typeof(CanvasRenderer), typeof(UnityEngine.UI.Image), typeof(UnityEngine.UI.Button));
-            btnObj.transform.SetParent(panel.transform, false);
-            RectTransform btnRect = btnObj.GetComponent<RectTransform>();
-            btnRect.anchorMin = new Vector2(0.35f, 0.15f); btnRect.anchorMax = new Vector2(0.65f, 0.25f);
-            btnRect.offsetMin = Vector2.zero; btnRect.offsetMax = Vector2.zero;
-            btnObj.GetComponent<UnityEngine.UI.Image>().color = new Color(0.3f, 0.8f, 0.3f); // Light green
+            bool isAutoSequence = PlayerPrefs.GetInt("AutoSequenceCompleted", 0) == 0;
 
-            GameObject btnTextObj = new GameObject("BtnText", typeof(RectTransform), typeof(CanvasRenderer), typeof(UnityEngine.UI.Text));
-            btnTextObj.transform.SetParent(btnObj.transform, false);
-            RectTransform btnTextRect = btnTextObj.GetComponent<RectTransform>();
-            btnTextRect.anchorMin = Vector2.zero; btnTextRect.anchorMax = Vector2.one;
-            btnTextRect.offsetMin = Vector2.zero; btnTextRect.offsetMax = Vector2.zero;
-            UnityEngine.UI.Text btnText = btnTextObj.GetComponent<UnityEngine.UI.Text>();
-            btnText.font = text.font;
-            btnText.text = "TEND THE GARDEN!";
-            btnText.fontSize = 28;
-            btnText.alignment = TextAnchor.MiddleCenter;
-            btnText.color = Color.white;
+            if (isAutoSequence)
+            {
+                // Generate a lively, less robotic description based on the level ID
+                string livelyMessage = "Get ready! " + currentLevel.instructionText;
+                
+                if (currentLevel.levelId.Contains("1")) 
+                    livelyMessage = "Welcome to your very first app!\nLet's practice moving the mouse. Just hover over the dirt spots to clean them!";
+                else if (currentLevel.levelId.Contains("2"))
+                    livelyMessage = "Awesome job so far!\nNow things will move a bit faster. Keep those clicks sharp!";
+                else if (currentLevel.levelId.Contains("3"))
+                    livelyMessage = "Time for something new!\nLet's keep practicing your computer skills. Make sure to read the instructions!";
+                else if (currentLevel.levelId.Contains("4"))
+                    livelyMessage = "You're a pro now!\nLet's do a final practice session to test everything you've learned.";
 
-            UnityEngine.UI.Button btn = btnObj.GetComponent<UnityEngine.UI.Button>();
-            btn.onClick.AddListener(() => {
-                VirtualMascot.HideMascot();
-                Destroy(panel);
-                SpawnNextTask();
-            });
-            
-            // Call the mascot to point to the play button
-            VirtualMascot.Show(dialogs.level_ready_prompt, btnRect, new Vector2(250, 50));
+                VirtualMascot.Show(livelyMessage, appWindow.ContentArea, new Vector2(0, -80));
+                
+                // Automatically transition after 5 seconds instead of waiting for a button click
+                StartCoroutine(AutoStartLevelAfterDelay(5f, panel));
+            }
+            else
+            {
+                // Normal flow for replayability/after onboarding: Show the manual Play button
+                GameObject btnObj = new GameObject("PlayButton", typeof(RectTransform), typeof(CanvasRenderer), typeof(UnityEngine.UI.Image), typeof(UnityEngine.UI.Button));
+                btnObj.transform.SetParent(panel.transform, false);
+                RectTransform btnRect = btnObj.GetComponent<RectTransform>();
+                btnRect.anchorMin = new Vector2(0.35f, 0.15f); btnRect.anchorMax = new Vector2(0.65f, 0.25f);
+                btnRect.offsetMin = Vector2.zero; btnRect.offsetMax = Vector2.zero;
+                btnObj.GetComponent<UnityEngine.UI.Image>().color = new Color(0.2f, 0.6f, 0.8f); // Blue
+
+                GameObject btnTextObj = new GameObject("BtnText", typeof(RectTransform), typeof(CanvasRenderer), typeof(UnityEngine.UI.Text));
+                btnTextObj.transform.SetParent(btnObj.transform, false);
+                RectTransform btnTextRect = btnTextObj.GetComponent<RectTransform>();
+                btnTextRect.anchorMin = Vector2.zero; btnTextRect.anchorMax = Vector2.one;
+                btnTextRect.offsetMin = Vector2.zero; btnTextRect.offsetMax = Vector2.zero;
+                UnityEngine.UI.Text btnText = btnTextObj.GetComponent<UnityEngine.UI.Text>();
+                btnText.font = text.font;
+                btnText.text = "START!";
+                btnText.fontSize = 28;
+                btnText.alignment = TextAnchor.MiddleCenter;
+                btnText.color = Color.white;
+
+                UnityEngine.UI.Button btn = btnObj.GetComponent<UnityEngine.UI.Button>();
+                btn.onClick.AddListener(() => {
+                    VirtualMascot.HideMascot();
+                    Destroy(panel);
+                    SpawnNextTask();
+                });
+                
+                // Call the mascot to point to the play button
+                VirtualMascot.Show(dialogs.level_ready_prompt, btnRect, new Vector2(250, 50));
+            }
         }
 
+        private System.Collections.IEnumerator AutoStartLevelAfterDelay(float delay, GameObject panel)
+        {
+            yield return new WaitForSeconds(delay);
+            VirtualMascot.HideMascot();
+            if (panel != null) Destroy(panel);
+            SpawnNextTask();
+        }
+
+        private System.Collections.IEnumerator AutoCloseAfterDelay(float delay)
+        {
+            yield return new WaitForSeconds(delay);
+            if (appWindow != null) appWindow.CloseWindow();
+        }
         
         private void SpawnNextTask()
         {
@@ -138,20 +175,29 @@ namespace ComputerLearning
             {
                 Debug.Log($"[LevelRunner] Level '{currentLevel.displayName}' completed!");
                 
-                Transform closeBtn = null;
-                if (appWindow != null)
+                if (PlayerPrefs.GetInt("AutoSequenceCompleted", 0) == 0)
                 {
-                    closeBtn = appWindow.transform.Find("WindowTop/Buttons/Close");
-                    if (closeBtn == null) closeBtn = appWindow.transform.Find("WindowTop"); 
+                    VirtualMascot.Show(dialogs.level_completed, appWindow.ContentArea, new Vector2(0, -80));
+                    // Auto-close after a delay
+                    StartCoroutine(AutoCloseAfterDelay(3.5f));
                 }
+                else
+                {
+                    RectTransform closeBtn = null;
+                    if (appWindow != null)
+                    {
+                        closeBtn = appWindow.CloseButton;
+                        if (closeBtn == null) closeBtn = appWindow.TitleBar; 
+                    }
 
-                if (closeBtn != null)
-                {
-                    VirtualMascot.Show(dialogs.level_completed, closeBtn.GetComponent<RectTransform>(), new Vector2(-200, -80));
-                }
-                else if (appWindow != null)
-                {
-                    appWindow.CloseWindow();
+                    if (closeBtn != null)
+                    {
+                        VirtualMascot.Show(dialogs.level_completed, closeBtn, new Vector2(-200, -80));
+                    }
+                    else if (appWindow != null)
+                    {
+                        appWindow.CloseWindow();
+                    }
                 }
 
                 if (ProgressData.Instance != null && currentLevel.levelId.Contains("1"))

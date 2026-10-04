@@ -23,7 +23,7 @@ namespace ComputerLearning
 
             // Give the blocker its own Canvas sorting layer to guarantee it's always above all windows
             Canvas canvas = gameObject.AddComponent<Canvas>();
-            canvas.overrideSorting = true;
+            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
             canvas.sortingOrder = 30000;
             
             gameObject.AddComponent<GraphicRaycaster>();

@@ -25,7 +25,14 @@ namespace ComputerLearning
         #endregion
 
         #region Private Variables
+        [Header("Window References")]
+        [SerializeField] private RectTransform titleBar;
+        [SerializeField] private RectTransform closeButton;
+        [SerializeField] private RectTransform maximizeButton;
+        [SerializeField] private RectTransform minimizeButton;
         [SerializeField] private RectTransform contentArea;
+        
+        [Header("Configuration")]
         [SerializeField] private GameObject contentPrefab;
         [SerializeField] private string windowTitle;
         [SerializeField] private Sprite windowIcon;
@@ -37,6 +44,12 @@ namespace ComputerLearning
         private Vector2 lastPosition;
         private Vector2 lastSize;
 
+        public RectTransform TitleBar => titleBar;
+        public RectTransform CloseButton => closeButton;
+        public RectTransform MaximizeButton => maximizeButton;
+        public RectTransform MinimizeButton => minimizeButton;
+        public RectTransform ContentArea => contentArea;
+
         [Header("Animation Settings")]
         [SerializeField] private float animationDuration = 0.2f;
         private Coroutine animationCoroutine;
@@ -46,6 +59,14 @@ namespace ComputerLearning
         private void Awake()
         {
             windowRectTransform = GetComponent<RectTransform>();
+
+            // Fallback for unassigned references (maintains backward compatibility with old prefabs)
+            if (titleBar == null) titleBar = transform.Find("WindowTop") as RectTransform;
+            if (closeButton == null) closeButton = transform.Find("WindowTop/Buttons/Close") as RectTransform;
+            if (maximizeButton == null) maximizeButton = transform.Find("WindowTop/Buttons/Maximize") as RectTransform;
+            if (minimizeButton == null) minimizeButton = transform.Find("WindowTop/Buttons/Minimize") as RectTransform;
+            if (contentArea == null) contentArea = transform.Find("WindowContents") as RectTransform;
+
             windowRectTransform.localScale = Vector3.zero; // Start small for open animation
             if (contentPrefab != null) SetContent(Instantiate(contentPrefab));
             InstallFocusRelays();

@@ -17,10 +17,9 @@ namespace ComputerLearning
 
             if (taskContentArea == null)
             {
-                Transform contentTr = transform.Find("WindowContents");
-                if (contentTr != null)
+                if (window != null)
                 {
-                    taskContentArea = contentTr.GetComponent<RectTransform>();
+                    taskContentArea = window.ContentArea;
                 }
             }
 
@@ -63,8 +62,8 @@ namespace ComputerLearning
             Window window = GetComponentInParent<Window>();
             if (window != null && !window.IsClosed)
             {
-                Transform closeBtn = window.transform.Find("WindowTop/Buttons/Close");
-                if (closeBtn == null) closeBtn = window.transform.Find("WindowTop"); 
+                RectTransform closeBtn = window.CloseButton;
+                if (closeBtn == null) closeBtn = window.TitleBar; 
                 
                 if (closeBtn != null)
                 {

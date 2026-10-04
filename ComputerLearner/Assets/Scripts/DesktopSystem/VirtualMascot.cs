@@ -49,6 +49,25 @@ namespace ComputerLearning
             if (cg == null) cg = gameObject.AddComponent<CanvasGroup>();
             cg.interactable = false;
             cg.blocksRaycasts = false;
+            
+            // Ensure speech bubble has layout components
+            if (speechBubble != null)
+            {
+                UnityEngine.UI.ContentSizeFitter csf = speechBubble.GetComponent<UnityEngine.UI.ContentSizeFitter>();
+                if (csf == null) csf = speechBubble.AddComponent<UnityEngine.UI.ContentSizeFitter>();
+                csf.horizontalFit = UnityEngine.UI.ContentSizeFitter.FitMode.PreferredSize;
+                csf.verticalFit = UnityEngine.UI.ContentSizeFitter.FitMode.PreferredSize;
+                
+                UnityEngine.UI.HorizontalLayoutGroup hlg = speechBubble.GetComponent<UnityEngine.UI.HorizontalLayoutGroup>();
+                if (hlg == null && speechBubble.GetComponent<UnityEngine.UI.VerticalLayoutGroup>() == null)
+                {
+                    hlg = speechBubble.AddComponent<UnityEngine.UI.HorizontalLayoutGroup>();
+                    hlg.padding = new RectOffset(20, 20, 15, 15);
+                    hlg.childAlignment = TextAnchor.MiddleCenter;
+                    hlg.childControlHeight = true;
+                    hlg.childControlWidth = true;
+                }
+            }
         }
 
         private void Update()
@@ -199,6 +218,32 @@ namespace ComputerLearning
                 bool hasMessage = !string.IsNullOrEmpty(message);
                 speechBubble.SetActive(hasMessage);
                 speechText.text = message;
+
+                if (hasMessage)
+                {
+                    // Ensure the text wraps properly
+                    speechText.horizontalOverflow = HorizontalWrapMode.Wrap;
+
+                    // Add a LayoutElement to constrain maximum width
+                    UnityEngine.UI.LayoutElement layoutElement = speechText.GetComponent<UnityEngine.UI.LayoutElement>();
+                    if (layoutElement == null)
+                    {
+                        layoutElement = speechText.gameObject.AddComponent<UnityEngine.UI.LayoutElement>();
+                    }
+                    
+                    // Reset to unconstrained to calculate raw width
+                    layoutElement.preferredWidth = -1;
+                    float rawWidth = speechText.preferredWidth;
+                    
+                    // Constrain width to 350 max, otherwise let it fit tightly
+                    if (rawWidth > 350f)
+                    {
+                        layoutElement.preferredWidth = 350f;
+                    }
+                    
+                    // Force the layout to rebuild immediately so it resizes vertically before the next frame
+                    UnityEngine.UI.LayoutRebuilder.ForceRebuildLayoutImmediate(speechBubble.GetComponent<RectTransform>());
+                }
             }
             
             transform.SetAsLastSibling(); 

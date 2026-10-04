@@ -1133,7 +1133,8 @@ before proposing an isolated implementation.
 **Changes Implemented:**
 * ProgressData.cs now defines a public System.Action<string> OnLevelUnlocked; event. This is invoked the exact millisecond UnlockLevel(string) adds a new level to the tracked list.
 * IconGrid.cs handles the Desktop Tour. It was modified to subscribe to OnLevelUnlocked in OnEnable(). When the event fires (e.g., when the user closes Level 3 and it unlocks Level 4), IconGrid instantly finds the newly available icon by name (e.g., "Application Icon (3)") and commands VirtualMascot.Show() to point at it with a custom message.
-* **Desktop Tour Lock:** A transparent UI blocker (aycastTarget = true) is dynamically instantiated at the start of the initial IconGrid Mascot Tour coroutine and destroyed at the end. This prevents the user from clicking desktop icons prematurely while the Mascot is still explaining the UI.
+* **Desktop Tour Lock:** A transparent UI blocker (
+aycastTarget = true) is dynamically instantiated at the start of the initial IconGrid Mascot Tour coroutine and destroyed at the end. This prevents the user from clicking desktop icons prematurely while the Mascot is still explaining the UI.
 
 ==================================================
 47. UI OVERHAUL: STATS WINDOW & TEXTMESHPRO
@@ -1155,7 +1156,8 @@ before proposing an isolated implementation.
 * To dismiss it, scripts call VirtualMascot.HideMascot().
 
 **Current Integrations:**
-1. **Initial Desktop Tour:** Managed by IconGrid.cs. On the first boot, a Coroutine orchestrates the Mascot pointing sequentially to Level 1, the Stats icon, and back to Level 1. A transparent full-screen blocker (aycastTarget = true) is temporarily spawned to prevent the player from interacting with the desktop until the tour concludes.
+1. **Initial Desktop Tour:** Managed by IconGrid.cs. On the first boot, a Coroutine orchestrates the Mascot pointing sequentially to Level 1, the Stats icon, and back to Level 1. A transparent full-screen blocker (
+aycastTarget = true) is temporarily spawned to prevent the player from interacting with the desktop until the tour concludes.
 2. **Dynamic Unlocks:** IconGrid listens to ProgressData.Instance.OnLevelUnlocked. When a new level unlocks (e.g., Level 4), the Mascot automatically appears on the desktop pointing to the newly unlocked icon with a custom message.
 3. **Level Intros:** In LevelRunner.cs, before tasks begin, a dark green instruction screen appears. The Mascot points directly to the "TEND THE GARDEN!" play button to ensure the child knows where to click.
 4. **Level Outros:** When a level (or the adaptive session) finishes, LevelRunner.cs calls the Mascot to point directly to the Window's Close ('X') button, explicitly instructing the player to close the window.
@@ -1222,3 +1224,28 @@ END OF PROJECT CONTEXT
 
 ==================================================
 
+==================================================
+52. ARCHITECTURE BUG FIXES (TUTORIAL BLOCKER, MASCOT, ONBOARDING SEQUENCE)
+
+**Context:** The new onboarding systems and mascot visual refactors introduced several critical architecture bugs that broke the tutorial flow.
+
+**Changes Implemented:**
+* **TutorialBlocker Event Consumption:** TutorialBlocker.cs was intercepting raycasts via ICanvasRaycastFilter but failing to consume them because it didn't implement event interfaces. The UI EventSystem allowed the events to bubble down to desktop icons. Added empty implementations of IPointerClickHandler, IDragHandler, etc., to physically consume the blocked input.
+* **Smart Mascot Hiding:** Previously, closing *any* window unconditionally hid the Virtual Mascot. Replaced VirtualMascot.HideMascot() with HideMascotIfTargeting(transform) in Window.cs, ensuring the mascot only hides if it was explicitly pointing at the window being closed.
+* **Canvas Scale Math Fix:** The Mascot's speech bubble clamp logic incorrectly added Screen Space pixels to Local Space anchored coordinates. Fixed by dividing the pixel difference by canvas.scaleFactor before applying it to nchoredPosition.
+* **AutoOnboardingSequence Robustness:** The DesktopManager loop was previously bypassing gameplay checks and unlocking levels merely when a window closed. It was modified to wait and verify ProgressData.Instance.IsLevelUnlocked(nextLevelId). Crucially, if the user closes a window prematurely, the sequence no longer aborts (which broke the flow and failed to transition to IntroTutorialScene) nor does it create an infinite frame loop. Instead, the coroutine now safely uses yield return null to wait for the user to reopen the target application window and successfully complete the level.
+
+==================================================
+53. REFINED ONBOARDING, NO MAGIC STRINGS & GARDEN THEME REMOVAL
+
+**Context:** The initial automated onboarding still allowed the player to click outside the guided flow, felt too robotic, lacked visual feedback in Level 1, and the game text leaned heavily on an abandoned "Garden" theme. Furthermore, the codebase relied on brittle GameObject.Find lookups.
+
+**Changes Implemented:**
+* **No Magic Strings / GameObject.Find Removed:** Purged brittle 	ransform.Find and GameObject.Find throughout the codebase. Window.cs now exposes direct references (TitleBar, ContentArea, etc.). DesktopManager caches ctiveIcons on spawn and exposes GetIconByLevelId().
+* **Strict & Seamless Onboarding Flow:** The TutorialBlocker is now an independent ScreenSpaceOverlay Canvas, removing dependency on specific canvas naming. During the AutoOnboardingSequence (Levels 1-4), the blocker strictly isolates input to the current app window's ContentArea. The player can no longer drag, close, minimize, maximize, or interact with the taskbar/desktop during onboarding.
+* **Auto-Start & Auto-Close Automation:** The manual "START!" button and "Click 'X' to close" prompts were removed during onboarding. The Virtual Mascot automatically introduces the level with lively dialogue, waits 5 seconds, and auto-starts the level. Upon completion, the window auto-closes after a congratulatory message, making the guided sequence completely seamless.
+* **Garden Theme Removed:** Eliminated all "Harvest/Garden" text from L_Level3, L_Level4, LevelRunner, DesktopManager, and JSON dialog files (LevelTutorialDialogs.json), replacing them with standard computer-learning terminology (apps, practice points, challenges) to fit the theme.
+* **Dynamic Mascot Speech Bubble:** Fixed an issue where long mascot text overflowed the speech bubble. VirtualMascot.cs now forces the text to wrap using a LayoutElement with a maximum width constraint (350px) and recalculates the bubble height using LayoutRebuilder.ForceRebuildLayoutImmediate().
+* **Hover-to-Wipe Minigame (Level 1 Redesign):** MoveMouseTask.cs was completely rewritten from an invisible mouse distance tracker into an interactive visual minigame. It dynamically spawns 24 "dirt spots" inside the window. The player must simply hover (no clicks required) over each spot to clean them, filling a progress bar. This forces deliberate mouse movement across the entire window area.
+
+==================================================

@@ -64,22 +64,8 @@ namespace ComputerLearning
                 return;
             }
 
-            GameObject canvas = GameObject.Find("Canvas");
-            if (canvas == null) return;
-
             GameObject blockerObj = new GameObject("TutorialBlocker");
-            blockerObj.transform.SetParent(canvas.transform, false);
-            
-            // Stretch to full screen
-            RectTransform rt = blockerObj.AddComponent<RectTransform>();
-            rt.anchorMin = Vector2.zero;
-            rt.anchorMax = Vector2.one;
-            rt.offsetMin = Vector2.zero;
-            rt.offsetMax = Vector2.zero;
-            
             tutorialBlocker = blockerObj.AddComponent<TutorialBlocker>();
-            // Keep it underneath the Virtual Mascot, but above everything else
-            blockerObj.transform.SetSiblingIndex(canvas.transform.childCount - 2); 
         }
 
         private IEnumerator Start()
@@ -98,11 +84,10 @@ namespace ComputerLearning
             yield return new WaitForSeconds(0.5f);
 
             // Find the Application Icon explicitly first
-            GameObject level1Icon = GameObject.Find("Application Icon");
+            DraggableIcon level1Icon = DesktopManager.Instance?.GetIconByLevelId("level1");
             if (level1Icon == null) 
             {
-                DraggableIcon firstIcon = UnityEngine.Object.FindAnyObjectByType<DraggableIcon>();
-                level1Icon = firstIcon != null ? firstIcon.gameObject : null;
+                level1Icon = UnityEngine.Object.FindAnyObjectByType<DraggableIcon>();
             }
             
             if (level1Icon == null) 
@@ -121,8 +106,7 @@ namespace ComputerLearning
             yield return new WaitForSeconds(3.0f);
 
             // STEP 2 — Desktop
-            GameObject desktopBg = GameObject.Find("DesktopBackground") ?? GameObject.Find("Canvas");
-            RectTransform desktopRect = desktopBg != null ? desktopBg.GetComponent<RectTransform>() : iconRect;
+            RectTransform desktopRect = (iconRect.parent as RectTransform) ?? iconRect;
             VirtualMascot.Show(dialogs.step2_desktop, desktopRect, new Vector2(0, 150));
             yield return new WaitForSeconds(3.0f);
 
@@ -150,36 +134,10 @@ namespace ComputerLearning
             VirtualMascot.Show(dialogs.step5_window, windowRect, new Vector2(250, 0));
             yield return new WaitForSeconds(3.0f);
 
-            Transform titleBar = targetWindow.transform.Find("WindowTop");
-            RectTransform titleBarRect = titleBar != null ? titleBar.GetComponent<RectTransform>() : windowRect;
-            
-            VirtualMascot.Show(dialogs.step5_move, titleBarRect, new Vector2(250, -50));
-            yield return new WaitForSeconds(3.0f);
-
-            // STEP 6 — Move Window
-            if (IsWindowClosedEarly(targetWindow)) yield break;
-            VirtualMascot.Show(dialogs.step6_drag, titleBarRect, new Vector2(250, -50));
-            Vector3 startPos = targetWindow.transform.localPosition;
-            
-            
-            tutorialBlocker?.SetAllowedTarget(titleBarRect);
-            yield return StartCoroutine(WaitWithReminder(
-                () => targetWindow == null || targetWindow.IsClosed || Vector3.Distance(startPos, targetWindow.transform.localPosition) > 20f, 
-                dialogs.step6_reminder, 
-                titleBarRect, 
-                new Vector2(250, -50),
-                targetWindow));
-                
-            
-            tutorialBlocker?.SetAllowedTarget(null);
-            if (IsWindowClosedEarly(targetWindow)) yield break;
-            
-            VirtualMascot.Show(dialogs.step6_nice, windowRect, new Vector2(250, 0));
-            yield return new WaitForSeconds(2.0f);
+            RectTransform titleBarRect = targetWindow.TitleBar != null ? targetWindow.TitleBar : windowRect;
 
             // STEP 7 — Maximize
-            Transform maximizeBtn = targetWindow.transform.Find("WindowTop/Buttons/Maximize");
-            RectTransform maxBtnRect = maximizeBtn != null ? maximizeBtn.GetComponent<RectTransform>() : titleBarRect;
+            RectTransform maxBtnRect = targetWindow.MaximizeButton != null ? targetWindow.MaximizeButton : titleBarRect;
             
             VirtualMascot.Show(dialogs.step7_maximize, maxBtnRect, new Vector2(-250, 50));
             
@@ -219,8 +177,7 @@ namespace ComputerLearning
             yield return new WaitForSeconds(2.0f);
 
             // STEP 9 — Minimize
-            Transform minimizeBtn = targetWindow.transform.Find("WindowTop/Buttons/Minimize");
-            RectTransform minBtnRect = minimizeBtn != null ? minimizeBtn.GetComponent<RectTransform>() : titleBarRect;
+            RectTransform minBtnRect = targetWindow.MinimizeButton != null ? targetWindow.MinimizeButton : titleBarRect;
 
             VirtualMascot.Show(dialogs.step9_minimize, minBtnRect, new Vector2(-250, 50));
             
@@ -268,8 +225,7 @@ namespace ComputerLearning
             }
 
             // STEP 11 — Close Window
-            Transform closeBtn = targetWindow.transform.Find("WindowTop/Buttons/Close");
-            RectTransform closeBtnRect = closeBtn != null ? closeBtn.GetComponent<RectTransform>() : titleBarRect;
+            RectTransform closeBtnRect = targetWindow.CloseButton != null ? targetWindow.CloseButton : titleBarRect;
 
             VirtualMascot.Show(dialogs.step11_close, closeBtnRect, new Vector2(-250, 50));
             

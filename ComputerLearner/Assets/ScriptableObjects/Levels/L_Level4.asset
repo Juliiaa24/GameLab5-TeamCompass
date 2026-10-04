@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ComputerLearning.LevelDefinition
   levelId: level4
   displayName: 'Level 4: Adaptive'
-  instructionText: 'Welcome to the Adaptive Garden!
+  instructionText: 'Welcome to the Adaptive Challenge!
 
     Here you will practice everything
     you''ve learned.'

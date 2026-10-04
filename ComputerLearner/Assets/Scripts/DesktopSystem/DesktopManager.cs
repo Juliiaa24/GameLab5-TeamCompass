@@ -61,7 +61,36 @@ namespace ComputerLearning
         [Header("Initial Desktop Icons")]
         [Tooltip("List of icons to spawn automatically on start (or via test method)")]
         [SerializeField] private List<DesktopIconData> initialDesktopIcons = new List<DesktopIconData>();
+
+        // Tracks all currently spawned icons
+        private List<DraggableIcon> activeIcons = new List<DraggableIcon>();
         #endregion
+
+        public IReadOnlyList<DraggableIcon> ActiveIcons => activeIcons;
+
+        /// <summary>
+        /// Gets an icon by its LevelDef ID (e.g., "level1", "level2")
+        /// </summary>
+        public DraggableIcon GetIconByLevelId(string levelId)
+        {
+            foreach (var icon in activeIcons)
+            {
+                if (icon.LevelDef != null && icon.LevelDef.levelId == levelId) return icon;
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Gets an icon by its visible item name (e.g., "Level 1", "Paint")
+        /// </summary>
+        public DraggableIcon GetIconByName(string itemName)
+        {
+            foreach (var icon in activeIcons)
+            {
+                if (icon.GetComponentInChildren<TMPro.TextMeshProUGUI>()?.text == itemName) return icon;
+            }
+            return null;
+        }
 
         #region Unity Methods
         private void Awake()
@@ -133,6 +162,12 @@ namespace ComputerLearning
             GameObject iconInstance = Instantiate(defaultIconPrefab, desktopIconContainer);
             iconInstance.name = iconData.iconName;
 
+            DraggableIcon draggable = iconInstance.GetComponent<DraggableIcon>();
+            if (draggable != null)
+            {
+                if (!activeIcons.Contains(draggable)) activeIcons.Add(draggable);
+            }
+
             // Update the icon image if a sprite was provided
             if (iconData.iconSprite != null)
             {
@@ -151,7 +186,6 @@ namespace ComputerLearning
             }
 
             // Inject the window data into the DraggableIcon component
-            DraggableIcon draggable = iconInstance.GetComponent<DraggableIcon>();
             if (draggable != null)
             {
                 if (baseWindowPrefab == null) Debug.LogWarning("[DesktopManager] Base Window Prefab is not assigned! Icon might not open a window.");
@@ -181,6 +215,11 @@ namespace ComputerLearning
             // Ensure the initial icons are spawned
             List<GameObject> spawnedIcons = SpawnInitialIcons();
             
+            // Create a tutorial blocker to prevent early clicks during onboarding
+            GameObject blockerObj = new GameObject("OnboardingBlocker");
+            TutorialBlocker blocker = blockerObj.AddComponent<TutorialBlocker>();
+            blocker.SetAllowedTarget(null); // Block EVERYTHING initially
+
             // Expected sequence of LevelDefinitions
             string[] levelSequence = { "level1", "level2", "level3", "level4" };
             int foundIconsCount = 0;
@@ -212,8 +251,15 @@ namespace ComputerLearning
                     // Force the DraggableIcon itself to visually update and unlock!
                     targetIcon.GetType().GetField("isLocked", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)?.SetValue(targetIcon, false);
 
-                    VirtualMascot.Show($"Time for {targetIcon.LevelDef.displayName}!", targetIcon.GetComponent<RectTransform>(), new Vector2(160, -80));
-                    yield return new WaitForSeconds(2.5f);
+                    // Make the mascot lively when introducing the next app
+                    string introMessage = $"Let's open {targetIcon.LevelDef.displayName}!";
+                    if (targetLevelId.Contains("1")) introMessage = "Let's start by opening our very first application! Watch this!";
+                    else if (targetLevelId.Contains("2")) introMessage = "Great! Now let's try the next one. It's a bit faster!";
+                    else if (targetLevelId.Contains("3")) introMessage = "Fantastic! Time for a new challenge. Let's open it!";
+                    else if (targetLevelId.Contains("4")) introMessage = "You're unstoppable! One last practice app. Here we go!";
+
+                    VirtualMascot.Show(introMessage, targetIcon.GetComponent<RectTransform>(), new Vector2(160, -80));
+                    yield return new WaitForSeconds(5.0f);
 
                     VirtualMascot.HideMascot();
                     Debug.Log($"[DesktopManager] Opening application for {targetLevelId}...");
@@ -224,23 +270,28 @@ namespace ComputerLearning
                         Debug.LogError($"[DesktopManager] AppWindow is NULL after OpenApplication for {targetLevelId}! The level is skipping!");
                     }
 
+                    // Wait for window to actually open
+                    while (targetIcon.AppWindow == null || targetIcon.AppWindow.IsClosed)
+                    {
+                        yield return null;
+                    }
+
+                    // Allow interactions ONLY inside the application window content area
+                    blocker.SetAllowedTarget(targetIcon.AppWindow.ContentArea);
+
                     bool movedToNext = false;
                     int currentIndex = System.Array.IndexOf(levelSequence, targetLevelId);
                     
                     while (!movedToNext)
                     {
-                        // Wait for a VALID, OPEN window. 
-                        // If it's null OR it's the old closed one, wait here frame by frame.
-                        while (targetIcon.AppWindow == null || targetIcon.AppWindow.IsClosed)
-                        {
-                            yield return null;
-                        }
-
-                        // Wait for the window to be closed by the user
+                        // Wait for the window to be closed (which is now automated by LevelRunner)
                         while (targetIcon.AppWindow != null && !targetIcon.AppWindow.IsClosed)
                         {
                             yield return null;
                         }
+
+                        // Block everything again while transitioning
+                        blocker.SetAllowedTarget(null);
 
                         // Give one frame for any OnDestroy / ProgressData updates to settle
                         yield return null;
@@ -261,7 +312,10 @@ namespace ComputerLearning
 
                         if (!movedToNext)
                         {
-                            Debug.LogWarning($"[DesktopManager] User closed {targetLevelId} early. Waiting for them to retry.");
+                            Debug.LogWarning($"[DesktopManager] User somehow closed {targetLevelId} early. Re-opening.");
+                            targetIcon.OpenApplication();
+                            while (targetIcon.AppWindow == null || targetIcon.AppWindow.IsClosed) yield return null;
+                            blocker.SetAllowedTarget(targetIcon.AppWindow.ContentArea);
                         }
                     }
 
@@ -277,10 +331,15 @@ namespace ComputerLearning
             if (foundIconsCount < 4)
             {
                 Debug.LogError("[DesktopManager] SECUENCIA ABORTADA. No se encontraron los 4 iconos. Arregla los iconos antes de continuar.");
+                if (blockerObj != null) Destroy(blockerObj);
                 yield break;
             }
 
             Debug.Log("[DesktopManager] Sequence finished! Transitioning to IntroTutorialScene.");
+            
+            // Clean up the blocker
+            if (blockerObj != null) Destroy(blockerObj);
+            
             // Sequence finished!
             PlayerPrefs.SetInt("AutoSequenceCompleted", 1);
             PlayerPrefs.SetInt("DesktopTourCompleted", 0);

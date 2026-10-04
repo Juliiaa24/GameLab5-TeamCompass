@@ -120,7 +120,7 @@ namespace ComputerLearning
         private void OnTutorialCompleted()
         {
             // Point the mascot to the Level 1 icon so the child knows what to do next
-            GameObject level1Icon = GameObject.Find("Application Icon");
+            DraggableIcon level1Icon = DesktopManager.Instance?.GetIconByLevelId("level1");
             if (level1Icon == null) 
             {
                 var icons = UnityEngine.Object.FindObjectsByType<DraggableIcon>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
@@ -128,11 +128,11 @@ namespace ComputerLearning
                 {
                     if (icon.LevelDef != null && icon.LevelDef.levelId == "level1")
                     {
-                        level1Icon = icon.gameObject;
+                        level1Icon = icon;
                         break;
                     }
                 }
-                if (level1Icon == null && icons.Length > 0) level1Icon = icons[0].gameObject;
+                if (level1Icon == null && icons.Length > 0) level1Icon = icons[0];
             }
 
             if (level1Icon != null)

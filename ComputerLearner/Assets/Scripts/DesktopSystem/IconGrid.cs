@@ -39,17 +39,17 @@ namespace ComputerLearning
         {
             if (levelId == "level2")
             {
-                GameObject icon = GameObject.Find("Application Icon (1)");
+                DraggableIcon icon = DesktopManager.Instance?.GetIconByLevelId("level2");
                 if (icon != null) VirtualMascot.Show("Level 2 is now unlocked!\nDouble-click here to continue.", icon.GetComponent<RectTransform>(), new Vector2(160, -80));
             }
             else if (levelId == "level3")
             {
-                GameObject icon = GameObject.Find("Application Icon (2)");
-                if (icon != null) VirtualMascot.Show("Level 3 is ready!\nHarvest the garden.", icon.GetComponent<RectTransform>(), new Vector2(160, -80));
+                DraggableIcon icon = DesktopManager.Instance?.GetIconByLevelId("level3");
+                if (icon != null) VirtualMascot.Show("Level 3 is ready!\nDouble-click to start.", icon.GetComponent<RectTransform>(), new Vector2(160, -80));
             }
             else if (levelId == "level4")
             {
-                GameObject icon = GameObject.Find("Application Icon (3)");
+                DraggableIcon icon = DesktopManager.Instance?.GetIconByLevelId("level4");
                 if (icon != null) VirtualMascot.Show("Level 4 unlocked!\nTry Endless Practice.", icon.GetComponent<RectTransform>(), new Vector2(160, -80));
             }
         }
@@ -62,17 +62,17 @@ namespace ComputerLearning
             {
                 if (ProgressData.Instance.IsLevelUnlocked("level2") && !ProgressData.Instance.IsLevelUnlocked("level3"))
                 {
-                    GameObject level2Icon = GameObject.Find("Application Icon (1)");
+                    DraggableIcon level2Icon = DesktopManager.Instance?.GetIconByLevelId("level2");
                     if (level2Icon != null) VirtualMascot.Show("Level 2 is now unlocked!\nDouble-click here to continue.", level2Icon.GetComponent<RectTransform>(), new Vector2(160, -80));
                 }
                 else if (ProgressData.Instance.IsLevelUnlocked("level3") && !ProgressData.Instance.IsLevelUnlocked("level4"))
                 {
-                    GameObject level3Icon = GameObject.Find("Application Icon (2)");
-                    if (level3Icon != null) VirtualMascot.Show("Level 3 is ready!\nHarvest the garden.", level3Icon.GetComponent<RectTransform>(), new Vector2(160, -80));
+                    DraggableIcon level3Icon = DesktopManager.Instance?.GetIconByLevelId("level3");
+                    if (level3Icon != null) VirtualMascot.Show("Level 3 is ready!\nDouble-click to start.", level3Icon.GetComponent<RectTransform>(), new Vector2(160, -80));
                 }
                 else if (ProgressData.Instance.IsLevelUnlocked("level4"))
                 {
-                    GameObject level4Icon = GameObject.Find("Application Icon (3)");
+                    DraggableIcon level4Icon = DesktopManager.Instance?.GetIconByLevelId("level4");
                     if (level4Icon != null) VirtualMascot.Show("Level 4 unlocked!\nTry Endless Practice.", level4Icon.GetComponent<RectTransform>(), new Vector2(160, -80));
                 }
             }

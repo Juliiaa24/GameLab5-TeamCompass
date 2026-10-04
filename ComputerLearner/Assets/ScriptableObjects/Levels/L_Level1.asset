@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ComputerLearning.LevelDefinition
   levelId: level1
   displayName: 'Level 1: Move'
-  instructionText: 
+  instructionText: 'Move your mouse over the brown dust spots to clean the window!'
   isAdaptive: 0
   adaptiveTaskCount: 5
   tasks:

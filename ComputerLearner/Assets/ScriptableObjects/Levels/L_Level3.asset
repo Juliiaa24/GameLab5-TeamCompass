@@ -14,9 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ComputerLearning.LevelDefinition
   levelId: level3
   displayName: 'Level 3: Click'
-  instructionText: 'LEFT CLICK on the water drops
+  instructionText: 'LEFT CLICK on the blue targets
 
-    to water the garden plants.'
+    to earn practice points.'
   isAdaptive: 0
   adaptiveTaskCount: 5
   tasks:

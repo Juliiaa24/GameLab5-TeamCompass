@@ -195,10 +195,9 @@ namespace ComputerLearning
                 if (runner == null)
                 {
                     runner = appWindow.gameObject.AddComponent<LevelRunner>();
-                    Transform contentArea = appWindow.transform.Find("WindowContents");
-                    if (contentArea != null)
-                        runner.taskContentArea = contentArea.GetComponent<RectTransform>();
-                    else
+                    runner.taskContentArea = appWindow.ContentArea;
+                    
+                    if (runner.taskContentArea == null)
                         runner.taskContentArea = appWindow.GetComponent<RectTransform>();
                 }
                 
