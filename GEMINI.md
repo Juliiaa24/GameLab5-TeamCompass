@@ -1222,3 +1222,15 @@ END OF PROJECT CONTEXT
 
 ==================================================
 
+==================================================
+52. ARCHITECTURE BUG FIXES (TUTORIAL BLOCKER, MASCOT, ONBOARDING SEQUENCE)
+
+**Context:** The new onboarding systems and mascot visual refactors introduced several critical architecture bugs that broke the tutorial flow.
+
+**Changes Implemented:**
+* **TutorialBlocker Event Consumption:** TutorialBlocker.cs was intercepting raycasts via ICanvasRaycastFilter but failing to consume them because it didn't implement event interfaces. The UI EventSystem allowed the events to bubble down to desktop icons. Added empty implementations of IPointerClickHandler, IDragHandler, etc., to physically consume the blocked input.
+* **Smart Mascot Hiding:** Previously, closing *any* window unconditionally hid the Virtual Mascot. Replaced VirtualMascot.HideMascot() with HideMascotIfTargeting(transform) in Window.cs, ensuring the mascot only hides if it was explicitly pointing at the window being closed.
+* **Canvas Scale Math Fix:** The Mascot's speech bubble clamp logic incorrectly added Screen Space pixels to Local Space anchored coordinates. Fixed by dividing the pixel difference by canvas.scaleFactor before applying it to nchoredPosition.
+* **AutoOnboardingSequence Robustness:** The DesktopManager loop was previously bypassing gameplay checks and unlocking levels merely when a window closed. It was modified to wait and verify ProgressData.Instance.IsLevelUnlocked(nextLevelId). Crucially, if the user closes a window prematurely, the sequence no longer aborts (which broke the flow and failed to transition to IntroTutorialScene) nor does it create an infinite frame loop. Instead, the coroutine now safely uses yield return null to wait for the user to reopen the target application window and successfully complete the level.
+
+==================================================
