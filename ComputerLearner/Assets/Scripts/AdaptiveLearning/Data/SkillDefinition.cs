@@ -21,6 +21,10 @@ namespace ComputerLearning
         [Tooltip("Human-readable name shown in UI and debug panels.")]
         public string displayName;
 
+        [TextArea(2, 5)]
+        [Tooltip("Description of the skill and its pedagogical purpose.")]
+        public string description;
+
         [Tooltip("Optional icon for the UI.")]
         public Sprite icon;
         #endregion

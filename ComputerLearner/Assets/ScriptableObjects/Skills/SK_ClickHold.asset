@@ -15,3 +15,4 @@ MonoBehaviour:
   skillId: click_hold
   displayName: Click Hold
   icon: {fileID: 0}
+  description: 'The ability to press and hold the left mouse button for a continuous period of time.'

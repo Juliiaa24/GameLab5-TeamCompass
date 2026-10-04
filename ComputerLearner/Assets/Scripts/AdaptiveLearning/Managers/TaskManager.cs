@@ -131,10 +131,10 @@ namespace ComputerLearning
                 rt.offsetMax = Vector2.zero;
             }
 
-            BaseTask task = go.GetComponent<BaseTask>();
+            BaseTask task = go.GetComponentInChildren<BaseTask>();
             if (task == null)
             {
-                Debug.LogError($"[TaskManager] Prefab '{definition.taskPrefab.name}' has no BaseTask component.");
+                Debug.LogError($"[TaskManager] Prefab '{definition.taskPrefab.name}' has no BaseTask component in its hierarchy.");
                 Destroy(go);
                 return null;
             }

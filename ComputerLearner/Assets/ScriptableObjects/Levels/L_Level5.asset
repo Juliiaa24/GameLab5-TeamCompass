@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b4c922c8996808e458e05e428dbb8240, type: 3}
+  m_Name: L_Level5
+  m_EditorClassIdentifier: Assembly-CSharp::ComputerLearning.LevelDefinition
+  levelId: level5
+  displayName: 'Level 5: Double Click'
+  instructionText: ''
+  isAdaptive: 0
+  adaptiveTaskCount: 5
+  tasks:
+  - {fileID: 11400000, guid: d01f60b7c67cfe94f9f5ff19784c5861, type: 2}
+  - {fileID: 11400000, guid: ee9fb7e002ea5f34e8c6095c13fcb65b, type: 2}
+  - {fileID: 11400000, guid: d01f60b7c67cfe94f9f5ff19784c5861, type: 2}
+  - {fileID: 11400000, guid: 9ee56f60f75546b458cc72ade93a9bec, type: 2}
+  - {fileID: 11400000, guid: ee9fb7e002ea5f34e8c6095c13fcb65b, type: 2}
+  - {fileID: 11400000, guid: 91409f7a01035a144b7e77d788ac0f9a, type: 2}
+  - {fileID: 11400000, guid: 9ee56f60f75546b458cc72ade93a9bec, type: 2}
+  - {fileID: 11400000, guid: 91409f7a01035a144b7e77d788ac0f9a, type: 2}

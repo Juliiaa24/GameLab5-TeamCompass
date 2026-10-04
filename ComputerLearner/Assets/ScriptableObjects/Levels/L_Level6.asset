@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b4c922c8996808e458e05e428dbb8240, type: 3}
+  m_Name: L_Level6
+  m_EditorClassIdentifier: Assembly-CSharp::ComputerLearning.LevelDefinition
+  levelId: level6
+  displayName: 'Level 6: Right Click'
+  instructionText: ''
+  isAdaptive: 0
+  adaptiveTaskCount: 5
+  tasks:
+  - {fileID: 11400000, guid: 10637379e1ab6d94a951e26e01ce6adb, type: 2}
+  - {fileID: 11400000, guid: 84934499f2856034fb54aac4ff3e509b, type: 2}
+  - {fileID: 11400000, guid: 10637379e1ab6d94a951e26e01ce6adb, type: 2}
+  - {fileID: 11400000, guid: 03236e16887887249b71dcede7ec82e1, type: 2}
+  - {fileID: 11400000, guid: 84934499f2856034fb54aac4ff3e509b, type: 2}
+  - {fileID: 11400000, guid: a56bf3df708b9914f8d94b11e5de886f, type: 2}
+  - {fileID: 11400000, guid: 03236e16887887249b71dcede7ec82e1, type: 2}
+  - {fileID: 11400000, guid: a56bf3df708b9914f8d94b11e5de886f, type: 2}

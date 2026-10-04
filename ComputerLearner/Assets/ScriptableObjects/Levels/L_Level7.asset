@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b4c922c8996808e458e05e428dbb8240, type: 3}
+  m_Name: L_Level7
+  m_EditorClassIdentifier: Assembly-CSharp::ComputerLearning.LevelDefinition
+  levelId: level7
+  displayName: 'Level 7: Click & Hold'
+  instructionText: ''
+  isAdaptive: 0
+  adaptiveTaskCount: 5
+  tasks:
+  - {fileID: 11400000, guid: 197db728a4c80fe4797c10f1c34e0436, type: 2}
+  - {fileID: 11400000, guid: 55cf0dcd64dd8ef4980ff75234ed0ffe, type: 2}
+  - {fileID: 11400000, guid: 197db728a4c80fe4797c10f1c34e0436, type: 2}
+  - {fileID: 11400000, guid: 7572a7243bae7f846af839b2e4ad2c62, type: 2}
+  - {fileID: 11400000, guid: 55cf0dcd64dd8ef4980ff75234ed0ffe, type: 2}
+  - {fileID: 11400000, guid: 4be3b4e7f2cb25340966d8f58e50cd5b, type: 2}
+  - {fileID: 11400000, guid: 7572a7243bae7f846af839b2e4ad2c62, type: 2}
+  - {fileID: 11400000, guid: 4be3b4e7f2cb25340966d8f58e50cd5b, type: 2}
