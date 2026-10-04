@@ -254,8 +254,8 @@ namespace ComputerLearning
             IsTourRunning = false;
             OnIntroductionCompleted?.Invoke();
 
-            // Transition to the main game scene
-            UnityEngine.SceneManagement.SceneManager.LoadScene("MainScene");
+            // Transition to the second desktop scene for advanced levels
+            UnityEngine.SceneManagement.SceneManager.LoadScene("SecondDesktopScene");
         }
 
         private TaskbarWindowButton FindTaskbarButton(Window targetWindow)

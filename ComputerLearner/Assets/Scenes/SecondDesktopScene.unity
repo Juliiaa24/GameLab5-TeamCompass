@@ -844,160 +844,71 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &1046919617
-GameObject:
+--- !u!1001 &1224546291
+PrefabInstance:
   m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1046919625}
-  - component: {fileID: 1046919624}
-  - component: {fileID: 1046919623}
-  - component: {fileID: 1046919622}
-  - component: {fileID: 1046919620}
-  - component: {fileID: 1046919626}
-  m_Layer: 0
-  m_Name: Managers
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &1046919620
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1046919617}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2c1d09445014fc445a61944145efa3bd, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ComputerLearning.ProgressData
-  autoSaveAfterEachResult: 1
---- !u!114 &1046919622
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1046919617}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c1cbe475d543b714aa4f6903e7ae1a3e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ComputerLearning.LearningSessionManager
-  sessionConfig:
-    maxTasks: 10
-    maxDurationSeconds: 300
-    minDistinctSkills: 2
-    antiRepetitionWindowSize: 5
-  taskContentArea: {fileID: 0}
---- !u!114 &1046919623
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1046919617}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2b4803c139dc9b64086a8e05a16440b2, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ComputerLearning.TaskManager
-  allTaskDefinitions:
-  - {fileID: 11400000, guid: 71ed3f9ca5f9580479dca5ce233ad2ab, type: 2}
-  - {fileID: 11400000, guid: 3c5fa028ea1407644aa9c25d58ae8283, type: 2}
-  - {fileID: 11400000, guid: 6cfcb15d32314ce4083618be9f62b02f, type: 2}
-  - {fileID: 11400000, guid: e6907cc8f04e56e439d8d3bff39c5b3e, type: 2}
-  - {fileID: 11400000, guid: 74e350ddd64358347a3684b1aa38ce1a, type: 2}
-  - {fileID: 11400000, guid: d27fff3bbb1c2ba43a68606442da8eed, type: 2}
-  - {fileID: 11400000, guid: 0ab9d5cc78ddfaf468420fb0847c9c28, type: 2}
-  - {fileID: 11400000, guid: 228a4da9811d79e49bfc0cf2d4c72edc, type: 2}
-  - {fileID: 11400000, guid: 29c62e5bf5719cf4ca3855ce04d3d6ed, type: 2}
-  - {fileID: 11400000, guid: 516976cf1c4635d45be465bb384992c7, type: 2}
---- !u!114 &1046919624
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1046919617}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 56bae01e13eb3d24f8d13d701b64b98f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ComputerLearning.SkillManager
-  allSkills:
-  - {fileID: 11400000, guid: 261e6039b09da8c459508544c2ed8371, type: 2}
-  - {fileID: 11400000, guid: 3df0d358dd8b7cc47a2e6f5ed6fce112, type: 2}
-  - {fileID: 11400000, guid: 2c69083b9984f4b46af4bacac21baabb, type: 2}
-  - {fileID: 11400000, guid: 6b2af8a403b126143a1c11a5042014a3, type: 2}
-  - {fileID: 11400000, guid: fe8c82e39a3c7154e92e6f8eb33f3542, type: 2}
-  - {fileID: 11400000, guid: 65a98522455500242862475f06a74c9d, type: 2}
-  - {fileID: 11400000, guid: f96e841b9cbd8604babeaac389aa207b, type: 2}
-  - {fileID: 11400000, guid: 1e6685ea66c4b504d9d6579ba392444b, type: 2}
-  difficultyConfig: {fileID: 11400000, guid: fbe1ae07c076ae14c905930ffc4e3e3e, type: 2}
---- !u!4 &1046919625
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1046919617}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 960, y: 540, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1046919626
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1046919617}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4cf4eae7fc422b14ab630e717191ea24, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ComputerLearning.DesktopManager
-  baseWindowPrefab: {fileID: 242377210234752804, guid: 0e4a41ca73db6a54fa7c2d386fa55f52, type: 3}
-  mascotPrefab: {fileID: 3533204669126379452, guid: 9ef3d8fc00602bb40ab799ef33d6b7cd, type: 3}
-  mascotContainer: {fileID: 1652979087}
-  desktopIconContainer: {fileID: 678566843}
-  defaultIconPrefab: {fileID: 4589747606434197877, guid: 0305366714b7ed046a56250c766b3bd0, type: 3}
-  initialDesktopIcons:
-  - iconName: Level 1
-    itemType: 0
-    iconSprite: {fileID: 0}
-    contentPrefab: {fileID: 0}
-    levelDefinition: {fileID: 11400000, guid: e3ba152d28074de4fb85165efa5bcde2, type: 2}
-    isLocked: 1
-  - iconName: Level 2
-    itemType: 0
-    iconSprite: {fileID: 0}
-    contentPrefab: {fileID: 0}
-    levelDefinition: {fileID: 11400000, guid: b16584c600842cc45ae7168326057489, type: 2}
-    isLocked: 1
-  - iconName: Level 3
-    itemType: 0
-    iconSprite: {fileID: 0}
-    contentPrefab: {fileID: 0}
-    levelDefinition: {fileID: 11400000, guid: b89a2efc3ac0ef247928bb29fc8e084b, type: 2}
-    isLocked: 1
-  - iconName: Level 4
-    itemType: 0
-    iconSprite: {fileID: 0}
-    contentPrefab: {fileID: 0}
-    levelDefinition: {fileID: 11400000, guid: ed5099abe5487f24887349c0db277ead, type: 2}
-    isLocked: 1
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 1752656936260673201, guid: 8fd5d29b8e6b66b4aa43469e74eaad42, type: 3}
+      propertyPath: mascotContainer
+      value: 
+      objectReference: {fileID: 1652979087}
+    - target: {fileID: 1752656936260673201, guid: 8fd5d29b8e6b66b4aa43469e74eaad42, type: 3}
+      propertyPath: desktopIconContainer
+      value: 
+      objectReference: {fileID: 678566843}
+    - target: {fileID: 4428457656248998586, guid: 8fd5d29b8e6b66b4aa43469e74eaad42, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 341.1275
+      objectReference: {fileID: 0}
+    - target: {fileID: 4428457656248998586, guid: 8fd5d29b8e6b66b4aa43469e74eaad42, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 180.41125
+      objectReference: {fileID: 0}
+    - target: {fileID: 4428457656248998586, guid: 8fd5d29b8e6b66b4aa43469e74eaad42, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -13.33326
+      objectReference: {fileID: 0}
+    - target: {fileID: 4428457656248998586, guid: 8fd5d29b8e6b66b4aa43469e74eaad42, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4428457656248998586, guid: 8fd5d29b8e6b66b4aa43469e74eaad42, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4428457656248998586, guid: 8fd5d29b8e6b66b4aa43469e74eaad42, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4428457656248998586, guid: 8fd5d29b8e6b66b4aa43469e74eaad42, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4428457656248998586, guid: 8fd5d29b8e6b66b4aa43469e74eaad42, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4428457656248998586, guid: 8fd5d29b8e6b66b4aa43469e74eaad42, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4428457656248998586, guid: 8fd5d29b8e6b66b4aa43469e74eaad42, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 9153483348491107059, guid: 8fd5d29b8e6b66b4aa43469e74eaad42, type: 3}
+      propertyPath: m_Name
+      value: Managers
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 8fd5d29b8e6b66b4aa43469e74eaad42, type: 3}
 --- !u!1 &1534371724
 GameObject:
   m_ObjectHideFlags: 0
@@ -1221,4 +1132,4 @@ SceneRoots:
   - {fileID: 673248100}
   - {fileID: 1652979087}
   - {fileID: 5477914819878320728}
-  - {fileID: 1046919625}
+  - {fileID: 1224546291}

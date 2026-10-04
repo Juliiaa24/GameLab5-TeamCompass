@@ -108,7 +108,9 @@ namespace ComputerLearning
                 else if (currentLevel.levelId.Contains("3"))
                     livelyMessage = "Time for something new!\nLet's keep practicing your computer skills. Make sure to read the instructions!";
                 else if (currentLevel.levelId.Contains("4"))
-                    livelyMessage = "You're a pro now!\nLet's do a final practice session to test everything you've learned.";
+                    livelyMessage = "You're a pro now!\nLet's test what you've learned in the Adaptive Challenge!";
+                else if (currentLevel.levelId.Contains("5"))
+                    livelyMessage = "One more trick!\nDouble click quickly to clear the targets!";
 
                 VirtualMascot.Show(livelyMessage, appWindow.ContentArea, new Vector2(0, -80));
                 

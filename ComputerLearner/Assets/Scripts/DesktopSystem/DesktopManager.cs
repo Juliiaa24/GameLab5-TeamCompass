@@ -197,13 +197,20 @@ namespace ComputerLearning
 
         private void Start()
         {
-            if (PlayerPrefs.GetInt("AutoSequenceCompleted", 0) == 0)
+            string sceneName = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
+            
+            if (PlayerPrefs.GetInt("AutoSequenceCompleted", 0) == 0 && sceneName != "SecondDesktopScene")
             {
                 StartCoroutine(AutoOnboardingSequence());
             }
             else
             {
                 SpawnInitialIcons();
+                
+                if (sceneName == "SecondDesktopScene" && PlayerPrefs.GetInt("SemiGuidedSequenceCompleted", 0) == 0)
+                {
+                    StartCoroutine(SemiGuidedOnboardingSequence());
+                }
             }
         }
 
@@ -221,7 +228,7 @@ namespace ComputerLearning
             blocker.SetAllowedTarget(null); // Block EVERYTHING initially
 
             // Expected sequence of LevelDefinitions
-            string[] levelSequence = { "level1", "level2", "level3", "level4" };
+            string[] levelSequence = { "level1", "level2", "level3", "level4", "level5" };
             int foundIconsCount = 0;
 
             foreach (string targetLevelId in levelSequence)
@@ -256,7 +263,8 @@ namespace ComputerLearning
                     if (targetLevelId.Contains("1")) introMessage = "Let's start by opening our very first application! Watch this!";
                     else if (targetLevelId.Contains("2")) introMessage = "Great! Now let's try the next one. It's a bit faster!";
                     else if (targetLevelId.Contains("3")) introMessage = "Fantastic! Time for a new challenge. Let's open it!";
-                    else if (targetLevelId.Contains("4")) introMessage = "You're unstoppable! One last practice app. Here we go!";
+                    else if (targetLevelId.Contains("4")) introMessage = "You're unstoppable! Let's do the adaptive challenge!";
+                    else if (targetLevelId.Contains("5")) introMessage = "Almost done! One last trick: Double Click!";
 
                     VirtualMascot.Show(introMessage, targetIcon.GetComponent<RectTransform>(), new Vector2(160, -80));
                     yield return new WaitForSeconds(5.0f);
@@ -346,6 +354,78 @@ namespace ComputerLearning
 
             // Transition to Desktop Tour
             UnityEngine.SceneManagement.SceneManager.LoadScene("IntroTutorialScene");
+        }
+
+        private System.Collections.IEnumerator SemiGuidedOnboardingSequence()
+        {
+            Debug.Log("[DesktopManager] Starting SemiGuidedOnboardingSequence.");
+            yield return new WaitForSeconds(1f); // wait for UI to settle
+
+            // Ensure the initial icons are spawned
+            List<GameObject> spawnedIcons = activeIcons.ConvertAll(i => i.gameObject);
+            
+            // Create a tutorial blocker to guide clicks
+            GameObject blockerObj = new GameObject("SemiGuidedBlocker");
+            TutorialBlocker blocker = blockerObj.AddComponent<TutorialBlocker>();
+            blocker.SetAllowedTarget(null); // Block EVERYTHING initially
+
+            string[] levelSequence = { "level6", "level7", "level8", "level9" };
+
+            foreach (string targetLevelId in levelSequence)
+            {
+                DraggableIcon targetIcon = null;
+                foreach (var iconObj in spawnedIcons)
+                {
+                    DraggableIcon draggable = iconObj.GetComponent<DraggableIcon>();
+                    if (draggable != null && draggable.LevelDef != null && draggable.LevelDef.levelId == targetLevelId)
+                    {
+                        targetIcon = draggable;
+                        break;
+                    }
+                }
+
+                if (targetIcon != null)
+                {
+                    Debug.Log($"[DesktopManager] Guiding user to open {targetLevelId}.");
+                    
+                    if (ProgressData.Instance != null) ProgressData.Instance.UnlockLevel(targetLevelId);
+                    targetIcon.GetType().GetField("isLocked", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)?.SetValue(targetIcon, false);
+                    
+                    // 1. Allow clicking ONLY the icon
+                    blocker.SetAllowedTarget(targetIcon.GetComponent<RectTransform>());
+                    
+                    string introMessage = "Double click here to start the next practice!";
+                    if (targetLevelId == "level6") introMessage = "Let's learn something new: Right Click! Double click here to start.";
+                    else if (targetLevelId == "level7") introMessage = "Great! Now let's try Click and Hold. Open this app.";
+                    else if (targetLevelId == "level8") introMessage = "Awesome! Time for Drag and Drop. Double click!";
+                    else if (targetLevelId == "level9") introMessage = "You're a master! Let's mix everything together in a final challenge!";
+
+                    VirtualMascot.Show(introMessage, targetIcon.GetComponent<RectTransform>(), new Vector2(160, -80));
+                    
+                    // Wait until the window actually opens (user double clicks)
+                    yield return new WaitUntil(() => targetIcon.AppWindow != null && targetIcon.AppWindow.gameObject.activeInHierarchy);
+                    
+                    // 2. Window is open! Let the child play the level and close it normally.
+                    VirtualMascot.HideMascot();
+                    blocker.SetAllowedTarget(null); // Block nothing (or we could just disable blocker)
+                    blockerObj.SetActive(false); // Let them interact freely with the desktop and window
+
+                    // Wait until the window closes (level completed)
+                    yield return new WaitUntil(() => targetIcon.AppWindow == null || !targetIcon.AppWindow.gameObject.activeInHierarchy);
+                    
+                    // Re-enable blocker for the next guided step
+                    blockerObj.SetActive(true);
+                    
+                    // Wait to make sure progress data is saved
+                    yield return new WaitForSeconds(1.0f);
+                }
+            }
+
+            Debug.Log("[DesktopManager] Semi-Guided Sequence finished!");
+            if (blockerObj != null) Destroy(blockerObj);
+            
+            PlayerPrefs.SetInt("SemiGuidedSequenceCompleted", 1);
+            VirtualMascot.Show("You've completed all the computer basics! You're ready to use the desktop freely.", desktopIconContainer, new Vector2(0, 0));
         }
 
         [ContextMenu("Spawn Initial Icons (Test)")]

@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 287281179125001018}
   - component: {fileID: 5715404564723926634}
   - component: {fileID: 7645958056006233941}
+  - component: {fileID: 1752656936260673201}
   m_Layer: 0
   m_Name: Managers
   m_TagString: Untagged
@@ -111,3 +112,51 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ComputerLearning.ProgressData
   autoSaveAfterEachResult: 1
+--- !u!114 &1752656936260673201
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9153483348491107059}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4cf4eae7fc422b14ab630e717191ea24, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ComputerLearning.DesktopManager
+  baseWindowPrefab: {fileID: 242377210234752804, guid: 0e4a41ca73db6a54fa7c2d386fa55f52, type: 3}
+  mascotPrefab: {fileID: 3533204669126379452, guid: 9ef3d8fc00602bb40ab799ef33d6b7cd, type: 3}
+  mascotContainer: {fileID: 0}
+  desktopIconContainer: {fileID: 0}
+  defaultIconPrefab: {fileID: 4589747606434197877, guid: 0305366714b7ed046a56250c766b3bd0, type: 3}
+  initialDesktopIcons:
+  - iconName: 
+    itemType: 0
+    iconSprite: {fileID: 0}
+    contentPrefab: {fileID: 0}
+    levelDefinition: {fileID: 0}
+    isLocked: 0
+  - iconName: 
+    itemType: 0
+    iconSprite: {fileID: 0}
+    contentPrefab: {fileID: 0}
+    levelDefinition: {fileID: 0}
+    isLocked: 0
+  - iconName: 
+    itemType: 0
+    iconSprite: {fileID: 0}
+    contentPrefab: {fileID: 0}
+    levelDefinition: {fileID: 0}
+    isLocked: 0
+  - iconName: 
+    itemType: 0
+    iconSprite: {fileID: 0}
+    contentPrefab: {fileID: 0}
+    levelDefinition: {fileID: 0}
+    isLocked: 0
+  - iconName: 
+    itemType: 0
+    iconSprite: {fileID: 0}
+    contentPrefab: {fileID: 0}
+    levelDefinition: {fileID: 0}
+    isLocked: 0
