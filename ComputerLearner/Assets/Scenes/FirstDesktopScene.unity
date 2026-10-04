@@ -1072,6 +1072,46 @@ PrefabInstance:
       propertyPath: desktopIconContainer
       value: 
       objectReference: {fileID: 678566843}
+    - target: {fileID: 1752656936260673201, guid: 8fd5d29b8e6b66b4aa43469e74eaad42, type: 3}
+      propertyPath: initialDesktopIcons.Array.data[0].iconName
+      value: App_level1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1752656936260673201, guid: 8fd5d29b8e6b66b4aa43469e74eaad42, type: 3}
+      propertyPath: initialDesktopIcons.Array.data[1].iconName
+      value: App_level2
+      objectReference: {fileID: 0}
+    - target: {fileID: 1752656936260673201, guid: 8fd5d29b8e6b66b4aa43469e74eaad42, type: 3}
+      propertyPath: initialDesktopIcons.Array.data[2].iconName
+      value: App_level3
+      objectReference: {fileID: 0}
+    - target: {fileID: 1752656936260673201, guid: 8fd5d29b8e6b66b4aa43469e74eaad42, type: 3}
+      propertyPath: initialDesktopIcons.Array.data[3].iconName
+      value: App_level4
+      objectReference: {fileID: 0}
+    - target: {fileID: 1752656936260673201, guid: 8fd5d29b8e6b66b4aa43469e74eaad42, type: 3}
+      propertyPath: initialDesktopIcons.Array.data[4].iconName
+      value: App_level5
+      objectReference: {fileID: 0}
+    - target: {fileID: 1752656936260673201, guid: 8fd5d29b8e6b66b4aa43469e74eaad42, type: 3}
+      propertyPath: initialDesktopIcons.Array.data[0].levelDefinition
+      value: 
+      objectReference: {fileID: 11400000, guid: e3ba152d28074de4fb85165efa5bcde2, type: 2}
+    - target: {fileID: 1752656936260673201, guid: 8fd5d29b8e6b66b4aa43469e74eaad42, type: 3}
+      propertyPath: initialDesktopIcons.Array.data[1].levelDefinition
+      value: 
+      objectReference: {fileID: 11400000, guid: b16584c600842cc45ae7168326057489, type: 2}
+    - target: {fileID: 1752656936260673201, guid: 8fd5d29b8e6b66b4aa43469e74eaad42, type: 3}
+      propertyPath: initialDesktopIcons.Array.data[2].levelDefinition
+      value: 
+      objectReference: {fileID: 11400000, guid: b89a2efc3ac0ef247928bb29fc8e084b, type: 2}
+    - target: {fileID: 1752656936260673201, guid: 8fd5d29b8e6b66b4aa43469e74eaad42, type: 3}
+      propertyPath: initialDesktopIcons.Array.data[3].levelDefinition
+      value: 
+      objectReference: {fileID: 11400000, guid: ed5099abe5487f24887349c0db277ead, type: 2}
+    - target: {fileID: 1752656936260673201, guid: 8fd5d29b8e6b66b4aa43469e74eaad42, type: 3}
+      propertyPath: initialDesktopIcons.Array.data[4].levelDefinition
+      value: 
+      objectReference: {fileID: 11400000, guid: ced8910a2fe14674c90d5c24f7ff87a4, type: 2}
     - target: {fileID: 4428457656248998586, guid: 8fd5d29b8e6b66b4aa43469e74eaad42, type: 3}
       propertyPath: m_LocalPosition.x
       value: 341.1275
@@ -1119,8 +1159,28 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 9153483348491107059, guid: 8fd5d29b8e6b66b4aa43469e74eaad42, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8298691074759196488}
   m_SourcePrefab: {fileID: 100100000, guid: 8fd5d29b8e6b66b4aa43469e74eaad42, type: 3}
+--- !u!1 &8298691074759196487 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 9153483348491107059, guid: 8fd5d29b8e6b66b4aa43469e74eaad42, type: 3}
+  m_PrefabInstance: {fileID: 8298691074759196486}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &8298691074759196488
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8298691074759196487}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3c492d5a34458174887d2374404372a5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ComputerLearning.FirstDesktopTutorial
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
