@@ -7,6 +7,13 @@ namespace ComputerLearning
 {
     public class SecondDesktopTutorial : MonoBehaviour
     {
+        private TutorialDialogs dialogs;
+        private void Awake() {
+            TextAsset json = Resources.Load<TextAsset>("TutorialDialogs");
+            if (json != null) dialogs = JsonUtility.FromJson<TutorialDialogs>(json.text);
+            else dialogs = new TutorialDialogs();
+        }
+
         private DesktopManager desktopManager;
 
         private void Start()
@@ -87,8 +94,9 @@ namespace ComputerLearning
             if (blockerObj != null) Destroy(blockerObj);
             
             PlayerPrefs.SetInt("SemiGuidedSequenceCompleted", 1);
-            VirtualMascot.Show("You've completed all the computer basics! You're ready to use the desktop freely.", desktopManager.DesktopIconContainer, new Vector2(0, 0));
+            VirtualMascot.Show(dialogs.second_welcome, desktopManager.DesktopIconContainer, new Vector2(0, 0));
         }
     }
 }
+
 

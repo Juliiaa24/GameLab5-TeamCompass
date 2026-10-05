@@ -70,7 +70,7 @@ namespace ComputerLearning
                 {
                     if (spawned >= spotsToSpawn) break;
                     
-                    GameObject spotObj = new GameObject("DirtSpot_" + spawned, typeof(RectTransform), typeof(Image), typeof(DirtSpot));
+                    GameObject spotObj = new GameObject("DirtSpot_" + spawned, typeof(RectTransform), typeof(Image), typeof(DirtSpot), typeof(ComputerLearning.CircleHitbox));
                     spotObj.transform.SetParent(contentArea, false);
                     
                     RectTransform rect = spotObj.GetComponent<RectTransform>();
@@ -94,7 +94,7 @@ namespace ComputerLearning
                     // Visuals
                     Image img = spotObj.GetComponent<Image>();
                     img.color = new Color(0.6f, 0.4f, 0.2f, 0.8f); // Dirt brown
-                    img.sprite = Resources.GetBuiltinResource<Sprite>("Knob.psd"); // Built-in circle sprite
+                    // Removed Knob.psd reference // Built-in circle sprite
                     
                     // Logic
                     DirtSpot spotLogic = spotObj.GetComponent<DirtSpot>();
@@ -141,3 +141,5 @@ namespace ComputerLearning
         }
     }
 }
+
+

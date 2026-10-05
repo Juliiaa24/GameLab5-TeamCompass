@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 5337020221857278267}
   - component: {fileID: 5190953794425844330}
   - component: {fileID: 8058863597729976718}
+  - component: {fileID: 8618452825108688356}
   m_Layer: 0
   m_Name: Target
   m_TagString: Untagged
@@ -88,6 +89,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 505cc3240e87e92438b9087bdd173b2d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ComputerLearning.RightClickTask
+--- !u!114 &8618452825108688356
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4015115455248097002}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 705a4be5c9b3f814a8f638812ce7d6ac, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ComputerLearning.CircleHitbox
 --- !u!1 &4845225995659487574
 GameObject:
   m_ObjectHideFlags: 0

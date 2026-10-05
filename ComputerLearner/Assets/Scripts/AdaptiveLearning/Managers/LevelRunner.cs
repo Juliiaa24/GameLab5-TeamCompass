@@ -7,14 +7,6 @@ namespace ComputerLearning
     /// Executes a specific LevelDefinition (sequence of tasks) inside a Window.
     /// Replaces the old Level1/Level2 hardcoded classes.
     /// </summary>
-    [System.Serializable]
-    public class LevelTutorialDialogs
-    {
-        public string point_to_level1;
-        public string level_ready_prompt;
-        public string level_completed;
-    }
-
     public class LevelRunner : MonoBehaviour
     {
         [Header("References")]
@@ -28,17 +20,13 @@ namespace ComputerLearning
         
         private BaseTask activeTask;
         private Window appWindow;
-        private LevelTutorialDialogs dialogs;
+        private TutorialDialogs dialogs;
 
         private void Awake()
         {
-            TextAsset json = Resources.Load<TextAsset>("LevelTutorialDialogs");
-            if (json != null) dialogs = JsonUtility.FromJson<LevelTutorialDialogs>(json.text);
-            else dialogs = new LevelTutorialDialogs { 
-                point_to_level1 = "Let's begin!\nDouble-click here to start.",
-                level_ready_prompt = "Read carefully and click here\nwhen you are ready!",
-                level_completed = "Great job!\nLevel Complete." 
-            };
+            TextAsset json = Resources.Load<TextAsset>("TutorialDialogs");
+            if (json != null) dialogs = JsonUtility.FromJson<TutorialDialogs>(json.text);
+            else dialogs = new TutorialDialogs();
             appWindow = GetComponentInParent<Window>();
         }
 
@@ -177,30 +165,8 @@ namespace ComputerLearning
             {
                 Debug.Log($"[LevelRunner] Level '{currentLevel.displayName}' completed!");
                 
-                if (PlayerPrefs.GetInt("AutoSequenceCompleted", 0) == 0)
-                {
-                    VirtualMascot.Show(dialogs.level_completed, appWindow.ContentArea, new Vector2(0, -80));
-                    // Auto-close after a delay
-                    StartCoroutine(AutoCloseAfterDelay(3.5f));
-                }
-                else
-                {
-                    RectTransform closeBtn = null;
-                    if (appWindow != null)
-                    {
-                        closeBtn = appWindow.CloseButton;
-                        if (closeBtn == null) closeBtn = appWindow.TitleBar; 
-                    }
-
-                    if (closeBtn != null)
-                    {
-                        VirtualMascot.Show(dialogs.level_completed, closeBtn, new Vector2(-200, -80));
-                    }
-                    else if (appWindow != null)
-                    {
-                        appWindow.CloseWindow();
-                    }
-                }
+                VirtualMascot.Show(dialogs.level_completed, appWindow != null ? appWindow.ContentArea : null, new Vector2(0, -80));
+                StartCoroutine(AutoCloseAfterDelay(3.5f));
 
                 if (ProgressData.Instance != null && currentLevel.levelId.Contains("1"))
                 {
@@ -338,3 +304,6 @@ namespace ComputerLearning
         }
     }
 }
+
+
+

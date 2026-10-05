@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 6148733280050120321}
   - component: {fileID: 7008192182396012675}
   - component: {fileID: 6720641061156696279}
+  - component: {fileID: 7124001335726430981}
   m_Layer: 0
   m_Name: Target
   m_TagString: Untagged
@@ -91,6 +92,18 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ComputerLearning.ClickHoldTask
   requiredHoldTime: 1.5
   fillImage: {fileID: 8674583940393954986}
+--- !u!114 &7124001335726430981
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 695565099443382019}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 705a4be5c9b3f814a8f638812ce7d6ac, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ComputerLearning.CircleHitbox
 --- !u!1 &1899206975172614215
 GameObject:
   m_ObjectHideFlags: 0

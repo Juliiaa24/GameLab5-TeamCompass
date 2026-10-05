@@ -33,6 +33,12 @@ namespace ComputerLearning
             Image img = GetComponent<Image>();
             img.color = new Color(0, 0, 0, 0); // Completely transparent
             img.raycastTarget = true;
+
+            RectTransform rt = GetComponent<RectTransform>();
+            rt.anchorMin = Vector2.zero;
+            rt.anchorMax = Vector2.one;
+            rt.offsetMin = Vector2.zero;
+            rt.offsetMax = Vector2.zero;
         }
 
         private void Start()
@@ -128,3 +134,4 @@ namespace ComputerLearning
         public void OnEndDrag(PointerEventData eventData) { }
     }
 }
+

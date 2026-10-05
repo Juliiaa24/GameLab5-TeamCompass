@@ -32,15 +32,15 @@ namespace ComputerLearning
                  "Typically a window's content RectTransform.")]
         [SerializeField] private RectTransform taskContentArea;
 
-        private LevelTutorialDialogs dialogs;
+        private TutorialDialogs dialogs;
         #endregion
 
         #region Unity Methods
         private void Awake()
         {
-            TextAsset json = Resources.Load<TextAsset>("LevelTutorialDialogs");
-            if (json != null) dialogs = JsonUtility.FromJson<LevelTutorialDialogs>(json.text);
-            else dialogs = new LevelTutorialDialogs { point_to_level1 = "Let's tend the garden!\nDouble-click here to start." };
+            TextAsset json = Resources.Load<TextAsset>("TutorialDialogs");
+            if (json != null) dialogs = JsonUtility.FromJson<TutorialDialogs>(json.text);
+            else dialogs = new TutorialDialogs();
         }
 
         private void Start()
@@ -137,7 +137,7 @@ namespace ComputerLearning
 
             if (level1Icon != null)
             {
-                VirtualMascot.Show(dialogs.point_to_level1, level1Icon.GetComponent<RectTransform>(), new Vector2(160, -80));
+                VirtualMascot.Show(dialogs.first_welcome, level1Icon.GetComponent<RectTransform>(), new Vector2(160, -80));
             }
 
             // We intentionally do NOT automatically start InitialTestManager or LearningSessionManager here.
@@ -160,3 +160,4 @@ namespace ComputerLearning
         #endregion
     }
 }
+
