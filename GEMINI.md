@@ -1394,3 +1394,38 @@ If the BaseTask script and visual Image were on the root object, the target beca
 * **Hover-to-Wipe Minigame (Level 1 Redesign):** MoveMouseTask.cs was completely rewritten from an invisible mouse distance tracker into an interactive visual minigame. It dynamically spawns 24 "dirt spots" inside the window. The player must simply hover (no clicks required) over each spot to clean them, filling a progress bar. This forces deliberate mouse movement across the entire window area.
 
 ==================================================
+
+==================================================
+62. SECOND TUTORIAL (ADVANCED DESKTOP TOUR)
+
+A second tutorial was created to explain advanced desktop actions (moving windows, resizing, and the recycle bin) to users AFTER they complete levels 1 to 5.
+It operates independently in a new scene (SecondTutorial.unity) so as not to clutter DesktopManager.
+
+Key architecture choices:
+* **AdvancedDesktopTour.cs**: An IEnumerator state machine script orchestrating the sequence. It uses WaitWithReminder() just like the first tutorial.
+* **RecycleBinIcon.cs**: A new component attached to the Application Icon prefab. It tracks distance to other DraggableIcon elements and destroys them if they are dropped within 100 pixels, emitting an OnIconRecycled event.
+* **TutorialBlocker Unblocking**: For the Recycle Bin step (drag & drop an icon across the desktop), 	utorialBlocker.SetAllowedTarget(null) is called to completely unblock raycasts, as Unity EventSystem requires the canvas or grid to receive drag events.
+* **Minimize Prevention**: If the user minimizes the window during a step that requires moving or resizing, 	argetWindow.Restore() is explicitly called within the wait loop to prevent soft-locks.
+
+==================================================
+63. ADVANCED DESKTOP TOUR - RECYCLE BIN COLLISION & EXCLUSIONS FIX
+
+Fixes applied to SecondTutorial and AdvancedDesktopTour:
+* **TutorialBlocker Exclusions:** Modifying TutorialBlocker.cs to allow excluding multiple specific targets (AddExcludedTarget()). This was used to block the close, minimize, and maximize buttons during the resize step, preventing the user from breaking the sequence by clicking them while keeping the rest of the window interactive.
+* **Recycle Bin Slot Occupation:** We kept the DraggableIcon component on the Recycle Bin but disabled its initialization logic. This allows it to physically occupy a slot in the IconGrid, preventing other icons from snapping into the same space and overlapping it. 
+* **Top Right Positioning:** The Recycle Bin is moved automatically to the top right of the screen (around x=800, y=400) where it snaps perfectly to the grid.
+
+==================================================
+64. POST TUTORIAL TRANSITION (END DEMO)
+
+A new transition scene was created: PostTutorialScene.unity.
+* It triggers immediately after the user finishes the AdvancedDesktopTour.
+* **Visuals:** Shows a clean layout with the TeamCompass logo and an English message indicating that the child would continue to manage the virtual desktop naturally.
+* **Return Logic:** Instead of creating a redundant one-off script, the return button is directly wired to Julia's SceneSystem.ChangeToMenu() method. This highlights the architectural choice of reusing existing managers and avoiding script bloat.
+
+==================================================
+65. SCENE SYSTEM (INPUT FIX & RESET PROGRESS)
+
+Two important upgrades were applied to SceneSystem.cs:
+* **New Input System Compliance:** The old Input.GetKeyDown(KeyCode.Escape) line was crashing because the project relies on the modern Input System package. It was migrated to UnityEngine.InputSystem.Keyboard.current.escapeKey.wasPressedThisFrame.
+* **Reset Progress Method:** Added public void ResetProgress() which can be called directly from UI Buttons (e.g. in the Main Menu). It automatically wipes both runtime data (ProgressData.Instance.ClearHistory()) and persistence layers (PlayerPrefs.DeleteAll()), safely returning the game to Level 1.
