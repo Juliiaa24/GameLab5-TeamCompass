@@ -14,6 +14,7 @@ namespace ComputerLearning
         public static TutorialBlocker Instance { get; private set; }
 
         private RectTransform allowedTarget;
+        private System.Collections.Generic.List<RectTransform> excludedTargets = new System.Collections.Generic.List<RectTransform>();
         private Camera eventCamera;
 
         private void Awake()
@@ -69,11 +70,30 @@ namespace ComputerLearning
         }
 
         /// <summary>
+        /// Sets a single excluded target (clearing previous ones).
+        /// </summary>
+        public void SetExcludedTarget(RectTransform target)
+        {
+            excludedTargets.Clear();
+            if (target != null) excludedTargets.Add(target);
+        }
+
+        /// <summary>
+        /// Adds a UI element that should always be blocked, even if it's inside the allowed target.
+        /// </summary>
+        public void AddExcludedTarget(RectTransform target)
+        {
+            if (target != null && !excludedTargets.Contains(target))
+                excludedTargets.Add(target);
+        }
+
+        /// <summary>
         /// Clears the allowed target and disables the blocker.
         /// </summary>
         public void ClearTarget()
         {
             allowedTarget = null;
+            excludedTargets.Clear();
             gameObject.SetActive(false); // Hide entirely if no target
         }
 
@@ -84,10 +104,21 @@ namespace ComputerLearning
         /// </summary>
         public bool IsRaycastLocationValid(Vector2 sp, Camera eventCamera)
         {
+            Camera cam = this.eventCamera ?? eventCamera;
+            
+            // Check exclusion first
+            foreach (var excluded in excludedTargets)
+            {
+                if (excluded != null && RectTransformUtility.RectangleContainsScreenPoint(excluded, sp, cam))
+                {
+                    return true; // Block!
+                }
+            }
+
             if (allowedTarget == null) return true; // Block everything if active but no target
 
             // Check if the screen point is inside the allowed target
-            bool isInsideTarget = RectTransformUtility.RectangleContainsScreenPoint(allowedTarget, sp, this.eventCamera ?? eventCamera);
+            bool isInsideTarget = RectTransformUtility.RectangleContainsScreenPoint(allowedTarget, sp, cam);
 
             // If it's inside the target, we do NOT want the blocker to catch the raycast (return false).
             // If it's outside, the blocker catches it (return true).

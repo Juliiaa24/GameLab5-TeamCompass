@@ -14,6 +14,12 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/IntroTutorialScene.unity
     guid: 1189a4d0f025ec944ba5b4c82302cfac
+  - enabled: 1
+    path: Assets/Scenes/PostTutorialScene.unity
+    guid: d2ce36f20a42ab44caa945402c6bd3d6
+  - enabled: 1
+    path: Assets/Scenes/FirstDesktopScene.unity
+    guid: 7a32b622793e0a2499a88ac2ce8de509
   m_configObjects:
     com.unity.dt.app-ui: {fileID: 11400000, guid: 1b1c20d82303e4b5781c3ef50ac1449f, type: 2}
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: c67348dabcbd5aa46979792420880344, type: 3}

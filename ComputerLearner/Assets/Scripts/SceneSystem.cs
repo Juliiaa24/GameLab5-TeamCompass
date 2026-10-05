@@ -58,7 +58,11 @@ namespace ComputerLearning
 
         private void Update()
         {
-
+            if (UnityEngine.InputSystem.Keyboard.current != null && UnityEngine.InputSystem.Keyboard.current.escapeKey.wasPressedThisFrame)
+            {
+                if (SceneManager.GetActiveScene().name == "Menu") Application.Quit();
+                else ChangeToMenu();
+            }
         }
 
         #endregion
@@ -67,6 +71,21 @@ namespace ComputerLearning
         // Public Methods accessible from other classes
         public void ChangeToMain() { ChangeScene(SceneNames.Main); }
         public void ChangeToMenu() { ChangeScene(SceneNames.Menu); }
+        public void Exit() { Application.Quit(); }
+
+        public void ResetProgress()
+        {
+            if (ProgressData.Instance != null)
+            {
+                ProgressData.Instance.ClearHistory();
+            }
+            else
+            {
+                PlayerPrefs.DeleteAll();
+                PlayerPrefs.Save();
+            }
+            Debug.Log("[SceneSystem] Game progress has been successfully reset.");
+        }
 
         #endregion
 
@@ -81,7 +100,7 @@ namespace ComputerLearning
                     SceneManager.LoadScene("Menu");
                     break;
                 case SceneNames.Main:
-                    SceneManager.LoadScene("MainScene");
+                    SceneManager.LoadScene("FirstDesktopScene");
                     break;
                 default:
                     break;
