@@ -71,6 +71,7 @@ namespace ComputerLearning
             // Setup Drag script
             DraggablePiece piece = go.GetComponent<DraggablePiece>();
             if (piece == null) piece = go.AddComponent<DraggablePiece>();
+            if (go.GetComponent<UnityEngine.UI.Image>() != null && go.GetComponent<CircleHitbox>() == null) go.AddComponent<CircleHitbox>();
             
             piece.dropTarget = dropTarget;
             piece.requiredDistanceToSnap = snapDist;
@@ -94,3 +95,4 @@ namespace ComputerLearning
         }
     }
 }
+

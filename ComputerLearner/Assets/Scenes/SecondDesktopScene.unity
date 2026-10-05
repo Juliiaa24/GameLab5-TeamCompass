@@ -866,20 +866,36 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1752656936260673201, guid: 8fd5d29b8e6b66b4aa43469e74eaad42, type: 3}
       propertyPath: initialDesktopIcons.Array.data[0].iconName
-      value: App_level6
+      value: Right Click
       objectReference: {fileID: 0}
     - target: {fileID: 1752656936260673201, guid: 8fd5d29b8e6b66b4aa43469e74eaad42, type: 3}
       propertyPath: initialDesktopIcons.Array.data[1].iconName
-      value: App_level7
+      value: Click & Hold
       objectReference: {fileID: 0}
     - target: {fileID: 1752656936260673201, guid: 8fd5d29b8e6b66b4aa43469e74eaad42, type: 3}
       propertyPath: initialDesktopIcons.Array.data[2].iconName
-      value: App_level8
+      value: Drag & Drop
       objectReference: {fileID: 0}
     - target: {fileID: 1752656936260673201, guid: 8fd5d29b8e6b66b4aa43469e74eaad42, type: 3}
       propertyPath: initialDesktopIcons.Array.data[3].iconName
-      value: App_level9
+      value: Mixed Skills Consolidation
       objectReference: {fileID: 0}
+    - target: {fileID: 1752656936260673201, guid: 8fd5d29b8e6b66b4aa43469e74eaad42, type: 3}
+      propertyPath: initialDesktopIcons.Array.data[0].iconSprite
+      value: 
+      objectReference: {fileID: 21300000, guid: 72a5127f153e59a48846383052e40937, type: 3}
+    - target: {fileID: 1752656936260673201, guid: 8fd5d29b8e6b66b4aa43469e74eaad42, type: 3}
+      propertyPath: initialDesktopIcons.Array.data[1].iconSprite
+      value: 
+      objectReference: {fileID: 21300000, guid: 63efd65564236ed449bbe2009507c589, type: 3}
+    - target: {fileID: 1752656936260673201, guid: 8fd5d29b8e6b66b4aa43469e74eaad42, type: 3}
+      propertyPath: initialDesktopIcons.Array.data[2].iconSprite
+      value: 
+      objectReference: {fileID: 21300000, guid: dc97453e5567a6948a39e458db433a60, type: 3}
+    - target: {fileID: 1752656936260673201, guid: 8fd5d29b8e6b66b4aa43469e74eaad42, type: 3}
+      propertyPath: initialDesktopIcons.Array.data[3].iconSprite
+      value: 
+      objectReference: {fileID: 21300000, guid: dc4a8776811c892489a3d50d0985d096, type: 3}
     - target: {fileID: 1752656936260673201, guid: 8fd5d29b8e6b66b4aa43469e74eaad42, type: 3}
       propertyPath: initialDesktopIcons.Array.data[0].levelDefinition
       value: 

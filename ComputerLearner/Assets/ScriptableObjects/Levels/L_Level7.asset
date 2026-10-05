@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ComputerLearning.LevelDefinition
   levelId: level7
   displayName: 'Level 7: Click & Hold'
-  instructionText: ''
+  instructionText: Click and hold the button down until it fills completely!
   isAdaptive: 0
   adaptiveTaskCount: 5
   tasks:

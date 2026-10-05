@@ -4,6 +4,13 @@ namespace ComputerLearning
 {
     public class AdaptiveSessionStarter : MonoBehaviour
     {
+        private TutorialDialogs dialogs;
+        private void Awake() {
+            TextAsset json = Resources.Load<TextAsset>("TutorialDialogs");
+            if (json != null) dialogs = JsonUtility.FromJson<TutorialDialogs>(json.text);
+            else dialogs = new TutorialDialogs();
+        }
+
         public RectTransform taskContentArea;
 
         private void Start()
@@ -31,12 +38,12 @@ namespace ComputerLearning
             RectTransform target = window != null ? window.GetComponent<RectTransform>() : taskContentArea;
             
             // Mini tutorial message
-            VirtualMascot.Show("Welcome to Level 4!\nKeep practicing to improve your skills.", target, new Vector2(250, -100));
+            VirtualMascot.Show(dialogs.adaptive_welcome, target, new Vector2(250, -100));
             
             yield return new WaitForSeconds(4.0f);
             if (window != null && window.IsClosed) { VirtualMascot.HideMascot(); yield break; }
             
-            VirtualMascot.Show("I will give you tasks based on what you need to learn.\nGood luck!", target, new Vector2(250, -100));
+            VirtualMascot.Show(dialogs.adaptive_explanation, target, new Vector2(250, -100));
             
             yield return new WaitForSeconds(4.0f);
             if (window != null && window.IsClosed) { VirtualMascot.HideMascot(); yield break; }
@@ -67,7 +74,7 @@ namespace ComputerLearning
                 
                 if (closeBtn != null)
                 {
-                    VirtualMascot.Show("Great practice!\nYou can click the 'X' to close this window now.", closeBtn.GetComponent<RectTransform>(), new Vector2(-200, -80));
+                    VirtualMascot.Show(dialogs.adaptive_done, closeBtn.GetComponent<RectTransform>(), new Vector2(-200, -80));
                 }
             }
         }
@@ -92,3 +99,4 @@ namespace ComputerLearning
         }
     }
 }
+

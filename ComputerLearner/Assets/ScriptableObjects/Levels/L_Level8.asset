@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ComputerLearning.LevelDefinition
   levelId: level8
   displayName: 'Level 8: Drag & Drop'
-  instructionText: ''
+  instructionText: Click and drag items to their correct drop zones!
   isAdaptive: 0
   adaptiveTaskCount: 5
   tasks:

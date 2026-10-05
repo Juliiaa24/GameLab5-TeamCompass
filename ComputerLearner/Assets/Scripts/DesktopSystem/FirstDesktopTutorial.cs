@@ -7,6 +7,13 @@ namespace ComputerLearning
 {
     public class FirstDesktopTutorial : MonoBehaviour
     {
+        private TutorialDialogs dialogs;
+        private void Awake() {
+            TextAsset json = Resources.Load<TextAsset>("TutorialDialogs");
+            if (json != null) dialogs = JsonUtility.FromJson<TutorialDialogs>(json.text);
+            else dialogs = new TutorialDialogs();
+        }
+
         private DesktopManager desktopManager;
 
         private void Start()
@@ -30,7 +37,7 @@ namespace ComputerLearning
             TutorialBlocker blocker = blockerObj.AddComponent<TutorialBlocker>();
             blocker.SetAllowedTarget(null); // Block EVERYTHING initially
 
-            VirtualMascot.Show("Welcome to the computer! Let's learn how to use it.", desktopManager.DesktopIconContainer, new Vector2(0, 0));
+            VirtualMascot.Show(dialogs.first_welcome, desktopManager.DesktopIconContainer, new Vector2(0, 0));
             yield return new WaitForSeconds(4f);
 
             // Expected sequence of LevelDefinitions
@@ -60,8 +67,12 @@ namespace ComputerLearning
                     targetIcon.GetType().GetField("isLocked", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)?.SetValue(targetIcon, false);
                     
                     // 1. Highlight the icon and explain
-                    string mascotMsg = $"This is an app for {targetLevelId}. Watch how I open it!";
-                    if (targetLevelId == "level5") mascotMsg = "Almost done! One last trick: Double Click!";
+                    string mascotMsg = dialogs.first_default;
+                    if (targetLevelId == "level1") mascotMsg = dialogs.first_move;
+                    else if (targetLevelId == "level2") mascotMsg = dialogs.first_hover;
+                    else if (targetLevelId == "level3") mascotMsg = dialogs.first_click;
+                    else if (targetLevelId == "level4") mascotMsg = dialogs.first_adaptive;
+                    else if (targetLevelId == "level5") mascotMsg = dialogs.first_double_click;
                     VirtualMascot.Show(mascotMsg, targetIcon.GetComponent<RectTransform>(), new Vector2(150, -50));
                     yield return new WaitForSeconds(3f);
 
@@ -94,4 +105,7 @@ namespace ComputerLearning
         }
     }
 }
+
+
+
 

@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ComputerLearning.LevelDefinition
   levelId: level6
   displayName: 'Level 6: Right Click'
-  instructionText: ''
+  instructionText: Right Click on the targets to practice opening context menus!
   isAdaptive: 0
   adaptiveTaskCount: 5
   tasks:

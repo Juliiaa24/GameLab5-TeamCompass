@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ComputerLearning.LevelDefinition
   levelId: level5
   displayName: 'Level 5: Double Click'
-  instructionText: ''
+  instructionText: Double Click on the targets to practice opening files and folders!
   isAdaptive: 0
   adaptiveTaskCount: 5
   tasks:
