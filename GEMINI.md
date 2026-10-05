@@ -1429,3 +1429,12 @@ A new transition scene was created: PostTutorialScene.unity.
 Two important upgrades were applied to SceneSystem.cs:
 * **New Input System Compliance:** The old Input.GetKeyDown(KeyCode.Escape) line was crashing because the project relies on the modern Input System package. It was migrated to UnityEngine.InputSystem.Keyboard.current.escapeKey.wasPressedThisFrame.
 * **Reset Progress Method:** Added public void ResetProgress() which can be called directly from UI Buttons (e.g. in the Main Menu). It automatically wipes both runtime data (ProgressData.Instance.ClearHistory()) and persistence layers (PlayerPrefs.DeleteAll()), safely returning the game to Level 1.
+==================================================
+66. DESKTOP ICON LAYOUT, CIRCULAR HITBOXES, DATA-DRIVEN DIALOGUES & ADAPTIVE POOL REFINEMENT
+
+Several critical quality-of-life and architectural improvements were made:
+* **Strict Column-Based Icon Layout:** The IconGrid.cs placement algorithm was rewritten. Instead of relying on distance calculations that caused icons to cluster into squished blocks or squares, it now evaluates candidate = x * 1000f + y. This forces the desktop to strictly populate icons column-by-column (top-to-bottom, then left-to-right), perfectly mirroring standard OS behavior.
+* **Circular UI Hitboxes:** Created CircleHitbox.cs implementing ICanvasRaycastFilter. This component restricts UI raycast clicks to a perfect circle (sqrMagnitude <= 0.25f), ignoring clicks on the transparent corners of square images. This was injected programmatically into dynamic tasks and added to task prefabs via MCP.
+* **Fully Data-Driven Dialogues:** Purged all remaining hardcoded tutorial and level onboarding strings from C# scripts (FirstDesktopTutorial.cs, SecondDesktopTutorial.cs, LevelRunner.cs, AdaptiveSessionStarter.cs). Everything now routes through a central TutorialDialogs.cs struct parsing TutorialDialogs.json, paving the way for localization.
+* **Adaptive Pool Refinement:** Removed Level 1 (SK_MouseMovement / mouse_move) from the allSkills list inside SkillManager (on Managers.prefab). As a result, the Adaptive Session (Level 4+) will no longer test or spawn the basic "Move Mouse" task, ensuring adaptive challenges focus on advanced skills.
+* **Instruction Screens for Advanced Levels:** Populated the instructionText field in L_Level5 through L_Level9. This ensures LevelRunner.cs renders the dark blue intro screen with a "START!" button before launching these levels, paving the way for future video tutorial integrations.
