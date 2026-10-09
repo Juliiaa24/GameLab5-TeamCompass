@@ -17,6 +17,7 @@ namespace ComputerLearning
         [SerializeField] private LevelDefinition _currentLevel;
         public LevelDefinition currentLevel => _currentLevel;
         [SerializeField] private int currentTaskIndex = 0;
+        public bool IsCompleted { get; private set; } = false;
         
         private BaseTask activeTask;
         private Window appWindow;
@@ -166,6 +167,7 @@ namespace ComputerLearning
                 Debug.Log($"[LevelRunner] Level '{currentLevel.displayName}' completed!");
                 
                 VirtualMascot.Show(dialogs.level_completed, appWindow != null ? appWindow.ContentArea : null, new Vector2(0, -80));
+                IsCompleted = true;
                 StartCoroutine(AutoCloseAfterDelay(3.5f));
 
                 if (ProgressData.Instance != null && currentLevel.levelId.Contains("1"))

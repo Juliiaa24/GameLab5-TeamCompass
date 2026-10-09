@@ -55,6 +55,7 @@ namespace ComputerLearning
             yield return new WaitForSeconds(4.0f);
 
             // 2. Move Icon
+            appIcon.AllowDoubleClick = false; // Block opening it by accident
             VirtualMascot.Show("You can drag icons to organize them. Try moving this application to another spot!", iconRect, new Vector2(250, 0));
             tutorialBlocker?.SetAllowedTarget(iconRect);
             
@@ -66,6 +67,7 @@ namespace ComputerLearning
             yield return new WaitForSeconds(2.0f);
 
             // 3. Open Window
+            appIcon.AllowDoubleClick = true;
             VirtualMascot.Show("Now, open the application by double-clicking on it.", iconRect, new Vector2(250, 0));
             tutorialBlocker?.SetAllowedTarget(iconRect);
             yield return StartCoroutine(WaitWithReminder(() => appIcon.AppWindow != null && !appIcon.AppWindow.IsClosed, 

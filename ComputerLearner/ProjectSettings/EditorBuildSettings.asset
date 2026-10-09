@@ -20,6 +20,9 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/FirstDesktopScene.unity
     guid: 7a32b622793e0a2499a88ac2ce8de509
+  - enabled: 1
+    path: Assets/Scenes/SecondTutorial.unity
+    guid: 6c1835a0f4ca5224cb89bee5b4d67fec
   m_configObjects:
     com.unity.dt.app-ui: {fileID: 11400000, guid: 1b1c20d82303e4b5781c3ef50ac1449f, type: 2}
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: c67348dabcbd5aa46979792420880344, type: 3}

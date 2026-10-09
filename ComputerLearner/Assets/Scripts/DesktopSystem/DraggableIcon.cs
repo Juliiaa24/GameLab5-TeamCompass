@@ -8,11 +8,12 @@ using UnityEngine.EventSystems;
 
 namespace ComputerLearning
 {
-    public class DraggableIcon : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, IDragHandler, IPointerClickHandler
+    public class DraggableIcon : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, IDragHandler, IBeginDragHandler, IEndDragHandler, IPointerClickHandler
     {
         #region Public Variables
         public Window AppWindow => appWindow;
         public LevelDefinition LevelDef => levelDefinition;
+        public bool AllowDoubleClick { get; set; } = true;
         #endregion
 
         #region Private Variables
@@ -27,11 +28,15 @@ namespace ComputerLearning
         private Vector3 originalScale;
         private Color originalColor = Color.white;
         private bool dragging;
+        private CanvasGroup canvasGroup;
         #endregion
 
         #region Unity Methods
         private void Start()
         {
+            canvasGroup = GetComponent<CanvasGroup>();
+            if (canvasGroup == null) canvasGroup = gameObject.AddComponent<CanvasGroup>();
+
             grid = GetComponentInParent<IconGrid>();
             if (grid != null) grid.Register(this);
             manager = GetComponentInParent<WindowManager>();
@@ -91,6 +96,13 @@ namespace ComputerLearning
             this.contentPrefab = contentPref;
             this.levelDefinition = levelDef;
             this.isLocked = lockedState;
+            
+            UnityEngine.UI.Image img = GetComponent<UnityEngine.UI.Image>();
+            if (img != null)
+            {
+                if (!lockedState) img.color = Color.white;
+                originalColor = img.color;
+            }
         }
 
         public void OnPointerDown(PointerEventData eventData)
@@ -114,6 +126,11 @@ namespace ComputerLearning
                 grid.TryPlaceIcon(this, eventData.position, initialPosition, eventData.pressEventCamera);
         }
 
+        public void OnBeginDrag(PointerEventData eventData) 
+        { 
+            if (canvasGroup != null) canvasGroup.blocksRaycasts = false;
+        }
+
         public void OnDrag(PointerEventData eventData)
         {
             if (eventData.button != PointerEventData.InputButton.Left) return;
@@ -123,8 +140,14 @@ namespace ComputerLearning
                 transform.position = point;
         }
 
+        public void OnEndDrag(PointerEventData eventData) 
+        { 
+            if (canvasGroup != null) canvasGroup.blocksRaycasts = true;
+        }
+
         public void OnPointerClick(PointerEventData eventData)
         {
+            if (!AllowDoubleClick) return;
             if (!dragging && eventData.button == PointerEventData.InputButton.Left && eventData.clickCount == 2)
                 OpenApplication();
         }

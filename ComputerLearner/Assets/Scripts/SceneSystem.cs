@@ -69,7 +69,25 @@ namespace ComputerLearning
 
         #region Public Methods
         // Public Methods accessible from other classes
-        public void ChangeToMain() { ChangeScene(SceneNames.Main); }
+        public void ChangeToMain() 
+        { 
+            if (PlayerPrefs.GetInt("SemiGuidedSequenceCompleted", 0) == 1)
+            {
+                SceneManager.LoadScene("PostTutorialScene");
+            }
+            else if (PlayerPrefs.GetInt("DesktopTourCompleted", 0) == 1)
+            {
+                SceneManager.LoadScene("SecondDesktopScene");
+            }
+            else if (PlayerPrefs.GetInt("AutoSequenceCompleted", 0) == 1)
+            {
+                SceneManager.LoadScene("IntroTutorialScene");
+            }
+            else
+            {
+                SceneManager.LoadScene("FirstDesktopScene");
+            }
+        }
         public void ChangeToMenu() { ChangeScene(SceneNames.Menu); }
         public void Exit() { Application.Quit(); }
 

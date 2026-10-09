@@ -99,7 +99,9 @@ namespace ComputerLearning
                 for (int y = 0; y < grid.GetLength(1); y++)
                 {
                     if (grid[x, y] != null) continue;
-                    float candidate = x * 1000f + y;
+                    float dx = x - target.x;
+                    float dy = y - target.y;
+                    float candidate = (dx * dx * 1000f) + (dy * dy);
                     if (candidate >= distance) continue;
                     distance = candidate;
                     closest = new Vector2Int(x, y);

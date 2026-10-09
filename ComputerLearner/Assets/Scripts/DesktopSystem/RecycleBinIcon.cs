@@ -4,7 +4,7 @@ using System;
 
 namespace ComputerLearning
 {
-    public class RecycleBinIcon : MonoBehaviour
+    public class RecycleBinIcon : MonoBehaviour, UnityEngine.EventSystems.IDropHandler
     {
         public static event Action<DraggableIcon> OnIconRecycled;
         private RectTransform myRect;
@@ -21,33 +21,24 @@ namespace ComputerLearning
                 di.SetupDynamicIcon(null, null, null, false);
             }
             
+            // Set the color directly to white to fix the transparent issue
             UnityEngine.UI.Image img = GetComponent<UnityEngine.UI.Image>();
-            if (img != null) img.color = new Color(0.2f, 0.2f, 0.2f);
+            if (img != null) img.color = Color.white;
             
             UnityEngine.UI.Text txt = GetComponentInChildren<UnityEngine.UI.Text>();
             if (txt != null) txt.text = "Recycle Bin";
         }
 
-        private void Update()
+        public void OnDrop(UnityEngine.EventSystems.PointerEventData eventData)
         {
-            if (Mouse.current != null && Mouse.current.leftButton.wasReleasedThisFrame)
+            if (eventData.pointerDrag != null)
             {
-                DraggableIcon[] icons = FindObjectsByType<DraggableIcon>(FindObjectsSortMode.None);
-                foreach (var icon in icons)
+                DraggableIcon icon = eventData.pointerDrag.GetComponent<DraggableIcon>();
+                if (icon != null && icon.gameObject != this.gameObject)
                 {
-                    if (icon.gameObject == this.gameObject) continue;
-
-                    RectTransform iconRect = icon.GetComponent<RectTransform>();
-                    if (iconRect != null)
-                    {
-                        float dist = Vector2.Distance(myRect.position, iconRect.position);
-                        if (dist < 100f) // Snap threshold
-                        {
-                            Debug.Log($"[RecycleBin] Recycled {icon.gameObject.name}");
-                            OnIconRecycled?.Invoke(icon);
-                            Destroy(icon.gameObject);
-                        }
-                    }
+                    Debug.Log($"[RecycleBin] Recycled {icon.gameObject.name}");
+                    OnIconRecycled?.Invoke(icon);
+                    Destroy(icon.gameObject);
                 }
             }
         }

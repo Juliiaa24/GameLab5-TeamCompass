@@ -18,7 +18,7 @@ MonoBehaviour:
   difficulty: 1
   taskPrefab: {fileID: 4845225995659487574, guid: 3c0c4cf03fc285e49b0929c857c0cac6, type: 3}
   config:
-    targetSize: 130
+    targetSize: 250
     targetCount: 1
     isMoving: 0
     moveSpeed: 130

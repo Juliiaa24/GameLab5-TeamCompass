@@ -60,28 +60,45 @@ namespace ComputerLearning
                     if (ProgressData.Instance != null) ProgressData.Instance.UnlockLevel(targetLevelId);
                     targetIcon.GetType().GetField("isLocked", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)?.SetValue(targetIcon, false);
                     
-                    // 1. Allow clicking ONLY the icon
-                    blocker.SetAllowedTarget(targetIcon.GetComponent<RectTransform>());
-                    
                     string introMessage = "Double click here to start the next practice!";
                     if (targetLevelId == "level6") introMessage = "Let's learn something new: Right Click! Double click here to start.";
                     else if (targetLevelId == "level7") introMessage = "Great! Now let's try Click and Hold. Open this app.";
                     else if (targetLevelId == "level8") introMessage = "Awesome! Time for Drag and Drop. Double click!";
                     else if (targetLevelId == "level9") introMessage = "You're a master! Let's mix everything together in a final challenge!";
 
-                    VirtualMascot.Show(introMessage, targetIcon.GetComponent<RectTransform>(), new Vector2(160, -80));
-                    
-                    // Wait until the window actually opens (user double clicks)
-                    yield return new WaitUntil(() => targetIcon.AppWindow != null && targetIcon.AppWindow.gameObject.activeInHierarchy);
-                    
-                    // 2. Window is open! Let the child play the level and close it normally.
-                    VirtualMascot.HideMascot();
-                    blocker.SetAllowedTarget(null); // Block nothing
-                    blockerObj.SetActive(false); // Let them interact freely with the desktop and window
+                    while (true)
+                    {
+                        // 1. Allow clicking ONLY the icon
+                        blockerObj.SetActive(true);
+                        blocker.SetAllowedTarget(targetIcon.GetComponent<RectTransform>());
 
-                    // Wait until the window closes (level completed)
-                    yield return new WaitUntil(() => targetIcon.AppWindow == null || !targetIcon.AppWindow.gameObject.activeInHierarchy);
-                    
+                        VirtualMascot.Show(introMessage, targetIcon.GetComponent<RectTransform>(), new Vector2(160, -80));
+                        
+                        // Wait until the window actually opens (user double clicks)
+                        yield return new WaitUntil(() => targetIcon.AppWindow != null && targetIcon.AppWindow.gameObject.activeInHierarchy);
+                        
+                        // 2. Window is open! Let the child play the level and close it normally.
+                        VirtualMascot.HideMascot();
+                        blocker.SetAllowedTarget(null); // Block nothing
+                        blockerObj.SetActive(false); // Let them interact freely with the desktop and window
+
+                        // Grab the runner to track completion
+                        LevelRunner runner = targetIcon.AppWindow.GetComponentInChildren<LevelRunner>();
+
+                        // Wait until the window starts closing or is closed
+                        yield return new WaitUntil(() => targetIcon.AppWindow == null || !targetIcon.AppWindow.gameObject.activeInHierarchy || targetIcon.AppWindow.IsClosed);
+                        
+                        // Did they finish?
+                        if (runner != null && runner.IsCompleted)
+                        {
+                            break; // Done with this level!
+                        }
+                        
+                        // Otherwise, they closed it early. Remind them.
+                        introMessage = "Oops! You closed it without finishing! Double click to try again.";
+                        yield return new WaitForSeconds(1f); // small breather before asking again
+                    }
+
                     // Re-enable blocker for the next guided step
                     blockerObj.SetActive(true);
                     
@@ -94,7 +111,9 @@ namespace ComputerLearning
             if (blockerObj != null) Destroy(blockerObj);
             
             PlayerPrefs.SetInt("SemiGuidedSequenceCompleted", 1);
-            VirtualMascot.Show(dialogs.second_welcome, desktopManager.DesktopIconContainer, new Vector2(0, 0));
+            
+            // Flow: Go to the Second Tutorial (Advanced Desktop Tour) after level 9!
+            UnityEngine.SceneManagement.SceneManager.LoadScene("SecondTutorial");
         }
     }
 }
