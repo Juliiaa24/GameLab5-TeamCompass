@@ -1,3 +1,8 @@
+/**
+ * Author: Diego
+ * Date: 01/10/26
+ * Description: A virtual pet that guides the kid through the virtual desktop.
+*/
 using UnityEngine;
 using UnityEngine.UI;
 using System.Collections;
