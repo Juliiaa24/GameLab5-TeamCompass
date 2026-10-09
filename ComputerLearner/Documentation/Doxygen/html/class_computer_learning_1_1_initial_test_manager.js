@@ -1,0 +1,25 @@
+var class_computer_learning_1_1_initial_test_manager =
+[
+    [ "AssessmentSkillData", "class_computer_learning_1_1_initial_test_manager_1_1_assessment_skill_data.html", "class_computer_learning_1_1_initial_test_manager_1_1_assessment_skill_data" ],
+    [ "AutoCloseAfterDelay", "class_computer_learning_1_1_initial_test_manager.html#ab84c883589bb406daa10e010b93e2ae3", null ],
+    [ "Awake", "class_computer_learning_1_1_initial_test_manager.html#a34bd56577137ad0c325f09c1ff427b23", null ],
+    [ "CalculateAndStoreResults", "class_computer_learning_1_1_initial_test_manager.html#ab81e4e5a5d66b23f4316d31a8baebe45", null ],
+    [ "FinishTest", "class_computer_learning_1_1_initial_test_manager.html#a4d2f8abfee4d38b39a1f469ad5ce00a6", null ],
+    [ "HandleTaskCompleted", "class_computer_learning_1_1_initial_test_manager.html#ab20529ecbb020108d570a3327d1e7223", null ],
+    [ "OnDestroy", "class_computer_learning_1_1_initial_test_manager.html#ac5b79bb83aa3e435d4fa242129280608", null ],
+    [ "SetContentArea", "class_computer_learning_1_1_initial_test_manager.html#a62141ebf8b1d96c2695289ad6ef2cb4e", null ],
+    [ "ShowCompletionScreen", "class_computer_learning_1_1_initial_test_manager.html#aa05dfa4a8b955b1ba42bb8bbb446929c", null ],
+    [ "ShowInstructionScreen", "class_computer_learning_1_1_initial_test_manager.html#aea04aa96a969e33d2ef95fb44e3186eb", null ],
+    [ "SkipTest", "class_computer_learning_1_1_initial_test_manager.html#a8095f80df36e7572487d0f7ebf0a2073", null ],
+    [ "SpawnNextTask", "class_computer_learning_1_1_initial_test_manager.html#afc3505276381e00f4fd87f1bc2e7c30b", null ],
+    [ "StartAssessment", "class_computer_learning_1_1_initial_test_manager.html#a400552089c243a141a31e2bc00a7f916", null ],
+    [ "appWindow", "class_computer_learning_1_1_initial_test_manager.html#aa9a3f689d26472d524bd391ef422e7ed", null ],
+    [ "assessmentData", "class_computer_learning_1_1_initial_test_manager.html#af09e69321d2ecffc93199eba134c1bb0", null ],
+    [ "currentIndex", "class_computer_learning_1_1_initial_test_manager.html#aca96fe23e212b50d51b3d97cbfbb799f", null ],
+    [ "currentLevel", "class_computer_learning_1_1_initial_test_manager.html#a2b9798134016138f7044d19a1c7b26bb", null ],
+    [ "currentTask", "class_computer_learning_1_1_initial_test_manager.html#a200ee901b56580c6ffb230346e17a654", null ],
+    [ "dialogs", "class_computer_learning_1_1_initial_test_manager.html#aebfa6478cd263f0d92309e4b5ba84678", null ],
+    [ "taskContentArea", "class_computer_learning_1_1_initial_test_manager.html#a0bfcfcacaa698abbdae8566e95d561bc", null ],
+    [ "IsTestActive", "class_computer_learning_1_1_initial_test_manager.html#ab16dd73ce18c637394f16c0c4d02edb1", null ],
+    [ "OnTestCompleted", "class_computer_learning_1_1_initial_test_manager.html#a6f9c4e61eee5131d9a3d36b5664fdffb", null ]
+];

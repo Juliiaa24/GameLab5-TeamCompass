@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b4c922c8996808e458e05e428dbb8240, type: 3}
+  m_Name: L_Assessment
+  m_EditorClassIdentifier: Assembly-CSharp::ComputerLearning.LevelDefinition
+  levelId: assessment
+  displayName: Initial Assessment Test
+  instructionText: Welcome to the Assessment!\nWe are going to do a few quick exercises
+    to see what you already know how to do.\nDon't worry if it's hard!
+  isAdaptive: 0
+  adaptiveTaskCount: 5
+  tasks:
+  - {fileID: 11400000, guid: e26c9be711d8f764c9c8de161cadc8b6, type: 2}
+  - {fileID: 11400000, guid: d27fff3bbb1c2ba43a68606442da8eed, type: 2}
+  - {fileID: 11400000, guid: 71ed3f9ca5f9580479dca5ce233ad2ab, type: 2}
+  - {fileID: 11400000, guid: d01f60b7c67cfe94f9f5ff19784c5861, type: 2}
+  - {fileID: 11400000, guid: 10637379e1ab6d94a951e26e01ce6adb, type: 2}
+  - {fileID: 11400000, guid: 197db728a4c80fe4797c10f1c34e0436, type: 2}
+  - {fileID: 11400000, guid: 6b306a0af022ae641b00e809ee611992, type: 2}

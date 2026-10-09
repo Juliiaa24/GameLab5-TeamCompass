@@ -1,7 +1,19 @@
 var searchData=
 [
-  ['icon_5fsize_0',['ICON_SIZE',['../class_computer_learning_1_1_icon_grid.html#a92dca577e0ebc12340ba1a1d6dcf04d6',1,'ComputerLearning::IconGrid']]],
-  ['initial_5fpos_5fx_1',['INITIAL_POS_X',['../class_computer_learning_1_1_icon_grid.html#a1cba131d26cfc1e53b91bd71efeb2e27',1,'ComputerLearning::IconGrid']]],
-  ['initial_5fpos_5fy_2',['INITIAL_POS_Y',['../class_computer_learning_1_1_icon_grid.html#acf823c500d5feca2fb5af78c6ebec5f3',1,'ComputerLearning::IconGrid']]],
-  ['initialposition_3',['initialPosition',['../class_computer_learning_1_1_draggable_icon.html#afe0cfeb4271e7af187d71a6fbc532a70',1,'ComputerLearning::DraggableIcon']]]
+  ['canvasgroup_0',['canvasGroup',['../class_computer_learning_1_1_draggable_icon.html#a78b8a9bdafc819cc2c0952365014939a',1,'ComputerLearning.DraggableIcon.canvasGroup'],['../class_computer_learning_1_1_draggable_piece.html#afb96190e3821c460c075b3eaf5d63cc3',1,'ComputerLearning.DraggablePiece.canvasGroup']]],
+  ['canvastransform_1',['canvasTransform',['../class_computer_learning_1_1_level_tester.html#a5492f6ad9751c3b00781170c218cfca6',1,'ComputerLearning::LevelTester']]],
+  ['closebutton_2',['closeButton',['../class_computer_learning_1_1_window.html#a14cd94c11ebceb128a089003816c3b80',1,'ComputerLearning::Window']]],
+  ['completed_3',['completed',['../class_computer_learning_1_1_hover_target.html#ad65092c7ae0341f3b772eb5e502bef97',1,'ComputerLearning::HoverTarget']]],
+  ['completedtasks_4',['completedTasks',['../class_computer_learning_1_1_initial_test_manager_1_1_assessment_skill_data.html#a631804c2c7bea716e5860ad668a6de96',1,'ComputerLearning::InitialTestManager::AssessmentSkillData']]],
+  ['completiontime_5',['completionTime',['../class_computer_learning_1_1_task_result.html#aa9f6b1778059f5ece74ea06991870013',1,'ComputerLearning::TaskResult']]],
+  ['config_6',['config',['../class_computer_learning_1_1_task_definition.html#aae3ff8cc6c1327c0d7cb14ce8ef7ed62',1,'ComputerLearning::TaskDefinition']]],
+  ['contentarea_7',['contentArea',['../class_computer_learning_1_1_window.html#ae70d084ad2f281237c6ee31cb6629244',1,'ComputerLearning.Window.contentArea'],['../class_computer_learning_1_1_move_mouse_task.html#affa4ded69d95cebc2330146ff65c7559',1,'ComputerLearning.MoveMouseTask.contentArea']]],
+  ['contentprefab_8',['contentPrefab',['../class_computer_learning_1_1_desktop_icon_data.html#a3d64f7795ee4de75b5b8c0426e325117',1,'ComputerLearning.DesktopIconData.contentPrefab'],['../class_computer_learning_1_1_draggable_icon.html#ad47a104d11df51936bf1381c5afa6149',1,'ComputerLearning.DraggableIcon.contentPrefab'],['../class_computer_learning_1_1_window.html#a27ffb5fdcbba43ba9fdccc1e2f96bb6d',1,'ComputerLearning.Window.contentPrefab']]],
+  ['controller_9',['controller',['../class_computer_learning_1_1_resize_handle.html#a3121241cabd66fbe24ebb9986ea64631',1,'ComputerLearning.ResizeHandle.controller'],['../class_computer_learning_1_1_window_drag.html#a4514c283821c543c42cda509b817c9ff',1,'ComputerLearning.WindowDrag.controller']]],
+  ['currentholdtime_10',['currentHoldTime',['../class_computer_learning_1_1_click_hold_task.html#a670e6947d904b2730ffaf3f718f81272',1,'ComputerLearning::ClickHoldTask']]],
+  ['currentindex_11',['currentIndex',['../class_computer_learning_1_1_initial_test_manager.html#aca96fe23e212b50d51b3d97cbfbb799f',1,'ComputerLearning::InitialTestManager']]],
+  ['currentlevel_12',['currentLevel',['../class_computer_learning_1_1_initial_test_manager.html#a2b9798134016138f7044d19a1c7b26bb',1,'ComputerLearning::InitialTestManager']]],
+  ['currenttask_13',['currentTask',['../class_computer_learning_1_1_initial_test_manager.html#a200ee901b56580c6ffb230346e17a654',1,'ComputerLearning.InitialTestManager.currentTask'],['../class_computer_learning_1_1_learning_session_manager.html#a945a849b651a6e722e8adc1d47178021',1,'ComputerLearning.LearningSessionManager.currentTask']]],
+  ['currenttaskindex_14',['currentTaskIndex',['../class_computer_learning_1_1_level_runner.html#a16531b215c1faa473b9181c6e9413192',1,'ComputerLearning::LevelRunner']]],
+  ['currentwindow_15',['currentWindow',['../class_computer_learning_1_1_level_tester.html#a46163d19c50a1bd00c9e31789421559e',1,'ComputerLearning::LevelTester']]]
 ];

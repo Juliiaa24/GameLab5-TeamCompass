@@ -63,28 +63,52 @@ namespace ComputerLearning
             // Spawn the window
             currentWindow = Instantiate(windowPrefab, canvasTransform);
             
-            // Get or add LevelRunner
-            LevelRunner runner = currentWindow.GetComponentInChildren<LevelRunner>();
-            if (runner == null)
+            // Get or add Runner
+            if (levelDef.levelId == "assessment")
             {
-                runner = currentWindow.gameObject.AddComponent<LevelRunner>();
-                Transform contentArea = currentWindow.transform.Find("WindowContents");
-                if (contentArea != null)
-                    runner.taskContentArea = contentArea.GetComponent<RectTransform>();
-                else
-                    runner.taskContentArea = currentWindow.GetComponent<RectTransform>();
+                InitialTestManager runner = currentWindow.GetComponentInChildren<InitialTestManager>();
+                if (runner == null && InitialTestManager.Instance != null)
+                {
+                    runner = InitialTestManager.Instance;
+                }
+                else if (runner == null)
+                {
+                    runner = currentWindow.gameObject.AddComponent<InitialTestManager>();
+                }
+                
+                Window windowScript = currentWindow.GetComponent<Window>();
+                if (windowScript != null)
+                {
+                    windowScript.setTitle(levelDef.displayName);
+                    windowScript.toggleMaximize();
+                }
+                
+                runner.StartAssessment(levelDef, windowScript);
             }
-
-            // Maximize if possible
-            Window windowScript = currentWindow.GetComponent<Window>();
-            if (windowScript != null)
+            else
             {
-                windowScript.setTitle(levelDef.displayName);
-                windowScript.toggleMaximize();
-            }
+                LevelRunner runner = currentWindow.GetComponentInChildren<LevelRunner>();
+                if (runner == null)
+                {
+                    runner = currentWindow.gameObject.AddComponent<LevelRunner>();
+                    Transform contentArea = currentWindow.transform.Find("WindowContents");
+                    if (contentArea != null)
+                        runner.taskContentArea = contentArea.GetComponent<RectTransform>();
+                    else
+                        runner.taskContentArea = currentWindow.GetComponent<RectTransform>();
+                }
 
-            // Start Level
-            runner.StartLevel(levelDef);
+                // Maximize if possible
+                Window windowScript = currentWindow.GetComponent<Window>();
+                if (windowScript != null)
+                {
+                    windowScript.setTitle(levelDef.displayName);
+                    windowScript.toggleMaximize();
+                }
+
+                // Start Level
+                runner.StartLevel(levelDef);
+            }
         }
     }
 }

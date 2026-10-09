@@ -113,6 +113,9 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('class_computer
   <div class="headertitle"><div class="title">ComputerLearning.InputManager Class Reference</div></div>
 </div><!--header-->
 <div class="contents">
+
+<p>Manage the input of the game.  
+ <a href="#details">More...</a></p>
 <div class="dynheader">
 Inheritance diagram for ComputerLearning.InputManager:</div>
 <div class="dyncontent">
@@ -133,6 +136,7 @@ Properties</h2></td></tr>
 <tr class="heading"><td colspan="2"><h2 id="header-pri-methods" class="groupheader"><a id="pri-methods" name="pri-methods"></a>
 Private Member Functions</h2></td></tr>
 <tr class="memitem:a299495a7c77619659983a4ae7acb8805" id="r_a299495a7c77619659983a4ae7acb8805"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a299495a7c77619659983a4ae7acb8805">Awake</a> ()</td></tr>
+<tr class="memitem:a3ca7fba2e1ac0d76f5871950e5528860" id="r_a3ca7fba2e1ac0d76f5871950e5528860"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a3ca7fba2e1ac0d76f5871950e5528860">OnDestroy</a> ()</td></tr>
 <tr class="memitem:a627df543652ceb88a685f1ecdab06da2" id="r_a627df543652ceb88a685f1ecdab06da2"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a627df543652ceb88a685f1ecdab06da2">Start</a> ()</td></tr>
 <tr class="memitem:a14a4d6455eb0d1380dc3c92f437205b1" id="r_a14a4d6455eb0d1380dc3c92f437205b1"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a14a4d6455eb0d1380dc3c92f437205b1">Update</a> ()</td></tr>
 <tr class="memitem:a2b30f2f19b397b0d24660f7660574e59" id="r_a2b30f2f19b397b0d24660f7660574e59"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a2b30f2f19b397b0d24660f7660574e59">OnEnable</a> ()</td></tr>
@@ -140,13 +144,19 @@ Private Member Functions</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-pri-attribs" class="groupheader"><a id="pri-attribs" name="pri-attribs"></a>
 Private Attributes</h2></td></tr>
+<tr class="memitem:a28b9530256db334bf2939b417c22dc16" id="r_a28b9530256db334bf2939b417c22dc16"><td class="memItemLeft">Transform&#160;</td><td class="memItemRight"><a class="el" href="#a28b9530256db334bf2939b417c22dc16">windowSpawner</a></td></tr>
+<tr class="memitem:a2ea265b2ff7461fa46cb73c48065cd98" id="r_a2ea265b2ff7461fa46cb73c48065cd98"><td class="memItemLeft">GameObject&#160;</td><td class="memItemRight"><a class="el" href="#a2ea265b2ff7461fa46cb73c48065cd98">windowPrefab</a></td></tr>
 <tr class="memitem:a5b199b99a8dc954586158d6250cc8a99" id="r_a5b199b99a8dc954586158d6250cc8a99"><td class="memItemLeft">InputActionReference&#160;</td><td class="memItemRight"><a class="el" href="#a5b199b99a8dc954586158d6250cc8a99">mousePosition</a></td></tr>
 <tr class="memitem:ad0c2e31cd20bdf82f7657d9886cb1f9f" id="r_ad0c2e31cd20bdf82f7657d9886cb1f9f"><td class="memItemLeft">InputActionReference&#160;</td><td class="memItemRight"><a class="el" href="#ad0c2e31cd20bdf82f7657d9886cb1f9f">mouseDelta</a></td></tr>
 <tr class="memitem:a02b8512c709e578129bb4fc91d179166" id="r_a02b8512c709e578129bb4fc91d179166"><td class="memItemLeft">InputActionReference&#160;</td><td class="memItemRight"><a class="el" href="#a02b8512c709e578129bb4fc91d179166">leftClick</a></td></tr>
 <tr class="memitem:a5dd66a70e55b4d86baf6e5315f5d20b6" id="r_a5dd66a70e55b4d86baf6e5315f5d20b6"><td class="memItemLeft">InputActionReference&#160;</td><td class="memItemRight"><a class="el" href="#a5dd66a70e55b4d86baf6e5315f5d20b6">rightClick</a></td></tr>
 <tr class="memitem:a929a0167de285a81252ceb1ca2b2c659" id="r_a929a0167de285a81252ceb1ca2b2c659"><td class="memItemLeft">InputActionReference&#160;</td><td class="memItemRight"><a class="el" href="#a929a0167de285a81252ceb1ca2b2c659">scroll</a></td></tr>
+<tr class="memitem:a3a3fa82da6dfa065e4117fb605fe5c87" id="r_a3a3fa82da6dfa065e4117fb605fe5c87"><td class="memItemLeft">InputActionReference&#160;</td><td class="memItemRight"><a class="el" href="#a3a3fa82da6dfa065e4117fb605fe5c87">spawnWindow</a></td></tr>
+<tr class="memitem:a6ec6452abaa36f9dd144150adbb58126" id="r_a6ec6452abaa36f9dd144150adbb58126"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="#a6ec6452abaa36f9dd144150adbb58126">ownsSpawnAction</a></td></tr>
 </table>
-<a name="doc-func-members" id="doc-func-members"></a><h2 id="header-doc-func-members" class="groupheader">Member Function Documentation</h2>
+<a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>Manage the input of the game. </p>
+</div><a name="doc-func-members" id="doc-func-members"></a><h2 id="header-doc-func-members" class="groupheader">Member Function Documentation</h2>
 <a id="a299495a7c77619659983a4ae7acb8805" name="a299495a7c77619659983a4ae7acb8805"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a299495a7c77619659983a4ae7acb8805">&#9670;&#160;</a></span>Awake()</h2>
 
@@ -158,6 +168,31 @@ Private Attributes</h2></td></tr>
       <table class="memname">
         <tr>
           <td class="memname">void ComputerLearning.InputManager.Awake </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel private">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a3ca7fba2e1ac0d76f5871950e5528860" name="a3ca7fba2e1ac0d76f5871950e5528860"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3ca7fba2e1ac0d76f5871950e5528860">&#9670;&#160;</a></span>OnDestroy()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ComputerLearning.InputManager.OnDestroy </td>
           <td>(</td>
           <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
           <td></td>
@@ -339,6 +374,28 @@ Private Attributes</h2></td></tr>
 
 </div>
 </div>
+<a id="a6ec6452abaa36f9dd144150adbb58126" name="a6ec6452abaa36f9dd144150adbb58126"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6ec6452abaa36f9dd144150adbb58126">&#9670;&#160;</a></span>ownsSpawnAction</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool ComputerLearning.InputManager.ownsSpawnAction</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel private">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="a5dd66a70e55b4d86baf6e5315f5d20b6" name="a5dd66a70e55b4d86baf6e5315f5d20b6"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a5dd66a70e55b4d86baf6e5315f5d20b6">&#9670;&#160;</a></span>rightClick</h2>
 
@@ -383,6 +440,72 @@ Private Attributes</h2></td></tr>
 
 </div>
 </div>
+<a id="a3a3fa82da6dfa065e4117fb605fe5c87" name="a3a3fa82da6dfa065e4117fb605fe5c87"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3a3fa82da6dfa065e4117fb605fe5c87">&#9670;&#160;</a></span>spawnWindow</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">InputActionReference ComputerLearning.InputManager.spawnWindow</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel private">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a2ea265b2ff7461fa46cb73c48065cd98" name="a2ea265b2ff7461fa46cb73c48065cd98"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2ea265b2ff7461fa46cb73c48065cd98">&#9670;&#160;</a></span>windowPrefab</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">GameObject ComputerLearning.InputManager.windowPrefab</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel private">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a28b9530256db334bf2939b417c22dc16" name="a28b9530256db334bf2939b417c22dc16"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a28b9530256db334bf2939b417c22dc16">&#9670;&#160;</a></span>windowSpawner</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">Transform ComputerLearning.InputManager.windowSpawner</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel private">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a name="doc-property-members" id="doc-property-members"></a><h2 id="header-doc-property-members" class="groupheader">Property Documentation</h2>
 <a id="a52c281f58ae41e0a5e162722cbafe6e4" name="a52c281f58ae41e0a5e162722cbafe6e4"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a52c281f58ae41e0a5e162722cbafe6e4">&#9670;&#160;</a></span>Instance</h2>
@@ -403,12 +526,12 @@ Private Attributes</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
-<p>Instancia unica del <a class="el" href="class_computer_learning_1_1_input_manager.html">InputManager</a> </p>
+<p>Unique Instance of <a class="el" href="class_computer_learning_1_1_input_manager.html" title="Manage the input of the game.">InputManager</a> </p>
 
 </div>
 </div>
 <hr/>The documentation for this class was generated from the following file:<ul>
-<li>C:/Users/julia/OneDrive/Documentos/GitHub/Erasmus/GameLab5-TeamCompass/ComputerLearner/Assets/Scripts/<a class="el" href="_input_manager_8cs.html">InputManager.cs</a></li>
+<li>C:/Users/julia/OneDrive/Documentos/GitHub/Erasmus/GameLab5-TeamCompass/ComputerLearner/Assets/Scripts/Managers/<a class="el" href="_input_manager_8cs.html">InputManager.cs</a></li>
 </ul>
 </div><!-- contents -->
 </div><!-- doc-content -->

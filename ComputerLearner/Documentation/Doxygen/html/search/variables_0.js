@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['contentarea_0',['contentArea',['../class_computer_learning_1_1_window.html#ae70d084ad2f281237c6ee31cb6629244',1,'ComputerLearning::Window']]]
+  ['_5fcurrentlevel_0',['_currentLevel',['../class_computer_learning_1_1_level_runner.html#aff0824849008998c7bae6f185aca7751',1,'ComputerLearning::LevelRunner']]]
 ];

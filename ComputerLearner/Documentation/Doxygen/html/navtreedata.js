@@ -26,18 +26,23 @@ var NAVTREE =
 [
   [ "ComputerLearner", "index.html", [
     [ "Packages", "namespaces.html", [
-      [ "Package List", "namespaces.html", "namespaces_dup" ]
+      [ "Package List", "namespaces.html", "namespaces_dup" ],
+      [ "Package Members", "namespacemembers.html", [
+        [ "All", "namespacemembers.html", null ],
+        [ "Enumerations", "namespacemembers_enum.html", null ]
+      ] ]
     ] ],
     [ "Classes", "annotated.html", [
       [ "Class List", "annotated.html", "annotated_dup" ],
       [ "Class Index", "classes.html", null ],
       [ "Class Hierarchy", "hierarchy.html", "hierarchy" ],
       [ "Class Members", "functions.html", [
-        [ "All", "functions.html", null ],
-        [ "Functions", "functions_func.html", null ],
-        [ "Variables", "functions_vars.html", null ],
+        [ "All", "functions.html", "functions_dup" ],
+        [ "Functions", "functions_func.html", "functions_func" ],
+        [ "Variables", "functions_vars.html", "functions_vars" ],
         [ "Enumerations", "functions_enum.html", null ],
-        [ "Properties", "functions_prop.html", null ]
+        [ "Properties", "functions_prop.html", null ],
+        [ "Events", "functions_evnt.html", null ]
       ] ]
     ] ],
     [ "Files", "files.html", [
@@ -48,7 +53,13 @@ var NAVTREE =
 
 var NAVTREEINDEX =
 [
-"_draggable_icon_8cs.html"
+"_adaptive_session_starter_8cs.html",
+"class_computer_learning_1_1_desktop_manager.html#affd3e8c4ce0205d78eb4f433bdb596fd",
+"class_computer_learning_1_1_game_flow_controller.html#adb9eb37e9bf6c7fe08d98104021f470b",
+"class_computer_learning_1_1_level_runner.html#a1b2373bea8aa20bae257a0882ec23630",
+"class_computer_learning_1_1_skill_definition.html#af33ab67ea6c0a8ff4a851c81e53ce82b",
+"class_computer_learning_1_1_tutorial_blocker.html#a892214495d08e0198663217e0be654f0",
+"class_computer_learning_1_1_window_manager.html#a60b49f7d63f9105e323c6d1d9cfa1662"
 ];
 
 const SYNCONMSG = 'click to disable panel synchronization';

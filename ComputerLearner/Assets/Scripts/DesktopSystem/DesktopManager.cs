@@ -130,7 +130,13 @@ namespace ComputerLearning
                 return;
             }
 
-            Transform container = mascotContainer != null ? mascotContainer : transform;
+            Transform container = mascotContainer;
+            if (container == null)
+            {
+                Canvas canvas = UnityEngine.Object.FindFirstObjectByType<Canvas>();
+                if (canvas != null) container = canvas.transform;
+                else container = transform;
+            }
             
             // Instantiate and disable
             GameObject mascotInstance = Instantiate(mascotPrefab, container);
@@ -149,7 +155,7 @@ namespace ComputerLearning
         {
             if (desktopIconContainer == null)
             {
-                Debug.LogError("[DesktopManager] Desktop Icon Container is missing!");
+                Debug.LogWarning("[DesktopManager] Desktop Icon Container is missing! Skipping icon spawn.");
                 return null;
             }
 

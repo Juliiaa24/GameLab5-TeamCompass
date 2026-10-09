@@ -1,4 +1,30 @@
 var searchData=
 [
-  ['window_0',['window',['../class_computer_learning_1_1_resize_handle.html#ac948a3365c40aae000483e8f5d2fc07b',1,'ComputerLearning.ResizeHandle.window'],['../class_computer_learning_1_1_window_drag.html#aa79ba36ada6d609e78d88ebb2dca834c',1,'ComputerLearning.WindowDrag.window']]]
+  ['icon_0',['icon',['../class_computer_learning_1_1_skill_definition.html#af46f6796eb904bdefe48a2ee1dd8136f',1,'ComputerLearning.SkillDefinition.icon'],['../class_computer_learning_1_1_taskbar_window_button.html#a765ce0d9c51e46268aebcfadbbf272a5',1,'ComputerLearning.TaskbarWindowButton.icon']]],
+  ['icon_5fsize_1',['ICON_SIZE',['../class_computer_learning_1_1_icon_grid.html#a92dca577e0ebc12340ba1a1d6dcf04d6',1,'ComputerLearning::IconGrid']]],
+  ['iconname_2',['iconName',['../class_computer_learning_1_1_desktop_icon_data.html#aa52685b8633cfe7577e070c1255b27d1',1,'ComputerLearning::DesktopIconData']]],
+  ['iconsprite_3',['iconSprite',['../class_computer_learning_1_1_desktop_icon_data.html#ab118559db8526bf2e602ad2f65aa3996',1,'ComputerLearning::DesktopIconData']]],
+  ['initial_5fpos_5fx_4',['INITIAL_POS_X',['../class_computer_learning_1_1_icon_grid.html#a1cba131d26cfc1e53b91bd71efeb2e27',1,'ComputerLearning::IconGrid']]],
+  ['initial_5fpos_5fy_5',['INITIAL_POS_Y',['../class_computer_learning_1_1_icon_grid.html#acf823c500d5feca2fb5af78c6ebec5f3',1,'ComputerLearning::IconGrid']]],
+  ['initialdesktopicons_6',['initialDesktopIcons',['../class_computer_learning_1_1_desktop_manager.html#ab1e0668fa16b7299d405a064cf4c59b7',1,'ComputerLearning::DesktopManager']]],
+  ['initialposition_7',['initialPosition',['../class_computer_learning_1_1_draggable_icon.html#afe0cfeb4271e7af187d71a6fbc532a70',1,'ComputerLearning::DraggableIcon']]],
+  ['instructiontext_8',['instructionText',['../class_computer_learning_1_1_level_definition.html#a04dc0aad52674874de13520626191e8e',1,'ComputerLearning::LevelDefinition']]],
+  ['intro_5fadaptive_9',['intro_adaptive',['../class_computer_learning_1_1_tutorial_dialogs.html#a3329038563584cfd747635364fa881ca',1,'ComputerLearning::TutorialDialogs']]],
+  ['intro_5fclick_10',['intro_click',['../class_computer_learning_1_1_tutorial_dialogs.html#a8d83e6e61ce9caa9d698a812a39fcfe1',1,'ComputerLearning::TutorialDialogs']]],
+  ['intro_5fclick_5fhold_11',['intro_click_hold',['../class_computer_learning_1_1_tutorial_dialogs.html#acc496837cae7813a95673359f8f8bd01',1,'ComputerLearning::TutorialDialogs']]],
+  ['intro_5fdefault_12',['intro_default',['../class_computer_learning_1_1_tutorial_dialogs.html#abfc6bb3b35ba1884a55efffb7dd63cd8',1,'ComputerLearning::TutorialDialogs']]],
+  ['intro_5fdouble_5fclick_13',['intro_double_click',['../class_computer_learning_1_1_tutorial_dialogs.html#a45434dc3bed5ba0f1c04df9cc1610075',1,'ComputerLearning::TutorialDialogs']]],
+  ['intro_5fdrag_5fdrop_14',['intro_drag_drop',['../class_computer_learning_1_1_tutorial_dialogs.html#aa42c0e48f2fa685b9534ac25159e2541',1,'ComputerLearning::TutorialDialogs']]],
+  ['intro_5fhover_15',['intro_hover',['../class_computer_learning_1_1_tutorial_dialogs.html#aa94358dc47c480cdb159506f51ac33ed',1,'ComputerLearning::TutorialDialogs']]],
+  ['intro_5fmixed_16',['intro_mixed',['../class_computer_learning_1_1_tutorial_dialogs.html#a27e6968bd260aded32ca88728da6f284',1,'ComputerLearning::TutorialDialogs']]],
+  ['intro_5fmove_17',['intro_move',['../class_computer_learning_1_1_tutorial_dialogs.html#ab11922778bf043a54eddc2347896e995',1,'ComputerLearning::TutorialDialogs']]],
+  ['intro_5fright_5fclick_18',['intro_right_click',['../class_computer_learning_1_1_tutorial_dialogs.html#a639ef598721d24d2288f1ac03f143532',1,'ComputerLearning::TutorialDialogs']]],
+  ['isadaptive_19',['isAdaptive',['../class_computer_learning_1_1_level_definition.html#a5b20b746474d8396b1292deaa5242b23',1,'ComputerLearning::LevelDefinition']]],
+  ['iscleaned_20',['isCleaned',['../class_computer_learning_1_1_dirt_spot.html#a7533cf624747fce2d4361a4b60f70cdb',1,'ComputerLearning::DirtSpot']]],
+  ['isdone_21',['isDone',['../class_computer_learning_1_1_draggable_piece.html#aec2d242cdc1b54a99b125ea2d6c3cfb7',1,'ComputerLearning::DraggablePiece']]],
+  ['isholding_22',['isHolding',['../class_computer_learning_1_1_click_hold_task.html#a0e0992e168ac6736d351df9fcef177d4',1,'ComputerLearning::ClickHoldTask']]],
+  ['ishovering_23',['isHovering',['../class_computer_learning_1_1_hover_target.html#abb157483a51a8d344c0ea2b13c0d2503',1,'ComputerLearning::HoverTarget']]],
+  ['islocked_24',['isLocked',['../class_computer_learning_1_1_desktop_icon_data.html#af80d5dce2176a1f29722a16ef6a64523',1,'ComputerLearning.DesktopIconData.isLocked'],['../class_computer_learning_1_1_draggable_icon.html#ae68150bcb97f600ab82da29b9fce24b0',1,'ComputerLearning.DraggableIcon.isLocked']]],
+  ['ismoving_25',['isMoving',['../class_computer_learning_1_1_task_config.html#a7335ef8db767fdbd431c0abb69be9922',1,'ComputerLearning.TaskConfig.isMoving'],['../class_computer_learning_1_1_click_target.html#a4ff1717ae69ed798288e4983fc7499ca',1,'ComputerLearning.ClickTarget.isMoving'],['../class_computer_learning_1_1_hover_target.html#a62ebe0f916b112fca06793cccaf8934b',1,'ComputerLearning.HoverTarget.isMoving'],['../class_computer_learning_1_1_task_target_movement.html#a0e1ccfb39a6e6283ab7f579d6d3eca9c',1,'ComputerLearning.TaskTargetMovement.isMoving']]],
+  ['itemtype_26',['itemType',['../class_computer_learning_1_1_desktop_icon_data.html#a8ace9fbc78d290ca46bd6b3274a7bea5',1,'ComputerLearning::DesktopIconData']]]
 ];

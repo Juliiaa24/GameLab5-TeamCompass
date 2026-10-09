@@ -1,4 +1,16 @@
 var searchData=
 [
-  ['update_0',['Update',['../class_computer_learning_1_1_draggable_icon.html#a311edcb0867e9dbde74b25a161b9aa00',1,'ComputerLearning.DraggableIcon.Update()'],['../class_computer_learning_1_1_icon_grid.html#abf0eba6ea4057af55def4f29084ab336',1,'ComputerLearning.IconGrid.Update()'],['../class_computer_learning_1_1_input_manager.html#a14a4d6455eb0d1380dc3c92f437205b1',1,'ComputerLearning.InputManager.Update()'],['../class_computer_learning_1_1_resize_handle.html#ae58858839d2afcef2ba0d103f6b82561',1,'ComputerLearning.ResizeHandle.Update()'],['../class_computer_learning_1_1_scene_system.html#a0b1ba0d6513de84822e2321f0ad4ebd9',1,'ComputerLearning.SceneSystem.Update()'],['../class_computer_learning_1_1_window.html#aec5aeae4aa3d4c56171f9d35ba145f7d',1,'ComputerLearning.Window.Update()'],['../class_computer_learning_1_1_window_drag.html#a64bd5e6393e4a694466ec14a657adb0e',1,'ComputerLearning.WindowDrag.Update()']]]
+  ['getdifficulty_0',['GetDifficulty',['../class_computer_learning_1_1_skill_manager.html#afc13ea662e83756ffe07f9e1672bb099',1,'ComputerLearning::SkillManager']]],
+  ['getgridposition_1',['GetGridPosition',['../class_computer_learning_1_1_icon_grid.html#a5b625c6f62fb4a8fef3f0060fa5c16c2',1,'ComputerLearning::IconGrid']]],
+  ['gethistoricalsuccessrate_2',['GetHistoricalSuccessRate',['../class_computer_learning_1_1_progress_data.html#a5ba1840eb93709a3155c7644dc4fe04a',1,'ComputerLearning::ProgressData']]],
+  ['geticonbylevelid_3',['GetIconByLevelId',['../class_computer_learning_1_1_desktop_manager.html#affd3e8c4ce0205d78eb4f433bdb596fd',1,'ComputerLearning::DesktopManager']]],
+  ['geticonbyname_4',['GetIconByName',['../class_computer_learning_1_1_desktop_manager.html#ab3998e26903afc7cd62d24e3dbe5991b',1,'ComputerLearning::DesktopManager']]],
+  ['getnextadaptivetask_5',['GetNextAdaptiveTask',['../class_computer_learning_1_1_level_runner.html#ae3a6e9b28d30d9b3fd4bc56e8d981fd3',1,'ComputerLearning::LevelRunner']]],
+  ['getresultsforskill_6',['GetResultsForSkill',['../class_computer_learning_1_1_progress_data.html#a30b2c447d6811a2bb9e6545a3b3bb6ca',1,'ComputerLearning::ProgressData']]],
+  ['getscore_7',['GetScore',['../class_computer_learning_1_1_skill_manager.html#a5c80bab6f38e88aaabf1d6b756286072',1,'ComputerLearning::SkillManager']]],
+  ['getscorechange_8',['GetScoreChange',['../class_computer_learning_1_1_difficulty_config.html#a5bf12893875a2ff5998d21bd491ac216',1,'ComputerLearning::DifficultyConfig']]],
+  ['getscorehistory_9',['GetScoreHistory',['../class_computer_learning_1_1_progress_data.html#a0b35f62b80b0a77dd2c709ac482c14af',1,'ComputerLearning::ProgressData']]],
+  ['getselectionweight_10',['GetSelectionWeight',['../class_computer_learning_1_1_difficulty_config.html#a3f155d1f212b3f85ed355331519c4ded',1,'ComputerLearning::DifficultyConfig']]],
+  ['getskillweights_11',['GetSkillWeights',['../class_computer_learning_1_1_skill_manager.html#a80400e96e12984120f893441f2b3f5c3',1,'ComputerLearning::SkillManager']]],
+  ['getstate_12',['GetState',['../class_computer_learning_1_1_skill_manager.html#a3e0b6f9bf674a901e340a17cd27d3166',1,'ComputerLearning::SkillManager']]]
 ];

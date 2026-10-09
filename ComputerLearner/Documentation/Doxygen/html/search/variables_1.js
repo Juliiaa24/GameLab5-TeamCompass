@@ -1,4 +1,25 @@
 var searchData=
 [
-  ['direction_0',['direction',['../class_computer_learning_1_1_resize_handle.html#a15420bd6c3b5401ca9e1c3e6c53bebd5',1,'ComputerLearning::ResizeHandle']]]
+  ['activecolor_0',['activeColor',['../class_computer_learning_1_1_taskbar_window_button.html#a1f81f5adc0e1509edc2685406b064294',1,'ComputerLearning::TaskbarWindowButton']]],
+  ['activeicons_1',['activeIcons',['../class_computer_learning_1_1_desktop_manager.html#a001ccd522fa2b07fe6d4e1b6dd158b71',1,'ComputerLearning::DesktopManager']]],
+  ['activeindicator_2',['activeIndicator',['../class_computer_learning_1_1_taskbar_window_button.html#af6899fb8164125b8e56911acef4d8183',1,'ComputerLearning::TaskbarWindowButton']]],
+  ['activetargets_3',['activeTargets',['../class_computer_learning_1_1_click_target_task.html#a8822cfea0f2cdf80976998bbb1aedd27',1,'ComputerLearning::ClickTargetTask']]],
+  ['activetask_4',['activeTask',['../class_computer_learning_1_1_level_runner.html#ab5c2fd899abf1ba6e8f0a225e67e18e7',1,'ComputerLearning::LevelRunner']]],
+  ['adaptive_5fdone_5',['adaptive_done',['../class_computer_learning_1_1_tutorial_dialogs.html#a754bd8ceb9e8baf190e4902390e9158e',1,'ComputerLearning::TutorialDialogs']]],
+  ['adaptive_5fexplanation_6',['adaptive_explanation',['../class_computer_learning_1_1_tutorial_dialogs.html#ac973b786a4f6c12ceea7d78f6ca8bfe0',1,'ComputerLearning::TutorialDialogs']]],
+  ['adaptive_5fwelcome_7',['adaptive_welcome',['../class_computer_learning_1_1_tutorial_dialogs.html#ae08d46e6c0d16bcfae32685a6b21d7f4',1,'ComputerLearning::TutorialDialogs']]],
+  ['adaptivetaskcount_8',['adaptiveTaskCount',['../class_computer_learning_1_1_level_definition.html#a0b376cd3927a6e90e1402421f3278ffa',1,'ComputerLearning::LevelDefinition']]],
+  ['allowedtarget_9',['allowedTarget',['../class_computer_learning_1_1_tutorial_blocker.html#a6f9dfe416d01fb411727c43249b387da',1,'ComputerLearning::TutorialBlocker']]],
+  ['allskills_10',['allSkills',['../class_computer_learning_1_1_skill_manager.html#aa4eaecd4c5f0c2d26dddc14c11ae01da',1,'ComputerLearning::SkillManager']]],
+  ['alltaskdefinitions_11',['allTaskDefinitions',['../class_computer_learning_1_1_task_manager.html#a8ba2a3344764d8ff9e010100263429f3',1,'ComputerLearning::TaskManager']]],
+  ['animationcoroutine_12',['animationCoroutine',['../class_computer_learning_1_1_window.html#a1604d65c506f42e7da2000ce1ed8adf7',1,'ComputerLearning::Window']]],
+  ['animationduration_13',['animationDuration',['../class_computer_learning_1_1_window.html#abc8d2c6894d66b646bb1a3ea3c3aa85b',1,'ComputerLearning::Window']]],
+  ['antirepetitionwindowsize_14',['antiRepetitionWindowSize',['../class_computer_learning_1_1_session_config.html#ad66c74912ca3c433f5ca8c821fefa9bb',1,'ComputerLearning.SessionConfig.antiRepetitionWindowSize'],['../class_computer_learning_1_1_task_manager.html#a6ecda9757e7f4c3cca7c5a1e91f285fd',1,'ComputerLearning.TaskManager.antiRepetitionWindowSize']]],
+  ['appwindow_15',['appWindow',['../class_computer_learning_1_1_draggable_icon.html#aec9d175d0cab147759180e6746a20b97',1,'ComputerLearning.DraggableIcon.appWindow'],['../class_computer_learning_1_1_initial_test_manager.html#aa9a3f689d26472d524bd391ef422e7ed',1,'ComputerLearning.InitialTestManager.appWindow'],['../class_computer_learning_1_1_level_runner.html#a90772afd9ffbc195942369594cab8a55',1,'ComputerLearning.LevelRunner.appWindow']]],
+  ['assessmentdata_16',['assessmentData',['../class_computer_learning_1_1_initial_test_manager.html#af09e69321d2ecffc93199eba134c1bb0',1,'ComputerLearning::InitialTestManager']]],
+  ['attempts_17',['attempts',['../class_computer_learning_1_1_task_result.html#ade0c4a6e0956aff6a610cebcc68d1651',1,'ComputerLearning.TaskResult.attempts'],['../class_computer_learning_1_1_base_task.html#a7d6abf0d60d94eb0e0cc93f9c81ec065',1,'ComputerLearning.BaseTask.attempts']]],
+  ['autoadvancedelay_18',['autoAdvanceDelay',['../class_computer_learning_1_1_tutorial_manager.html#a6b0383fef1e7dbde00fa8360e5a92fe7',1,'ComputerLearning::TutorialManager']]],
+  ['autoflipmascot_19',['autoFlipMascot',['../class_computer_learning_1_1_virtual_mascot.html#a04cfbacaae32fc9217d5486e45c071da',1,'ComputerLearning::VirtualMascot']]],
+  ['autosaveaftereachresult_20',['autoSaveAfterEachResult',['../class_computer_learning_1_1_progress_data.html#a93cca254fc177facd9291b242f36760e',1,'ComputerLearning::ProgressData']]],
+  ['availablelevels_21',['availableLevels',['../class_computer_learning_1_1_level_tester.html#a39866a99313d001a9f09d6f6114a2a33',1,'ComputerLearning::LevelTester']]]
 ];

@@ -41,7 +41,7 @@ namespace ComputerLearning
             yield return new WaitForSeconds(4f);
 
             // Expected sequence of LevelDefinitions
-            string[] levelSequence = { "level1", "level2", "level3", "level4", "level5" };
+            string[] levelSequence = { "assessment", "level1", "level2", "level3", "level4", "level5" };
             int foundIconsCount = 0;
 
             foreach (string targetLevelId in levelSequence)
@@ -68,7 +68,8 @@ namespace ComputerLearning
                     
                     // 1. Highlight the icon and explain
                     string mascotMsg = dialogs.first_default;
-                    if (targetLevelId == "level1") mascotMsg = dialogs.first_move;
+                    if (targetLevelId == "assessment") mascotMsg = "Let's start with a quick assessment! Double click the Assessment icon!";
+                    else if (targetLevelId == "level1") mascotMsg = dialogs.first_move;
                     else if (targetLevelId == "level2") mascotMsg = dialogs.first_hover;
                     else if (targetLevelId == "level3") mascotMsg = dialogs.first_click;
                     else if (targetLevelId == "level4") mascotMsg = dialogs.first_adaptive;

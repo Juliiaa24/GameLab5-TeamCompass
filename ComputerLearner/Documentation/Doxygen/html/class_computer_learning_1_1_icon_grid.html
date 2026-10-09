@@ -128,43 +128,161 @@ Collaboration diagram for ComputerLearning.IconGrid:</div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-pub-methods" class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a7f38d2d831fd7a6842416446b9157674" id="r_a7f38d2d831fd7a6842416446b9157674"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a7f38d2d831fd7a6842416446b9157674">OnDrop</a> (PointerEventData eventData)</td></tr>
-<tr class="memitem:a028e6c33cfc4742d591a9789473b3830" id="r_a028e6c33cfc4742d591a9789473b3830"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a028e6c33cfc4742d591a9789473b3830">Register</a> (Vector2 pos)</td></tr>
+<tr class="memitem:a34182a333aa1ed36d76402368526b4e5" id="r_a34182a333aa1ed36d76402368526b4e5"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a34182a333aa1ed36d76402368526b4e5">Register</a> (<a class="el" href="class_computer_learning_1_1_draggable_icon.html">DraggableIcon</a> icon)</td></tr>
+<tr class="memitem:abaa81f33190f146f434a7f86e4c48994" id="r_abaa81f33190f146f434a7f86e4c48994"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#abaa81f33190f146f434a7f86e4c48994">Unregister</a> (<a class="el" href="class_computer_learning_1_1_draggable_icon.html">DraggableIcon</a> icon)</td></tr>
+<tr class="memitem:ae494988214ac49723bf14544565ca9ff" id="r_ae494988214ac49723bf14544565ca9ff"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#ae494988214ac49723bf14544565ca9ff">TryPlaceIcon</a> (<a class="el" href="class_computer_learning_1_1_draggable_icon.html">DraggableIcon</a> icon, Vector2 screenPosition, Vector3 previousPosition, Camera eventCamera)</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-pri-methods" class="groupheader"><a id="pri-methods" name="pri-methods"></a>
 Private Member Functions</h2></td></tr>
+<tr class="memitem:a2807ea8a17636527c314921878447f81" id="r_a2807ea8a17636527c314921878447f81"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a2807ea8a17636527c314921878447f81">Awake</a> ()</td></tr>
 <tr class="memitem:a5b86f6140f40973710314c289f9f36e9" id="r_a5b86f6140f40973710314c289f9f36e9"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a5b86f6140f40973710314c289f9f36e9">Start</a> ()</td></tr>
-<tr class="memitem:abf0eba6ea4057af55def4f29084ab336" id="r_abf0eba6ea4057af55def4f29084ab336"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#abf0eba6ea4057af55def4f29084ab336">Update</a> ()</td></tr>
+<tr class="memitem:ad16bf2d5bc5ba8e6978b3ff45b8fa502" id="r_ad16bf2d5bc5ba8e6978b3ff45b8fa502"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#ad16bf2d5bc5ba8e6978b3ff45b8fa502">OnRectTransformDimensionsChange</a> ()</td></tr>
+<tr class="memitem:a56a75c82545ac65f2c38faab0c18943f" id="r_a56a75c82545ac65f2c38faab0c18943f"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a56a75c82545ac65f2c38faab0c18943f">EnsureGrid</a> ()</td></tr>
+<tr class="memitem:a5b625c6f62fb4a8fef3f0060fa5c16c2" id="r_a5b625c6f62fb4a8fef3f0060fa5c16c2"><td class="memItemLeft">Vector2Int&#160;</td><td class="memItemRight"><a class="el" href="#a5b625c6f62fb4a8fef3f0060fa5c16c2">GetGridPosition</a> (Vector2 local)</td></tr>
+<tr class="memitem:a4cda5276f27b56638d036398d98e31b3" id="r_a4cda5276f27b56638d036398d98e31b3"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="#a4cda5276f27b56638d036398d98e31b3">Place</a> (<a class="el" href="class_computer_learning_1_1_draggable_icon.html">DraggableIcon</a> icon, Vector2Int target)</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-pri-attribs" class="groupheader"><a id="pri-attribs" name="pri-attribs"></a>
 Private Attributes</h2></td></tr>
-<tr class="memitem:a1cba131d26cfc1e53b91bd71efeb2e27" id="r_a1cba131d26cfc1e53b91bd71efeb2e27"><td class="memItemLeft">float&#160;</td><td class="memItemRight"><a class="el" href="#a1cba131d26cfc1e53b91bd71efeb2e27">INITIAL_POS_X</a> = 60</td></tr>
-<tr class="memitem:acf823c500d5feca2fb5af78c6ebec5f3" id="r_acf823c500d5feca2fb5af78c6ebec5f3"><td class="memItemLeft">float&#160;</td><td class="memItemRight"><a class="el" href="#acf823c500d5feca2fb5af78c6ebec5f3">INITIAL_POS_Y</a> = -60</td></tr>
-<tr class="memitem:a92dca577e0ebc12340ba1a1d6dcf04d6" id="r_a92dca577e0ebc12340ba1a1d6dcf04d6"><td class="memItemLeft">float&#160;</td><td class="memItemRight"><a class="el" href="#a92dca577e0ebc12340ba1a1d6dcf04d6">ICON_SIZE</a> = 60</td></tr>
-<tr class="memitem:a7cc50e2e2600b844eb0b6e71aeebfe2b" id="r_a7cc50e2e2600b844eb0b6e71aeebfe2b"><td class="memItemLeft">float&#160;</td><td class="memItemRight"><a class="el" href="#a7cc50e2e2600b844eb0b6e71aeebfe2b">SPACING</a> = 10</td></tr>
+<tr class="memitem:a1cba131d26cfc1e53b91bd71efeb2e27" id="r_a1cba131d26cfc1e53b91bd71efeb2e27"><td class="memItemLeft">float&#160;</td><td class="memItemRight"><a class="el" href="#a1cba131d26cfc1e53b91bd71efeb2e27">INITIAL_POS_X</a> = 0</td></tr>
+<tr class="memitem:acf823c500d5feca2fb5af78c6ebec5f3" id="r_acf823c500d5feca2fb5af78c6ebec5f3"><td class="memItemLeft">float&#160;</td><td class="memItemRight"><a class="el" href="#acf823c500d5feca2fb5af78c6ebec5f3">INITIAL_POS_Y</a> = 0</td></tr>
+<tr class="memitem:a92dca577e0ebc12340ba1a1d6dcf04d6" id="r_a92dca577e0ebc12340ba1a1d6dcf04d6"><td class="memItemLeft">float&#160;</td><td class="memItemRight"><a class="el" href="#a92dca577e0ebc12340ba1a1d6dcf04d6">ICON_SIZE</a> = 120</td></tr>
+<tr class="memitem:a7cc50e2e2600b844eb0b6e71aeebfe2b" id="r_a7cc50e2e2600b844eb0b6e71aeebfe2b"><td class="memItemLeft">float&#160;</td><td class="memItemRight"><a class="el" href="#a7cc50e2e2600b844eb0b6e71aeebfe2b">SPACING</a> = 30</td></tr>
 <tr class="memitem:a9e9e09429e04075e38b0bdaa24305a8f" id="r_a9e9e09429e04075e38b0bdaa24305a8f"><td class="memItemLeft">RectTransform&#160;</td><td class="memItemRight"><a class="el" href="#a9e9e09429e04075e38b0bdaa24305a8f">rect</a></td></tr>
-<tr class="memitem:a57723bbeb4e629eebf37f4aa8c5fe15f" id="r_a57723bbeb4e629eebf37f4aa8c5fe15f"><td class="memItemLeft">bool[,]&#160;</td><td class="memItemRight"><a class="el" href="#a57723bbeb4e629eebf37f4aa8c5fe15f">grid</a></td></tr>
+<tr class="memitem:a2f0abdb915e5016403c369fce12361e9" id="r_a2f0abdb915e5016403c369fce12361e9"><td class="memItemLeft"><a class="el" href="class_computer_learning_1_1_draggable_icon.html">DraggableIcon</a>[,]&#160;</td><td class="memItemRight"><a class="el" href="#a2f0abdb915e5016403c369fce12361e9">grid</a></td></tr>
+<tr class="memitem:af4348cb248e4d4d07dd5437a63939f5c" id="r_af4348cb248e4d4d07dd5437a63939f5c"><td class="memItemLeft">readonly List&lt; <a class="el" href="class_computer_learning_1_1_draggable_icon.html">DraggableIcon</a> &gt;&#160;</td><td class="memItemRight"><a class="el" href="#af4348cb248e4d4d07dd5437a63939f5c">registered</a> = new List&lt;<a class="el" href="class_computer_learning_1_1_draggable_icon.html">DraggableIcon</a>&gt;()</td></tr>
 </table>
 <a name="doc-func-members" id="doc-func-members"></a><h2 id="header-doc-func-members" class="groupheader">Member Function Documentation</h2>
-<a id="a7f38d2d831fd7a6842416446b9157674" name="a7f38d2d831fd7a6842416446b9157674"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7f38d2d831fd7a6842416446b9157674">&#9670;&#160;</a></span>OnDrop()</h2>
+<a id="a2807ea8a17636527c314921878447f81" name="a2807ea8a17636527c314921878447f81"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2807ea8a17636527c314921878447f81">&#9670;&#160;</a></span>Awake()</h2>
 
 <div class="memitem">
 <div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">void ComputerLearning.IconGrid.OnDrop </td>
+          <td class="memname">void ComputerLearning.IconGrid.Awake </td>
           <td>(</td>
-          <td class="paramtype">PointerEventData</td>          <td class="paramname"><span class="paramname"><em>eventData</em></span></td><td>)</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
           <td></td>
         </tr>
       </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel private">private</span></span>  </td>
+  </tr>
+</table>
 </div><div class="memdoc">
 
 </div>
 </div>
-<a id="a028e6c33cfc4742d591a9789473b3830" name="a028e6c33cfc4742d591a9789473b3830"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a028e6c33cfc4742d591a9789473b3830">&#9670;&#160;</a></span>Register()</h2>
+<a id="a56a75c82545ac65f2c38faab0c18943f" name="a56a75c82545ac65f2c38faab0c18943f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a56a75c82545ac65f2c38faab0c18943f">&#9670;&#160;</a></span>EnsureGrid()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ComputerLearning.IconGrid.EnsureGrid </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel private">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a5b625c6f62fb4a8fef3f0060fa5c16c2" name="a5b625c6f62fb4a8fef3f0060fa5c16c2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5b625c6f62fb4a8fef3f0060fa5c16c2">&#9670;&#160;</a></span>GetGridPosition()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">Vector2Int ComputerLearning.IconGrid.GetGridPosition </td>
+          <td>(</td>
+          <td class="paramtype">Vector2</td>          <td class="paramname"><span class="paramname"><em>local</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel private">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ad16bf2d5bc5ba8e6978b3ff45b8fa502" name="ad16bf2d5bc5ba8e6978b3ff45b8fa502"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad16bf2d5bc5ba8e6978b3ff45b8fa502">&#9670;&#160;</a></span>OnRectTransformDimensionsChange()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ComputerLearning.IconGrid.OnRectTransformDimensionsChange </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel private">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a4cda5276f27b56638d036398d98e31b3" name="a4cda5276f27b56638d036398d98e31b3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4cda5276f27b56638d036398d98e31b3">&#9670;&#160;</a></span>Place()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool ComputerLearning.IconGrid.Place </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="class_computer_learning_1_1_draggable_icon.html">DraggableIcon</a></td>          <td class="paramname"><span class="paramname"><em>icon</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Vector2Int</td>          <td class="paramname"><span class="paramname"><em>target</em></span>&#160;)</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel private">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a34182a333aa1ed36d76402368526b4e5" name="a34182a333aa1ed36d76402368526b4e5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a34182a333aa1ed36d76402368526b4e5">&#9670;&#160;</a></span>Register()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -172,7 +290,7 @@ Private Attributes</h2></td></tr>
         <tr>
           <td class="memname">void ComputerLearning.IconGrid.Register </td>
           <td>(</td>
-          <td class="paramtype">Vector2</td>          <td class="paramname"><span class="paramname"><em>pos</em></span></td><td>)</td>
+          <td class="paramtype"><a class="el" href="class_computer_learning_1_1_draggable_icon.html">DraggableIcon</a></td>          <td class="paramname"><span class="paramname"><em>icon</em></span></td><td>)</td>
           <td></td>
         </tr>
       </table>
@@ -205,34 +323,57 @@ Private Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="abf0eba6ea4057af55def4f29084ab336" name="abf0eba6ea4057af55def4f29084ab336"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#abf0eba6ea4057af55def4f29084ab336">&#9670;&#160;</a></span>Update()</h2>
+<a id="ae494988214ac49723bf14544565ca9ff" name="ae494988214ac49723bf14544565ca9ff"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae494988214ac49723bf14544565ca9ff">&#9670;&#160;</a></span>TryPlaceIcon()</h2>
 
 <div class="memitem">
 <div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">void ComputerLearning.IconGrid.Update </td>
+          <td class="memname">void ComputerLearning.IconGrid.TryPlaceIcon </td>
           <td>(</td>
-          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td class="paramtype"><a class="el" href="class_computer_learning_1_1_draggable_icon.html">DraggableIcon</a></td>          <td class="paramname"><span class="paramname"><em>icon</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Vector2</td>          <td class="paramname"><span class="paramname"><em>screenPosition</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Vector3</td>          <td class="paramname"><span class="paramname"><em>previousPosition</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Camera</td>          <td class="paramname"><span class="paramname"><em>eventCamera</em></span>&#160;)</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="abaa81f33190f146f434a7f86e4c48994" name="abaa81f33190f146f434a7f86e4c48994"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abaa81f33190f146f434a7f86e4c48994">&#9670;&#160;</a></span>Unregister()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ComputerLearning.IconGrid.Unregister </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="class_computer_learning_1_1_draggable_icon.html">DraggableIcon</a></td>          <td class="paramname"><span class="paramname"><em>icon</em></span></td><td>)</td>
           <td></td>
         </tr>
       </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel private">private</span></span>  </td>
-  </tr>
-</table>
 </div><div class="memdoc">
 
 </div>
 </div>
 <a name="doc-variable-members" id="doc-variable-members"></a><h2 id="header-doc-variable-members" class="groupheader">Member Data Documentation</h2>
-<a id="a57723bbeb4e629eebf37f4aa8c5fe15f" name="a57723bbeb4e629eebf37f4aa8c5fe15f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a57723bbeb4e629eebf37f4aa8c5fe15f">&#9670;&#160;</a></span>grid</h2>
+<a id="a2f0abdb915e5016403c369fce12361e9" name="a2f0abdb915e5016403c369fce12361e9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2f0abdb915e5016403c369fce12361e9">&#9670;&#160;</a></span>grid</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -241,7 +382,7 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">bool [,] ComputerLearning.IconGrid.grid</td>
+          <td class="memname"><a class="el" href="class_computer_learning_1_1_draggable_icon.html">DraggableIcon</a> [,] ComputerLearning.IconGrid.grid</td>
         </tr>
       </table>
   </td>
@@ -263,7 +404,7 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">float ComputerLearning.IconGrid.ICON_SIZE = 60</td>
+          <td class="memname">float ComputerLearning.IconGrid.ICON_SIZE = 120</td>
         </tr>
       </table>
   </td>
@@ -285,7 +426,7 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">float ComputerLearning.IconGrid.INITIAL_POS_X = 60</td>
+          <td class="memname">float ComputerLearning.IconGrid.INITIAL_POS_X = 0</td>
         </tr>
       </table>
   </td>
@@ -307,7 +448,7 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">float ComputerLearning.IconGrid.INITIAL_POS_Y = -60</td>
+          <td class="memname">float ComputerLearning.IconGrid.INITIAL_POS_Y = 0</td>
         </tr>
       </table>
   </td>
@@ -341,6 +482,28 @@ Private Attributes</h2></td></tr>
 
 </div>
 </div>
+<a id="af4348cb248e4d4d07dd5437a63939f5c" name="af4348cb248e4d4d07dd5437a63939f5c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af4348cb248e4d4d07dd5437a63939f5c">&#9670;&#160;</a></span>registered</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">readonly List&lt;<a class="el" href="class_computer_learning_1_1_draggable_icon.html">DraggableIcon</a>&gt; ComputerLearning.IconGrid.registered = new List&lt;<a class="el" href="class_computer_learning_1_1_draggable_icon.html">DraggableIcon</a>&gt;()</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel private">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="a7cc50e2e2600b844eb0b6e71aeebfe2b" name="a7cc50e2e2600b844eb0b6e71aeebfe2b"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a7cc50e2e2600b844eb0b6e71aeebfe2b">&#9670;&#160;</a></span>SPACING</h2>
 
@@ -351,7 +514,7 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">float ComputerLearning.IconGrid.SPACING = 10</td>
+          <td class="memname">float ComputerLearning.IconGrid.SPACING = 30</td>
         </tr>
       </table>
   </td>

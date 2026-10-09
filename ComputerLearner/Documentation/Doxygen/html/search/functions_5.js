@@ -1,5 +1,10 @@
 var searchData=
 [
-  ['setcontent_0',['SetContent',['../class_computer_learning_1_1_window.html#a3c01afae1dfd3f921140995ad840d811',1,'ComputerLearning::Window']]],
-  ['start_1',['Start',['../class_computer_learning_1_1_draggable_icon.html#a60ed7f4f31b8f43fca12394ac617b11b',1,'ComputerLearning.DraggableIcon.Start()'],['../class_computer_learning_1_1_icon_grid.html#a5b86f6140f40973710314c289f9f36e9',1,'ComputerLearning.IconGrid.Start()'],['../class_computer_learning_1_1_input_manager.html#a627df543652ceb88a685f1ecdab06da2',1,'ComputerLearning.InputManager.Start()'],['../class_computer_learning_1_1_resize_handle.html#a90a174861e1f8f2c5086a9b5a5fe220c',1,'ComputerLearning.ResizeHandle.Start()'],['../class_computer_learning_1_1_scene_system.html#af97566c6f48af293858cf1a14818e289',1,'ComputerLearning.SceneSystem.Start()'],['../class_computer_learning_1_1_window.html#a14923bcd03266c463fe0788888ee2666',1,'ComputerLearning.Window.Start()'],['../class_computer_learning_1_1_window_drag.html#a7ca5faaced43cfb574d01fa76db13cdc',1,'ComputerLearning.WindowDrag.Start()']]]
+  ['filterrecent_0',['FilterRecent',['../class_computer_learning_1_1_task_manager.html#a77d650f5c8701cd57e45f77a030253f2',1,'ComputerLearning::TaskManager']]],
+  ['findtaskbarbutton_1',['FindTaskbarButton',['../class_computer_learning_1_1_desktop_tour.html#a40a54ada6cef6694306a484ed5d8083c',1,'ComputerLearning::DesktopTour']]],
+  ['finishtest_2',['FinishTest',['../class_computer_learning_1_1_initial_test_manager.html#a4d2f8abfee4d38b39a1f469ad5ce00a6',1,'ComputerLearning::InitialTestManager']]],
+  ['finishtutorial_3',['FinishTutorial',['../class_computer_learning_1_1_tutorial_manager.html#a736e4d18ae8849717d5dbbbfe3c77601',1,'ComputerLearning::TutorialManager']]],
+  ['finishwithoutresult_4',['FinishWithoutResult',['../class_computer_learning_1_1_base_task.html#a876bff33a90be64b8e8b57fe009427a0',1,'ComputerLearning::BaseTask']]],
+  ['focustopwindow_5',['FocusTopWindow',['../class_computer_learning_1_1_window_manager.html#a847ca2bfda5c48c61179ab1182a078b0',1,'ComputerLearning::WindowManager']]],
+  ['focuswindow_6',['FocusWindow',['../class_computer_learning_1_1_window_manager.html#a2a658d5d102246473679326750d6ece8',1,'ComputerLearning::WindowManager']]]
 ];

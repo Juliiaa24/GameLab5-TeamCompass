@@ -113,6 +113,9 @@ document.addEventListener('DOMContentLoaded',() => { initNavTree('class_computer
   <div class="headertitle"><div class="title">ComputerLearning.Window Class Reference</div></div>
 </div><!--header-->
 <div class="contents">
+
+<p>The source of truth for a window, including while it is minimized.  
+ <a href="#details">More...</a></p>
 <div class="dynheader">
 Inheritance diagram for ComputerLearning.Window:</div>
 <div class="dyncontent">
@@ -128,21 +131,357 @@ Collaboration diagram for ComputerLearning.Window:</div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-pub-methods" class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a3c01afae1dfd3f921140995ad840d811" id="r_a3c01afae1dfd3f921140995ad840d811"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a3c01afae1dfd3f921140995ad840d811">SetContent</a> (GameObject contentPrefab)</td></tr>
-<tr class="memdesc:a3c01afae1dfd3f921140995ad840d811"><td class="mdescLeft">&#160;</td><td class="mdescRight">Añade el prefab del contenido a la ventana, no tiene por que adaptarse correctamente siempre, hay que adaptar cada prefab segun las necesidades.  <br /></td></tr>
+<tr class="memitem:a6e2a0e935bb97bd241c347e8e5d76bbb" id="r_a6e2a0e935bb97bd241c347e8e5d76bbb"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a6e2a0e935bb97bd241c347e8e5d76bbb">SetContent</a> (GameObject content)</td></tr>
+<tr class="memitem:ae38d53d97e609fcfbf1e6e835c3aa077" id="r_ae38d53d97e609fcfbf1e6e835c3aa077"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#ae38d53d97e609fcfbf1e6e835c3aa077">OnPointerDown</a> (PointerEventData eventData)</td></tr>
+<tr class="memitem:af14ee382e032308d88ce7e84c700a591" id="r_af14ee382e032308d88ce7e84c700a591"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#af14ee382e032308d88ce7e84c700a591">BringToFront</a> ()</td></tr>
+<tr class="memitem:a5c7ed4457127703050bb982e7b87e30c" id="r_a5c7ed4457127703050bb982e7b87e30c"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a5c7ed4457127703050bb982e7b87e30c">toggleMaximize</a> ()</td></tr>
+<tr class="memitem:a1de3693deb7bc4c447c8a2b6c595834c" id="r_a1de3693deb7bc4c447c8a2b6c595834c"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a1de3693deb7bc4c447c8a2b6c595834c">Minimize</a> ()</td></tr>
+<tr class="memitem:a2f93edce726f7b55b2ab234e50b323e4" id="r_a2f93edce726f7b55b2ab234e50b323e4"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a2f93edce726f7b55b2ab234e50b323e4">Restore</a> ()</td></tr>
+<tr class="memitem:a15418ee2e9157563a162ee3b68e45884" id="r_a15418ee2e9157563a162ee3b68e45884"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a15418ee2e9157563a162ee3b68e45884">CloseWindow</a> ()</td></tr>
+<tr class="memitem:afa7f4e770144a1d52757871c41480930" id="r_afa7f4e770144a1d52757871c41480930"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#afa7f4e770144a1d52757871c41480930">KeepTitleVisible</a> ()</td></tr>
+<tr class="memitem:a3796794afcb60be4bfe0bd0156563c18" id="r_a3796794afcb60be4bfe0bd0156563c18"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a3796794afcb60be4bfe0bd0156563c18">setTitle</a> (string title)</td></tr>
+<tr class="memitem:ab8d2ba042950bf82ebaea666735e43be" id="r_ab8d2ba042950bf82ebaea666735e43be"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#ab8d2ba042950bf82ebaea666735e43be">setIcon</a> (Sprite icon)</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 id="header-properties" class="groupheader"><a id="properties" name="properties"></a>
+Properties</h2></td></tr>
+<tr class="memitem:a90b201a5d3f62d08f62ea2c325ae7500" id="r_a90b201a5d3f62d08f62ea2c325ae7500"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="#a90b201a5d3f62d08f62ea2c325ae7500">IsMaximized</a><code> [get]</code></td></tr>
+<tr class="memitem:a52f6a9bac5e9bb92157a5d6399abe852" id="r_a52f6a9bac5e9bb92157a5d6399abe852"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="#a52f6a9bac5e9bb92157a5d6399abe852">IsMinimized</a><code> [get]</code></td></tr>
+<tr class="memitem:a92c656f72c97ff3a495ad0eb861ff658" id="r_a92c656f72c97ff3a495ad0eb861ff658"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="#a92c656f72c97ff3a495ad0eb861ff658">IsClosed</a><code> [get, private set]</code></td></tr>
+<tr class="memitem:a6fb3c5d536d95ba3831d43082948a78b" id="r_a6fb3c5d536d95ba3831d43082948a78b"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="#a6fb3c5d536d95ba3831d43082948a78b">IsFocused</a><code> [get]</code></td></tr>
+<tr class="memitem:ae259a8846e9f7d8e842361e00fe57be0" id="r_ae259a8846e9f7d8e842361e00fe57be0"><td class="memItemLeft">string&#160;</td><td class="memItemRight"><a class="el" href="#ae259a8846e9f7d8e842361e00fe57be0">Title</a><code> [get]</code></td></tr>
+<tr class="memitem:aa99cf799e1d79a949dc6ca19261ad75e" id="r_aa99cf799e1d79a949dc6ca19261ad75e"><td class="memItemLeft">Sprite&#160;</td><td class="memItemRight"><a class="el" href="#aa99cf799e1d79a949dc6ca19261ad75e">Icon</a><code> [get]</code></td></tr>
+<tr class="memitem:a6c462bd787442f3b7f64f2101e97b8fa" id="r_a6c462bd787442f3b7f64f2101e97b8fa"><td class="memItemLeft">GameObject&#160;</td><td class="memItemRight"><a class="el" href="#a6c462bd787442f3b7f64f2101e97b8fa">Content</a><code> [get, private set]</code></td></tr>
+<tr class="memitem:a0b484190fd7df318a4c9079a211eb8cd" id="r_a0b484190fd7df318a4c9079a211eb8cd"><td class="memItemLeft">RectTransform&#160;</td><td class="memItemRight"><a class="el" href="#a0b484190fd7df318a4c9079a211eb8cd">TitleBar</a><code> [get]</code></td></tr>
+<tr class="memitem:ac05c9b34f04a6b903ce90e12f35d9080" id="r_ac05c9b34f04a6b903ce90e12f35d9080"><td class="memItemLeft">RectTransform&#160;</td><td class="memItemRight"><a class="el" href="#ac05c9b34f04a6b903ce90e12f35d9080">CloseButton</a><code> [get]</code></td></tr>
+<tr class="memitem:a9f3af8eec2e7957bc3efe9a43bc8d48b" id="r_a9f3af8eec2e7957bc3efe9a43bc8d48b"><td class="memItemLeft">RectTransform&#160;</td><td class="memItemRight"><a class="el" href="#a9f3af8eec2e7957bc3efe9a43bc8d48b">MaximizeButton</a><code> [get]</code></td></tr>
+<tr class="memitem:acf0ce52b8193e0b9ac86d82f630a1d20" id="r_acf0ce52b8193e0b9ac86d82f630a1d20"><td class="memItemLeft">RectTransform&#160;</td><td class="memItemRight"><a class="el" href="#acf0ce52b8193e0b9ac86d82f630a1d20">MinimizeButton</a><code> [get]</code></td></tr>
+<tr class="memitem:a8b90ce0874305c02f3fee4524b49084f" id="r_a8b90ce0874305c02f3fee4524b49084f"><td class="memItemLeft">RectTransform&#160;</td><td class="memItemRight"><a class="el" href="#a8b90ce0874305c02f3fee4524b49084f">ContentArea</a><code> [get]</code></td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 id="header-events" class="groupheader"><a id="events" name="events"></a>
+Events</h2></td></tr>
+<tr class="memitem:a0d74c633d55a731226c790b348ce7e98" id="r_a0d74c633d55a731226c790b348ce7e98"><td class="memItemLeft">Action&lt; <a class="el" href="class_computer_learning_1_1_window.html">Window</a> &gt;&#160;</td><td class="memItemRight"><a class="el" href="#a0d74c633d55a731226c790b348ce7e98">StateChanged</a></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-pri-methods" class="groupheader"><a id="pri-methods" name="pri-methods"></a>
 Private Member Functions</h2></td></tr>
-<tr class="memitem:a14923bcd03266c463fe0788888ee2666" id="r_a14923bcd03266c463fe0788888ee2666"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a14923bcd03266c463fe0788888ee2666">Start</a> ()</td></tr>
-<tr class="memitem:aec5aeae4aa3d4c56171f9d35ba145f7d" id="r_aec5aeae4aa3d4c56171f9d35ba145f7d"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#aec5aeae4aa3d4c56171f9d35ba145f7d">Update</a> ()</td></tr>
+<tr class="memitem:acd43a3df37915334cc2311a73a8bebdb" id="r_acd43a3df37915334cc2311a73a8bebdb"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#acd43a3df37915334cc2311a73a8bebdb">Awake</a> ()</td></tr>
+<tr class="memitem:ae34f8238c4966b6afcae94b1271e681e" id="r_ae34f8238c4966b6afcae94b1271e681e"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#ae34f8238c4966b6afcae94b1271e681e">OnEnable</a> ()</td></tr>
+<tr class="memitem:aa81a7046f63d89a1727e8ab3d4e5e14f" id="r_aa81a7046f63d89a1727e8ab3d4e5e14f"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#aa81a7046f63d89a1727e8ab3d4e5e14f">OnDisable</a> ()</td></tr>
+<tr class="memitem:ae3a1274bd89d00c57812ae29e4e18d66" id="r_ae3a1274bd89d00c57812ae29e4e18d66"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#ae3a1274bd89d00c57812ae29e4e18d66">OnDestroy</a> ()</td></tr>
+<tr class="memitem:a912bf52782f70329495b1f3329b5ff00" id="r_a912bf52782f70329495b1f3329b5ff00"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a912bf52782f70329495b1f3329b5ff00">OnRectTransformDimensionsChange</a> ()</td></tr>
+<tr class="memitem:a73f758330e9608a81f3d8b7e9d5da6d0" id="r_a73f758330e9608a81f3d8b7e9d5da6d0"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a73f758330e9608a81f3d8b7e9d5da6d0">InstallFocusRelays</a> ()</td></tr>
+<tr class="memitem:a3dc9c903b09dd4075fbd1e20546767ee" id="r_a3dc9c903b09dd4075fbd1e20546767ee"><td class="memItemLeft">IEnumerator&#160;</td><td class="memItemRight"><a class="el" href="#a3dc9c903b09dd4075fbd1e20546767ee">AnimateScale</a> (Vector3 fromScale, Vector3 toScale, Action onComplete)</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-pri-attribs" class="groupheader"><a id="pri-attribs" name="pri-attribs"></a>
 Private Attributes</h2></td></tr>
+<tr class="memitem:a5dab426a53174fc451e871d6066488e9" id="r_a5dab426a53174fc451e871d6066488e9"><td class="memItemLeft">RectTransform&#160;</td><td class="memItemRight"><a class="el" href="#a5dab426a53174fc451e871d6066488e9">titleBar</a></td></tr>
+<tr class="memitem:a14cd94c11ebceb128a089003816c3b80" id="r_a14cd94c11ebceb128a089003816c3b80"><td class="memItemLeft">RectTransform&#160;</td><td class="memItemRight"><a class="el" href="#a14cd94c11ebceb128a089003816c3b80">closeButton</a></td></tr>
+<tr class="memitem:afe2e9fb68d445475dabeaf197c04aa0f" id="r_afe2e9fb68d445475dabeaf197c04aa0f"><td class="memItemLeft">RectTransform&#160;</td><td class="memItemRight"><a class="el" href="#afe2e9fb68d445475dabeaf197c04aa0f">maximizeButton</a></td></tr>
+<tr class="memitem:a4b461e55c6c8effd5f04725c7fa63f09" id="r_a4b461e55c6c8effd5f04725c7fa63f09"><td class="memItemLeft">RectTransform&#160;</td><td class="memItemRight"><a class="el" href="#a4b461e55c6c8effd5f04725c7fa63f09">minimizeButton</a></td></tr>
 <tr class="memitem:ae70d084ad2f281237c6ee31cb6629244" id="r_ae70d084ad2f281237c6ee31cb6629244"><td class="memItemLeft">RectTransform&#160;</td><td class="memItemRight"><a class="el" href="#ae70d084ad2f281237c6ee31cb6629244">contentArea</a></td></tr>
+<tr class="memitem:a27ffb5fdcbba43ba9fdccc1e2f96bb6d" id="r_a27ffb5fdcbba43ba9fdccc1e2f96bb6d"><td class="memItemLeft">GameObject&#160;</td><td class="memItemRight"><a class="el" href="#a27ffb5fdcbba43ba9fdccc1e2f96bb6d">contentPrefab</a></td></tr>
+<tr class="memitem:af3e20ab29307761034e20a9fc8f6284a" id="r_af3e20ab29307761034e20a9fc8f6284a"><td class="memItemLeft">string&#160;</td><td class="memItemRight"><a class="el" href="#af3e20ab29307761034e20a9fc8f6284a">windowTitle</a></td></tr>
+<tr class="memitem:a332062c1096ff9bfade29684085f0ccf" id="r_a332062c1096ff9bfade29684085f0ccf"><td class="memItemLeft">Sprite&#160;</td><td class="memItemRight"><a class="el" href="#a332062c1096ff9bfade29684085f0ccf">windowIcon</a></td></tr>
+<tr class="memitem:a101ed9d17700d6cecc251465b65b2793" id="r_a101ed9d17700d6cecc251465b65b2793"><td class="memItemLeft">RectTransform&#160;</td><td class="memItemRight"><a class="el" href="#a101ed9d17700d6cecc251465b65b2793">windowRectTransform</a></td></tr>
+<tr class="memitem:a63f86159295aa69a3dca4738aad8db06" id="r_a63f86159295aa69a3dca4738aad8db06"><td class="memItemLeft"><a class="el" href="class_computer_learning_1_1_window_manager.html">WindowManager</a>&#160;</td><td class="memItemRight"><a class="el" href="#a63f86159295aa69a3dca4738aad8db06">manager</a></td></tr>
+<tr class="memitem:ac9e5078452521c3d8ea29205bd851b10" id="r_ac9e5078452521c3d8ea29205bd851b10"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="#ac9e5078452521c3d8ea29205bd851b10">maximized</a></td></tr>
+<tr class="memitem:a70a318bf817dbec93459a9cd688f9e52" id="r_a70a318bf817dbec93459a9cd688f9e52"><td class="memItemLeft">Vector2&#160;</td><td class="memItemRight"><a class="el" href="#a70a318bf817dbec93459a9cd688f9e52">lastAnchorMin</a></td></tr>
+<tr class="memitem:ad29966f78b1a4b117b8c22429c2fafc6" id="r_ad29966f78b1a4b117b8c22429c2fafc6"><td class="memItemLeft">Vector2&#160;</td><td class="memItemRight"><a class="el" href="#ad29966f78b1a4b117b8c22429c2fafc6">lastAnchorMax</a></td></tr>
+<tr class="memitem:a11c5b1eb0f3576380ab342440b7c0b88" id="r_a11c5b1eb0f3576380ab342440b7c0b88"><td class="memItemLeft">Vector2&#160;</td><td class="memItemRight"><a class="el" href="#a11c5b1eb0f3576380ab342440b7c0b88">lastPosition</a></td></tr>
+<tr class="memitem:a2666772a4aff2dd913f1515fd7567168" id="r_a2666772a4aff2dd913f1515fd7567168"><td class="memItemLeft">Vector2&#160;</td><td class="memItemRight"><a class="el" href="#a2666772a4aff2dd913f1515fd7567168">lastSize</a></td></tr>
+<tr class="memitem:abc8d2c6894d66b646bb1a3ea3c3aa85b" id="r_abc8d2c6894d66b646bb1a3ea3c3aa85b"><td class="memItemLeft">float&#160;</td><td class="memItemRight"><a class="el" href="#abc8d2c6894d66b646bb1a3ea3c3aa85b">animationDuration</a> = 0.2f</td></tr>
+<tr class="memitem:a1604d65c506f42e7da2000ce1ed8adf7" id="r_a1604d65c506f42e7da2000ce1ed8adf7"><td class="memItemLeft">Coroutine&#160;</td><td class="memItemRight"><a class="el" href="#a1604d65c506f42e7da2000ce1ed8adf7">animationCoroutine</a></td></tr>
 </table>
-<a name="doc-func-members" id="doc-func-members"></a><h2 id="header-doc-func-members" class="groupheader">Member Function Documentation</h2>
-<a id="a3c01afae1dfd3f921140995ad840d811" name="a3c01afae1dfd3f921140995ad840d811"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3c01afae1dfd3f921140995ad840d811">&#9670;&#160;</a></span>SetContent()</h2>
+<a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>The source of truth for a window, including while it is minimized. </p>
+</div><a name="doc-func-members" id="doc-func-members"></a><h2 id="header-doc-func-members" class="groupheader">Member Function Documentation</h2>
+<a id="a3dc9c903b09dd4075fbd1e20546767ee" name="a3dc9c903b09dd4075fbd1e20546767ee"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3dc9c903b09dd4075fbd1e20546767ee">&#9670;&#160;</a></span>AnimateScale()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">IEnumerator ComputerLearning.Window.AnimateScale </td>
+          <td>(</td>
+          <td class="paramtype">Vector3</td>          <td class="paramname"><span class="paramname"><em>fromScale</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Vector3</td>          <td class="paramname"><span class="paramname"><em>toScale</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Action</td>          <td class="paramname"><span class="paramname"><em>onComplete</em></span>&#160;)</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel private">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="acd43a3df37915334cc2311a73a8bebdb" name="acd43a3df37915334cc2311a73a8bebdb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acd43a3df37915334cc2311a73a8bebdb">&#9670;&#160;</a></span>Awake()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ComputerLearning.Window.Awake </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel private">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="af14ee382e032308d88ce7e84c700a591" name="af14ee382e032308d88ce7e84c700a591"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af14ee382e032308d88ce7e84c700a591">&#9670;&#160;</a></span>BringToFront()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ComputerLearning.Window.BringToFront </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a15418ee2e9157563a162ee3b68e45884" name="a15418ee2e9157563a162ee3b68e45884"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a15418ee2e9157563a162ee3b68e45884">&#9670;&#160;</a></span>CloseWindow()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ComputerLearning.Window.CloseWindow </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a73f758330e9608a81f3d8b7e9d5da6d0" name="a73f758330e9608a81f3d8b7e9d5da6d0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a73f758330e9608a81f3d8b7e9d5da6d0">&#9670;&#160;</a></span>InstallFocusRelays()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ComputerLearning.Window.InstallFocusRelays </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel private">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="afa7f4e770144a1d52757871c41480930" name="afa7f4e770144a1d52757871c41480930"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afa7f4e770144a1d52757871c41480930">&#9670;&#160;</a></span>KeepTitleVisible()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ComputerLearning.Window.KeepTitleVisible </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a1de3693deb7bc4c447c8a2b6c595834c" name="a1de3693deb7bc4c447c8a2b6c595834c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1de3693deb7bc4c447c8a2b6c595834c">&#9670;&#160;</a></span>Minimize()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ComputerLearning.Window.Minimize </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ae3a1274bd89d00c57812ae29e4e18d66" name="ae3a1274bd89d00c57812ae29e4e18d66"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae3a1274bd89d00c57812ae29e4e18d66">&#9670;&#160;</a></span>OnDestroy()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ComputerLearning.Window.OnDestroy </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel private">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="aa81a7046f63d89a1727e8ab3d4e5e14f" name="aa81a7046f63d89a1727e8ab3d4e5e14f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa81a7046f63d89a1727e8ab3d4e5e14f">&#9670;&#160;</a></span>OnDisable()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ComputerLearning.Window.OnDisable </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel private">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ae34f8238c4966b6afcae94b1271e681e" name="ae34f8238c4966b6afcae94b1271e681e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae34f8238c4966b6afcae94b1271e681e">&#9670;&#160;</a></span>OnEnable()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ComputerLearning.Window.OnEnable </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel private">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ae38d53d97e609fcfbf1e6e835c3aa077" name="ae38d53d97e609fcfbf1e6e835c3aa077"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae38d53d97e609fcfbf1e6e835c3aa077">&#9670;&#160;</a></span>OnPointerDown()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ComputerLearning.Window.OnPointerDown </td>
+          <td>(</td>
+          <td class="paramtype">PointerEventData</td>          <td class="paramname"><span class="paramname"><em>eventData</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a912bf52782f70329495b1f3329b5ff00" name="a912bf52782f70329495b1f3329b5ff00"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a912bf52782f70329495b1f3329b5ff00">&#9670;&#160;</a></span>OnRectTransformDimensionsChange()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ComputerLearning.Window.OnRectTransformDimensionsChange </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel private">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a2f93edce726f7b55b2ab234e50b323e4" name="a2f93edce726f7b55b2ab234e50b323e4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2f93edce726f7b55b2ab234e50b323e4">&#9670;&#160;</a></span>Restore()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ComputerLearning.Window.Restore </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a6e2a0e935bb97bd241c347e8e5d76bbb" name="a6e2a0e935bb97bd241c347e8e5d76bbb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6e2a0e935bb97bd241c347e8e5d76bbb">&#9670;&#160;</a></span>SetContent()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -150,73 +489,132 @@ Private Attributes</h2></td></tr>
         <tr>
           <td class="memname">void ComputerLearning.Window.SetContent </td>
           <td>(</td>
-          <td class="paramtype">GameObject</td>          <td class="paramname"><span class="paramname"><em>contentPrefab</em></span></td><td>)</td>
+          <td class="paramtype">GameObject</td>          <td class="paramname"><span class="paramname"><em>content</em></span></td><td>)</td>
           <td></td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p>Añade el prefab del contenido a la ventana, no tiene por que adaptarse correctamente siempre, hay que adaptar cada prefab segun las necesidades. </p>
-<dl class="params"><dt>Parameters</dt><dd>
-  <table class="params">
-    <tr><td class="paramname">contentPrefab</td><td></td></tr>
-  </table>
-  </dd>
-</dl>
-
 </div>
 </div>
-<a id="a14923bcd03266c463fe0788888ee2666" name="a14923bcd03266c463fe0788888ee2666"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a14923bcd03266c463fe0788888ee2666">&#9670;&#160;</a></span>Start()</h2>
+<a id="ab8d2ba042950bf82ebaea666735e43be" name="ab8d2ba042950bf82ebaea666735e43be"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab8d2ba042950bf82ebaea666735e43be">&#9670;&#160;</a></span>setIcon()</h2>
 
 <div class="memitem">
 <div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">void ComputerLearning.Window.Start </td>
+          <td class="memname">void ComputerLearning.Window.setIcon </td>
           <td>(</td>
-          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td class="paramtype">Sprite</td>          <td class="paramname"><span class="paramname"><em>icon</em></span></td><td>)</td>
           <td></td>
         </tr>
       </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel private">private</span></span>  </td>
-  </tr>
-</table>
 </div><div class="memdoc">
 
 </div>
 </div>
-<a id="aec5aeae4aa3d4c56171f9d35ba145f7d" name="aec5aeae4aa3d4c56171f9d35ba145f7d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aec5aeae4aa3d4c56171f9d35ba145f7d">&#9670;&#160;</a></span>Update()</h2>
+<a id="a3796794afcb60be4bfe0bd0156563c18" name="a3796794afcb60be4bfe0bd0156563c18"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3796794afcb60be4bfe0bd0156563c18">&#9670;&#160;</a></span>setTitle()</h2>
 
 <div class="memitem">
 <div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">void ComputerLearning.Window.Update </td>
+          <td class="memname">void ComputerLearning.Window.setTitle </td>
+          <td>(</td>
+          <td class="paramtype">string</td>          <td class="paramname"><span class="paramname"><em>title</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a5c7ed4457127703050bb982e7b87e30c" name="a5c7ed4457127703050bb982e7b87e30c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5c7ed4457127703050bb982e7b87e30c">&#9670;&#160;</a></span>toggleMaximize()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ComputerLearning.Window.toggleMaximize </td>
           <td>(</td>
           <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
           <td></td>
         </tr>
       </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel private">private</span></span>  </td>
-  </tr>
-</table>
 </div><div class="memdoc">
 
 </div>
 </div>
 <a name="doc-variable-members" id="doc-variable-members"></a><h2 id="header-doc-variable-members" class="groupheader">Member Data Documentation</h2>
+<a id="a1604d65c506f42e7da2000ce1ed8adf7" name="a1604d65c506f42e7da2000ce1ed8adf7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1604d65c506f42e7da2000ce1ed8adf7">&#9670;&#160;</a></span>animationCoroutine</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">Coroutine ComputerLearning.Window.animationCoroutine</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel private">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="abc8d2c6894d66b646bb1a3ea3c3aa85b" name="abc8d2c6894d66b646bb1a3ea3c3aa85b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abc8d2c6894d66b646bb1a3ea3c3aa85b">&#9670;&#160;</a></span>animationDuration</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">float ComputerLearning.Window.animationDuration = 0.2f</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel private">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a14cd94c11ebceb128a089003816c3b80" name="a14cd94c11ebceb128a089003816c3b80"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a14cd94c11ebceb128a089003816c3b80">&#9670;&#160;</a></span>closeButton</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">RectTransform ComputerLearning.Window.closeButton</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel private">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="ae70d084ad2f281237c6ee31cb6629244" name="ae70d084ad2f281237c6ee31cb6629244"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ae70d084ad2f281237c6ee31cb6629244">&#9670;&#160;</a></span>contentArea</h2>
 
@@ -239,8 +637,574 @@ Private Attributes</h2></td></tr>
 
 </div>
 </div>
+<a id="a27ffb5fdcbba43ba9fdccc1e2f96bb6d" name="a27ffb5fdcbba43ba9fdccc1e2f96bb6d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a27ffb5fdcbba43ba9fdccc1e2f96bb6d">&#9670;&#160;</a></span>contentPrefab</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">GameObject ComputerLearning.Window.contentPrefab</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel private">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ad29966f78b1a4b117b8c22429c2fafc6" name="ad29966f78b1a4b117b8c22429c2fafc6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad29966f78b1a4b117b8c22429c2fafc6">&#9670;&#160;</a></span>lastAnchorMax</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">Vector2 ComputerLearning.Window.lastAnchorMax</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel private">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a70a318bf817dbec93459a9cd688f9e52" name="a70a318bf817dbec93459a9cd688f9e52"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a70a318bf817dbec93459a9cd688f9e52">&#9670;&#160;</a></span>lastAnchorMin</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">Vector2 ComputerLearning.Window.lastAnchorMin</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel private">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a11c5b1eb0f3576380ab342440b7c0b88" name="a11c5b1eb0f3576380ab342440b7c0b88"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a11c5b1eb0f3576380ab342440b7c0b88">&#9670;&#160;</a></span>lastPosition</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">Vector2 ComputerLearning.Window.lastPosition</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel private">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a2666772a4aff2dd913f1515fd7567168" name="a2666772a4aff2dd913f1515fd7567168"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2666772a4aff2dd913f1515fd7567168">&#9670;&#160;</a></span>lastSize</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">Vector2 ComputerLearning.Window.lastSize</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel private">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a63f86159295aa69a3dca4738aad8db06" name="a63f86159295aa69a3dca4738aad8db06"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a63f86159295aa69a3dca4738aad8db06">&#9670;&#160;</a></span>manager</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="class_computer_learning_1_1_window_manager.html">WindowManager</a> ComputerLearning.Window.manager</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel private">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="afe2e9fb68d445475dabeaf197c04aa0f" name="afe2e9fb68d445475dabeaf197c04aa0f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afe2e9fb68d445475dabeaf197c04aa0f">&#9670;&#160;</a></span>maximizeButton</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">RectTransform ComputerLearning.Window.maximizeButton</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel private">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ac9e5078452521c3d8ea29205bd851b10" name="ac9e5078452521c3d8ea29205bd851b10"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac9e5078452521c3d8ea29205bd851b10">&#9670;&#160;</a></span>maximized</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool ComputerLearning.Window.maximized</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel private">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a4b461e55c6c8effd5f04725c7fa63f09" name="a4b461e55c6c8effd5f04725c7fa63f09"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4b461e55c6c8effd5f04725c7fa63f09">&#9670;&#160;</a></span>minimizeButton</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">RectTransform ComputerLearning.Window.minimizeButton</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel private">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a5dab426a53174fc451e871d6066488e9" name="a5dab426a53174fc451e871d6066488e9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5dab426a53174fc451e871d6066488e9">&#9670;&#160;</a></span>titleBar</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">RectTransform ComputerLearning.Window.titleBar</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel private">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a332062c1096ff9bfade29684085f0ccf" name="a332062c1096ff9bfade29684085f0ccf"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a332062c1096ff9bfade29684085f0ccf">&#9670;&#160;</a></span>windowIcon</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">Sprite ComputerLearning.Window.windowIcon</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel private">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a101ed9d17700d6cecc251465b65b2793" name="a101ed9d17700d6cecc251465b65b2793"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a101ed9d17700d6cecc251465b65b2793">&#9670;&#160;</a></span>windowRectTransform</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">RectTransform ComputerLearning.Window.windowRectTransform</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel private">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="af3e20ab29307761034e20a9fc8f6284a" name="af3e20ab29307761034e20a9fc8f6284a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af3e20ab29307761034e20a9fc8f6284a">&#9670;&#160;</a></span>windowTitle</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">string ComputerLearning.Window.windowTitle</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel private">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a name="doc-property-members" id="doc-property-members"></a><h2 id="header-doc-property-members" class="groupheader">Property Documentation</h2>
+<a id="ac05c9b34f04a6b903ce90e12f35d9080" name="ac05c9b34f04a6b903ce90e12f35d9080"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac05c9b34f04a6b903ce90e12f35d9080">&#9670;&#160;</a></span>CloseButton</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">RectTransform ComputerLearning.Window.CloseButton</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel get">get</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a6c462bd787442f3b7f64f2101e97b8fa" name="a6c462bd787442f3b7f64f2101e97b8fa"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6c462bd787442f3b7f64f2101e97b8fa">&#9670;&#160;</a></span>Content</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">GameObject ComputerLearning.Window.Content</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel get">get</span><span class="mlabel private-set">private set</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a8b90ce0874305c02f3fee4524b49084f" name="a8b90ce0874305c02f3fee4524b49084f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8b90ce0874305c02f3fee4524b49084f">&#9670;&#160;</a></span>ContentArea</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">RectTransform ComputerLearning.Window.ContentArea</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel get">get</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="aa99cf799e1d79a949dc6ca19261ad75e" name="aa99cf799e1d79a949dc6ca19261ad75e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa99cf799e1d79a949dc6ca19261ad75e">&#9670;&#160;</a></span>Icon</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">Sprite ComputerLearning.Window.Icon</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel get">get</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a92c656f72c97ff3a495ad0eb861ff658" name="a92c656f72c97ff3a495ad0eb861ff658"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a92c656f72c97ff3a495ad0eb861ff658">&#9670;&#160;</a></span>IsClosed</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool ComputerLearning.Window.IsClosed</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel get">get</span><span class="mlabel private-set">private set</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a6fb3c5d536d95ba3831d43082948a78b" name="a6fb3c5d536d95ba3831d43082948a78b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6fb3c5d536d95ba3831d43082948a78b">&#9670;&#160;</a></span>IsFocused</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool ComputerLearning.Window.IsFocused</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel get">get</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a90b201a5d3f62d08f62ea2c325ae7500" name="a90b201a5d3f62d08f62ea2c325ae7500"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a90b201a5d3f62d08f62ea2c325ae7500">&#9670;&#160;</a></span>IsMaximized</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool ComputerLearning.Window.IsMaximized</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel get">get</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a52f6a9bac5e9bb92157a5d6399abe852" name="a52f6a9bac5e9bb92157a5d6399abe852"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a52f6a9bac5e9bb92157a5d6399abe852">&#9670;&#160;</a></span>IsMinimized</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool ComputerLearning.Window.IsMinimized</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel get">get</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a9f3af8eec2e7957bc3efe9a43bc8d48b" name="a9f3af8eec2e7957bc3efe9a43bc8d48b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9f3af8eec2e7957bc3efe9a43bc8d48b">&#9670;&#160;</a></span>MaximizeButton</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">RectTransform ComputerLearning.Window.MaximizeButton</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel get">get</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="acf0ce52b8193e0b9ac86d82f630a1d20" name="acf0ce52b8193e0b9ac86d82f630a1d20"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acf0ce52b8193e0b9ac86d82f630a1d20">&#9670;&#160;</a></span>MinimizeButton</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">RectTransform ComputerLearning.Window.MinimizeButton</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel get">get</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ae259a8846e9f7d8e842361e00fe57be0" name="ae259a8846e9f7d8e842361e00fe57be0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae259a8846e9f7d8e842361e00fe57be0">&#9670;&#160;</a></span>Title</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">string ComputerLearning.Window.Title</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel get">get</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a0b484190fd7df318a4c9079a211eb8cd" name="a0b484190fd7df318a4c9079a211eb8cd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0b484190fd7df318a4c9079a211eb8cd">&#9670;&#160;</a></span>TitleBar</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">RectTransform ComputerLearning.Window.TitleBar</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel get">get</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a name="doc-event-members" id="doc-event-members"></a><h2 id="header-doc-event-members" class="groupheader">Event Documentation</h2>
+<a id="a0d74c633d55a731226c790b348ce7e98" name="a0d74c633d55a731226c790b348ce7e98"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0d74c633d55a731226c790b348ce7e98">&#9670;&#160;</a></span>StateChanged</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">Action&lt;<a class="el" href="class_computer_learning_1_1_window.html">Window</a>&gt; ComputerLearning.Window.StateChanged</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <hr/>The documentation for this class was generated from the following file:<ul>
-<li>C:/Users/julia/OneDrive/Documentos/GitHub/Erasmus/GameLab5-TeamCompass/ComputerLearner/Assets/Scripts/<a class="el" href="_window_8cs.html">Window.cs</a></li>
+<li>C:/Users/julia/OneDrive/Documentos/GitHub/Erasmus/GameLab5-TeamCompass/ComputerLearner/Assets/Scripts/DesktopSystem/<a class="el" href="_window_8cs.html">Window.cs</a></li>
 </ul>
 </div><!-- contents -->
 </div><!-- doc-content -->

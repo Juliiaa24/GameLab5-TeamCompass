@@ -1,4 +1,28 @@
 var searchData=
 [
-  ['parentrect_0',['parentRect',['../class_computer_learning_1_1_resize_handle.html#a028b62fb54f468fd53daedc489a328be',1,'ComputerLearning::ResizeHandle']]]
+  ['lastanchormax_0',['lastAnchorMax',['../class_computer_learning_1_1_window.html#ad29966f78b1a4b117b8c22429c2fafc6',1,'ComputerLearning::Window']]],
+  ['lastanchormin_1',['lastAnchorMin',['../class_computer_learning_1_1_window.html#a70a318bf817dbec93459a9cd688f9e52',1,'ComputerLearning::Window']]],
+  ['lastclicktime_2',['lastClickTime',['../class_computer_learning_1_1_double_click_task.html#af17fbbfbf9b036b646489cecc3cf0822',1,'ComputerLearning::DoubleClickTask']]],
+  ['lastposition_3',['lastPosition',['../class_computer_learning_1_1_window.html#a11c5b1eb0f3576380ab342440b7c0b88',1,'ComputerLearning::Window']]],
+  ['lastpracticed_4',['LastPracticed',['../class_computer_learning_1_1_skill_state.html#aa6e2da9d3e19120960d2f1dd1a08707e',1,'ComputerLearning::SkillState']]],
+  ['lastpracticedticks_5',['lastPracticedTicks',['../class_computer_learning_1_1_skill_state.html#a8d83a0a596e115c6817ee047a322041f',1,'ComputerLearning::SkillState']]],
+  ['lastsize_6',['lastSize',['../class_computer_learning_1_1_window.html#a2666772a4aff2dd913f1515fd7567168',1,'ComputerLearning::Window']]],
+  ['learningsessionmanager_7',['LearningSessionManager',['../class_computer_learning_1_1_learning_session_manager.html',1,'ComputerLearning']]],
+  ['learningsessionmanager_2ecs_8',['LearningSessionManager.cs',['../_learning_session_manager_8cs.html',1,'']]],
+  ['left_9',['Left',['../class_computer_learning_1_1_resize_handle.html#ad1005df57e8ac1f19c385d008fe32cf8a945d5e233cf7d6240f6b783b36a374ff',1,'ComputerLearning::ResizeHandle']]],
+  ['leftclick_10',['leftClick',['../class_computer_learning_1_1_input_manager.html#a02b8512c709e578129bb4fc91d179166',1,'ComputerLearning::InputManager']]],
+  ['level_5fcompleted_11',['level_completed',['../class_computer_learning_1_1_tutorial_dialogs.html#a76f9d499592e1bb4f9cc931f133b372e',1,'ComputerLearning::TutorialDialogs']]],
+  ['level_5fready_5fprompt_12',['level_ready_prompt',['../class_computer_learning_1_1_tutorial_dialogs.html#a93839fa1ea0178bdf933e209a2f99063',1,'ComputerLearning::TutorialDialogs']]],
+  ['leveldef_13',['LevelDef',['../class_computer_learning_1_1_draggable_icon.html#a6bc36c53b317f9356545376d9b36f5f7',1,'ComputerLearning::DraggableIcon']]],
+  ['leveldefinition_14',['LevelDefinition',['../class_computer_learning_1_1_level_definition.html',1,'ComputerLearning']]],
+  ['leveldefinition_15',['levelDefinition',['../class_computer_learning_1_1_desktop_icon_data.html#ae0c3e2ae069c8aa20877ef0679f5f4b4',1,'ComputerLearning.DesktopIconData.levelDefinition'],['../class_computer_learning_1_1_draggable_icon.html#a638b4a755e87f15e5aa759e253f7584a',1,'ComputerLearning.DraggableIcon.levelDefinition']]],
+  ['leveldefinition_2ecs_16',['LevelDefinition.cs',['../_level_definition_8cs.html',1,'']]],
+  ['levelid_17',['levelId',['../class_computer_learning_1_1_level_definition.html#ac3c45bed3cb6e53ceab087cc603ab8fb',1,'ComputerLearning.LevelDefinition.levelId'],['../class_computer_learning_1_1_task_result.html#abaae38d6f95f409f27aa8df61d5036f6',1,'ComputerLearning.TaskResult.levelId']]],
+  ['levelname_18',['levelName',['../class_computer_learning_1_1_task_result.html#a03f0894d5475ee121eb57e1e2ea18ff8',1,'ComputerLearning::TaskResult']]],
+  ['levelrunner_19',['LevelRunner',['../class_computer_learning_1_1_level_runner.html',1,'ComputerLearning']]],
+  ['levelrunner_2ecs_20',['LevelRunner.cs',['../_level_runner_8cs.html',1,'']]],
+  ['leveltester_21',['LevelTester',['../class_computer_learning_1_1_level_tester.html',1,'ComputerLearning']]],
+  ['leveltester_2ecs_22',['LevelTester.cs',['../_level_tester_8cs.html',1,'']]],
+  ['load_23',['Load',['../class_computer_learning_1_1_progress_data.html#a3b39c9218648c65ee0fb600372bf3121',1,'ComputerLearning::ProgressData']]],
+  ['loaddialogs_24',['LoadDialogs',['../class_computer_learning_1_1_desktop_tour.html#a71d79a756de240fa99b4d27e4979b8a4',1,'ComputerLearning::DesktopTour']]]
 ];

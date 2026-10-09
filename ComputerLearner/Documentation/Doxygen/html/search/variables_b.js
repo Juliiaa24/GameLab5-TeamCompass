@@ -1,0 +1,21 @@
+var searchData=
+[
+  ['manager_0',['manager',['../class_computer_learning_1_1_draggable_icon.html#a9ca2339addd7af8059d368420214bd4a',1,'ComputerLearning.DraggableIcon.manager'],['../class_computer_learning_1_1_taskbar_window_button.html#a99594d47e72992363379d7b371adaf8e',1,'ComputerLearning.TaskbarWindowButton.manager'],['../class_computer_learning_1_1_window.html#a63f86159295aa69a3dca4738aad8db06',1,'ComputerLearning.Window.manager']]],
+  ['mascotcontainer_1',['mascotContainer',['../class_computer_learning_1_1_desktop_manager.html#a7e8b636ff0a8fb889794865c62e1a535',1,'ComputerLearning::DesktopManager']]],
+  ['mascotprefab_2',['mascotPrefab',['../class_computer_learning_1_1_desktop_manager.html#a48c8860d37c540f61b63071836da9007',1,'ComputerLearning::DesktopManager']]],
+  ['mascotrect_3',['mascotRect',['../class_computer_learning_1_1_virtual_mascot.html#a22ce404408b1ec34a741cd7d52707f9b',1,'ComputerLearning::VirtualMascot']]],
+  ['maxattempts_4',['maxAttempts',['../class_computer_learning_1_1_task_config.html#a4ae4066ec30309c11d19e734108ed390',1,'ComputerLearning::TaskConfig']]],
+  ['maxdurationseconds_5',['maxDurationSeconds',['../class_computer_learning_1_1_session_config.html#aebe72cc3114ea3a3f643ca9f773bc009',1,'ComputerLearning::SessionConfig']]],
+  ['maximizebutton_6',['maximizeButton',['../class_computer_learning_1_1_window.html#afe2e9fb68d445475dabeaf197c04aa0f',1,'ComputerLearning::Window']]],
+  ['maximized_7',['maximized',['../class_computer_learning_1_1_window.html#ac9e5078452521c3d8ea29205bd851b10',1,'ComputerLearning::Window']]],
+  ['maxtasks_8',['maxTasks',['../class_computer_learning_1_1_session_config.html#aba0562321c7921b77db9b63ad915dd0b',1,'ComputerLearning::SessionConfig']]],
+  ['mindistinctskills_9',['minDistinctSkills',['../class_computer_learning_1_1_session_config.html#aec7e652b7099991f22db24bb72e9c147',1,'ComputerLearning::SessionConfig']]],
+  ['minimizebutton_10',['minimizeButton',['../class_computer_learning_1_1_window.html#a4b461e55c6c8effd5f04725c7fa63f09',1,'ComputerLearning::Window']]],
+  ['minimizedcolor_11',['minimizedColor',['../class_computer_learning_1_1_taskbar_window_button.html#a9016e07b3b8cd83d417ea0d45b4b0680',1,'ComputerLearning::TaskbarWindowButton']]],
+  ['minsize_12',['minSize',['../class_computer_learning_1_1_resize_handle.html#a3da0488e50181ad58674f5f504318d34',1,'ComputerLearning::ResizeHandle']]],
+  ['mousedelta_13',['mouseDelta',['../class_computer_learning_1_1_input_manager.html#ad0c2e31cd20bdf82f7657d9886cb1f9f',1,'ComputerLearning::InputManager']]],
+  ['mouseposition_14',['mousePosition',['../class_computer_learning_1_1_input_manager.html#a5b199b99a8dc954586158d6250cc8a99',1,'ComputerLearning::InputManager']]],
+  ['movedirection_15',['moveDirection',['../class_computer_learning_1_1_click_target.html#ac85d82ead7bba78e46f46e43ef82de8e',1,'ComputerLearning.ClickTarget.moveDirection'],['../class_computer_learning_1_1_hover_target.html#a654d2307a48a1e8bda617ef65a4ea590',1,'ComputerLearning.HoverTarget.moveDirection'],['../class_computer_learning_1_1_task_target_movement.html#acce5644749eb48e572ea14fa3a7efc3c',1,'ComputerLearning.TaskTargetMovement.moveDirection']]],
+  ['movespeed_16',['moveSpeed',['../class_computer_learning_1_1_task_config.html#a36eb20c4c8d06cb800db1ab89a7bf513',1,'ComputerLearning.TaskConfig.moveSpeed'],['../class_computer_learning_1_1_click_target.html#aa0f77444dbf15f6aadf21e449aa71347',1,'ComputerLearning.ClickTarget.moveSpeed'],['../class_computer_learning_1_1_hover_target.html#aa80bf1258645e409ae88c702588dc905',1,'ComputerLearning.HoverTarget.moveSpeed'],['../class_computer_learning_1_1_task_target_movement.html#aaff5f2c901f45974f64184f65937faec',1,'ComputerLearning.TaskTargetMovement.moveSpeed']]],
+  ['myrect_17',['myRect',['../class_computer_learning_1_1_recycle_bin_icon.html#ada1740e855d0d44113ef07fb6250aef9',1,'ComputerLearning::RecycleBinIcon']]]
+];

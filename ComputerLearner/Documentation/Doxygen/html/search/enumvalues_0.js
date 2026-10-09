@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['bottom_0',['Bottom',['../class_computer_learning_1_1_resize_handle.html#ad1005df57e8ac1f19c385d008fe32cf8a2ad9d63b69c4a10a5cc9cad923133bc4',1,'ComputerLearning::ResizeHandle']]]
+  ['application_0',['Application',['../namespace_computer_learning.html#a021b12d19c94170400dcd4cc21536f48ae498749f3c42246d50b15c81c101d988',1,'ComputerLearning']]]
 ];

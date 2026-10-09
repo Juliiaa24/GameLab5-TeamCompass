@@ -1,8 +1,18 @@
 var searchData=
 [
-  ['main_0',['Main',['../class_computer_learning_1_1_scene_system.html#a53b7f240be57215a3a0b6342fdd3fbc3aa02c83a7dbd96295beaefb72c2bee2de',1,'ComputerLearning::SceneSystem']]],
-  ['menu_1',['Menu',['../class_computer_learning_1_1_scene_system.html#a53b7f240be57215a3a0b6342fdd3fbc3ab61541208db7fa7dba42c85224405911',1,'ComputerLearning::SceneSystem']]],
-  ['minsize_2',['minSize',['../class_computer_learning_1_1_resize_handle.html#a3da0488e50181ad58674f5f504318d34',1,'ComputerLearning::ResizeHandle']]],
-  ['mousedelta_3',['mouseDelta',['../class_computer_learning_1_1_input_manager.html#ad0c2e31cd20bdf82f7657d9886cb1f9f',1,'ComputerLearning::InputManager']]],
-  ['mouseposition_4',['mousePosition',['../class_computer_learning_1_1_input_manager.html#a5b199b99a8dc954586158d6250cc8a99',1,'ComputerLearning::InputManager']]]
+  ['handlepiecedropped_0',['HandlePieceDropped',['../class_computer_learning_1_1_drag_drop_task.html#aab40cd738d2303482e989aee6ab391b6',1,'ComputerLearning::DragDropTask']]],
+  ['handletaskcompleted_1',['HandleTaskCompleted',['../class_computer_learning_1_1_initial_test_manager.html#ab20529ecbb020108d570a3327d1e7223',1,'ComputerLearning.InitialTestManager.HandleTaskCompleted()'],['../class_computer_learning_1_1_learning_session_manager.html#a0046fc5d8429972a7720a3b24bbe73f7',1,'ComputerLearning.LearningSessionManager.HandleTaskCompleted()'],['../class_computer_learning_1_1_level_runner.html#a2dabd5e1a9d90c8db4ac3961050e040f',1,'ComputerLearning.LevelRunner.HandleTaskCompleted()']]],
+  ['handlewindowstate_2',['HandleWindowState',['../class_computer_learning_1_1_adaptive_session_starter.html#a81948a2bccf0de9e90fd9ea0953432dc',1,'ComputerLearning::AdaptiveSessionStarter']]],
+  ['hasdirection_3',['HasDirection',['../class_computer_learning_1_1_resize_handle.html#a0d9207a5e039817a7f2368b2e51a84ba',1,'ComputerLearning::ResizeHandle']]],
+  ['hasseendesktoptour_4',['HasSeenDesktopTour',['../class_computer_learning_1_1_progress_data.html#a8f3695c44da8a5f5378818b7737e8ba1',1,'ComputerLearning::ProgressData']]],
+  ['hasseendesktoptour_5',['hasSeenDesktopTour',['../class_computer_learning_1_1_progress_data_1_1_progress_data_wrapper.html#ac2356a0bb9597313db75969288edcc6d',1,'ComputerLearning::ProgressData::ProgressDataWrapper']]],
+  ['hasskill_6',['HasSkill',['../class_computer_learning_1_1_skill_manager.html#ae6d5f89d448a4cfe4bde0bb40ad7053c',1,'ComputerLearning::SkillManager']]],
+  ['hide_7',['Hide',['../class_computer_learning_1_1_virtual_mascot.html#a19ae64951cd4d1df48d301f2b8b00d2e',1,'ComputerLearning::VirtualMascot']]],
+  ['hidemascot_8',['HideMascot',['../class_computer_learning_1_1_virtual_mascot.html#a11c44134e942ec5dd725e656a36971d0',1,'ComputerLearning::VirtualMascot']]],
+  ['hidemascotiftargeting_9',['HideMascotIfTargeting',['../class_computer_learning_1_1_virtual_mascot.html#aceb42a1264d003bf8c836f41d35321a9',1,'ComputerLearning::VirtualMascot']]],
+  ['hovertarget_10',['HoverTarget',['../class_computer_learning_1_1_hover_target.html',1,'ComputerLearning']]],
+  ['hovertarget_2ecs_11',['HoverTarget.cs',['../_hover_target_8cs.html',1,'']]],
+  ['hovertargettask_12',['HoverTargetTask',['../class_computer_learning_1_1_hover_target_task.html',1,'ComputerLearning']]],
+  ['hovertargettask_2ecs_13',['HoverTargetTask.cs',['../_hover_target_task_8cs.html',1,'']]],
+  ['hovertime_14',['hoverTime',['../class_computer_learning_1_1_hover_target.html#a4cd6af81911624ddaf9b1b67d7e0c1ad',1,'ComputerLearning::HoverTarget']]]
 ];

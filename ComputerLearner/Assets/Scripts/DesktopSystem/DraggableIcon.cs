@@ -214,19 +214,39 @@ namespace ComputerLearning
                     appWindow.toggleMaximize();
                 }
 
-                LevelRunner runner = appWindow.GetComponentInChildren<LevelRunner>();
-                if (runner == null)
+                if (levelDefinition.levelId == "assessment")
                 {
-                    runner = appWindow.gameObject.AddComponent<LevelRunner>();
-                    runner.taskContentArea = appWindow.ContentArea;
-                    
-                    if (runner.taskContentArea == null)
-                        runner.taskContentArea = appWindow.GetComponent<RectTransform>();
+                    InitialTestManager runner = appWindow.GetComponentInChildren<InitialTestManager>();
+                    if (runner == null && InitialTestManager.Instance != null)
+                    {
+                        runner = InitialTestManager.Instance;
+                    }
+                    else if (runner == null)
+                    {
+                        runner = appWindow.gameObject.AddComponent<InitialTestManager>();
+                    }
+
+                    if (!DesktopTour.IsTourRunning)
+                    {
+                        runner.StartAssessment(levelDefinition, appWindow);
+                    }
                 }
-                
-                if (!DesktopTour.IsTourRunning)
+                else
                 {
-                    runner.StartLevel(levelDefinition);
+                    LevelRunner runner = appWindow.GetComponentInChildren<LevelRunner>();
+                    if (runner == null)
+                    {
+                        runner = appWindow.gameObject.AddComponent<LevelRunner>();
+                        runner.taskContentArea = appWindow.ContentArea;
+                        
+                        if (runner.taskContentArea == null)
+                            runner.taskContentArea = appWindow.GetComponent<RectTransform>();
+                    }
+                    
+                    if (!DesktopTour.IsTourRunning)
+                    {
+                        runner.StartLevel(levelDefinition);
+                    }
                 }
             }
         }

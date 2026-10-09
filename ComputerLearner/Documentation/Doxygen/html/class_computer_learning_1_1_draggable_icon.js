@@ -1,10 +1,29 @@
 var class_computer_learning_1_1_draggable_icon =
 [
+    [ "OnBeginDrag", "class_computer_learning_1_1_draggable_icon.html#a634aaef30be9d863639069c9c7f21834", null ],
+    [ "OnDestroy", "class_computer_learning_1_1_draggable_icon.html#a0bcdafcdbabfa59e58d90675b5083780", null ],
     [ "OnDrag", "class_computer_learning_1_1_draggable_icon.html#adf279d42c96e43da5c76f0fef94140c9", null ],
+    [ "OnEndDrag", "class_computer_learning_1_1_draggable_icon.html#a38eb06d129c57eae36fdb813765ed3d4", null ],
+    [ "OnPointerClick", "class_computer_learning_1_1_draggable_icon.html#a2805cf21c220eaff14407c3fd313cf3b", null ],
     [ "OnPointerDown", "class_computer_learning_1_1_draggable_icon.html#a37b58ec8275dde435dd21a1dcde84ad6", null ],
     [ "OnPointerUp", "class_computer_learning_1_1_draggable_icon.html#a3cd991e30c5e0cae393108cac4871189", null ],
+    [ "OpenApplication", "class_computer_learning_1_1_draggable_icon.html#a7e0c8d8629f02dfe6144d8778594b56a", null ],
+    [ "SetupDynamicIcon", "class_computer_learning_1_1_draggable_icon.html#a087faa057a61ab97220df47a5acac4e6", null ],
     [ "Start", "class_computer_learning_1_1_draggable_icon.html#a60ed7f4f31b8f43fca12394ac617b11b", null ],
     [ "Update", "class_computer_learning_1_1_draggable_icon.html#a311edcb0867e9dbde74b25a161b9aa00", null ],
+    [ "appWindow", "class_computer_learning_1_1_draggable_icon.html#aec9d175d0cab147759180e6746a20b97", null ],
+    [ "canvasGroup", "class_computer_learning_1_1_draggable_icon.html#a78b8a9bdafc819cc2c0952365014939a", null ],
+    [ "contentPrefab", "class_computer_learning_1_1_draggable_icon.html#ad47a104d11df51936bf1381c5afa6149", null ],
+    [ "dragging", "class_computer_learning_1_1_draggable_icon.html#ad976dc65509400980e46e87d899beaf6", null ],
     [ "grid", "class_computer_learning_1_1_draggable_icon.html#a34a71b4d85ad5acf85c2b85b96a2f91d", null ],
-    [ "initialPosition", "class_computer_learning_1_1_draggable_icon.html#afe0cfeb4271e7af187d71a6fbc532a70", null ]
+    [ "initialPosition", "class_computer_learning_1_1_draggable_icon.html#afe0cfeb4271e7af187d71a6fbc532a70", null ],
+    [ "isLocked", "class_computer_learning_1_1_draggable_icon.html#ae68150bcb97f600ab82da29b9fce24b0", null ],
+    [ "levelDefinition", "class_computer_learning_1_1_draggable_icon.html#a638b4a755e87f15e5aa759e253f7584a", null ],
+    [ "manager", "class_computer_learning_1_1_draggable_icon.html#a9ca2339addd7af8059d368420214bd4a", null ],
+    [ "originalColor", "class_computer_learning_1_1_draggable_icon.html#a57a5a7ae8dcfc2fc2aa82b96ebfbb8bb", null ],
+    [ "originalScale", "class_computer_learning_1_1_draggable_icon.html#a42ba512cbcbab55162ea3017fca70440", null ],
+    [ "windowPrefab", "class_computer_learning_1_1_draggable_icon.html#a0b844da21d0b616f6bac037ba143abc5", null ],
+    [ "AllowDoubleClick", "class_computer_learning_1_1_draggable_icon.html#af92ca08b2684d539a41a6f9d410332c3", null ],
+    [ "AppWindow", "class_computer_learning_1_1_draggable_icon.html#afa54c8d290c03976b13b1dd30df2e079", null ],
+    [ "LevelDef", "class_computer_learning_1_1_draggable_icon.html#a6bc36c53b317f9356545376d9b36f5f7", null ]
 ];
