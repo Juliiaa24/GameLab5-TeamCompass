@@ -6,7 +6,7 @@ namespace ComputerLearning
     {
         private TutorialDialogs dialogs;
         private void Awake() {
-            TextAsset json = Resources.Load<TextAsset>("TutorialDialogs");
+            TextAsset json = LocalizationManager.LoadLocalizedResource("TutorialDialogs");
             if (json != null) dialogs = JsonUtility.FromJson<TutorialDialogs>(json.text);
             else dialogs = new TutorialDialogs();
         }

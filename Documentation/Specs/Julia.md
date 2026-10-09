@@ -97,7 +97,7 @@ A reference resolution of approximately:
 
 has been used.
 
-The Canvas uses Unity’s Canvas Scaler so the interface adapts to different resolutions.
+The Canvas uses Unityâ€™s Canvas Scaler so the interface adapts to different resolutions.
 
 Important:
 Some window resizing logic previously broke when the Canvas resolution / scaling configuration was changed.
@@ -119,7 +119,7 @@ Scripts should generally use:
 
 namespace ComputerLearning
 {
-…
+â€¦
 }
 
 There is an existing C# script template used for the project.
@@ -133,7 +133,7 @@ The template follows a structure similar to:
 * Description:
     */
 
-using …
+using â€¦
 
 namespace ComputerLearning
 {
@@ -216,7 +216,7 @@ offsetMin = Vector2.zero
 offsetMax = Vector2.zero
 
 However, remember:
-This stretches relative to the object’s parent, not automatically relative to the Canvas.
+This stretches relative to the objectâ€™s parent, not automatically relative to the Canvas.
 
 Therefore, content should be parented to the intended window content container before applying full-stretch anchors.
 
@@ -286,10 +286,10 @@ When explaining the system, explain:
 Example conceptual flow:
 
 Window changes state
-→ Window invokes an event
-→ WindowManager subscribed previously
-→ WindowManager receives callback
-→ WindowManager updates taskbar or window state
+â†’ Window invokes an event
+â†’ WindowManager subscribed previously
+â†’ WindowManager receives callback
+â†’ WindowManager updates taskbar or window state
 
 Avoid assuming I already fully understand event-driven programming.
 
@@ -340,7 +340,7 @@ There was previously a problem where the window only came to the front after rel
 
 Bring-to-front should ideally happen on pointer down / begin drag rather than waiting until pointer click completes.
 
-Dragging should respect the coordinate system of the window’s parent RectTransform.
+Dragging should respect the coordinate system of the windowâ€™s parent RectTransform.
 
 ==================================================
 11. RESIZE HANDLE SYSTEM
@@ -503,7 +503,7 @@ Content should adapt to the current window size.
 Usually:
 
 * Instantiate content.
-* Parent it to the window’s content RectTransform.
+* Parent it to the windowâ€™s content RectTransform.
 * Stretch it to fill that RectTransform.
 
 However, not every child inside the content should necessarily scale with the window.
@@ -556,18 +556,18 @@ Desktop icons are another existing system.
 
 Some of this was implemented by a teammate named Julia.
 
-The window system was merged with Julia’s desktop icon implementation.
+The window system was merged with Juliaâ€™s desktop icon implementation.
 
 Desired architecture:
 
 Desktop icon
-→ opens corresponding application/window
+â†’ opens corresponding application/window
 
 Window
-→ is managed by WindowManager
+â†’ is managed by WindowManager
 
 Taskbar
-→ reflects currently open applications/windows
+â†’ reflects currently open applications/windows
 
 Avoid creating three completely independent systems.
 
@@ -603,7 +603,7 @@ When the containing window resizes:
 
 Targets should remain appropriately positioned within the content area.
 
-They should not simply become smaller because the window’s parent RectTransform changes.
+They should not simply become smaller because the windowâ€™s parent RectTransform changes.
 
 Prefer:
 
@@ -667,7 +667,7 @@ When debugging animation speed, inspect:
 ==================================================
 24. INPUT SYSTEM
 
-The project uses Unity’s newer Input System package.
+The project uses Unityâ€™s newer Input System package.
 
 Mouse input is important because the game teaches computer use.
 
@@ -718,7 +718,7 @@ Do not implement complete text typing by manually checking every keyboard key un
 
 Sometimes it may be necessary to determine whether the pointer is currently interacting with UI.
 
-Unity’s EventSystem can be used.
+Unityâ€™s EventSystem can be used.
 
 For example conceptually:
 
@@ -774,7 +774,7 @@ Work already done / tracked includes approximately:
 * Windows moving and resizing: 3 hours.
 * Closing and maximizing windows while remembering previous state: 2 hours.
 * Final window tweaks and bug fixing: 2 hours.
-* Merge with Julia’s desktop icon implementation: 2 hours.
+* Merge with Juliaâ€™s desktop icon implementation: 2 hours.
 * Planning the TaskSystem: part of the same work session.
 * Defining Task / Skill / Level managers: 3 hours.
 
@@ -809,10 +809,10 @@ Do not assume I own every repository-level permission.
 
 Desired workflow:
 
-Task moves to “Review” in GitHub Projects
-→ automation detects the change
-→ Discord webhook posts a review notification
-→ one of the other team members can review it.
+Task moves to â€œReviewâ€� in GitHub Projects
+â†’ automation detects the change
+â†’ Discord webhook posts a review notification
+â†’ one of the other team members can review it.
 
 A variable / configuration called:
 
@@ -1212,14 +1212,14 @@ END OF PROJECT CONTEXT
 ==================================================
 50. PRE-TUTORIAL ONBOARDING (NIVEL 1, 2, 3, 4 AUTO-SEQUENCE)
 
-**Contexto:** Los niños necesitaban niveles más sencillos (mover ratón, hover, click) antes de enfrentarse al Desktop Tour. El flujo ahora orquesta estos niveles de forma automática al iniciar por primera vez el juego.
+**Contexto:** Los niÃ±os necesitaban niveles mÃ¡s sencillos (mover ratÃ³n, hover, click) antes de enfrentarse al Desktop Tour. El flujo ahora orquesta estos niveles de forma automÃ¡tica al iniciar por primera vez el juego.
 
-**Implementación con DesktopManager:**
+**ImplementaciÃ³n con DesktopManager:**
 - `DesktopManager.cs` tiene ahora un `Start()` que comprueba la variable `PlayerPrefs` `"AutoSequenceCompleted"`.
 - Si es 0, ejecuta la corrutina `AutoOnboardingSequence()`.
-- Esta corrutina spawnea los iconos iniciales, usa a la Virtual Mascot para apuntar a cada uno de ellos y llama automáticamente a `OpenApplication()` sin que el niño tenga que hacer doble click.
+- Esta corrutina spawnea los iconos iniciales, usa a la Virtual Mascot para apuntar a cada uno de ellos y llama automÃ¡ticamente a `OpenApplication()` sin que el niÃ±o tenga que hacer doble click.
 - El sistema de progreso (`ProgressData`) desbloquea a la fuerza cada nivel durante la secuencia para que sean jugables.
-- Se ha creado una nueva task `MoveMouseTask.cs` que pide al usuario que mueva el ratón por la pantalla una distancia concreta. Nota: usa el nuevo `UnityEngine.InputSystem` en lugar de `Input.mousePosition`.
+- Se ha creado una nueva task `MoveMouseTask.cs` que pide al usuario que mueva el ratÃ³n por la pantalla una distancia concreta. Nota: usa el nuevo `UnityEngine.InputSystem` en lugar de `Input.mousePosition`.
 - Al terminar el Nivel 4 (Adaptativo), se guarda `"AutoSequenceCompleted"` como 1 y se carga la escena `IntroTutorialScene` (Desktop Tour).
 
 ==================================================
@@ -1481,4 +1481,154 @@ Several critical quality-of-life and architectural improvements were made:
 4. Double-click it and complete the tasks!
 
 **Future Iterations:**
-* The assessment currently records the baseline scores but does not yet skip levels (as requested). In a future iteration, a `LevelProgressionManager` could read the `SkillManager` scores after the assessment to dynamically unlock Levels 1–5 based on proficiency.
+* The assessment currently records the baseline scores but does not yet skip levels (as requested). In a future iteration, a `LevelProgressionManager` could read the `SkillManager` scores after the assessment to dynamically unlock Levels 1â€“5 based on proficiency.
+
+==================================================
+68. CLEAN GEOMETRIC INITIAL ASSESSMENT (MINIMALIST, TIME-AWARE, JSON-LOCALIZED)
+
+**Context & Motivation:**
+User feedback required decoupling the Initial Assessment Test from game minigames (such as dirt cleaning and animated targets) and removing the Virtual Mascot. The target audience includes children and novice users who may have never touched a mouse before. The test needed to feel clean, serious, and direct (Task > Action) with minimal cognitive load, configurable timeouts, fail-safes (Skip / Exit), and external JSON localization.
+
+**Key Architecture & Design:**
+* **Standalone Minimalist UI:** The assessment runs inside its own dedicated high-contrast, dark-slate UI (AssessmentCleanRoot), replacing all playful minigame elements.
+* **No Virtual Mascot:** VirtualMascot.HideMascot() is enforced upon test start. There are no mascot interruptions or character animations.
+* **English JSON Localization:** All UI labels and task definitions are loaded from Resources/AssessmentInstructions.json. Translating or adding new languages requires only modifying or providing a JSON file without recompiling code.
+* **Per-Task Timeouts & Skip Option:**
+  - Every task has an independent 	imeoutSeconds (e.g. 15s or 20s) configured in the JSON.
+  - A real-time countdown progress bar is displayed at the top of the header (turning red in the last 3 seconds).
+  - If a child struggles or remains inactive until the timer expires, the task is marked as timed out (0 points) and smoothly auto-advances to the next task after a subtle notice.
+  - A persistent **Skip** button allows tutor/child to immediately bypass impossible tasks.
+  - An **Exit** button allows ending the test at any time, preserving recorded skills.
+* **Geometric Tasks Implementation:**
+  1. **Move Cursor (mouse_move):** Clean blue circle. Hovering inside turns it green and completes the task.
+  2. **Hover (hover):** Clean purple square. Hovering steadily fills an inner white gauge over 2.0s without clicking.
+  3. **Single Click (click):** Clean orange square. Left-clicking completes the action.
+  4. **Double Click (double_click):** Clean teal circle. Two rapid clicks within 0.45s complete the action.
+  5. **Right Click (ight_click):** Clean amber rectangle. Evaluates PointerEventData.InputButton.Right.
+  6. **Click and Hold (click_hold):** Clean red circle. Holding down fills an inner gauge over 2.0s. Releasing early resets gauge and increments extra attempts.
+  7. **Drag and Drop (drag_drop):** Blue square draggable into a gray target slot on the right using Unity's EventSystem drag handlers.
+* **Immediate Evaluation Visibility:**
+  - Upon completion or exit, a clean summary card displays every tested skill with its percentage score (e.g., 100%, 90%, or  % (Timed out)).
+  - Results are persisted to SkillManager.Instance.SetScore(...) and ProgressData.Instance.RecordResult(...).
+
+
+==================================================
+69. LIGHT MODE & AUTOMATIC EVALUATION REPORT JSON EXPORT
+
+**Enhancements:**
+* **Light Mode Transformation:**
+  - Migrated the assessment UI from dark slate to a clean modern Light Mode palette.
+  - Background is soft light off-white (#F1F5F9), the header is pure white (#FFFFFF) with a subtle bottom divider, and typography uses crisp slate hues (#0F172A for titles, #334155 for instructions, #64748B for step indicators).
+  - High-contrast geometric shapes (Royal Blue, Purple, Vibrant Orange, Teal, Amber, Crimson Red) provide immediate clarity on a light canvas.
+  - The completion card features a clean white container with alternating row backgrounds and high-contrast green/red score indicators.
+* **Evaluation Report JSON Auto-Export:**
+  - When the assessment completes or is exited, InitialTestManager now automatically exports a structured evaluation report to Assets/Assessment/{HH-mm-ss}.json.
+  - The file name is timestamped with the exact current time (HH-mm-ss).
+  - The exported JSON contains:
+    - 	imestamp (ISO UTC) and ormattedTime (HH:mm:ss).
+    - 	otalTasksTested, completedTasks, and calculated verageScore.
+    - Detailed skills list: skillId, skillName, completed, score, extraAttempts, and 	imeTakenSeconds.
+  - Ensures seamless integration with external analysis tools, tutors, and teachers without requiring manual data extraction.
+
+
+==================================================
+70. SPATIAL DISTRIBUTION & ANTI-INSTANT HOVER COMPLETION
+
+**Problem Identified:**
+When Task 1 (Move Cursor) was completed, the user's cursor naturally rested at the center of the screen (0, 0). Because Task 2 (Hover) previously spawned in the exact same spot, the cursor was already positioned inside the square upon appearance. Consequently, if the user didn't move, the 2-second hover timer counted down automatically and completed the task without requiring deliberate interaction.
+
+**Solutions Applied:**
+1. **Diverse Spatial Placement Across Stages:**
+   - Every task now spawns in distinct coordinates across the screen canvas to force deliberate hand/mouse movements between exercises:
+     - Task 1 (Move Cursor): Right side (180, 40).
+     - Task 2 (Hover): Opposite Left side (-180, -40) — more than 360 pixels away from where Task 1 ends.
+     - Task 3 (Click): Bottom-Right (140, -60).
+     - Task 4 (Double Click): Top-Left (-120, 70).
+     - Task 5 (Right Click): Top-Right (160, 60).
+     - Task 6 (Click & Hold): Center-Bottom (0, -40).
+     - Task 7 (Drag & Drop): Source at Left (-160, 0), target slot at Right (160, 0).
+2. **Hover Arming Delay:**
+   - Added an rmingDelay = 0.35f to HoverController. The gauge cannot begin filling during the first 0.35 seconds after shape instantiation, giving the player visual notice and ensuring that a stationary cursor does not instantly trigger completion.
+
+
+==================================================
+71. TIME-WEIGHTED SKILL EVALUATION FORMULA
+
+**Overview:**
+Skill proficiency calculation was upgraded to evaluate both accuracy (attempts/misclicks) and execution speed relative to each task's timeout limit.
+
+**Formula & Logic:**
+1. **Accuracy Factor:**
+   - Starts at 100 points.
+   - Deducts 10 points per extra attempt (misclick or releasing hold/drag prematurely).
+   - Clamped to a minimum base of 20 points for completion.
+2. **Time Factor (Speed Efficiency):**
+   - Evaluated as 	imeRatio = timeTaken / currentTaskTimeout.
+   - **Agility Threshold (	imeRatio <= 0.30):** Completing the task within the first 30% of the timeout incurs **0 time penalty** (full 100% speed credit).
+   - **Gradual Time Penalty ( .30 < timeRatio <= 1.0):** For hesitant or slower completion, a penalty scales linearly up to 35 points:
+     	imePenalty = ((timeRatio - 0.30f) / 0.70f) * 35f;
+3. **Combined Final Score:**
+   - inalScore = Mathf.Clamp(accuracyScore - timePenalty, 20f, 100f);
+   - If timed out or skipped: inalScore = 0f.
+4. **Enhanced Feedback Display:**
+   - The completion results screen and the exported JSON (Assets/Assessment/{HH-mm-ss}.json) now record and display both the final score and the exact seconds taken (e.g. 94% (3.2s) or 62% (14.1s)).
+
+
+==================================================
+72. DOUBLE CLICK ATTEMPT CALCULATION FIX
+
+**Problem Identified:**
+In DoubleClickController, the very first click of a double-click gesture was incorrectly invoking onAttempt?.Invoke(). Since lastClickTime started at -1f, the initial click fell into the else branch, registering as a failed attempt and adding an unnecessary 10-point penalty. As a result, even flawless double clicks on the first attempt always capped at 90%.
+
+**Solution Applied:**
+- Updated DoubleClickController.OnPointerClick to only invoke onAttempt if lastClickTime > 0f (meaning a previous click had actually occurred and the user waited too long before clicking the second time).
+- Expanded the double-click window to a child-friendly 0.50s threshold.
+- A clean double click on the first try now correctly yields 0 extra attempts and a full 100% score.
+
+
+==================================================
+73. LOCALIZATION SYSTEM (JSON LANGUAGE SWITCHER & MENU BUTTON)
+
+**Overview:**
+Implemented a dynamic localization system allowing the game to switch between languages (English 'EN' and Spanish 'ES') via JSON resource naming conventions, with language selection persisted across sessions.
+
+**JSON Naming Convention:**
+- All dialog and instruction files in `Assets/Resources/` now follow the `[LANG]-[BaseName].json` format:
+  - English: `EN-DesktopTourDialogs.json`, `EN-TutorialDialogs.json`, `EN-AssessmentInstructions.json`.
+  - Spanish: `ES-DesktopTourDialogs.json`, `ES-TutorialDialogs.json`, `ES-AssessmentInstructions.json`.
+- In accordance with project instructions, Spanish JSON files currently contain duplicate English text awaiting future translation.
+
+**Localization Manager:**
+- `LocalizationManager.cs`:
+  - Central singleton managing active language (`CurrentLanguage`), persisted via `PlayerPrefs` (`SelectedLanguage`).
+  - Exposes `LoadLocalizedResource(string baseName)`: dynamically resolves `Resources.Load<TextAsset>(lang + "-" + baseName)` with automatic fallbacks to `EN-` and un-prefixed versions.
+  - Exposes `OnLanguageChanged` event and `ToggleLanguage()` helper.
+
+**Scripts Updated to Use Localized Resources:**
+- `DesktopTour.cs`: Loads `DesktopTourDialogs` via `LocalizationManager`.
+- `FirstDesktopTutorial.cs`: Loads `TutorialDialogs` via `LocalizationManager`.
+- `SecondDesktopTutorial.cs`: Loads `TutorialDialogs` via `LocalizationManager`.
+- `AdaptiveSessionStarter.cs`: Loads `TutorialDialogs` via `LocalizationManager`.
+- `GameFlowController.cs`: Loads `TutorialDialogs` via `LocalizationManager`.
+- `LevelRunner.cs`: Loads `TutorialDialogs` via `LocalizationManager`.
+- `InitialTestManager.cs`: Loads `AssessmentInstructions` via `LocalizationManager`.
+
+**Main Menu Language Toggle Button:**
+- Created `LanguageButton.cs` attached to a newly spawned `Btn-Language` in `Menu.unity` (inside `MenuBtnLayout`).
+- Displays current language (`Language: EN` / `Language: ES`) and toggles on click, dynamically updating gameplay text resources.
+
+==================================================
+74. MENU LANGUAGE DROPDOWN (BOTTOM-RIGHT CORNER)
+
+**Overview:**
+Replaced the prominent language button in the main menu button layout with an elegant, compact dropdown situated in the bottom-right corner of the menu screen.
+
+**Implementation Details:**
+- **Removal of Btn-Language:** Removed the previous button from `MenuBtnLayout` to keep the primary vertical menu clean (Play, Reset Progress, Exit).
+- **LanguageDropdown Component (`LanguageDropdown.cs`):**
+  - Manages a TextMeshPro `TMP_Dropdown` component.
+  - Automatically synchronizes selected option with `LocalizationManager.CurrentLanguage` (`English (EN)` index 0, `Español (ES)` index 1).
+  - Listens to `onValueChanged` to update `LocalizationManager.SetLanguage(...)` and responds to `OnLanguageChanged` events without triggering feedback loops.
+- **UI Positioning & Behavior in `Menu.unity`:**
+  - Anchored directly to the Canvas bottom-right corner (`anchorMin = (1, 0)`, `anchorMax = (1, 0)`, `pivot = (1, 0)`, `anchoredPosition = (-40, 30)`).
+  - The dropdown's internal template pivot and position were inverted to unfold **upwards** (`pivot = (0.5, 0)`, `anchoredPosition = (0, 44)`), ensuring the options list remains fully visible without clipping below screen boundaries.

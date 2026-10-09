@@ -1,0 +1,69 @@
+{
+  "ui": {
+    "stepFormat": "Step {0} of {1}",
+    "skipButton": "Skip",
+    "exitButton": "Exit",
+    "timeExpired": "Time expired",
+    "completedTitle": "Assessment Completed",
+    "completedSubtitle": "Your initial computer skills have been evaluated.",
+    "closeButton": "Finish"
+  },
+  "tasks": [
+    {
+      "skillId": "mouse_move",
+      "title": "Move Cursor",
+      "instruction": "Move the cursor into the blue circle.",
+      "timeoutSeconds": 15,
+      "shape": "circle",
+      "requiredDuration": 0.0
+    },
+    {
+      "skillId": "hover",
+      "title": "Hover",
+      "instruction": "Keep the cursor inside the purple square for 2 seconds without clicking.",
+      "timeoutSeconds": 15,
+      "shape": "square",
+      "requiredDuration": 2.0
+    },
+    {
+      "skillId": "click",
+      "title": "Single Click",
+      "instruction": "Click the orange square once.",
+      "timeoutSeconds": 15,
+      "shape": "square",
+      "requiredDuration": 0.0
+    },
+    {
+      "skillId": "double_click",
+      "title": "Double Click",
+      "instruction": "Double-click quickly on the teal circle.",
+      "timeoutSeconds": 15,
+      "shape": "circle",
+      "requiredDuration": 0.0
+    },
+    {
+      "skillId": "right_click",
+      "title": "Right Click",
+      "instruction": "Click the amber rectangle using the right mouse button.",
+      "timeoutSeconds": 15,
+      "shape": "rectangle",
+      "requiredDuration": 0.0
+    },
+    {
+      "skillId": "click_hold",
+      "title": "Click and Hold",
+      "instruction": "Press and hold the mouse button on the red circle for 2 seconds.",
+      "timeoutSeconds": 20,
+      "shape": "circle",
+      "requiredDuration": 2.0
+    },
+    {
+      "skillId": "drag_drop",
+      "title": "Drag and Drop",
+      "instruction": "Drag the blue square into the target frame.",
+      "timeoutSeconds": 20,
+      "shape": "drag_drop",
+      "requiredDuration": 0.0
+    }
+  ]
+}

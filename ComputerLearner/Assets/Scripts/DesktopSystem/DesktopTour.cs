@@ -51,7 +51,7 @@ namespace ComputerLearning
 
         private void LoadDialogs()
         {
-            TextAsset json = Resources.Load<TextAsset>("DesktopTourDialogs");
+            TextAsset json = LocalizationManager.LoadLocalizedResource("DesktopTourDialogs");
             if (json != null) dialogs = JsonUtility.FromJson<DesktopTourDialogs>(json.text);
             else dialogs = new DesktopTourDialogs(); // Fallback empty
         }

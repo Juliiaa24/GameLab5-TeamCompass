@@ -1,0 +1,32 @@
+{
+  "first_welcome": "Welcome to the computer! Let's learn how to use it.",
+  "first_default": "Watch how I open this application!",
+  "first_move": "Let's start by moving the mouse! Watch how I open the Move app.",
+  "first_hover": "Now let's practice Hovering! Keep an eye on how I open it.",
+  "first_click": "Time to Click! I'll open this app so you can try.",
+  "first_adaptive": "Let's mix what we've learned in a fun challenge! Watch closely.",
+  "first_double_click": "Almost done with the basics! One last trick: Double Click!",
+
+  "second_welcome": "You've completed all the computer basics! You're ready to use the desktop freely.",
+  "second_right_click": "Now let's learn some advanced interactions! Double-click the Right Click app to start.",
+  "second_click_hold": "Great! Now double-click the Click & Hold app.",
+  "second_drag_drop": "Awesome! Let's try Drag & Drop. Open it up!",
+  "second_mixed": "You're a pro! Time for the final challenge: Mix everything together!",
+
+  "level_completed": "Level Completed! Great job!",
+  "level_ready_prompt": "Read carefully and click here\nwhen you are ready!",
+  "intro_move": "Welcome to your very first app!\nLet's practice moving the mouse. Just hover over the dirt spots to clean them!",
+  "intro_hover": "Awesome job so far!\nNow things will move a bit faster. Keep those moves sharp!",
+  "intro_click": "Ready for some clicking?\nClick on the targets as soon as they appear!",
+  "intro_adaptive": "Time for a challenge!\nLet's see what you've learned so far.",
+  "intro_double_click": "One more trick!\nDouble click quickly to clear the targets!",
+  "intro_right_click": "Let's learn how to use the right button on your mouse!",
+  "intro_click_hold": "Sometimes you need to hold the button down. Give it a try!",
+  "intro_drag_drop": "Click, hold, and move to drag items around!",
+  "intro_mixed": "The ultimate test!\nUse everything you've learned so far.",
+  "intro_default": "Get ready! ",
+
+  "adaptive_welcome": "Welcome to Level 4!\nKeep practicing to improve your skills.",
+  "adaptive_explanation": "I will give you tasks based on what you need to learn.\nGood luck!",
+  "adaptive_done": "Great practice!\nYou can click the 'X' to close this window now."
+}
