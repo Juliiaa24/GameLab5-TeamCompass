@@ -24,7 +24,9 @@ namespace ComputerLearning
         public enum SceneNames
         {
             Menu,
-            Main
+            Main,
+            AssessmentScene,
+            StatsScene
         }
 
 
@@ -71,6 +73,13 @@ namespace ComputerLearning
         // Public Methods accessible from other classes
         public void ChangeToMain() 
         { 
+            // If the initial assessment has not been completed, it serves as the first screen!
+            if (PlayerPrefs.GetInt("InitialAssessmentCompleted", 0) == 0)
+            {
+                SceneManager.LoadScene("AssessmentScene");
+                return;
+            }
+
             if (PlayerPrefs.GetInt("SemiGuidedSequenceCompleted", 0) == 1)
             {
                 SceneManager.LoadScene("BuildFinalScene");
@@ -89,19 +98,37 @@ namespace ComputerLearning
             }
         }
         public void ChangeToMenu() { ChangeScene(SceneNames.Menu); }
+        public void ChangeToAssessment() { ChangeScene(SceneNames.AssessmentScene); }
+        public void ChangeToStats() { ChangeScene(SceneNames.StatsScene); }
         public void Exit() { Application.Quit(); }
 
         public void ResetProgress()
         {
+            string lang = PlayerPrefs.GetString("SelectedLanguage", "EN");
+
             if (ProgressData.Instance != null)
             {
                 ProgressData.Instance.ClearHistory();
             }
-            else
+
+            if (SkillManager.Instance != null)
             {
-                PlayerPrefs.DeleteAll();
-                PlayerPrefs.Save();
+                SkillManager.Instance.ResetAllScores();
             }
+
+            if (InitialTestManager.Instance != null)
+            {
+                Destroy(InitialTestManager.Instance.gameObject);
+            }
+
+            PlayerPrefs.DeleteAll();
+            PlayerPrefs.SetString("SelectedLanguage", lang);
+            PlayerPrefs.SetInt("InitialAssessmentCompleted", 0);
+            PlayerPrefs.SetInt("AutoSequenceCompleted", 0);
+            PlayerPrefs.SetInt("DesktopTourCompleted", 0);
+            PlayerPrefs.SetInt("SemiGuidedSequenceCompleted", 0);
+            PlayerPrefs.Save();
+
             Debug.Log("[SceneSystem] Game progress has been successfully reset.");
         }
 
@@ -119,6 +146,12 @@ namespace ComputerLearning
                     break;
                 case SceneNames.Main:
                     SceneManager.LoadScene("Desktop1");
+                    break;
+                case SceneNames.AssessmentScene:
+                    SceneManager.LoadScene("AssessmentScene");
+                    break;
+                case SceneNames.StatsScene:
+                    SceneManager.LoadScene("StatsScene");
                     break;
                 default:
                     break;

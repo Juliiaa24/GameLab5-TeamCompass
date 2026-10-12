@@ -134,6 +134,20 @@ namespace ComputerLearning
                 return;
             }
             state.score = Mathf.Clamp(score, 0f, 100f);
+            PlayerPrefs.SetFloat($"SkillScore_{skillId}", state.score);
+            PlayerPrefs.Save();
+        }
+
+        /// <summary>
+        /// Reads the persistent score for a skill from either SkillManager or PlayerPrefs fallback.
+        /// </summary>
+        public static float GetPersistentScore(string skillId)
+        {
+            if (Instance != null && Instance.skillStates.TryGetValue(skillId, out SkillState state))
+            {
+                return state.score;
+            }
+            return PlayerPrefs.GetFloat($"SkillScore_{skillId}", 0f);
         }
 
         /// <summary>
@@ -162,7 +176,9 @@ namespace ComputerLearning
                 pair.Value.successCount = 0;
                 pair.Value.failureCount = 0;
                 pair.Value.lastPracticedTicks = 0;
+                PlayerPrefs.DeleteKey($"SkillScore_{pair.Key}");
             }
+            PlayerPrefs.Save();
             Debug.Log("[SkillManager] All skill scores reset to 0.");
         }
         #endregion
@@ -185,7 +201,8 @@ namespace ComputerLearning
                     Debug.LogWarning($"[SkillManager] Duplicate skill id '{def.skillId}' — skipping.");
                     continue;
                 }
-                skillStates[def.skillId] = new SkillState(def.skillId, 0f);
+                float savedScore = PlayerPrefs.GetFloat($"SkillScore_{def.skillId}", 0f);
+                skillStates[def.skillId] = new SkillState(def.skillId, savedScore);
             }
 
             Debug.Log($"[SkillManager] Initialised {skillStates.Count} skills.");

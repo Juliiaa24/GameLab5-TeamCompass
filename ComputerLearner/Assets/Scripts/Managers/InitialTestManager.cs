@@ -134,7 +134,17 @@ namespace ComputerLearning
 
         private void OnDestroy()
         {
+            IsTestActive = false;
             if (Instance == this) Instance = null;
+        }
+
+        private void Start()
+        {
+            if (UnityEngine.SceneManagement.SceneManager.GetActiveScene().name == "AssessmentScene")
+            {
+                IsTestActive = false;
+                StartAssessment(null, null);
+            }
         }
 
         private void Update()
@@ -168,17 +178,15 @@ namespace ComputerLearning
         #region Public Methods
         public void StartAssessment(LevelDefinition levelDef, Window window)
         {
-            if (IsTestActive)
-            {
-                Debug.LogWarning("[InitialTestManager] Assessment already active.");
-                return;
-            }
-
+            StopAllCoroutines();
             IsTestActive = true;
             appWindow = window;
             taskContentArea = appWindow != null ? appWindow.ContentArea : null;
             currentLevel = levelDef;
             currentTaskIndex = 0;
+            currentAttempts = 0;
+            currentTaskTimer = 0f;
+            isTaskResolving = false;
             recordedResults.Clear();
 
             // Completely hide the virtual mascot during the clean assessment
@@ -315,8 +323,17 @@ namespace ComputerLearning
             // Exit Button (Light button #F1F5F9 with dark slate text)
             CreateSimpleButton(headerObj.transform, config.ui.exitButton, new Vector2(20f, -10f), new Vector2(70f, 26f),
                 new Vector2(1f, 1f), new Vector2(1f, 1f), new Color(0.93f, 0.94f, 0.96f), new Color(0.28f, 0.34f, 0.44f), () => {
-                    CalculateAndStoreResults();
-                    FinishTest();
+                    IsTestActive = false;
+                    StopAllCoroutines();
+                    if (UnityEngine.SceneManagement.SceneManager.GetActiveScene().name == "AssessmentScene")
+                    {
+                        if (SceneSystem.Instance != null) SceneSystem.Instance.ChangeToMenu();
+                        else UnityEngine.SceneManagement.SceneManager.LoadScene("Menu");
+                    }
+                    else
+                    {
+                        if (appWindow != null) appWindow.CloseWindow();
+                    }
                 });
 
             // Skip Button (Light button #E2E8F0 with slate text)
@@ -410,7 +427,8 @@ namespace ComputerLearning
             if (currentTaskIndex >= config.tasks.Count)
             {
                 CalculateAndStoreResults();
-                ShowCompletionScreen();
+                if (appWindow != null) appWindow.CloseWindow();
+                FinishTest();
                 return;
             }
 
@@ -940,6 +958,18 @@ namespace ComputerLearning
             IsTestActive = false;
             Debug.Log("[InitialTestManager] Assessment completed.");
             OnTestCompleted?.Invoke();
+
+            if (UnityEngine.SceneManagement.SceneManager.GetActiveScene().name == "AssessmentScene")
+            {
+                if (SceneSystem.Instance != null)
+                {
+                    SceneSystem.Instance.ChangeToMain();
+                }
+                else
+                {
+                    UnityEngine.SceneManagement.SceneManager.LoadScene("Desktop1");
+                }
+            }
         }
         #endregion
     }

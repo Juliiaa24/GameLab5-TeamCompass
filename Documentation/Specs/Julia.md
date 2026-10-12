@@ -1632,3 +1632,83 @@ Replaced the prominent language button in the main menu button layout with an el
 - **UI Positioning & Behavior in `Menu.unity`:**
   - Anchored directly to the Canvas bottom-right corner (`anchorMin = (1, 0)`, `anchorMax = (1, 0)`, `pivot = (1, 0)`, `anchoredPosition = (-40, 30)`).
   - The dropdown's internal template pivot and position were inverted to unfold **upwards** (`pivot = (0.5, 0)`, `anchoredPosition = (0, 44)`), ensuring the options list remains fully visible without clipping below screen boundaries.
+
+==================================================
+75. INITIAL ASSESSMENT FIRST-SCREEN ROUTING & STATS DASHBOARD SCENE
+
+**Overview:**
+Integrated the Initial Assessment Test directly into the core game loop as the mandatory first experience after the Main Menu for new players, and built a dedicated Stats & Assessment dashboard scene accessible anytime from the Main Menu.
+
+**1. Main Menu First-Screen Flow:**
+- **Routing Logic (`SceneSystem.cs`):**
+  - Updated `SceneSystem.ChangeToMain()` (triggered by "Play" / `Btn-Play`) to check `PlayerPrefs.GetInt("InitialAssessmentCompleted", 0) == 0`.
+  - If the initial assessment has not been completed, the game routes immediately to `AssessmentScene`.
+  - Once completed or finished, `InitialTestManager` sets `PlayerPrefs.SetInt("InitialAssessmentCompleted", 1)` and calls `SceneSystem.ChangeToMain()`, smoothly advancing the player into `Desktop1` (or their saved level sequence).
+  - Clicking "Reset Progress" in the Main Menu wipes `PlayerPrefs`, ensuring that subsequent "Play" actions correctly restart the player at the Initial Assessment.
+
+**2. Dedicated Assessment Scene (`AssessmentScene.unity`):**
+- Standalone clean scene containing:
+  - `Main Camera` with soft neutral background (`#F1F5F9`).
+  - `Canvas` and `EventSystem` configured with `InputSystemUIInputModule`.
+  - `SceneManager` prefab (`SceneSystem`).
+  - `Managers` prefab (`SkillManager`, `ProgressData`, `DesktopManager`, etc.).
+  - `InitialTestManager` & `LocalizationManager`: Automatically starts the clean geometric assessment on load (`SceneManager.GetActiveScene().name == "AssessmentScene"`).
+  - Exit button safely navigates back to `Menu.unity`, while completion/finish progresses to `Desktop1`.
+
+**3. Stats & Reports Dashboard Scene (`StatsScene.unity` & `StatsSceneController.cs`):**
+- Accessible from the Main Menu via the new "Skills & Reports" button.
+- **Scene-Authored UI Hierarchy (constructed via Unity MCP):**
+  - All UI elements (Canvas, Background, Header bar, navigation buttons, Left/Right cards, summary panels, and table containers) are authored as persistent GameObjects within `StatsScene.unity` using the Unity MCP server rather than being built purely in runtime procedural code.
+  - `StatsSceneController.cs` binds to these pre-existing scene objects via `[SerializeField]` references (`backToMenuButton`, `retakeAssessmentButton`, `summaryBox`, `summaryText`, `avgScoreText`, `emptyStateText`, `assessmentTableContainer`, `skillsTableContainer`).
+- **Header:**
+  - "Back to Menu" button: navigates back to `Menu.unity`.
+  - "Retake Assessment" button: directly loads `AssessmentScene` so users or evaluators can re-run diagnostics anytime.
+- **Left Card (Assessment History):**
+  - Scans and parses the latest diagnostic evaluation from `Assets/Assessment/*.json`.
+  - Displays completion timestamp, tasks completed ratio, overall average proficiency percentage, and itemized task breakdowns (status, score, time taken, errors/extra attempts).
+  - Displays friendly empty state guidance if no diagnostic tests have been run yet.
+- **Right Card (Live Skill Mastery):**
+  - Queries active skill proficiencies from `SkillManager` and `PlayerPrefs` (`SkillScore_{skillId}`).
+  - Renders color-coded progress bars (High: Emerald Green >= 75%, Medium: Amber >= 45%, Beginner: Orange/Red < 45%).
+  - Summarizes current proficiency score and skill level status.
+
+**4. Main Menu Button (`Menu.unity`):**
+- Added `Btn-Stats` ("Skills & Reports") into `MenuBtnLayout` directly between "Play" and "Reset Progress".
+- Button is automatically managed by the layout's `VerticalLayoutGroup`.
+- Persistent `onClick` event is wired to `SceneSystem.ChangeToStats()`.
+
+**5. Build Settings:**
+- Both `Assets/Scenes/AssessmentScene.unity` and `Assets/Scenes/StatsScene.unity` are registered and enabled in `EditorBuildSettings.asset`.
+
+==================================================
+76. RESET PROGRESS STANDALONE BUILD FIX & DIRECT DESKTOP TRANSITION
+
+**1. Reset Progress Standalone Build Fix (`SceneSystem.cs`):**
+- **Problem Identified:**
+  - In `SceneSystem.ResetProgress()`, `PlayerPrefs.DeleteAll()` was previously located inside an `else` branch of `if (ProgressData.Instance != null)`. Because `ProgressData.Instance` exists at runtime, `PlayerPrefs.DeleteAll()` never executed.
+  - Furthermore, `ProgressData.Instance.ClearHistory()` only deleted its own save key, leaving `PlayerPrefs.GetInt("InitialAssessmentCompleted") == 1` intact. Consequently, clicking "Reset Progress" in a standalone build failed to reset the assessment state, causing the "Play" button to bypass the Initial Assessment.
+- **Solution Applied:**
+  - Cached the active language selection (`SelectedLanguage`) before wiping.
+  - Explicitly called `ProgressData.Instance?.ClearHistory()` to reset in-memory records and flags.
+  - Explicitly called `SkillManager.Instance?.ResetAllScores()` to reset active scores in memory and PlayerPrefs.
+  - Executed `PlayerPrefs.DeleteAll()` unconditionally.
+  - Re-applied `SelectedLanguage`, and explicitly set all progression flags (`InitialAssessmentCompleted`, `AutoSequenceCompleted`, `DesktopTourCompleted`, `SemiGuidedSequenceCompleted`) to `0`.
+  - Saved `PlayerPrefs` (`PlayerPrefs.Save()`), guaranteeing that clicking "Play" after "Reset Progress" consistently presents the Initial Assessment.
+
+**2. Direct Desktop Transition Without Summary Screen (`InitialTestManager.cs`):**
+- **Overview:**
+  - Removed the intermediate evaluation summary screen at the conclusion of the Initial Assessment level to create a seamless, child-friendly flow directly into the desktop environment.
+- **Implementation:**
+  - In `InitialTestManager.SpawnCurrentTask()`, upon completing all tasks (`currentTaskIndex >= config.tasks.Count`), the manager now directly calls `CalculateAndStoreResults()`, closes any open window (`appWindow?.CloseWindow()`), and calls `FinishTest()`.
+  - `CalculateAndStoreResults()` continues to evaluate accuracy/time metrics, updates `SkillManager`, sets `InitialAssessmentCompleted = 1`, and exports the diagnostic JSON report to `Assets/Assessment/{HH-mm-ss}.json`.
+**3. Mid-Assessment Reset & Re-entry Fix (`InitialTestManager.cs` & `LocalizationManager.cs`):**
+- **Problems Identified:**
+  1. The Exit ("Salir") button on the assessment window header was previously calling `CalculateAndStoreResults()`. When a user exited midway through an assessment, it mistakenly marked `InitialAssessmentCompleted = 1`, preventing the assessment from showing again upon pressing Play.
+  2. `LocalizationManager` was previously co-located with `InitialTestManager` on the `AssessmentManager` GameObject in `AssessmentScene.unity`. In `LocalizationManager.Awake()`, `DontDestroyOnLoad(gameObject)` made the entire `AssessmentManager` persist across scene unloads into `Menu`. When `AssessmentScene` was re-entered, the duplicate check destroyed the new scene's manager, while the old manager had stale/destroyed references and never re-triggered `Start()`.
+- **Solutions Applied:**
+  1. Removed `CalculateAndStoreResults()` from the Exit button callback in `InitialTestManager.cs`. Cancelling an assessment midway now cleanly closes the window or routes back to the Menu without marking it as completed.
+  2. Removed `DontDestroyOnLoad(gameObject)` from `LocalizationManager.cs` and decoupled it from `AssessmentManager` in `AssessmentScene.unity`.
+  3. Ensured `InitialTestManager.Start()` unconditionally resets `IsTestActive = false` and initializes `StartAssessment()` fresh whenever `AssessmentScene` is loaded.
+  4. Added a safety cleanup in `SceneSystem.ResetProgress()` to destroy any lingering `InitialTestManager` GameObject.
+
+
