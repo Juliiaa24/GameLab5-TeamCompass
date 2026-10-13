@@ -5,11 +5,12 @@
 */
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
 using System.Collections;
 
 namespace ComputerLearning
 {
-    public class VirtualMascot : MonoBehaviour
+    public class VirtualMascot : MonoBehaviour, IPointerClickHandler
     {
         public static VirtualMascot Instance { get; private set; }
 
@@ -25,8 +26,17 @@ namespace ComputerLearning
         [Tooltip("Should the mascot automatically flip its graphic if it is on the right side of the screen?")]
         public bool autoFlipMascot = true;
 
+        [Header("Desktop Companion Mode")]
+        [SerializeField] private bool isDesktopCompanion = false;
+        [SerializeField] private Vector2 companionCornerOffset = new Vector2(-45f, -45f);
+
+        public bool IsDesktopCompanion => isDesktopCompanion;
+
         private RectTransform targetRect;
         private float floatTimer;
+        private Coroutine bounceCoroutine;
+        private Coroutine hideBubbleCoroutine;
+        private int lastMessageIndex = -1;
 
         private void Awake()
         {
@@ -49,7 +59,13 @@ namespace ComputerLearning
         {
             if (mascotRect == null) mascotRect = GetComponent<RectTransform>();
 
-            // Make sure the mascot and its speech bubble NEVER block mouse clicks!
+            if (isDesktopCompanion)
+            {
+                InitAsDesktopCompanion();
+                return;
+            }
+
+            // Make sure the mascot and its speech bubble NEVER block mouse clicks during tutorials!
             CanvasGroup cg = GetComponent<CanvasGroup>();
             if (cg == null) cg = gameObject.AddComponent<CanvasGroup>();
             cg.interactable = false;
@@ -77,6 +93,11 @@ namespace ComputerLearning
 
         private void Update()
         {
+            if (isDesktopCompanion)
+            {
+                UpdateCompanionPosition();
+                return;
+            }
             if (targetRect != null && targetRect.gameObject.activeInHierarchy)
             {
                 // Get the true visual center of the target, regardless of where its pivot is set
@@ -197,12 +218,12 @@ namespace ComputerLearning
 
         public static void HideMascot()
         {
-            if (Instance != null) Instance.Hide();
+            if (Instance != null && !Instance.isDesktopCompanion) Instance.Hide();
         }
 
         public static void HideMascotIfTargeting(Transform potentialParent)
         {
-            if (Instance != null && Instance.targetRect != null)
+            if (Instance != null && !Instance.isDesktopCompanion && Instance.targetRect != null)
             {
                 // If the current target is the window itself, or a child of the window (like the X button)
                 if (Instance.targetRect.IsChildOf(potentialParent) || Instance.targetRect == potentialParent)
@@ -256,8 +277,203 @@ namespace ComputerLearning
 
         public void Hide()
         {
+            if (isDesktopCompanion) return; // Companion is always visible!
             gameObject.SetActive(false);
             targetRect = null;
         }
+
+        #region Desktop Companion Implementation
+        /// <summary>
+        /// Initializes the mascot as a persistent, interactive desktop pet in the top-right corner.
+        /// </summary>
+        public void InitAsDesktopCompanion()
+        {
+            isDesktopCompanion = true;
+            targetRect = null;
+            gameObject.SetActive(true);
+
+            if (mascotRect == null) mascotRect = GetComponent<RectTransform>();
+
+            // Anchor directly to top-right corner
+            mascotRect.anchorMin = new Vector2(1f, 1f);
+            mascotRect.anchorMax = new Vector2(1f, 1f);
+            mascotRect.pivot = new Vector2(1f, 1f);
+            mascotRect.anchoredPosition = companionCornerOffset;
+            mascotRect.localScale = Vector3.one;
+
+            // Make sure clicking on the mascot works smoothly!
+            CanvasGroup cg = GetComponent<CanvasGroup>();
+            if (cg == null) cg = gameObject.AddComponent<CanvasGroup>();
+            cg.interactable = true;
+            cg.blocksRaycasts = true;
+
+            Image mascotImg = GetComponentInChildren<Image>();
+            if (mascotImg != null) mascotImg.raycastTarget = true;
+
+            // Configure speech bubble to display cleanly to the left of the mascot
+            if (speechBubble != null)
+            {
+                Image bubbleImg = speechBubble.GetComponent<Image>();
+                if (bubbleImg != null) bubbleImg.raycastTarget = false;
+
+                RectTransform bubbleRt = speechBubble.GetComponent<RectTransform>();
+                bubbleRt.pivot = new Vector2(1f, 1f);
+                bubbleRt.anchoredPosition = new Vector2(-110f, -20f);
+            }
+
+            // Welcome greeting on desktop startup
+            bool isEn = LocalizationManager.CurrentLanguage == "EN";
+            string welcome = isEn
+                ? "Hello! I'm your desktop pet! Click on me whenever you want tips."
+                : "¡Hola! ¡Soy tu compañero virtual! Haz clic sobre mí si quieres consejos.";
+            ShowCompanionMessage(welcome);
+        }
+
+        private void UpdateCompanionPosition()
+        {
+            if (mascotRect == null) return;
+
+            // Idle floating / breathing bobbing animation in top-right corner
+            floatTimer += Time.unscaledDeltaTime;
+            float floatOffset = Mathf.Sin(floatTimer * 3f) * 6f;
+            mascotRect.anchoredPosition = companionCornerOffset + new Vector2(0f, floatOffset);
+        }
+
+        /// <summary>
+        /// Detects user clicks on the mascot and triggers reaction dialogue.
+        /// </summary>
+        public void OnPointerClick(PointerEventData eventData)
+        {
+            if (!isDesktopCompanion) return;
+            if (eventData.button != PointerEventData.InputButton.Left) return;
+
+            TriggerCompanionDialogue();
+        }
+
+        public void TriggerCompanionDialogue()
+        {
+            if (bounceCoroutine != null) StopCoroutine(bounceCoroutine);
+            bounceCoroutine = StartCoroutine(BounceAnimation());
+
+            string msg = GetNextCompanionMessage();
+            ShowCompanionMessage(msg);
+        }
+
+        public void ShowCompanionMessage(string message)
+        {
+            if (speechBubble == null || speechText == null) return;
+
+            if (hideBubbleCoroutine != null) StopCoroutine(hideBubbleCoroutine);
+
+            speechBubble.SetActive(true);
+            speechText.text = message;
+
+            RectTransform bubbleRt = speechBubble.GetComponent<RectTransform>();
+            if (bubbleRt != null)
+            {
+                bubbleRt.pivot = new Vector2(1f, 1f);
+                bubbleRt.anchoredPosition = new Vector2(-110f, -20f);
+                speechBubble.transform.localScale = Vector3.one;
+                UnityEngine.UI.LayoutRebuilder.ForceRebuildLayoutImmediate(bubbleRt);
+            }
+
+            hideBubbleCoroutine = StartCoroutine(AutoHideBubble(5f));
+        }
+
+        private IEnumerator AutoHideBubble(float delay)
+        {
+            yield return new WaitForSeconds(delay);
+            if (speechBubble != null)
+            {
+                speechBubble.SetActive(false);
+            }
+            hideBubbleCoroutine = null;
+        }
+
+        private IEnumerator BounceAnimation()
+        {
+            Vector3 originalScale = Vector3.one;
+            Vector3 squashed = new Vector3(1.22f, 0.82f, 1f);
+            Vector3 stretched = new Vector3(0.88f, 1.18f, 1f);
+
+            float elapsed = 0f;
+            float dur1 = 0.08f;
+            while (elapsed < dur1)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                mascotRect.localScale = Vector3.Lerp(originalScale, squashed, elapsed / dur1);
+                yield return null;
+            }
+
+            elapsed = 0f;
+            float dur2 = 0.09f;
+            while (elapsed < dur2)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                mascotRect.localScale = Vector3.Lerp(squashed, stretched, elapsed / dur2);
+                yield return null;
+            }
+
+            elapsed = 0f;
+            float dur3 = 0.1f;
+            while (elapsed < dur3)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                mascotRect.localScale = Vector3.Lerp(stretched, originalScale, elapsed / dur3);
+                yield return null;
+            }
+
+            mascotRect.localScale = originalScale;
+            bounceCoroutine = null;
+        }
+
+        private string GetNextCompanionMessage()
+        {
+            bool isEn = LocalizationManager.CurrentLanguage == "EN";
+            string[] pool = isEn ? englishCompanionMessages : spanishCompanionMessages;
+            if (pool == null || pool.Length == 0) return "¡Hola!";
+
+            int newIndex;
+            if (pool.Length == 1) newIndex = 0;
+            else
+            {
+                do
+                {
+                    newIndex = Random.Range(0, pool.Length);
+                } while (newIndex == lastMessageIndex);
+            }
+
+            lastMessageIndex = newIndex;
+            return pool[newIndex];
+        }
+
+        private static readonly string[] spanishCompanionMessages = new string[]
+        {
+            "¡Hola! ¡Soy tu compañero virtual! Explora el escritorio a tu ritmo.",
+            "¡Abre la carpeta de Minijuegos para poner a prueba tu puntería y rapidez!",
+            "¿Sabías que con el click derecho en el fondo puedes crear una Nueva Carpeta?",
+            "¡Prueba a abrir el Bloc de Notas para practicar escribiendo con el teclado!",
+            "¡Recuerda que con doble click rápido puedes abrir cualquier icono o carpeta!",
+            "En el botón Inicio abajo a la izquierda encontrarás todos tus programas y opciones.",
+            "¡Lo estás haciendo genial usando el ratón! ¡Sigue practicando!",
+            "Puedes arrastrar las ventanas desde su barra superior para moverlas por la pantalla.",
+            "Si una ventana es pequeña, ¡haz click en el botón del cuadrado para maximizarla!",
+            "¡Aquí estaré siempre en la esquina para acompañarte y darte consejos!"
+        };
+
+        private static readonly string[] englishCompanionMessages = new string[]
+        {
+            "Hello! I'm your desktop pet! Feel free to explore at your own pace.",
+            "Open the Minigames folder to practice your clicking accuracy and speed!",
+            "Did you know? Right-click anywhere on the desktop to create a New Folder.",
+            "Try opening Notepad to practice typing words on the keyboard!",
+            "Remember: double-click quickly to open folders and apps!",
+            "Click the Start button on the bottom-left to see all apps and options.",
+            "You're doing great with the mouse! Keep it up!",
+            "You can drag windows from their top bar to move them around the desktop.",
+            "If a window is too small, click the square button to maximize it!",
+            "I'll always be here in the corner whenever you need advice!"
+        };
+        #endregion
     }
 }

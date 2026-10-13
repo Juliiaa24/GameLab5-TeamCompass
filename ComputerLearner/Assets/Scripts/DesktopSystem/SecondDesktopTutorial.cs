@@ -111,9 +111,10 @@ namespace ComputerLearning
             if (blockerObj != null) Destroy(blockerObj);
             
             PlayerPrefs.SetInt("SemiGuidedSequenceCompleted", 1);
+            PlayerPrefs.Save();
             
-            // Flow: Go to the Second Tutorial (Advanced Desktop Tour) after level 9!
-            UnityEngine.SceneManagement.SceneManager.LoadScene("SecondTutorial");
+            // Flow: Go to Tutorial2 (Advanced Desktop Tour) after level 9!
+            UnityEngine.SceneManagement.SceneManager.LoadScene("Tutorial2");
         }
     }
 }

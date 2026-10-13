@@ -170,17 +170,9 @@ namespace ComputerLearning
                 IsCompleted = true;
                 StartCoroutine(AutoCloseAfterDelay(3.5f));
 
-                if (ProgressData.Instance != null && currentLevel.levelId.Contains("1"))
+                if (ProgressData.Instance != null && currentLevel != null && !string.IsNullOrEmpty(currentLevel.levelId))
                 {
-                    ProgressData.Instance.UnlockLevel("level2");
-                }
-                else if (ProgressData.Instance != null && currentLevel.levelId.Contains("2"))
-                {
-                    ProgressData.Instance.UnlockLevel("level3");
-                }
-                else if (ProgressData.Instance != null && currentLevel.levelId.Contains("3"))
-                {
-                    ProgressData.Instance.UnlockLevel("level4");
+                    ProgressData.Instance.MarkLevelCompleted(currentLevel.levelId);
                 }
 
                 return;

@@ -215,6 +215,11 @@ namespace ComputerLearning
         public void setTitle(string title)
         {
             windowTitle = title;
+            if (titleBar != null)
+            {
+                TMPro.TMP_Text txt = titleBar.GetComponentInChildren<TMPro.TMP_Text>();
+                if (txt != null) txt.text = title;
+            }
             StateChanged?.Invoke(this);
         }
 

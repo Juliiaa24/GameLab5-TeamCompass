@@ -26,7 +26,12 @@ namespace ComputerLearning
             Menu,
             Main,
             AssessmentScene,
-            StatsScene
+            StatsScene,
+            Desktop1,
+            Tutorial1,
+            Desktop2,
+            Tutorial2,
+            VirtualDesktop
         }
 
 
@@ -80,9 +85,13 @@ namespace ComputerLearning
                 return;
             }
 
-            if (PlayerPrefs.GetInt("SemiGuidedSequenceCompleted", 0) == 1)
+            if (PlayerPrefs.GetInt("AdvancedDesktopTourCompleted", 0) == 1)
             {
-                SceneManager.LoadScene("BuildFinalScene");
+                SceneManager.LoadScene("VirtualDesktop");
+            }
+            else if (PlayerPrefs.GetInt("SemiGuidedSequenceCompleted", 0) == 1)
+            {
+                SceneManager.LoadScene("Tutorial2");
             }
             else if (PlayerPrefs.GetInt("DesktopTourCompleted", 0) == 1)
             {
@@ -98,6 +107,7 @@ namespace ComputerLearning
             }
         }
         public void ChangeToMenu() { ChangeScene(SceneNames.Menu); }
+        public void ChangeToVirtualDesktop() { SceneManager.LoadScene("VirtualDesktop"); }
         public void ChangeToAssessment() { ChangeScene(SceneNames.AssessmentScene); }
         public void ChangeToStats() { ChangeScene(SceneNames.StatsScene); }
         public void Exit() { Application.Quit(); }
@@ -127,6 +137,7 @@ namespace ComputerLearning
             PlayerPrefs.SetInt("AutoSequenceCompleted", 0);
             PlayerPrefs.SetInt("DesktopTourCompleted", 0);
             PlayerPrefs.SetInt("SemiGuidedSequenceCompleted", 0);
+            PlayerPrefs.SetInt("AdvancedDesktopTourCompleted", 0);
             PlayerPrefs.Save();
 
             Debug.Log("[SceneSystem] Game progress has been successfully reset.");
@@ -145,7 +156,20 @@ namespace ComputerLearning
                     SceneManager.LoadScene("Menu");
                     break;
                 case SceneNames.Main:
+                case SceneNames.Desktop1:
                     SceneManager.LoadScene("Desktop1");
+                    break;
+                case SceneNames.Tutorial1:
+                    SceneManager.LoadScene("Tutorial1");
+                    break;
+                case SceneNames.Desktop2:
+                    SceneManager.LoadScene("Desktop2");
+                    break;
+                case SceneNames.Tutorial2:
+                    SceneManager.LoadScene("Tutorial2");
+                    break;
+                case SceneNames.VirtualDesktop:
+                    SceneManager.LoadScene("VirtualDesktop");
                     break;
                 case SceneNames.AssessmentScene:
                     SceneManager.LoadScene("AssessmentScene");

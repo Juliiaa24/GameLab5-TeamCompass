@@ -61,7 +61,8 @@ namespace ComputerLearning
         private float startBottom;
         private Vector2 startPointerPosition;
         [SerializeField] private ResizeDirection direction;
-        [SerializeField] private Vector2 minSize = new Vector2(300, 200);
+        [SerializeField] private Vector2 minSize = new Vector2(380, 260);
+        public Vector2 MinSize { get => minSize; set => minSize = value; }
         #endregion
 
         #region Unity Methods

@@ -59,6 +59,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5dd55e89dc66db4ba286b6009308840, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ComputerLearning.NewBehaviourScript
+  titleBar: {fileID: 0}
+  closeButton: {fileID: 0}
+  maximizeButton: {fileID: 0}
+  minimizeButton: {fileID: 0}
   contentArea: {fileID: 6063467877224136730}
   contentPrefab: {fileID: 0}
   windowTitle: 
@@ -154,7 +158,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ComputerLearning.ResizeHandle
   window: {fileID: 8798812805578167657}
   direction: 8
-  minSize: {x: 300, y: 300}
+  minSize: {x: 380, y: 260}
 --- !u!1 &3265160641082821475
 GameObject:
   m_ObjectHideFlags: 0
@@ -245,7 +249,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ComputerLearning.ResizeHandle
   window: {fileID: 8798812805578167657}
   direction: 6
-  minSize: {x: 300, y: 300}
+  minSize: {x: 380, y: 260}
 --- !u!1 &3697567272829605526
 GameObject:
   m_ObjectHideFlags: 0
@@ -336,7 +340,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ComputerLearning.ResizeHandle
   window: {fileID: 8798812805578167657}
   direction: 1
-  minSize: {x: 300, y: 300}
+  minSize: {x: 380, y: 260}
 --- !u!1 &6013099840506402737
 GameObject:
   m_ObjectHideFlags: 0
@@ -516,7 +520,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ComputerLearning.ResizeHandle
   window: {fileID: 8798812805578167657}
   direction: 5
-  minSize: {x: 300, y: 300}
+  minSize: {x: 380, y: 260}
 --- !u!1 &6454519334232111559
 GameObject:
   m_ObjectHideFlags: 0
@@ -607,7 +611,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ComputerLearning.ResizeHandle
   window: {fileID: 8798812805578167657}
   direction: 2
-  minSize: {x: 300, y: 300}
+  minSize: {x: 380, y: 260}
 --- !u!1 &6580366237322601901
 GameObject:
   m_ObjectHideFlags: 0
@@ -698,7 +702,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ComputerLearning.ResizeHandle
   window: {fileID: 8798812805578167657}
   direction: 10
-  minSize: {x: 300, y: 300}
+  minSize: {x: 380, y: 260}
 --- !u!1 &6659132395734597355
 GameObject:
   m_ObjectHideFlags: 0
@@ -789,7 +793,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ComputerLearning.ResizeHandle
   window: {fileID: 8798812805578167657}
   direction: 4
-  minSize: {x: 300, y: 300}
+  minSize: {x: 380, y: 260}
 --- !u!1 &6672924186175160387
 GameObject:
   m_ObjectHideFlags: 0
@@ -969,7 +973,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ComputerLearning.ResizeHandle
   window: {fileID: 8798812805578167657}
   direction: 9
-  minSize: {x: 300, y: 300}
+  minSize: {x: 380, y: 260}
 --- !u!1 &7720717617832601504
 GameObject:
   m_ObjectHideFlags: 0

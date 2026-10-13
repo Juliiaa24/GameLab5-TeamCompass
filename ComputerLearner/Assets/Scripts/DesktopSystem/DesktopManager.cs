@@ -53,6 +53,9 @@ namespace ComputerLearning
         [Header("Mascot Configuration")]
         [SerializeField] private GameObject mascotPrefab;
         [SerializeField] private RectTransform mascotContainer; // Usually the main Desktop Canvas
+        [Tooltip("If true, the virtual mascot spawns as an active, interactive desktop companion in the top-right corner")]
+        [SerializeField] private bool enableMascotCompanion = false;
+        public bool EnableMascotCompanion { get => enableMascotCompanion; set => enableMascotCompanion = value; }
 
         [Header("Icon Configuration")]
         [SerializeField] private RectTransform desktopIconContainer; // E.g., a GridLayoutGroup for icons
@@ -133,15 +136,32 @@ namespace ComputerLearning
             Transform container = mascotContainer;
             if (container == null)
             {
-                Canvas canvas = UnityEngine.Object.FindFirstObjectByType<Canvas>();
+                Canvas canvas = UnityEngine.Object.FindAnyObjectByType<Canvas>();
                 if (canvas != null) container = canvas.transform;
                 else container = transform;
             }
             
-            // Instantiate and disable
+            // Instantiate
             GameObject mascotInstance = Instantiate(mascotPrefab, container);
             mascotInstance.name = "VirtualMascot";
-            mascotInstance.SetActive(false);
+
+            VirtualMascot mascot = mascotInstance.GetComponent<VirtualMascot>();
+            if (enableMascotCompanion && mascot != null)
+            {
+                // Ensure it sits on the desktop surface layer before WindowsArea
+                Transform windowsArea = container.Find("WindowsArea");
+                if (windowsArea != null)
+                {
+                    mascotInstance.transform.SetSiblingIndex(windowsArea.GetSiblingIndex());
+                }
+
+                mascotInstance.SetActive(true);
+                mascot.InitAsDesktopCompanion();
+            }
+            else
+            {
+                mascotInstance.SetActive(false);
+            }
         }
         #endregion
 

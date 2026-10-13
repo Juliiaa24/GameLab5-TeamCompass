@@ -153,8 +153,11 @@ namespace ComputerLearning
             
             VirtualMascot.HideMascot();
 
-            // Load the transition scene
-            UnityEngine.SceneManagement.SceneManager.LoadScene("PostTutorialScene");
+            PlayerPrefs.SetInt("AdvancedDesktopTourCompleted", 1);
+            PlayerPrefs.Save();
+
+            // Load the simulated virtual desktop
+            UnityEngine.SceneManagement.SceneManager.LoadScene("VirtualDesktop");
         }
 
         private IEnumerator WaitWithReminder(Func<bool> condition, string reminderText, RectTransform targetObj, Vector2 offset)

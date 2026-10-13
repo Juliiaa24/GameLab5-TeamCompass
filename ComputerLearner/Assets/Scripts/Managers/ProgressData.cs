@@ -22,7 +22,25 @@ namespace ComputerLearning
     public class ProgressData : MonoBehaviour
     {
         #region Public Variables
-        public static ProgressData Instance { get; private set; }
+        private static ProgressData _instance;
+        public static ProgressData Instance
+        {
+            get
+            {
+                if (_instance == null)
+                {
+                    _instance = FindAnyObjectByType<ProgressData>();
+                    if (_instance == null)
+                    {
+                        GameObject go = new GameObject("ProgressData");
+                        _instance = go.AddComponent<ProgressData>();
+                        DontDestroyOnLoad(go);
+                    }
+                }
+                return _instance;
+            }
+            private set => _instance = value;
+        }
 
         /// <summary>Read-only access to the full ordered task history.</summary>
         public IReadOnlyList<TaskResult> TaskHistory => taskHistory;
@@ -44,29 +62,64 @@ namespace ComputerLearning
         #region Unity Methods
         private void Awake()
         {
-            if (Instance != null && Instance != this) { Destroy(gameObject); return; }
-            Instance = this;
+            if (_instance != null && _instance != this) { Destroy(gameObject); return; }
+            _instance = this;
+            DontDestroyOnLoad(gameObject);
             Load();
         }
 
         private void OnDestroy()
         {
-            if (Instance == this) Instance = null;
+            if (_instance == this) _instance = null;
         }
 
         // Always save when the application closes
         private void OnApplicationQuit() { Save(); }
         #endregion
 
+        public static readonly string[] LevelOrder = { "level1", "level2", "level3", "level4", "level5", "level6", "level7", "level8", "level9", "level10" };
+
         public bool HasSeenDesktopTour { get; private set; }
         private List<string> unlockedLevels = new List<string> { "level1" }; // Level 1 always unlocked
+        private List<string> completedLevels = new List<string>();
 
         #region Public Methods
         public System.Action<string> OnLevelUnlocked;
+        public System.Action<string> OnLevelCompleted;
+        public System.Action OnProgressChanged;
 
         public bool IsLevelUnlocked(string levelId)
         {
-            return unlockedLevels.Contains(levelId);
+            if (string.IsNullOrEmpty(levelId)) return true;
+            if (levelId == "level1") return true;
+            if (completedLevels != null && completedLevels.Contains(levelId)) return true;
+            if (unlockedLevels != null && unlockedLevels.Contains(levelId)) return true;
+
+            string nextLvl = GetCurrentNextLevelId();
+            if (levelId == nextLvl) return true;
+
+            return false;
+        }
+
+        public bool IsLevelCompleted(string levelId)
+        {
+            return completedLevels.Contains(levelId);
+        }
+
+        /// <summary>
+        /// Returns the first uncompleted level in the canonical progression sequence.
+        /// Returns null if all levels are completed.
+        /// </summary>
+        public string GetCurrentNextLevelId()
+        {
+            foreach (string lvl in LevelOrder)
+            {
+                if (!completedLevels.Contains(lvl))
+                {
+                    return lvl;
+                }
+            }
+            return null;
         }
 
         public void UnlockLevel(string levelId)
@@ -75,8 +128,28 @@ namespace ComputerLearning
             {
                 unlockedLevels.Add(levelId);
                 OnLevelUnlocked?.Invoke(levelId);
+                OnProgressChanged?.Invoke();
                 if (autoSaveAfterEachResult) Save();
             }
+        }
+
+        public void MarkLevelCompleted(string levelId)
+        {
+            if (!completedLevels.Contains(levelId))
+            {
+                completedLevels.Add(levelId);
+                OnLevelCompleted?.Invoke(levelId);
+            }
+
+            // Unlock next level in sequence
+            int idx = Array.IndexOf(LevelOrder, levelId);
+            if (idx >= 0 && idx + 1 < LevelOrder.Length)
+            {
+                UnlockLevel(LevelOrder[idx + 1]);
+            }
+
+            OnProgressChanged?.Invoke();
+            if (autoSaveAfterEachResult) Save();
         }
 
         public void SetHasSeenDesktopTour(bool seen)
@@ -147,6 +220,7 @@ namespace ComputerLearning
                 { 
                     results = taskHistory,
                     unlockedLevels = this.unlockedLevels,
+                    completedLevels = this.completedLevels,
                     hasSeenDesktopTour = this.HasSeenDesktopTour
                 };
                 string json = JsonUtility.ToJson(wrapper);
@@ -172,6 +246,32 @@ namespace ComputerLearning
                 if (wrapper?.results != null) taskHistory = wrapper.results;
                 if (wrapper?.unlockedLevels != null && wrapper.unlockedLevels.Count > 0) 
                     unlockedLevels = wrapper.unlockedLevels;
+                if (wrapper?.completedLevels != null && wrapper.completedLevels.Count > 0)
+                    completedLevels = wrapper.completedLevels;
+                else
+                {
+                    // Backward compatibility: infer completed levels from completed tutorial sequences
+                    if (PlayerPrefs.GetInt("SemiGuidedSequenceCompleted", 0) == 1)
+                    {
+                        for (int i = 1; i <= 9; i++)
+                        {
+                            string id = "level" + i;
+                            if (!completedLevels.Contains(id)) completedLevels.Add(id);
+                            if (!unlockedLevels.Contains(id)) unlockedLevels.Add(id);
+                        }
+                        if (!unlockedLevels.Contains("level10")) unlockedLevels.Add("level10");
+                    }
+                    else if (PlayerPrefs.GetInt("AutoSequenceCompleted", 0) == 1)
+                    {
+                        for (int i = 1; i <= 5; i++)
+                        {
+                            string id = "level" + i;
+                            if (!completedLevels.Contains(id)) completedLevels.Add(id);
+                            if (!unlockedLevels.Contains(id)) unlockedLevels.Add(id);
+                        }
+                        if (!unlockedLevels.Contains("level6")) unlockedLevels.Add("level6");
+                    }
+                }
                 if (wrapper != null) HasSeenDesktopTour = wrapper.hasSeenDesktopTour;
                 
                 Debug.Log($"[ProgressData] Loaded {taskHistory.Count} task results.");
@@ -190,6 +290,7 @@ namespace ComputerLearning
         {
             taskHistory.Clear();
             unlockedLevels = new List<string> { "level1" };
+            completedLevels.Clear();
             HasSeenDesktopTour = false;
             PlayerPrefs.DeleteKey(SaveKey);
             Debug.Log("[ProgressData] History cleared.");
@@ -203,6 +304,7 @@ namespace ComputerLearning
         {
             public List<TaskResult> results;
             public List<string> unlockedLevels;
+            public List<string> completedLevels;
             public bool hasSeenDesktopTour;
         }
         #endregion

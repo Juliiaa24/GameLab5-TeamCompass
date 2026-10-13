@@ -100,9 +100,10 @@ namespace ComputerLearning
             if (blockerObj != null) Destroy(blockerObj);
             
             PlayerPrefs.SetInt("AutoSequenceCompleted", 1);
+            PlayerPrefs.Save();
             
-            // Transition to Desktop Tour
-            UnityEngine.SceneManagement.SceneManager.LoadScene("IntroTutorialScene");
+            // Transition to Desktop Tour (Tutorial1)
+            UnityEngine.SceneManagement.SceneManager.LoadScene("Tutorial1");
         }
     }
 }

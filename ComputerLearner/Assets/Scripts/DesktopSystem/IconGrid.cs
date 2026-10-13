@@ -25,7 +25,7 @@ namespace ComputerLearning
 
         private void Start()
         {
-            // The desktop tour is now handled by IntroTutorialScene and DesktopTour.cs
+            // The desktop tour is now handled by Tutorial1 and DesktopTour.cs
             // We just need to check if they have unlocked new levels on load
             
         }

@@ -1438,3 +1438,767 @@ Several critical quality-of-life and architectural improvements were made:
 * **Fully Data-Driven Dialogues:** Purged all remaining hardcoded tutorial and level onboarding strings from C# scripts (FirstDesktopTutorial.cs, SecondDesktopTutorial.cs, LevelRunner.cs, AdaptiveSessionStarter.cs). Everything now routes through a central TutorialDialogs.cs struct parsing TutorialDialogs.json, paving the way for localization.
 * **Adaptive Pool Refinement:** Removed Level 1 (SK_MouseMovement / mouse_move) from the allSkills list inside SkillManager (on Managers.prefab). As a result, the Adaptive Session (Level 4+) will no longer test or spawn the basic "Move Mouse" task, ensuring adaptive challenges focus on advanced skills.
 * **Instruction Screens for Advanced Levels:** Populated the instructionText field in L_Level5 through L_Level9. This ensures LevelRunner.cs renders the dark blue intro screen with a "START!" button before launching these levels, paving the way for future video tutorial integrations.
+
+==================================================
+67. INITIAL ASSESSMENT TEST IMPLEMENTATION
+
+**Context:** The project required an initial assessment to evaluate a child's baseline computer skills before they start playing the regular learning levels. The previous `InitialTestManager` was deprecated because it ran blindly without a window, breaking the flow and interacting poorly with the new `VirtualMascot`.
+
+**What was implemented:**
+* The Initial Assessment was integrated as a standard desktop application. It acts similarly to a `LevelDefinition` but uses a distinct grading system.
+* **Flow:** The `FirstDesktopTutorial` now points the child to the "Assessment" icon *before* starting Level 1.
+* When the Assessment icon is clicked, it opens a window with simple child-friendly instructions. It dynamically runs one or two tasks of each major skill (Click, Hover, Double Click, etc.).
+
+**Reused Systems:**
+* **Window System:** The assessment runs perfectly inside the generic `Window` prefab.
+* **TaskManager / Tasks:** Existing modular tasks (e.g. `DoubleClickTask`, `DragDropTask`) were reused. No duplicate task scripts were created.
+* **TaskResult:** Task results are still captured and logged, but handled specially by the orchestrator.
+* **Virtual Mascot:** The mascot provides step-by-step guidance for each task (e.g., "Double click quickly!").
+
+**Modified Files:**
+* `InitialTestManager.cs`: Completely rewritten to act as the assessment orchestrator (similar to `LevelRunner` but exclusively for the diagnostic). It handles the instructions, spawns tasks sequentially, and calculates the final score.
+* `DraggableIcon.cs`: Modified to inject and launch `InitialTestManager` when the `levelId` is `"assessment"`.
+* `FirstDesktopTutorial.cs`: Modified to add `"assessment"` to the `levelSequence`, ensuring the Mascot points to it at the very start of the onboarding flow.
+* `InitialAssessmentSetup.cs`: Created an Editor script (`ComputerLearning -> Setup Initial Assessment`) to easily generate the `L_Assessment.asset` dynamically from existing skills and inject it into the `DesktopManager`'s initial icons list.
+
+**Score Calculation:**
+* Instead of incrementally adjusting scores by `+2` or `-1` (like normal gameplay), the Initial Assessment determines a definitive starting proficiency for each skill.
+* **Calculation Rules:** For every skill, it tracks `totalTasks`, `completedTasks`, and `totalAttempts`. 
+  - Base Score = `(completedTasks / totalTasks) * 100`
+  - Repeated Attempt Penalty = For every attempt beyond the minimum required, it subtracts 10 points. 
+  - This perfectly distinguishes between a child who can perform a skill independently on the first try and one who requires repeated attempts, keeping the results within `0 - 100`.
+* The final calculated score is passed to `SkillManager.Instance.SetScore(skillId, finalScore)`.
+
+**Persistence & Distinction:**
+* The assessment saves a specific `PlayerPrefs` flag (`InitialAssessmentCompleted`).
+* Task results generated during the assessment are explicitly marked with `levelId = "assessment"`, allowing historical logs (`ProgressData`) to distinguish diagnostic data from normal gameplay data.
+* If a window is closed prematurely or the test is interrupted, the manager gracefully calculates the scores based *only* on the tasks completed up to that point, without crashing or marking untested skills as failed.
+
+**How to Test in Unity:**
+1. In the Unity Editor menu, click `ComputerLearning -> Setup Initial Assessment`. This generates `L_Assessment.asset` and adds it to the `DesktopManager`.
+2. Clear your `PlayerPrefs` (to simulate a first-time player).
+3. Play the game. The Virtual Mascot will welcome you and point to the new "Assessment" icon.
+4. Double-click it and complete the tasks!
+
+**Future Iterations:**
+* The assessment currently records the baseline scores but does not yet skip levels (as requested). In a future iteration, a `LevelProgressionManager` could read the `SkillManager` scores after the assessment to dynamically unlock Levels 1–5 based on proficiency.
+
+==================================================
+68. CLEAN GEOMETRIC INITIAL ASSESSMENT (MINIMALIST, TIME-AWARE, JSON-LOCALIZED)
+
+**Context & Motivation:**
+User feedback required decoupling the Initial Assessment Test from game minigames (such as dirt cleaning and animated targets) and removing the Virtual Mascot. The target audience includes children and novice users who may have never touched a mouse before. The test needed to feel clean, serious, and direct (Task > Action) with minimal cognitive load, configurable timeouts, fail-safes (Skip / Exit), and external JSON localization.
+
+**Key Architecture & Design:**
+* **Standalone Minimalist UI:** The assessment runs inside its own dedicated high-contrast, dark-slate UI (AssessmentCleanRoot), replacing all playful minigame elements.
+* **No Virtual Mascot:** VirtualMascot.HideMascot() is enforced upon test start. There are no mascot interruptions or character animations.
+* **English JSON Localization:** All UI labels and task definitions are loaded from Resources/AssessmentInstructions.json. Translating or adding new languages requires only modifying or providing a JSON file without recompiling code.
+* **Per-Task Timeouts & Skip Option:**
+  - Every task has an independent timeoutSeconds (e.g. 15s or 20s) configured in the JSON.
+  - A real-time countdown progress bar is displayed at the top of the header (turning red in the last 3 seconds).
+  - If a child struggles or remains inactive until the timer expires, the task is marked as timed out (0 points) and smoothly auto-advances to the next task after a subtle notice.
+  - A persistent **Skip** button allows tutor/child to immediately bypass impossible tasks.
+  - An **Exit** button allows ending the test at any time, preserving recorded skills.
+* **Geometric Tasks Implementation:**
+  1. **Move Cursor (mouse_move):** Clean blue circle. Hovering inside turns it green and completes the task.
+  2. **Hover (hover):** Clean purple square. Hovering steadily fills an inner white gauge over 2.0s without clicking.
+  3. **Single Click (click):** Clean orange square. Left-clicking completes the action.
+  4. **Double Click (double_click):** Clean teal circle. Two rapid clicks within 0.45s complete the action.
+  5. **Right Click (right_click):** Clean amber rectangle. Evaluates PointerEventData.InputButton.Right.
+  6. **Click and Hold (click_hold):** Clean red circle. Holding down fills an inner gauge over 2.0s. Releasing early resets gauge and increments extra attempts.
+  7. **Drag and Drop (drag_drop):** Blue square draggable into a gray target slot on the right using Unity's EventSystem drag handlers.
+* **Immediate Evaluation Visibility:**
+  - Upon completion or exit, a clean summary card displays every tested skill with its percentage score (e.g., 100%, 90%, or 0% (Timed out)).
+  - Results are persisted to SkillManager.Instance.SetScore(...) and ProgressData.Instance.RecordResult(...).
+
+
+==================================================
+69. LIGHT MODE & AUTOMATIC EVALUATION REPORT JSON EXPORT
+
+**Enhancements:**
+* **Light Mode Transformation:**
+  - Migrated the assessment UI from dark slate to a clean modern Light Mode palette.
+  - Background is soft light off-white (#F1F5F9), the header is pure white (#FFFFFF) with a subtle bottom divider, and typography uses crisp slate hues (#0F172A for titles, #334155 for instructions, #64748B for step indicators).
+  - High-contrast geometric shapes (Royal Blue, Purple, Vibrant Orange, Teal, Amber, Crimson Red) provide immediate clarity on a light canvas.
+  - The completion card features a clean white container with alternating row backgrounds and high-contrast green/red score indicators.
+* **Evaluation Report JSON Auto-Export:**
+  - When the assessment completes or is exited, InitialTestManager now automatically exports a structured evaluation report to Assets/Assessment/{HH-mm-ss}.json.
+  - The file name is timestamped with the exact current time (HH-mm-ss).
+  - The exported JSON contains:
+    - timestamp (ISO UTC) and formattedTime (HH:mm:ss).
+    - totalTasksTested, completedTasks, and calculated averageScore.
+    - Detailed skills list: skillId, skillName, completed, score, extraAttempts, and timeTakenSeconds.
+  - Ensures seamless integration with external analysis tools, tutors, and teachers without requiring manual data extraction.
+
+
+==================================================
+70. SPATIAL DISTRIBUTION & ANTI-INSTANT HOVER COMPLETION
+
+**Problem Identified:**
+When Task 1 (Move Cursor) was completed, the user's cursor naturally rested at the center of the screen (0, 0). Because Task 2 (Hover) previously spawned in the exact same spot, the cursor was already positioned inside the square upon appearance. Consequently, if the user didn't move, the 2-second hover timer counted down automatically and completed the task without requiring deliberate interaction.
+
+**Solutions Applied:**
+1. **Diverse Spatial Placement Across Stages:**
+   - Every task now spawns in distinct coordinates across the screen canvas to force deliberate hand/mouse movements between exercises:
+     - Task 1 (Move Cursor): Right side (180, 40).
+     - Task 2 (Hover): Opposite Left side (-180, -40) — more than 360 pixels away from where Task 1 ends.
+     - Task 3 (Click): Bottom-Right (140, -60).
+     - Task 4 (Double Click): Top-Left (-120, 70).
+     - Task 5 (Right Click): Top-Right (160, 60).
+     - Task 6 (Click & Hold): Center-Bottom (0, -40).
+     - Task 7 (Drag & Drop): Source at Left (-160, 0), target slot at Right (160, 0).
+2. **Hover Arming Delay:**
+   - Added an armingDelay = 0.35f to HoverController. The gauge cannot begin filling during the first 0.35 seconds after shape instantiation, giving the player visual notice and ensuring that a stationary cursor does not instantly trigger completion.
+
+
+==================================================
+71. TIME-WEIGHTED SKILL EVALUATION FORMULA
+
+**Overview:**
+Skill proficiency calculation was upgraded to evaluate both accuracy (attempts/misclicks) and execution speed relative to each task's timeout limit.
+
+**Formula & Logic:**
+1. **Accuracy Factor:**
+   - Starts at 100 points.
+   - Deducts 10 points per extra attempt (misclick or releasing hold/drag prematurely).
+   - Clamped to a minimum base of 20 points for completion.
+2. **Time Factor (Speed Efficiency):**
+   - Evaluated as timeRatio = timeTaken / currentTaskTimeout.
+   - **Agility Threshold (timeRatio <= 0.30):** Completing the task within the first 30% of the timeout incurs **0 time penalty** (full 100% speed credit).
+   - **Gradual Time Penalty (0.30 < timeRatio <= 1.0):** For hesitant or slower completion, a penalty scales linearly up to 35 points:
+     timePenalty = ((timeRatio - 0.30f) / 0.70f) * 35f;
+3. **Combined Final Score:**
+   - finalScore = Mathf.Clamp(accuracyScore - timePenalty, 20f, 100f);
+   - If timed out or skipped: finalScore = 0f.
+4. **Enhanced Feedback Display:**
+   - The completion results screen and the exported JSON (Assets/Assessment/{HH-mm-ss}.json) now record and display both the final score and the exact seconds taken (e.g. 94% (3.2s) or 62% (14.1s)).
+
+
+==================================================
+72. DOUBLE CLICK ATTEMPT CALCULATION FIX
+
+**Problem Identified:**
+In DoubleClickController, the very first click of a double-click gesture was incorrectly invoking onAttempt?.Invoke(). Since lastClickTime started at -1f, the initial click fell into the else branch, registering as a failed attempt and adding an unnecessary 10-point penalty. As a result, even flawless double clicks on the first attempt always capped at 90%.
+
+**Solution Applied:**
+- Updated DoubleClickController.OnPointerClick to only invoke onAttempt if lastClickTime > 0f (meaning a previous click had actually occurred and the user waited too long before clicking the second time).
+- Expanded the double-click window to a child-friendly 0.50s threshold.
+- A clean double click on the first try now correctly yields 0 extra attempts and a full 100% score.
+
+
+==================================================
+73. LOCALIZATION SYSTEM (JSON LANGUAGE SWITCHER & MENU BUTTON)
+
+**Overview:**
+Implemented a dynamic localization system allowing the game to switch between languages (English 'EN' and Spanish 'ES') via JSON resource naming conventions, with language selection persisted across sessions.
+
+**JSON Naming Convention:**
+- All dialog and instruction files in `Assets/Resources/` now follow the `[LANG]-[BaseName].json` format:
+  - English: `EN-DesktopTourDialogs.json`, `EN-TutorialDialogs.json`, `EN-AssessmentInstructions.json`.
+  - Spanish: `ES-DesktopTourDialogs.json`, `ES-TutorialDialogs.json`, `ES-AssessmentInstructions.json`.
+- In accordance with project instructions, Spanish JSON files currently contain duplicate English text awaiting future translation.
+
+**Localization Manager:**
+- `LocalizationManager.cs`:
+  - Central singleton managing active language (`CurrentLanguage`), persisted via `PlayerPrefs` (`SelectedLanguage`).
+  - Exposes `LoadLocalizedResource(string baseName)`: dynamically resolves `Resources.Load<TextAsset>(lang + "-" + baseName)` with automatic fallbacks to `EN-` and un-prefixed versions.
+  - Exposes `OnLanguageChanged` event and `ToggleLanguage()` helper.
+
+**Scripts Updated to Use Localized Resources:**
+- `DesktopTour.cs`: Loads `DesktopTourDialogs` via `LocalizationManager`.
+- `FirstDesktopTutorial.cs`: Loads `TutorialDialogs` via `LocalizationManager`.
+- `SecondDesktopTutorial.cs`: Loads `TutorialDialogs` via `LocalizationManager`.
+- `AdaptiveSessionStarter.cs`: Loads `TutorialDialogs` via `LocalizationManager`.
+- `GameFlowController.cs`: Loads `TutorialDialogs` via `LocalizationManager`.
+- `LevelRunner.cs`: Loads `TutorialDialogs` via `LocalizationManager`.
+- `InitialTestManager.cs`: Loads `AssessmentInstructions` via `LocalizationManager`.
+
+**Main Menu Language Toggle Button:**
+- Created `LanguageButton.cs` attached to a newly spawned `Btn-Language` in `Menu.unity` (inside `MenuBtnLayout`).
+- Displays current language (`Language: EN` / `Language: ES`) and toggles on click, dynamically updating gameplay text resources.
+
+==================================================
+74. MENU LANGUAGE DROPDOWN (BOTTOM-RIGHT CORNER)
+
+**Overview:**
+Replaced the prominent language button in the main menu button layout with an elegant, compact dropdown situated in the bottom-right corner of the menu screen.
+
+**Implementation Details:**
+- **Removal of Btn-Language:** Removed the previous button from `MenuBtnLayout` to keep the primary vertical menu clean (Play, Reset Progress, Exit).
+- **LanguageDropdown Component (`LanguageDropdown.cs`):**
+  - Manages a TextMeshPro `TMP_Dropdown` component.
+  - Automatically synchronizes selected option with `LocalizationManager.CurrentLanguage` (`English (EN)` index 0, `Español (ES)` index 1).
+  - Listens to `onValueChanged` to update `LocalizationManager.SetLanguage(...)` and responds to `OnLanguageChanged` events without triggering feedback loops.
+- **UI Positioning & Behavior in `Menu.unity`:**
+  - Anchored directly to the Canvas bottom-right corner (`anchorMin = (1, 0)`, `anchorMax = (1, 0)`, `pivot = (1, 0)`, `anchoredPosition = (-40, 30)`).
+  - The dropdown's internal template pivot and position were inverted to unfold **upwards** (`pivot = (0.5, 0)`, `anchoredPosition = (0, 44)`), ensuring the options list remains fully visible without clipping below screen boundaries.
+
+==================================================
+75. INITIAL ASSESSMENT FIRST-SCREEN ROUTING & STATS DASHBOARD SCENE
+
+**Overview:**
+Integrated the Initial Assessment Test directly into the core game loop as the mandatory first experience after the Main Menu for new players, and built a dedicated Stats & Assessment dashboard scene accessible anytime from the Main Menu.
+
+**1. Main Menu First-Screen Flow:**
+- **Routing Logic (`SceneSystem.cs`):**
+  - Updated `SceneSystem.ChangeToMain()` (triggered by "Play" / `Btn-Play`) to check `PlayerPrefs.GetInt("InitialAssessmentCompleted", 0) == 0`.
+  - If the initial assessment has not been completed, the game routes immediately to `AssessmentScene`.
+  - Once completed or finished, `InitialTestManager` sets `PlayerPrefs.SetInt("InitialAssessmentCompleted", 1)` and calls `SceneSystem.ChangeToMain()`, smoothly advancing the player into `Desktop1` (or their saved level sequence).
+  - Clicking "Reset Progress" in the Main Menu wipes `PlayerPrefs`, ensuring that subsequent "Play" actions correctly restart the player at the Initial Assessment.
+
+**2. Dedicated Assessment Scene (`AssessmentScene.unity`):**
+- Standalone clean scene containing:
+  - `Main Camera` with soft neutral background (`#F1F5F9`).
+  - `Canvas` and `EventSystem` configured with `InputSystemUIInputModule`.
+  - `SceneManager` prefab (`SceneSystem`).
+  - `Managers` prefab (`SkillManager`, `ProgressData`, `DesktopManager`, etc.).
+  - `InitialTestManager` & `LocalizationManager`: Automatically starts the clean geometric assessment on load (`SceneManager.GetActiveScene().name == "AssessmentScene"`).
+  - Exit button safely navigates back to `Menu.unity`, while completion/finish progresses to `Desktop1`.
+
+**3. Stats & Reports Dashboard Scene (`StatsScene.unity` & `StatsSceneController.cs`):**
+- Accessible from the Main Menu via the new "Skills & Reports" button.
+- **Scene-Authored UI Hierarchy (constructed via Unity MCP):**
+  - All UI elements (Canvas, Background, Header bar, navigation buttons, Left/Right cards, summary panels, and table containers) are authored as persistent GameObjects within `StatsScene.unity` using the Unity MCP server rather than being built purely in runtime procedural code.
+  - `StatsSceneController.cs` binds to these pre-existing scene objects via `[SerializeField]` references (`backToMenuButton`, `retakeAssessmentButton`, `summaryBox`, `summaryText`, `avgScoreText`, `emptyStateText`, `assessmentTableContainer`, `skillsTableContainer`).
+- **Header:**
+  - "Back to Menu" button: navigates back to `Menu.unity`.
+  - "Retake Assessment" button: directly loads `AssessmentScene` so users or evaluators can re-run diagnostics anytime.
+- **Left Card (Assessment History):**
+  - Scans and parses the latest diagnostic evaluation from `Assets/Assessment/*.json`.
+  - Displays completion timestamp, tasks completed ratio, overall average proficiency percentage, and itemized task breakdowns (status, score, time taken, errors/extra attempts).
+  - Displays friendly empty state guidance if no diagnostic tests have been run yet.
+- **Right Card (Live Skill Mastery):**
+  - Queries active skill proficiencies from `SkillManager` and `PlayerPrefs` (`SkillScore_{skillId}`).
+  - Renders color-coded progress bars (High: Emerald Green >= 75%, Medium: Amber >= 45%, Beginner: Orange/Red < 45%).
+  - Summarizes current proficiency score and skill level status.
+
+**4. Main Menu Button (`Menu.unity`):**
+- Added `Btn-Stats` ("Skills & Reports") into `MenuBtnLayout` directly between "Play" and "Reset Progress".
+- Button is automatically managed by the layout's `VerticalLayoutGroup`.
+- Persistent `onClick` event is wired to `SceneSystem.ChangeToStats()`.
+
+**5. Build Settings:**
+- Both `Assets/Scenes/AssessmentScene.unity` and `Assets/Scenes/StatsScene.unity` are registered and enabled in `EditorBuildSettings.asset`.
+
+==================================================
+76. RESET PROGRESS STANDALONE BUILD FIX & DIRECT DESKTOP TRANSITION
+
+**1. Reset Progress Standalone Build Fix (`SceneSystem.cs`):**
+- **Problem Identified:**
+  - In `SceneSystem.ResetProgress()`, `PlayerPrefs.DeleteAll()` was previously located inside an `else` branch of `if (ProgressData.Instance != null)`. Because `ProgressData.Instance` exists at runtime, `PlayerPrefs.DeleteAll()` never executed.
+  - Furthermore, `ProgressData.Instance.ClearHistory()` only deleted its own save key, leaving `PlayerPrefs.GetInt("InitialAssessmentCompleted") == 1` intact. Consequently, clicking "Reset Progress" in a standalone build failed to reset the assessment state, causing the "Play" button to bypass the Initial Assessment.
+- **Solution Applied:**
+  - Cached the active language selection (`SelectedLanguage`) before wiping.
+  - Explicitly called `ProgressData.Instance?.ClearHistory()` to reset in-memory records and flags.
+  - Explicitly called `SkillManager.Instance?.ResetAllScores()` to reset active scores in memory and PlayerPrefs.
+  - Executed `PlayerPrefs.DeleteAll()` unconditionally.
+  - Re-applied `SelectedLanguage`, and explicitly set all progression flags (`InitialAssessmentCompleted`, `AutoSequenceCompleted`, `DesktopTourCompleted`, `SemiGuidedSequenceCompleted`) to `0`.
+  - Saved `PlayerPrefs` (`PlayerPrefs.Save()`), guaranteeing that clicking "Play" after "Reset Progress" consistently presents the Initial Assessment.
+
+**2. Direct Desktop Transition Without Summary Screen (`InitialTestManager.cs`):**
+- **Overview:**
+  - Removed the intermediate evaluation summary screen at the conclusion of the Initial Assessment level to create a seamless, child-friendly flow directly into the desktop environment.
+- **Implementation:**
+  - In `InitialTestManager.SpawnCurrentTask()`, upon completing all tasks (`currentTaskIndex >= config.tasks.Count`), the manager now directly calls `CalculateAndStoreResults()`, closes any open window (`appWindow?.CloseWindow()`), and calls `FinishTest()`.
+  - `CalculateAndStoreResults()` continues to evaluate accuracy/time metrics, updates `SkillManager`, sets `InitialAssessmentCompleted = 1`, and exports the diagnostic JSON report to `Assets/Assessment/{HH-mm-ss}.json`.
+
+**3. Mid-Assessment Reset & Re-entry Fix (`InitialTestManager.cs` & `LocalizationManager.cs`):**
+- **Problems Identified:**
+  1. The Exit ("Salir") button on the assessment window header was previously calling `CalculateAndStoreResults()`. When a user exited midway through an assessment, it mistakenly marked `InitialAssessmentCompleted = 1`, preventing the assessment from showing again upon pressing Play.
+  2. `LocalizationManager` was previously co-located with `InitialTestManager` on the `AssessmentManager` GameObject in `AssessmentScene.unity`. In `LocalizationManager.Awake()`, `DontDestroyOnLoad(gameObject)` made the entire `AssessmentManager` persist across scene unloads into `Menu`. When `AssessmentScene` was re-entered, the duplicate check destroyed the new scene's manager, while the old manager had stale/destroyed references and never re-triggered `Start()`.
+- **Solutions Applied:**
+  1. Removed `CalculateAndStoreResults()` from the Exit button callback in `InitialTestManager.cs`. Cancelling an assessment midway now cleanly closes the window or routes back to the Menu without marking it as completed.
+  2. Removed `DontDestroyOnLoad(gameObject)` from `LocalizationManager.cs` and decoupled it from `AssessmentManager` in `AssessmentScene.unity`.
+  3. Ensured `InitialTestManager.Start()` unconditionally resets `IsTestActive = false` and initializes `StartAssessment()` fresh whenever `AssessmentScene` is loaded.
+  4. Added a safety cleanup in `SceneSystem.ResetProgress()` to destroy any lingering `InitialTestManager` GameObject.
+
+==================================================
+77. SIMULATED OPERATING SYSTEM (VIRTUALDESKTOP SCENE, START MENU & NATIVE APPS)
+
+**Context & Objective:**
+Following the guided tutorials in `Desktop1` and `Desktop2` that teach basic mouse manipulation (single click, hover, drag, resize, and recycling bin), the player transitions to `VirtualDesktop.unity`. This scene represents the true simulated operating system ("Windows Simulado"), offering a free, unguided desktop playground equipped with system tools, productivity apps, and minigames tailored for children.
+
+**1. Scene Clean-up & Mode Isolation (`VirtualDesktop.unity`):**
+* Removed legacy tutorial orchestrator components (`FirstDesktopTutorial` / `SecondDesktopTutorial`) from the `Managers` GameObject.
+* Verified absence of any modal `TutorialBlocker` overlays.
+* Registered `Assets/Scenes/VirtualDesktop.unity` into `EditorBuildSettings.asset`.
+* Preserved the core UI infrastructure: reference Canvas (1920x1080), `WindowManager` (bound to `WindowsArea`), `IconGrid` (bound to `Panel`), `Taskbar`, and `Managers`.
+
+**2. Start Menu System (`StartMenuController.cs`):**
+* **Start Button (`StartButton`):** Converted `DesktopLabel` on the bottom-left of the `Taskbar` into an interactive uGUI `Button` labeled "❖ Inicio" (#1E293B background with hover states).
+* **Start Menu Panel (`StartMenuPanel`):** Authored a modern dark slate (#0F172A) popup window anchored directly above the Taskbar (300 x 390 px) featuring:
+  - Header: "Mi Ordenador" with sub-bar styling.
+  - App Shortcuts:
+    * 📁 Explorador de Archivos
+    * 📝 Bloc de Notas
+    * 🎮 Centro de Minijuegos
+  - System Actions:
+    * 📊 Estadísticas y Logros (routes to `SceneSystem.ChangeToStats()`).
+    * 🚪 Cerrar Sesión / Salir (routes to `SceneSystem.ChangeToMenu()`).
+* **Auto-Close Behavior:** Automatically detects clicks outside the panel or button clicks to close the menu cleanly.
+
+**3. Native Application Prefabs & Content Architecture:**
+* **Bloc de Notas (`NotepadApp.cs` & `NotepadContent.prefab`):**
+  - Full-window typing sandbox with multiline `TMP_InputField`.
+  - Educational character and word counters updated in real-time (`Caracteres: X | Palabras: Y`).
+  - Action buttons: "Limpiar" (resets text) and "Guardar" (displays feedback confirmation).
+* **Explorador de Archivos (`FileExplorerApp.cs` & `FileExplorerContent.prefab`):**
+  - Top navigation bar with "← Atrás" button and dynamic path display (`Este Equipo > Archivos > ...`).
+  - Hierarchical folder model: `Documentos` (text notes), `Imágenes`, and `Minijuegos`.
+  - Double-click file handling: opens text files in Notepad, images in viewer, or launches minigames.
+* **Centro de Minijuegos (`MinigamesHubApp.cs` & `MinigamesHubContent.prefab`):**
+  - Grid of interactive cards for rapid minigame launching:
+    * Dianas y Clics (`L_Level3`)
+    * Seguimiento y Hover (`L_Level2`)
+    * Doble Clic Rápido (`L_Level5`)
+    * Entrenamiento Adaptativo (`L_Level4`)
+  - "¡Jugar!" buttons dynamically spawn generic windows and inject `LevelRunner`.
+
+**4. Desktop Icons Setup (`DesktopManager.cs`):**
+* Configured `DesktopManager.initialDesktopIcons` to populate the free desktop with OS applications:
+  1. **Archivos** (`Folder_Icon01.png` -> `FileExplorerContent.prefab`)
+  2. **Bloc de Notas** (`Text_File_Icon_W01_Scaled.png` -> `NotepadContent.prefab`)
+  3. **Minijuegos** (`Maze_Minigame_Icon_01_Scaled.png` -> `MinigamesHubContent.prefab`)
+  4. **Papelera** (`RecyclingBin_Icon_01.png` -> `FileExplorerContent.prefab`)
+
+**5. Progression & Scene Routing:**
+* **`SceneSystem.cs`:**
+  - Added `SceneNames.VirtualDesktop`.
+  - In `ChangeToMain()`, when `PlayerPrefs.GetInt("SemiGuidedSequenceCompleted", 0) == 1`, players directly load `VirtualDesktop`.
+  - Added public helper `ChangeToVirtualDesktop()`.
+* **`AdvancedDesktopTour.cs`:**
+  - Updated completion transition from placeholder `PostTutorialScene` to `VirtualDesktop`.
+
+**6. Editor Automation Tool (`VirtualDesktopSetup.cs`):**
+* Created a one-click setup tool under `ComputerLearning -> Setup Virtual Desktop OS` to construct prefabs, wire serialized references, and rebuild the scene hierarchy deterministically.
+
+==================================================
+78. DEEP FILE EXPLORER ARCHITECTURE & RIGHT-CLICK CONTEXT MENU (FOLDER CREATION)
+
+**Context & Motivation:**
+User prioritized building a robust, educational simulated file system and implementing an OS-style Right-Click Context Menu. In this phase, the right-click menu is purposefully focused exclusively on creating folders ("📁 Nueva Carpeta"), allowing children to practice hierarchical organization, right-clicking, and mouse dexterity in a safe environment before text file authoring is introduced.
+
+**1. Context Menu System (`ContextMenuController.cs`):**
+* **Dynamic Placement & Boundary Clamping:** A dedicated uGUI popup panel (`ContextMenuPanel`) anchored to the Canvas. Converts screen coordinates via `RectTransformUtility.ScreenPointToLocalPointInRectangle` and automatically clamps positioning so the popup never clips outside display edges.
+* **Dismissal Rules:** Automatically hides when the user left-clicks or right-clicks outside the menu boundaries, or presses the `Escape` key.
+* **Focused Action:** Currently features exclusively the **"📁 Nueva Carpeta"** button with hover highlights, modern slate styling (`#101827`), and high-contrast typography.
+
+**2. Desktop Right-Click Trigger (`DesktopContextMenuTrigger.cs`):**
+* Attached to both `Background` and `Panel` in `VirtualDesktop.unity`.
+* Detects right clicks (`eventData.button == PointerEventData.InputButton.Right`) on any empty desktop area.
+* **Folder Spawning Logic:** When "Nueva Carpeta" is chosen, it automatically calculates unique naming ("Nueva Carpeta", "Nueva Carpeta (1)", etc.), spawns a new `DraggableIcon` via `DesktopManager.Instance.SpawnIcon`, assigns `Folder_Icon01.png`, and wires `FileExplorerContent.prefab`. The newly created folder automatically snaps into the `IconGrid`.
+
+**3. Deep File Explorer Overhaul (`FileExplorerApp.cs` & `FileExplorerContent.prefab`):**
+* **Hierarchical Virtual Directory Model:** Built with an extensible tree structure (`ExplorerItemData` / `ExplorerFileType`) supporting folders, text notes, images, and minigames.
+* **In-Window Right-Click Context Menu:** `FileExplorerApp` implements `IPointerClickHandler`. Right-clicking anywhere within the empty area of the Explorer window summons the Context Menu to create new subfolders inside the currently open directory.
+* **Toolbar & Navigation:**
+  - "← Atrás" button with disabled state when at the root directory.
+  - Interactive breadcrumbs path display (`📁 Este Equipo > Documentos > ...`).
+  - Prominent "📁 + Nueva Carpeta" button on the top toolbar for accessible folder creation.
+* **Item Selection & Double-Click Flow:**
+  - Single click selects the file/folder with a subtle highlight (`#38BDF8` tint).
+  - Double-click (< 0.45s) opens the item: entering subfolders, launching Notepad for text files, or launching minigames.
+* **Dynamic Status Footer:** Bottom bar dynamically displays item count ("X elementos").
+
+**4. Editor Setup Synchronization (`VirtualDesktopSetup.cs`):**
+* Updated the `ComputerLearning -> Setup Virtual Desktop OS` MenuItem to construct, bind, and serialize the `ContextMenuPanel`, desktop triggers, and updated `FileExplorerContent.prefab` deterministically.
+
+==================================================
+79. MINIGAMES FOLDER ARCHITECTURE & PERSISTENT COMPANION MASCOT
+
+**Context & Motivation:**
+User requested two essential desktop operating system features:
+1. Encapsulate all educational minigames inside a dedicated Desktop Folder ("Minijuegos") rather than leaving them as loose standalone applications or separate buttons on the desktop grid.
+2. Position the Virtual Mascot permanently in the top-right corner of the screen as a desktop pet/companion that greets the child, bobs gently in idle, and speaks helpful tips, instructions, and encouraging phrases upon being clicked.
+
+**1. Minigames Folder Architecture (`FileExplorerApp.cs` & `MinigamesFolderContent.prefab`):**
+* **Desktop Folder Integration:**
+  - In `DesktopManager.initialDesktopIcons`, the "Minijuegos" icon is now configured as a `DesktopItemType.Folder` utilizing `Folder_Icon01_Purple.png`.
+  - When double-clicked from the desktop, it opens `MinigamesFolderContent.prefab`, which is initialized with `initialFolderName = "Minijuegos"`.
+  - The Explorer window opens immediately focused on the `Minijuegos` subfolder, showing path breadcrumbs `📁 Este Equipo > Minijuegos`, active "← Atrás" navigation button, and footer item count.
+* **Direct Minigame Execution from Explorer:**
+  - The `Minijuegos` directory contains four modular educational games:
+    1. **Dianas y Clics:** `Target_Minigame_Icon01_Scaled.png` wired to `L_Level3.asset` (Single click / target accuracy).
+    2. **Seguimiento y Hover:** `Maze_Minigame_Icon_01_Scaled.png` wired to `L_Level2.asset` (Path tracking / hover).
+    3. **Doble Clic Rápido:** `Target_Minigame_Icon01_Scaled.png` wired to `L_Level5.asset` (Speed / double click).
+    4. **Entrenamiento Adaptativo:** `Maze_Minigame_Icon_01_Scaled.png` wired to `L_Level4.asset` (Dynamic session).
+  - Double-clicking any minigame inside the folder dynamically instantiates a `BaseWindow`, attaches `LevelRunner`, and calls `runner.StartLevel(item.levelToLaunch)`, launching the interactive minigame right inside that window.
+
+**2. Persistent Companion Mascot (`VirtualMascot.cs`):**
+* **Companion Mode:**
+  - Added `enableMascotCompanion` to `DesktopManager.cs`. In `VirtualDesktop.unity`, this automatically instantiates the mascot in companion mode.
+  - Positioned permanently in the top-right corner: `anchorMin = (1, 1)`, `anchorMax = (1, 1)`, `pivot = (1, 1)`, `anchoredPosition = (-45, -45)`.
+  - Layered on the desktop surface directly before `WindowsArea` so it is clearly visible on the desktop without occluding or interfering with opened application controls (like the window close 'X' button).
+  - Idle breathing/bobbing animation: `anchoredPosition = companionCornerOffset + new Vector2(0f, Mathf.Sin(Time.unscaledTime * 3f) * 6f)`.
+* **Click Interaction & Animated Speech (`IPointerClickHandler`):**
+  - Enabled raycasts on `CanvasGroup` (`blocksRaycasts = true`, `interactable = true`) and `MascotImage`.
+  - Clicking the mascot plays an elastic squash-and-stretch bounce reaction coroutine (`Vector3(1.22, 0.82, 1)` -> `Vector3(0.88, 1.18, 1)` -> `Vector3(1, 1, 1)`).
+  - Speech bubble dynamically displays to the left/below the mascot (`pivot = (1, 1)`, `anchoredPosition = (-110, -20)`) with automatic text wrapping and layout rebuild.
+  - Automatically hides after 5.0 seconds or refreshes immediately if clicked again.
+* **Bilingual Dialogue Pool:**
+  - Supports English and Spanish via `LocalizationManager.CurrentLanguage`.
+  - Features 10 varied child-friendly tips and encouraging remarks (using the mouse, right-clicking for folders, keyboard typing in Notepad, maximizing windows, and friendly greetings).
+  - Maintains random selection with a non-repeating constraint so consecutive clicks cycle through different advice.
+* **Persistent Visibility:**
+  - `VirtualMascot.HideMascot()` and `HideMascotIfTargeting()` now explicitly preserve the mascot if `isDesktopCompanion` is active, guaranteeing that opening windows or clicking icons never hides the companion.
+
+**3. Automation & Synchronization (`VirtualDesktopSetup.cs`):**
+* Updated `VirtualDesktopSetup` to automatically:
+  - Configure `FileExplorerContent.prefab` with serialized minigame levels and icons.
+  - Generate `MinigamesFolderContent.prefab` with `initialFolderName = "Minijuegos"`.
+  - Configure `DesktopManager` with the updated icons array and `enableMascotCompanion = true`.
+  - Save the clean scene `VirtualDesktop.unity`.
+
+==================================================
+80. EXPLORER UI REFINEMENT, PREFAB STANDARDIZATION & FONT GLYPH FIXES
+
+**Context & Problems Identified:**
+After testing the File Explorer and desktop minigames folder in `VirtualDesktop.unity`, several visual and layout defects were identified from screenshots:
+1. **Broken Toolbar Alignment:** The "← Atrás" button was protruding 28px outside the left window border.
+2. **Missing Font Glyphs (`□`):** Unity's default `LiberationSans SDF` font asset does not include emoji glyphs like `📁` (U+1F4C1) or special arrows (`←`), rendering empty square boxes `□` across `PathText` and button labels.
+3. **Transparent / Invisible Icons:** Explorer items appeared virtually invisible (rendered at 5% opacity) without their text names.
+4. **Start Menu Typography:** Menu buttons relied on emoji characters instead of dedicated graphical sprites.
+
+**Root Causes:**
+* **Icon Opacity:** When `itemPrefab` was unassigned, the procedural fallback in `FileExplorerApp.CreateItemUI` created a card background with `color = new Color(1, 1, 1, 0.05f)` and assigned the sprite to `GetComponentInChildren<Image>()`, which resolved to this 5% translucent card background. Additionally, no `TextMeshProUGUI` child was created for the item label.
+* **Button Anchor & Pivot:** In `VirtualDesktopSetup.EnsureExplorerPrefab`, `btnBackGo` had its pivot set to `(0.5, 0.5)` with `anchoredPosition = (10, 0)`. With a width of 76px, its left edge landed at `10 - 38 = -28px` outside the container.
+* **Selection Tinting:** `SelectItem` and `ClearSelection` previously modified the main `Image` color without isolating the background from the icon sprite.
+
+**Solutions & Implementation:**
+
+**1. Standalone Explorer Item Prefab (`ExplorerItemPrefab.prefab`):**
+* Created a dedicated prefab in `Assets/Prefabs/Windows/ExplorerItemPrefab.prefab`:
+  - Root: 110 x 110 px with transparent `Image` (acting as selection highlight surface) and `Button`.
+  - Child `Icon`: 64 x 64 px `Image` positioned at top with `color = Color.white` (100% full solid opacity, `preserveAspect = true`, `raycastTarget = false`).
+  - Child `Label`: `TextMeshProUGUI` anchored at bottom with 12pt dark slate typography (`#0F172A`), centered alignment, and ellipsis overflow.
+* Bound `itemPrefab` to both `FileExplorerContent.prefab` and `MinigamesFolderContent.prefab`.
+
+**2. Procedural Fallback Parity (`FileExplorerApp.cs`):**
+* Rewrote `CreateItemUI` so that both prefab and procedural code paths instantiate isolated `Icon` and `Label` child GameObjects.
+* In `SelectItem` and `ClearSelection`, only the root card background is toggled between `Color.clear` and light sky blue (`#3399FF` at 25% alpha), leaving the icon and label completely untouched.
+
+**3. Window Toolbar & Typography Fixes (`VirtualDesktopSetup.cs`):**
+* **Back Button:** Set `pivot = (0, 0.5f)`, `anchoredPosition = (12, 0)`, and size `(80, 32)`. Stretched the child text across the entire button with `< Atrás` in bold ASCII.
+* **Path Breadcrumbs:** Adjusted `offsetMin = (104, 0)` and `offsetMax = (-160, 0)`. Replaced emoji strings with clean ASCII: `Este Equipo > Archivos` (and `Este Equipo > Minijuegos`).
+* **Toolbar & Context Menu Buttons:** Changed labels to `+ Nueva Carpeta` (no unicode emoji).
+* **Start Menu Icons:** Refactored `CreateMenuButton` to dynamically instantiate a dedicated 24 x 24 px `Image` using the actual application sprite (`folderIcon`, `notepadIcon`, `minigamesIcon`) with 44px text padding, removing emojis completely.
+
+**4. Verification:**
+* Reimported assets and executed `ComputerLearning -> Setup Virtual Desktop OS`.
+* Inspected Unity console: 0 errors and 0 font fallback warnings.
+* Verified `VirtualDesktop.unity` scene saved cleanly.
+
+==================================================
+81. FULL SYSTEM LOCALIZATION TO ENGLISH (SIMULATED OS & APPS)
+
+**Context & Motivation:**
+To align with the project's primary English presentation standard during the Erasmus semester and `LocalizationManager.CurrentLanguage` default ("EN"), all text elements across `VirtualDesktop.unity`, its native applications, virtual file system, and interactive menus were translated to English.
+
+**1. Virtual Desktop & Taskbar:**
+* **Start Button:** Labeled "Start" (was "Inicio").
+* **Start Menu Header:** "My Computer" (was "Mi Ordenador").
+* **Start Menu Items:**
+  - "File Explorer" (was "Explorador de Archivos")
+  - "Notepad" (was "Bloc de Notas")
+  - "Minigames Hub" (was "Centro de Minijuegos")
+  - "Stats & Achievements" (was "Estadísticas y Logros")
+  - "Sign Out / Exit" (was "Cerrar Sesión / Salir")
+* **Initial Desktop Icons:** "Files", "Minigames", "Notepad", and "Recycle Bin".
+
+**2. File Explorer & Virtual File System (`FileExplorerApp.cs`):**
+* **Toolbar & Status:**
+  - Navigation: "< Back" (was "< Atrás") and "+ New Folder" (was "+ Nueva Carpeta").
+  - Breadcrumbs: "This PC > Files" and "This PC > Minigames" (was "Este Equipo > ...").
+  - Footer counter: "X items" (was "X elementos").
+* **Default Directory Hierarchy:**
+  - Root: "Files" (was "Archivos").
+  - "Documents" (was "Documentos") containing:
+    * `Welcome.txt`: "Welcome to your virtual computer!\nHere you will learn how to use all the tools."
+    * `Mouse_Guide.txt`: "Tip: Use left click to select and double click quickly to open programs."
+  - "Pictures" (was "Imágenes") containing `Mascot.png`.
+  - "Minigames" (was "Minijuegos") containing:
+    * `Targets & Clicks` (`L_Level3`)
+    * `Tracking & Hover` (`L_Level2`)
+    * `Fast Double Click` (`L_Level5`)
+    * `Adaptive Practice` (`L_Level4`)
+* **Folder Creation:** Default naming scheme updated to "New Folder", "New Folder (1)", etc.
+
+**3. Context Menu (`ContextMenuController.cs` & `DesktopContextMenuTrigger.cs`):**
+* Popup button: "+ New Folder" (was "+ Nueva Carpeta").
+* Desktop right-click trigger automatically spawns folders named "New Folder".
+
+**4. Notepad Application (`NotepadApp.cs`):**
+* Default document: "Welcome to Notepad!\n\nHere you can practice typing on your keyboard. Try typing your name and your favorite games!"
+* Action button: "Clear" (was "Limpiar").
+* Feedback message: "Note saved successfully!" (was "¡Nota guardada con éxito!").
+* Live counters: "Characters: X | Words: Y" (was "Caracteres: X | Palabras: Y").
+
+**5. Minigames Hub (`MinigamesHubApp.cs`):**
+* Game Cards: "Targets & Clicks", "Tracking & Hover", "Fast Double Click", "Adaptive Practice".
+* Action buttons: "Play!" (was "¡Jugar!").
+
+**6. Verification & Persistence:**
+* Rebuilt all content prefabs via `ComputerLearning -> Setup Virtual Desktop OS`.
+* Tested Play mode: verified English strings on spawned desktop icons, Start menu, File Explorer, and companion mascot.
+* Saved `VirtualDesktop.unity` scene cleanly.
+
+
+
+
+==================================================
+82. RESPONSIVE WINDOW RESIZING, VIEWPORT MASKING & MINIMUM BOUNDS
+
+**Context & Motivation:**
+When resizing application windows to small or compact sizes in `VirtualDesktop.unity`, several UI layout and clipping defects emerged:
+1. **Vertical Text Collapse in Explorer Toolbar:** The path breadcrumb label ("This PC > Files") collapsed into a single-character-wide vertical column.
+2. **Toolbar Overlap & Rect Inversion:** The Back button (80px), Path text, and New Folder button (140px) previously relied on manual pixel anchors with static offsets (`offsetMin.x = 104`, `offsetMax.x = -160`). When the window width dropped below 264px, the calculated rect width became negative, scrambling the text layout and causing buttons to overlap.
+3. **Item Bleeding Over Window Borders:** The item grid (`ItemsContainer`) was parented directly to the window root without clipping. Shrinking window height caused icons to hang out past the window frame and render onto the desktop wallpaper.
+4. **Overly Permissive Minimum Window Size:** Window resize handles allowed shrinking windows down to 300x200 px or smaller, which was too compact for a toolbar, title bar, and grid.
+
+**Root Causes & Architectural Solutions:**
+
+**1. Responsive Toolbar Layout (`HorizontalLayoutGroup` & `LayoutElement`):**
+* Converted the Explorer `TopBar` into a `HorizontalLayoutGroup` (padding `10, 10, 7, 7`, spacing `8`, `childControlWidth = true`, `childControlHeight = true`, `childForceExpandHeight = true`).
+* Assigned explicit `LayoutElement` components to all toolbar items:
+  - **Back Button:** `LayoutElement` (`preferredWidth = 72`, `minWidth = 60`, `flexibleWidth = 0`).
+  - **Path Breadcrumb Text:** `LayoutElement` (`flexibleWidth = 1`, `minWidth = 40`), `textWrappingMode = TextWrappingModes.NoWrap`, `overflowMode = TextOverflowModes.Ellipsis`. Takes all remaining horizontal space without pushing buttons out of view and truncates with "..." if constrained.
+  - **New Folder Button:** `LayoutElement` (`preferredWidth = 110`, `minWidth = 85`, `flexibleWidth = 0`).
+* Overlaps, collisions, and negative rect widths are now geometrically impossible regardless of window size.
+
+**2. Viewport Masking & Elastic Scrolling (`ScrollRect` & `RectMask2D`):**
+* **File Explorer (`FileExplorerContent.prefab`):** Created a scrollable `ScrollView` hierarchy anchored between the top bar and status footer (`offsetMin = (0, 26)`, `offsetMax = (0, -42)`). Attached `ScrollRect` (vertical only, elastic) and `RectMask2D` to `Viewport`. Added `ContentSizeFitter` (`verticalFit = PreferredSize`) to `ItemsContainer`.
+* **Minigames Hub (`MinigamesHubContent.prefab`):** Wrapped `GamesGrid` inside a masked `ScrollView` with `RectMask2D` and `ContentSizeFitter`.
+* Icons and grid items are strictly clipped inside the window frame and can be smoothly scrolled vertically when the window height is reduced.
+
+**3. Window Minimum Size Boundary Clamping (`ResizeHandle.cs` & `BaseWindow.prefab`):**
+* In `ResizeHandle.cs`, updated default minimum window size from `(300, 200)` to a robust `(380, 260)`.
+* Exposed public property `MinSize { get => minSize; set => minSize = value; }`.
+* Updated `VirtualDesktopSetup.cs` to iterate across all 8 resize handles in `BaseWindow.prefab` (Top, Bottom, Left, Right, and 4 corners), serializing `minSize = new Vector2(380, 260)`.
+
+**4. Deprecation & Clean Compilation:**
+* Replaced Unity 6 obsolete `TMP_Text.enableWordWrapping = false` with `TMP_Text.textWrappingMode = TextWrappingModes.NoWrap`.
+* Executed `ComputerLearning -> Setup Virtual Desktop OS` and verified 0 errors and 0 warnings in the Unity console.
+
+==================================================
+83. SCENE PROGRESSION CHAIN SYNCHRONIZATION (DESKTOP1 -> TUTORIAL1 -> DESKTOP2 -> TUTORIAL2 -> VIRTUALDESKTOP)
+
+**Context & Problem:**
+Following a project reorganization that standardized scene naming, the transitions between tutorial and desktop scenes became disjointed:
+- Upon completing `Desktop1`, the game attempted to load `IntroTutorialScene` (an old scene name), breaking the flow into `Tutorial1`.
+- `DesktopTour` in `Tutorial1` attempted to load `SecondDesktopScene` instead of `Desktop2`.
+- `SecondDesktopTutorial` in `Desktop2` attempted to load `SecondTutorial` instead of `Tutorial2`.
+- In `ProjectSettings/EditorBuildSettings.asset`, `VirtualDesktop.unity` had `enabled: 0`, preventing it from properly participating in builds and scene lookups.
+
+**Solutions & Implementation:**
+
+**1. Desktop1 -> Tutorial1 Transition (`FirstDesktopTutorial.cs`):**
+* Updated the sequence completion in `AutoOnboardingSequence()`:
+  - Sets `PlayerPrefs.SetInt("AutoSequenceCompleted", 1)`.
+  - Saves `PlayerPrefs.Save()`.
+  - Explicitly executes `UnityEngine.SceneManagement.SceneManager.LoadScene("Tutorial1")`.
+
+**2. Tutorial1 -> Desktop2 Transition (`DesktopTour.cs`):**
+* Updated `DesktopTour.TourSequence()` completion:
+  - Sets `PlayerPrefs.SetInt("DesktopTourCompleted", 1)`.
+  - Saves `PlayerPrefs.Save()`.
+  - Explicitly executes `UnityEngine.SceneManagement.SceneManager.LoadScene("Desktop2")`.
+
+**3. Desktop2 -> Tutorial2 Transition (`SecondDesktopTutorial.cs`):**
+* Updated `SemiGuidedOnboardingSequence()` completion:
+  - Sets `PlayerPrefs.SetInt("SemiGuidedSequenceCompleted", 1)`.
+  - Saves `PlayerPrefs.Save()`.
+  - Explicitly executes `UnityEngine.SceneManagement.SceneManager.LoadScene("Tutorial2")`.
+
+**4. Tutorial2 -> VirtualDesktop Transition (`AdvancedDesktopTour.cs`):**
+* Confirmed and secured completion in `AdvancedDesktopTour.Start()`:
+  - Sets `PlayerPrefs.SetInt("AdvancedDesktopTourCompleted", 1)`.
+  - Saves `PlayerPrefs.Save()`.
+  - Seamlessly routes into `UnityEngine.SceneManagement.SceneManager.LoadScene("VirtualDesktop")`.
+
+**5. Central Scene Controller Synchronization (`SceneSystem.cs`):**
+* Expanded `SceneNames` enum and `ChangeScene()` to include all standard scene names: `Desktop1`, `Tutorial1`, `Desktop2`, `Tutorial2`, `VirtualDesktop`.
+* Updated `ChangeToMain()` stateful routing logic:
+  - If `InitialAssessmentCompleted == 0` -> `AssessmentScene`.
+  - Else if `AdvancedDesktopTourCompleted == 1` -> `VirtualDesktop`.
+  - Else if `SemiGuidedSequenceCompleted == 1` -> `Tutorial2`.
+  - Else if `DesktopTourCompleted == 1` -> `Desktop2`.
+  - Else if `AutoSequenceCompleted == 1` -> `Tutorial1`.
+  - Default -> `Desktop1`.
+* Updated `ResetProgress()` to cleanly reset `AdvancedDesktopTourCompleted = 0` alongside other progression flags.
+
+**6. Build Settings & Verification:**
+* In `ProjectSettings/EditorBuildSettings.asset`, enabled `Assets/Scenes/VirtualDesktop.unity` (`enabled: 1`).
+* Reimported all modified scripts with 0 errors and 0 warnings.
+
+==================================================
+84. VIRTUAL DESKTOP PROGRESSION SYSTEM: LEVELS FOLDER, NESTED MOUSE LEVELS, LEVEL 10 (CTRL+C / CTRL+V), AND SELECTIVE PULSING ANIMATION
+
+**Context & User Requirements:**
+To balance player agency in the open-ended `VirtualDesktop.unity` simulated operating system with guided pedagogical progression:
+1. **Levels Desktop Folder:** A prominent "Levels" folder must reside on the desktop.
+2. **Subfolder Hierarchy:** Inside "Levels", all subsequent levels and challenges are organized, including a dedicated "Mouse Levels" subfolder housing the original 9 mouse levels (`Level 1` through `Level 9`).
+3. **Selective Icon Pulsing Animation:** Instead of all unlocked levels pulsating at once, only the single *next* level in progression must perform the pulsing breathing animation. Furthermore, if a pending level is inside a folder, that parent folder (e.g., "Levels" on the desktop, and "Mouse Levels" inside the explorer) must pulse to guide the child player directly to the objective. Once completed, the animation transitions immediately to the next task.
+4. **Level 10 (Keyboard Shortcuts - Ctrl+C / Ctrl+V):** A didactic provisional level teaching standard clipboard shortcuts (`Ctrl + C` to copy, `Ctrl + V` to paste).
+
+---
+
+**Architectural Solutions & Implementation:**
+
+**1. Centralized Level Progression Tracking (`ProgressData.cs`):**
+* Added canonical level progression list:
+  `public static readonly string[] LevelOrder = { "level1", "level2", "level3", "level4", "level5", "level6", "level7", "level8", "level9", "level10" };`
+* Added `completedLevels` list in `ProgressData` and persistent serialization wrapper `ProgressDataWrapper`.
+* Backward Compatibility Fallback: If existing players completed onboarding or tutorial sequences, `ProgressData` automatically populates tutorial-associated levels (`level1` to `level9`) upon load.
+* Query & Event API:
+  - `bool IsLevelCompleted(string levelId)`
+  - `void MarkLevelCompleted(string levelId)`: Appends completed level, writes to JSON disk storage, and triggers `OnProgressChanged`.
+  - `string GetCurrentNextLevelId()`: Returns the first uncompleted level ID from `LevelOrder`, or `null` if all levels are mastered.
+* Auto-completion in `LevelRunner.cs`: When a task sequence finishes (`SpawnNextTask()` completion branch), `ProgressData.Instance.MarkLevelCompleted(currentLevel.levelId)` is invoked automatically.
+
+**2. Breathing Scale Component (`PulsingIcon.cs`):**
+* Reusable component attached to desktop icons and explorer item views.
+* Computes an unscaled sinusoidal breathing scale:
+  `scale = baseScale * (1f + Mathf.Sin(Time.unscaledTime * frequency) * amplitude)` (with `frequency = 3f`, `amplitude = 0.08f`).
+* Includes `SetPulsing(bool)` with smooth reset to `Vector3.one` upon deactivation.
+
+**3. Desktop Icon Progression Guidance (`DraggableIcon.cs`):**
+* Updated `Update()` to enforce selective breathing:
+  - If the icon represents a level (`levelDefinition != null`): only pulses if `levelDefinition.levelId == ProgressData.Instance.GetCurrentNextLevelId()`.
+  - If the icon represents the desktop "Levels" folder: pulses whenever `GetCurrentNextLevelId() != null` (any level remains incomplete).
+  - All other desktop icons remain static.
+
+**4. File Explorer Hierarchical Pulsing (`FileExplorerApp.cs`):**
+* Subscribed to `ProgressData.Instance.OnProgressChanged` on `OnEnable`/`OnDisable` to dynamically refresh folder icons when levels complete.
+* Recursive level detection:
+  `bool FolderContainsLevel(ExplorerItem folderItem, string levelId)` recursively inspects folder hierarchies to identify if a folder hosts the target level.
+* In `CreateItemUI()`:
+  - Levels only pulse if their `levelId == nextLevelId`.
+  - Folders pulse if `FolderContainsLevel(item, nextLevelId)` evaluates to true (e.g., "Mouse Levels" pulses when any of Level 1-9 is the next goal).
+* Built initial filesystem hierarchy in `BuildInitialFileSystem()`:
+  - Root: "Levels", "Minigames", "Documents".
+  - Inside "Levels":
+    - Subfolder "Mouse Levels": populated with `L_Level1` through `L_Level9`.
+    - Level item: `Level 10: Copy & Paste` (`L_Level10`).
+
+**5. Level 10 Didactic Challenge (`CopyPasteTask.cs`):**
+* Procedural uGUI didactic interface:
+  - Instruction header with real-time step guidance.
+  - Source box containing a bright, rotatable yellow star sticker with interactive hover/click feedback.
+  - Destination paste box with animated dashed cyan border.
+  - Visual keyboard badge indicators: `[Ctrl]`, `[C]`, and `[V]` which dynamically light up with green borders and glow when pressed on the physical keyboard.
+* Input detection: Supports both `UnityEngine.InputSystem.Keyboard.current` and legacy input fallback.
+* Progression steps:
+  1. Detects `Ctrl + C`: Highlights badges, emits chime, stores clipboard state, and prompts the player to paste.
+  2. Detects `Ctrl + V`: Animates the star sticker into the target zone with a bounce effect, emits celebratory particles/sound, and completes the task with `Complete(true)`.
+
+**6. Automated Pipeline & Asset Setup (`VirtualDesktopSetup.cs`):**
+* `EnsureCopyPasteLevelAssets()`:
+  - Generates `SK_KeyboardShortcuts.asset` (`SkillDefinition`).
+  - Generates `Task_CopyPaste.prefab` with `CopyPasteTask` component.
+  - Generates `T_CopyPaste.asset` (`TaskDefinition`).
+  - Generates `L_Level10.asset` (`LevelDefinition`).
+* `EnsureLevelsFolderPrefab()`:
+  - Creates `LevelsFolderContent.prefab` configured with `initialFolderName = "Levels"`.
+  - Registers the "Levels" folder icon as the primary icon in `DesktopManager.initialDesktopIcons`.
+  - Configures `FileExplorerContent.prefab` with references to `mouseLevels` (1..9) and `level10CopyPaste`.
+* Executed `ComputerLearning -> Setup Virtual Desktop OS` in the Unity Editor: 0 compilation errors, clean scene save.
+
+==================================================
+85. VISUAL DARKENING AND ACCESS RESTRICTION FOR LOCKED LEVELS (FILE EXPLORER, DESKTOP & MINIGAMES HUB)
+
+**Context & User Requirements:**
+To visually distinguish available and active challenges from locked future challenges in the simulated operating system (`VirtualDesktop.unity`):
+* Levels that have not yet been unlocked by the player must appear darkened ("oscurecidos").
+* Locked levels must not be launchable by the player until prerequisites are completed.
+* The visual feedback must be clear, intuitive, and responsive to progression changes.
+
+---
+
+**Implementation Details:**
+
+**1. Central Progression State Synchronization (`ProgressData.cs`):**
+* Reinforced singleton access with fallback lazy-instantiation (`FindAnyObjectByType<ProgressData>()` and `DontDestroyOnLoad`) so progress checks are guaranteed valid in all standalone or direct editor playtests.
+* Upgraded `IsLevelUnlocked(string levelId)`:
+  - Empty / null IDs return `true`.
+  - Level 1 is always unlocked by default.
+  - Returns `true` if `levelId` is recorded in `completedLevels` or `unlockedLevels`.
+  - Always returns `true` for the active next level in sequence (`GetCurrentNextLevelId()`).
+  - Returns `false` for any subsequent locked levels.
+
+**2. File Explorer Visual Darkening & Lock Badging (`FileExplorerApp.cs`):**
+* In `CreateItemUI(ExplorerItemData item)`:
+  - Detects if the item is a minigame/level and evaluates `isUnlocked = ProgressData.Instance.IsLevelUnlocked(item.levelToLaunch.levelId)`.
+  - **Darkened Icon Visuals:** When locked, `iconImg.color = new Color(0.28f, 0.28f, 0.28f, 0.7f)`. Full-brightness `Color.white` is reserved for unlocked levels.
+  - **Dimmed Card Opacity:** Attaches/configures `CanvasGroup` on the item GameObject (`alpha = 0.6f` when locked, `1.0f` when unlocked).
+  - **Dimmed Label & Status Tag:** Text color dims to `new Color(0.45f, 0.45f, 0.45f, 0.7f)` and appends `<color=#777777>[Locked]</color>`.
+  - **Pulsing Guard:** The pulsing animation (`PulsingIcon`) is restricted exclusively to unlocked levels matching the active target.
+* Double-Click / Selection Enforcement:
+  - If a player clicks a locked item, the status bar displays: `"{item.name} (Locked - Complete previous levels first)"`.
+  - If a player double-clicks a locked item, execution is prevented and an alert is displayed in the status footer: `"<color=#D9534F>Locked: Complete previous levels to unlock {item.name}</color>"`.
+  - `OpenMinigame(ExplorerItemData item)` additionally validates `IsLevelUnlocked` before opening any window.
+
+**3. Desktop Icon Darkening (`DraggableIcon.cs`):**
+* In `Start()` and `Update()`:
+  - Evaluates `actuallyLocked` dynamically against `ProgressData.Instance.IsLevelUnlocked`.
+  - Dims the icon graphic: `img.color = actuallyLocked ? new Color(0.28f, 0.28f, 0.28f, 0.7f) : originalColor`.
+  - Dims the `CanvasGroup.alpha = 0.6f`.
+  - Dims the child label text to `new Color(0.5f, 0.5f, 0.5f, 0.7f)`.
+  - Drags and click executions remain blocked while locked.
+
+**4. Minigames Hub Synchronization (`MinigamesHubApp.cs`):**
+* Added `UpdateButtonStates()` subscribed to `ProgressData.Instance.OnProgressChanged`.
+* Each activity button (`Targets & Clicks`, `Tracking & Hover`, `Fast Double Click`, `Adaptive Practice`) automatically disables (`interactable = false`), applies `CanvasGroup.alpha = 0.5f`, and tints its image dark gray if its target level is locked.
+* `LaunchLevel()` validates unlock status before spawning windows.
+
+**5. Verification:**
+* Verified in Unity Editor with 0 errors and 0 warnings.
+
+==================================================
+86. VIRTUAL DESKTOP SYSTEM POLISH & BUG FIXES: DYNAMIC WINDOW TITLES, DUPLICATE WINDOW PREVENTION, CONTEXT MENU RIGHT-CLICK RELAYS, AND RECYCLE BIN
+
+**Context & Issues Identified:**
+1. **Generic Window Titles ("baseWindow"):** Opening File Explorer or other applications from desktop icons displayed the fallback prefab name "baseWindow" on the taskbar and window header instead of the application name.
+2. **Duplicate Window Spawning:** Double-clicking an application or level multiple times from the File Explorer instantiated multiple redundant windows and conflicting `LevelRunner` instances instead of refocusing the existing window.
+3. **Context Menu Failure on Right-Click:** Right-clicking on the desktop or within the File Explorer failed to summon the Context Menu because the menu GameObject was inactive on startup (blocking `Awake()` and nullifying `ContextMenuController.Instance`), and the Explorer ScrollView intercepted raycasts without routing them to `FileExplorerApp.OnPointerClick`.
+4. **Recycle Bin Misdirection:** The "Recycle Bin" desktop icon pointed directly to the root "Files" directory rather than a dedicated trash bin view.
+
+---
+
+**Architectural Solutions & Implementation:**
+
+**1. Window Title Resolution (`DraggableIcon.cs` & `Window.cs`):**
+* In `DraggableIcon.OpenApplication()`: Dynamically calculates `resolvedTitle`:
+  - If `levelDefinition != null`: uses `levelDefinition.displayName`.
+  - Else: inspects `TextMeshProUGUI` child or icon GameObject name.
+  - Normalizes "Files" to "File Explorer".
+* Passes `resolvedTitle` directly to `WindowManager.OpenWindow(windowPrefab, appWindow, resolvedTitle)` and executes `appWindow.setTitle(resolvedTitle)`.
+* In `Window.setTitle()`: Updates `windowTitle`, synchronizes any text component in `titleBar` (`WindowTop`), and invokes `StateChanged`, ensuring the taskbar button displays the true application title immediately.
+
+**2. Duplicate Window Prevention (`WindowManager.cs` & `FileExplorerApp.cs`):**
+* In `WindowManager.cs`: Added `FindOpenWindowByTitle(string title)`.
+* In `OpenWindow()`: Before instantiating a new prefab, if a window with the matching title is already registered and not closed, it restores, brings to front, and returns the existing window.
+* In `FileExplorerApp.cs`: Maintains `Dictionary<string, Window> openedWindows`.
+  - Double-clicking an open level immediately restores and focuses the active window rather than starting a duplicate `LevelRunner`.
+
+**3. Context Menu Right-Click Activation (`ContextMenuController.cs` & `FileExplorerApp.cs`):**
+* In `ContextMenuController.cs`:
+  - Implemented lazy search fallback in `Instance`: `FindAnyObjectByType<ContextMenuController>(FindObjectsInactive.Include)` to guarantee non-null singleton access regardless of activation state.
+  - Refactored `Show()` to guarantee `gameObject.SetActive(true)` and ensure canvas references are cached.
+* In `VirtualDesktopSetup.cs`: Kept `contextMenuGo` active on startup, delegating hiding to `cmController.Hide()` in `Start()`.
+* In `FileExplorerApp.cs`:
+  - Implemented `ExplorerClickRelay` component attached to `itemsContainer` and its parent `ScrollView`.
+  - Routes background click events directly to `FileExplorerApp.OnPointerClick()`, ensuring right-clicks anywhere in empty explorer areas trigger the Context Menu.
+
+**4. Dedicated Recycle Bin Integration (`FileExplorerApp.cs` & `VirtualDesktopSetup.cs`):**
+* In `FileExplorerApp.BuildInitialFileSystem()`: Created a dedicated `"Recycle Bin"` folder with discarded sample files (`Old_Drawing.png`, `Draft_Notes.txt`, `Deleted_Shortcut.txt`).
+* In `VirtualDesktopSetup.cs`:
+  - Added `EnsureRecycleBinFolderPrefab()` to generate `RecycleBinContent.prefab` configured with `initialFolderName = "Recycle Bin"`.
+  - Configured the desktop "Recycle Bin" icon with `RecycleBinContent.prefab`.
+  - Opening the Recycle Bin navigates directly to `This PC > Recycle Bin` with "Recycle Bin" window title and taskbar button.
+
+**5. Verification:**
+* Executed `ComputerLearning -> Setup Virtual Desktop OS`.
+* Clean compilation and execution: 0 errors in Unity Editor console.
+
+
+

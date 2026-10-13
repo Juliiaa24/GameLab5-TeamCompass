@@ -55,7 +55,10 @@ namespace ComputerLearning
 
             if (actuallyLocked)
             {
-                if (iconImg != null) iconImg.color = new Color(0.3f, 0.3f, 0.3f, 0.8f);
+                if (iconImg != null) iconImg.color = new Color(0.28f, 0.28f, 0.28f, 0.7f);
+                if (canvasGroup != null) canvasGroup.alpha = 0.6f;
+                TMPro.TextMeshProUGUI label = GetComponentInChildren<TMPro.TextMeshProUGUI>();
+                if (label != null) label.color = new Color(0.5f, 0.5f, 0.5f, 0.7f);
             }
         }
 
@@ -65,16 +68,41 @@ namespace ComputerLearning
             if (levelDefinition != null && ProgressData.Instance != null)
                 actuallyLocked = !ProgressData.Instance.IsLevelUnlocked(levelDefinition.levelId);
 
-            // Update color dynamically
+            // Update color dynamically (darkened/dimmed when locked)
             UnityEngine.UI.Image img = GetComponent<UnityEngine.UI.Image>();
             if (img != null)
             {
-                img.color = actuallyLocked ? new Color(0.5f, 0.5f, 0.5f, 0.5f) : originalColor;
+                img.color = actuallyLocked ? new Color(0.28f, 0.28f, 0.28f, 0.7f) : originalColor;
             }
 
-            if (!actuallyLocked && levelDefinition != null && (appWindow == null || appWindow.IsClosed))
+            if (canvasGroup != null)
             {
-                float scale = 1f + Mathf.Sin(Time.time * 3f) * 0.05f;
+                canvasGroup.alpha = actuallyLocked ? 0.6f : 1f;
+            }
+
+            TMPro.TextMeshProUGUI textLabel = GetComponentInChildren<TMPro.TextMeshProUGUI>();
+            if (textLabel != null)
+            {
+                textLabel.color = actuallyLocked ? new Color(0.5f, 0.5f, 0.5f, 0.7f) : Color.white;
+            }
+
+            bool shouldPulse = false;
+            string currentNextLevel = ProgressData.Instance != null ? ProgressData.Instance.GetCurrentNextLevelId() : null;
+
+            if (levelDefinition != null)
+            {
+                // Only pulse if this icon corresponds to the active NEXT level to complete
+                shouldPulse = !actuallyLocked && levelDefinition.levelId == currentNextLevel && (appWindow == null || appWindow.IsClosed);
+            }
+            else if (gameObject.name.Equals("Levels", System.StringComparison.OrdinalIgnoreCase) || (contentPrefab != null && contentPrefab.name.Contains("Levels")))
+            {
+                // The Levels folder on the desktop pulses whenever there is a pending next level to complete!
+                shouldPulse = !string.IsNullOrEmpty(currentNextLevel) && (appWindow == null || appWindow.IsClosed);
+            }
+
+            if (shouldPulse)
+            {
+                float scale = 1f + Mathf.Sin(Time.time * 3f) * 0.06f;
                 transform.localScale = originalScale * scale;
             }
             else
@@ -166,12 +194,35 @@ namespace ComputerLearning
             
             if (manager == null) manager = GetComponentInParent<WindowManager>();
             
+            string resolvedTitle = null;
+            if (levelDefinition != null)
+            {
+                resolvedTitle = levelDefinition.displayName;
+            }
+            else
+            {
+                TMPro.TextMeshProUGUI label = GetComponentInChildren<TMPro.TextMeshProUGUI>();
+                if (label != null && !string.IsNullOrWhiteSpace(label.text))
+                {
+                    resolvedTitle = label.text;
+                }
+                else
+                {
+                    resolvedTitle = gameObject.name.Replace("Icon", "").Trim();
+                }
+
+                if (resolvedTitle.Equals("Files", System.StringComparison.OrdinalIgnoreCase))
+                {
+                    resolvedTitle = "File Explorer";
+                }
+            }
+
             bool isNewWindow = false;
             
             if (manager != null)
             {
                 if (appWindow == null || appWindow.IsClosed) isNewWindow = true;
-                appWindow = manager.OpenWindow(windowPrefab, appWindow);
+                appWindow = manager.OpenWindow(windowPrefab, appWindow, resolvedTitle);
             }
             else if (appWindow != null && !appWindow.IsClosed)
             {
@@ -190,6 +241,8 @@ namespace ComputerLearning
 
             if (isNewWindow && appWindow != null)
             {
+                appWindow.setTitle(resolvedTitle);
+
                 // Inject the dynamic content if this icon was configured with one
                 if (contentPrefab != null)
                 {

@@ -41,12 +41,36 @@ namespace ComputerLearning
         #endregion
 
         #region Public Methods
+        public Window FindOpenWindowByTitle(string title)
+        {
+            if (string.IsNullOrEmpty(title)) return null;
+            foreach (Window w in windows)
+            {
+                if (w != null && !w.IsClosed && string.Equals(w.Title, title, StringComparison.OrdinalIgnoreCase))
+                    return w;
+            }
+            return null;
+        }
+
         public Window OpenWindow(GameObject prefab, Window existing = null, string title = null)
         {
             if (existing != null && !existing.IsClosed)
             {
                 existing.Restore();
+                FocusWindow(existing);
                 return existing;
+            }
+
+            // Prevent duplicate windows: if a window with this title is already active, restore and focus it
+            if (!string.IsNullOrEmpty(title))
+            {
+                Window alreadyOpen = FindOpenWindowByTitle(title);
+                if (alreadyOpen != null && !alreadyOpen.IsClosed)
+                {
+                    alreadyOpen.Restore();
+                    FocusWindow(alreadyOpen);
+                    return alreadyOpen;
+                }
             }
 
             if (prefab == null || prefab.GetComponent<Window>() == null) return null;
@@ -58,6 +82,7 @@ namespace ComputerLearning
             RegisterWindow(window);
 
             window.Restore();
+            FocusWindow(window);
             return window;
         }
 
