@@ -1583,10 +1583,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 20689734a35732e49b534f3f93cafc59, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ComputerLearning.IconGrid
+  targetRows: 6
+  cellWidth: 155
+  cellHeight: 164
+  initialPosX: 30
+  initialPosY: 16
+  autoFitRows: 1
   INITIAL_POS_X: 30
-  INITIAL_POS_Y: 30
-  ICON_SIZE: 120
-  SPACING: 30
+  INITIAL_POS_Y: 16
+  ICON_SIZE: 105
+  SPACING: 55
 --- !u!114 &678566845
 MonoBehaviour:
   m_ObjectHideFlags: 0

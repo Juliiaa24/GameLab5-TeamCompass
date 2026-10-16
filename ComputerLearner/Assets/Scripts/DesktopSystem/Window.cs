@@ -132,7 +132,11 @@ namespace ComputerLearning
             InstallFocusRelays();
         }
 
-        public void OnPointerDown(PointerEventData eventData) { BringToFront(); }
+        public void OnPointerDown(PointerEventData eventData)
+        {
+            DraggableIcon.ClearSelection();
+            BringToFront();
+        }
 
         public void BringToFront()
         {

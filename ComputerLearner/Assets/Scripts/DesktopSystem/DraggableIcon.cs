@@ -11,7 +11,7 @@ using UnityEngine.EventSystems;
 
 namespace ComputerLearning
 {
-    public class DraggableIcon : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, IDragHandler, IBeginDragHandler, IEndDragHandler, IPointerClickHandler
+    public class DraggableIcon : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, IDragHandler, IBeginDragHandler, IEndDragHandler, IPointerClickHandler, IPointerEnterHandler, IPointerExitHandler
     {
         #region Public Variables
         public Window AppWindow => appWindow;
@@ -20,6 +20,152 @@ namespace ComputerLearning
         public DesktopItemType ItemType { get; private set; }
         public bool IsProtected { get; private set; } = true;
         [field: NonSerialized] public ExplorerItemData LinkedExplorerItem { get; private set; }
+        public bool IsSelected => isSelected;
+        #endregion
+
+        #region Static Selection
+        public static DraggableIcon SelectedIcon { get; private set; }
+        private static DraggableIcon hoveredIcon;
+
+        private static GameObject selectionCard;
+        private static UnityEngine.UI.Image selectionCardImg;
+        private static RectTransform selectionCardRect;
+
+        private static GameObject hoverCard;
+        private static UnityEngine.UI.Image hoverCardImg;
+        private static RectTransform hoverCardRect;
+
+        public static void SelectIcon(DraggableIcon icon)
+        {
+            if (SelectedIcon == icon)
+            {
+                if (icon != null) icon.UpdateSelectionCardTransform();
+                return;
+            }
+
+            if (SelectedIcon != null)
+            {
+                SelectedIcon.isSelected = false;
+            }
+
+            SelectedIcon = icon;
+
+            if (SelectedIcon != null)
+            {
+                SelectedIcon.isSelected = true;
+                if (hoveredIcon == SelectedIcon && hoverCard != null)
+                {
+                    hoverCard.SetActive(false);
+                }
+
+                EnsureSelectionCard(SelectedIcon.transform.parent);
+                if (selectionCardImg != null)
+                {
+                    selectionCardImg.color = SelectedIcon.selectedColor;
+                }
+                if (selectionCard != null)
+                {
+                    selectionCard.SetActive(true);
+                }
+                SelectedIcon.UpdateSelectionCardTransform();
+            }
+            else
+            {
+                if (selectionCard != null) selectionCard.SetActive(false);
+            }
+        }
+
+        public static void ClearSelection()
+        {
+            if (SelectedIcon != null)
+            {
+                SelectedIcon.isSelected = false;
+                SelectedIcon = null;
+            }
+            if (selectionCard != null)
+            {
+                selectionCard.SetActive(false);
+            }
+        }
+
+        private static void EnsureSelectionCard(Transform parent)
+        {
+            if (selectionCard == null || selectionCardImg == null || selectionCardRect == null)
+            {
+                if (parent != null)
+                {
+                    Transform existing = parent.Find("DesktopSelectionHighlightCard");
+                    if (existing != null)
+                    {
+                        selectionCard = existing.gameObject;
+                        selectionCardImg = selectionCard.GetComponent<UnityEngine.UI.Image>();
+                        selectionCardRect = selectionCard.GetComponent<RectTransform>();
+                    }
+                }
+
+                if (selectionCard == null)
+                {
+                    selectionCard = new GameObject("DesktopSelectionHighlightCard", typeof(RectTransform), typeof(CanvasRenderer), typeof(UnityEngine.UI.Image));
+                    selectionCardImg = selectionCard.GetComponent<UnityEngine.UI.Image>();
+                    selectionCardRect = selectionCard.GetComponent<RectTransform>();
+                    selectionCardImg.raycastTarget = false;
+                }
+            }
+
+            if (parent != null && selectionCard.transform.parent != parent)
+            {
+                selectionCard.transform.SetParent(parent, false);
+            }
+        }
+
+        private static void EnsureHoverCard(Transform parent)
+        {
+            if (hoverCard == null || hoverCardImg == null || hoverCardRect == null)
+            {
+                if (parent != null)
+                {
+                    Transform existing = parent.Find("DesktopHoverHighlightCard");
+                    if (existing != null)
+                    {
+                        hoverCard = existing.gameObject;
+                        hoverCardImg = hoverCard.GetComponent<UnityEngine.UI.Image>();
+                        hoverCardRect = hoverCard.GetComponent<RectTransform>();
+                    }
+                }
+
+                if (hoverCard == null)
+                {
+                    hoverCard = new GameObject("DesktopHoverHighlightCard", typeof(RectTransform), typeof(CanvasRenderer), typeof(UnityEngine.UI.Image));
+                    hoverCardImg = hoverCard.GetComponent<UnityEngine.UI.Image>();
+                    hoverCardRect = hoverCard.GetComponent<RectTransform>();
+                    hoverCardImg.raycastTarget = false;
+                }
+            }
+
+            if (parent != null && hoverCard.transform.parent != parent)
+            {
+                hoverCard.transform.SetParent(parent, false);
+            }
+        }
+
+        private static void PlaceBehind(Transform card, Transform target)
+        {
+            if (card == null || target == null || card.parent != target.parent) return;
+
+            int targetIndex = target.GetSiblingIndex();
+            int cardIndex = card.GetSiblingIndex();
+
+            if (cardIndex == targetIndex - 1) return;
+
+            if (cardIndex < targetIndex)
+            {
+                card.SetSiblingIndex(targetIndex - 1);
+            }
+            else
+            {
+                card.SetSiblingIndex(targetIndex);
+            }
+        }
         #endregion
 
         #region Private Variables
@@ -28,6 +174,15 @@ namespace ComputerLearning
         [SerializeField] private GameObject contentPrefab;
         [SerializeField] private LevelDefinition levelDefinition;
         [SerializeField] private bool isLocked = false;
+
+        [Header("Selection & Hover Visuals (Translucent Desktop Styling)")]
+        [SerializeField] private Color selectedColor = new Color(144f / 255f, 198f / 255f, 244f / 255f, 0.45f); // Translucent sky-blue (Windows desktop parity)
+        [SerializeField] private Color hoverColor = new Color(184f / 255f, 220f / 255f, 248f / 255f, 0.25f);    // Soft translucent hover
+
+        private bool isHovered;
+        private bool isSelected;
+        private float lastLeftClickTime;
+
         private Window appWindow;
         private WindowManager manager;
         private Vector3 initialPosition;
@@ -53,12 +208,38 @@ namespace ComputerLearning
         {
             if (canvasGroup == null) canvasGroup = GetComponent<CanvasGroup>();
             if (canvasGroup == null) canvasGroup = gameObject.AddComponent<CanvasGroup>();
+            CleanupOldChildHighlight();
+
+            // Translucent desktop selection and hover styling (Windows desktop parity)
+            selectedColor = new Color(144f / 255f, 198f / 255f, 244f / 255f, 0.45f);
+            hoverColor = new Color(184f / 255f, 220f / 255f, 248f / 255f, 0.25f);
+
+            // Standardize icon sizing and text clearance
+            RectTransform iconRect = transform as RectTransform;
+            if (iconRect != null && (Mathf.Approximately(iconRect.sizeDelta.x, 120f) || iconRect.sizeDelta.x > 105f))
+            {
+                iconRect.sizeDelta = new Vector2(105f, 105f);
+            }
+
+            TMPro.TextMeshProUGUI label = GetComponentInChildren<TMPro.TextMeshProUGUI>();
+            if (label != null)
+            {
+                if (label.rectTransform.anchoredPosition.y < -65f || Mathf.Approximately(label.rectTransform.anchoredPosition.y, -70f))
+                {
+                    label.rectTransform.anchoredPosition = new Vector2(0f, -65f);
+                }
+                if (label.rectTransform.sizeDelta.x < 280f)
+                {
+                    label.rectTransform.sizeDelta = new Vector2(290f, 60f);
+                }
+            }
         }
 
         private void Start()
         {
             if (canvasGroup == null) canvasGroup = GetComponent<CanvasGroup>();
             if (canvasGroup == null) canvasGroup = gameObject.AddComponent<CanvasGroup>();
+            CleanupOldChildHighlight();
 
             grid = GetComponentInParent<IconGrid>();
             if (grid != null) grid.Register(this);
@@ -128,10 +309,28 @@ namespace ComputerLearning
             {
                 transform.localScale = originalScale;
             }
+
+            if (SelectedIcon == this && selectionCard != null && selectionCard.activeSelf)
+            {
+                UpdateSelectionCardTransform();
+            }
+            else if (hoveredIcon == this && hoverCard != null && hoverCard.activeSelf)
+            {
+                UpdateHoverCardTransform();
+            }
         }
 
         private void OnDestroy()
         {
+            if (SelectedIcon == this)
+            {
+                ClearSelection();
+            }
+            if (hoveredIcon == this)
+            {
+                hoveredIcon = null;
+                if (hoverCard != null) hoverCard.SetActive(false);
+            }
             if (grid != null) grid.Unregister(this);
             if (DesktopManager.Instance != null) DesktopManager.Instance.UnregisterIcon(this);
         }
@@ -196,6 +395,7 @@ namespace ComputerLearning
             transform.position = initialPosition;
             CanvasGroup.blocksRaycasts = true;
             dragging = false;
+            UpdateSelectionCardTransform();
             if (grid != null)
             {
                 grid.Unregister(this);
@@ -205,6 +405,11 @@ namespace ComputerLearning
 
         public void OnPointerDown(PointerEventData eventData)
         {
+            if (eventData.button == PointerEventData.InputButton.Left)
+            {
+                SelectIcon(this);
+            }
+
             bool actuallyLocked = isLocked;
             if (levelDefinition != null && ProgressData.Instance != null)
                 actuallyLocked = !ProgressData.Instance.IsLevelUnlocked(levelDefinition.levelId);
@@ -228,11 +433,13 @@ namespace ComputerLearning
         public void OnBeginDrag(PointerEventData eventData)
         {
             if (eventData.button != PointerEventData.InputButton.Left) return;
+            SelectIcon(this);
             dragging = true;
             dropHandled = false;
             CanvasGroup.blocksRaycasts = false;
             if (grid != null) grid.Unregister(this);
             transform.SetAsLastSibling();
+            UpdateSelectionCardTransform();
         }
 
         public void OnDrag(PointerEventData eventData)
@@ -241,13 +448,17 @@ namespace ComputerLearning
             dragging = true;
             if (RectTransformUtility.ScreenPointToWorldPointInRectangle(
                 transform.parent as RectTransform, eventData.position, eventData.pressEventCamera, out Vector3 point))
+            {
                 transform.position = point;
+                UpdateSelectionCardTransform();
+            }
         }
 
         public void OnEndDrag(PointerEventData eventData)
         {
             dragging = false;
             CanvasGroup.blocksRaycasts = true;
+            UpdateSelectionCardTransform();
 
             if (eventData.button != PointerEventData.InputButton.Left)
             {
@@ -435,17 +646,30 @@ namespace ComputerLearning
         public void OnPointerClick(PointerEventData eventData)
         {
             if (canvasGroup != null) canvasGroup.blocksRaycasts = true;
+
             if (eventData.button == PointerEventData.InputButton.Right)
             {
+                SelectIcon(this);
                 ShowIconContextMenu(eventData.position);
                 return;
             }
 
-            if (!AllowDoubleClick) return;
-            if (eventData.button == PointerEventData.InputButton.Left && eventData.clickCount == 2)
+            if (eventData.button == PointerEventData.InputButton.Left)
             {
-                dragging = false;
-                OpenApplication();
+                SelectIcon(this);
+
+                if (!AllowDoubleClick) return;
+
+                float now = Time.unscaledTime;
+                bool isDoubleClick = eventData.clickCount >= 2 || (now - lastLeftClickTime < 0.45f);
+                lastLeftClickTime = now;
+
+                if (isDoubleClick)
+                {
+                    lastLeftClickTime = 0f;
+                    dragging = false;
+                    OpenApplication();
+                }
             }
         }
 
@@ -780,6 +1004,117 @@ namespace ComputerLearning
                         runner.StartLevel(levelDefinition);
                     }
                 }
+            }
+        }
+        #endregion
+
+        #region Selection & Highlight Logic
+        private void UpdateCardTransform(GameObject cardGo, RectTransform cardRt)
+        {
+            if (cardGo == null || !cardGo.activeSelf || cardRt == null) return;
+
+            RectTransform iconRect = transform as RectTransform;
+            if (iconRect == null) return;
+
+            if (cardGo.transform.parent != transform.parent)
+            {
+                cardGo.transform.SetParent(transform.parent, false);
+            }
+
+            cardRt.anchorMin = iconRect.anchorMin;
+            cardRt.anchorMax = iconRect.anchorMax;
+            cardRt.pivot = iconRect.pivot;
+
+            float spriteHalfHeight = iconRect.rect.height > 0 ? iconRect.rect.height * (1f - iconRect.pivot.y) : 52.5f;
+            float topY = spriteHalfHeight + 7f;
+            float textBottom = -spriteHalfHeight - 20f;
+            float textWidth = iconRect.rect.width;
+
+            TMPro.TextMeshProUGUI label = GetComponentInChildren<TMPro.TextMeshProUGUI>();
+            if (label != null && !string.IsNullOrEmpty(label.text))
+            {
+                Vector2 rendered = label.GetRenderedValues(false);
+                float textH = rendered.y * label.transform.localScale.y;
+                textWidth = rendered.x * label.transform.localScale.x;
+                textBottom = label.rectTransform.anchoredPosition.y - textH * 0.5f;
+            }
+
+            float bottomY = textBottom - 8f;
+            float cardHeight = Mathf.Max(135f, topY - bottomY);
+            float centerY = (topY + bottomY) * 0.5f;
+            float cardWidth = Mathf.Clamp(Mathf.Max(iconRect.rect.width + 24f, textWidth + 24f), 126f, 150f);
+
+            cardRt.anchoredPosition = iconRect.anchoredPosition + new Vector2(0f, centerY);
+            cardRt.sizeDelta = new Vector2(cardWidth, cardHeight);
+            cardGo.transform.localScale = transform.localScale;
+
+            PlaceBehind(cardGo.transform, transform);
+        }
+
+        public void UpdateSelectionCardTransform()
+        {
+            UpdateCardTransform(selectionCard, selectionCardRect);
+        }
+
+        public void UpdateHoverCardTransform()
+        {
+            UpdateCardTransform(hoverCard, hoverCardRect);
+        }
+
+        public void OnPointerEnter(PointerEventData eventData)
+        {
+            isHovered = true;
+            if (SelectedIcon == this) return;
+
+            hoveredIcon = this;
+            EnsureHoverCard(transform.parent);
+            if (hoverCardImg != null)
+            {
+                hoverCardImg.color = hoverColor;
+            }
+            if (hoverCard != null)
+            {
+                hoverCard.SetActive(true);
+            }
+            UpdateHoverCardTransform();
+        }
+
+        public void OnPointerExit(PointerEventData eventData)
+        {
+            isHovered = false;
+            if (hoveredIcon == this)
+            {
+                hoveredIcon = null;
+                if (hoverCard != null)
+                {
+                    hoverCard.SetActive(false);
+                }
+            }
+        }
+
+        public void SetSelected(bool selected)
+        {
+            if (selected)
+            {
+                SelectIcon(this);
+            }
+            else if (SelectedIcon == this)
+            {
+                ClearSelection();
+            }
+        }
+
+        private void CleanupOldChildHighlight()
+        {
+            Transform oldChild = transform.Find("SelectionHighlight");
+            if (oldChild != null)
+            {
+#if UNITY_EDITOR
+                if (!Application.isPlaying) DestroyImmediate(oldChild.gameObject);
+                else Destroy(oldChild.gameObject);
+#else
+                Destroy(oldChild.gameObject);
+#endif
             }
         }
         #endregion

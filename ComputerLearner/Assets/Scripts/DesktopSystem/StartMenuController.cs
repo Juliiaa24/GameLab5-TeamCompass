@@ -143,6 +143,7 @@ namespace ComputerLearning
             startMenuPanel.SetActive(newState);
             if (newState)
             {
+                DraggableIcon.ClearSelection();
                 startMenuPanel.transform.SetAsLastSibling();
             }
         }

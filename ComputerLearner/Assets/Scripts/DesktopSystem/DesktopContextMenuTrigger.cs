@@ -11,7 +11,7 @@ using UnityEngine.EventSystems;
 
 namespace ComputerLearning
 {
-    public class DesktopContextMenuTrigger : MonoBehaviour, IPointerClickHandler
+    public class DesktopContextMenuTrigger : MonoBehaviour, IPointerClickHandler, IPointerDownHandler
     {
         #region Private Variables
         [Header("Desktop Creation Configuration")]
@@ -42,10 +42,25 @@ namespace ComputerLearning
         #endregion
 
         #region Public Methods
+        public void OnPointerDown(PointerEventData eventData)
+        {
+            if (eventData.button == PointerEventData.InputButton.Left)
+            {
+                DraggableIcon.ClearSelection();
+            }
+        }
+
         public void OnPointerClick(PointerEventData eventData)
         {
+            if (eventData.button == PointerEventData.InputButton.Left)
+            {
+                DraggableIcon.ClearSelection();
+                return;
+            }
+
             if (eventData.button == PointerEventData.InputButton.Right)
             {
+                DraggableIcon.ClearSelection();
                 if (ContextMenuController.Instance != null)
                 {
                     int binCount = FileExplorerApp.GetRecycleBinCount();

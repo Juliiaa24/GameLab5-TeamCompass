@@ -2407,3 +2407,125 @@ To enrich the educational operating system simulation, the Virtual Desktop neede
   - Back button from `Levels` and `Minigames` traverses cleanly back to `Desktop` -> `This PC`.
   - `.png` icons consistently display generic image file icons; double-clicking opens Image Viewer.
   - Save As dialog allows folder selection and file writing with zero compiler or runtime errors.
+
+---
+
+### 93. DESKTOP ICON SELECTION & BLUE HIGHLIGHT SYSTEM (PARITY WITH FILE EXPLORER) - 16/10/2026
+
+**Context & Motivation:**
+* In File Explorer (`FileExplorerApp.cs`, `ExplorerItemPointerHandler.cs`), files and folders have a light pastel ice-blue highlight card:
+  - Fill Color: `new Color(0.80f, 0.90f, 1.0f, 0.85f)` for selection; `new Color(0.90f, 0.95f, 1.0f, 0.75f)` for hover.
+  - The card renders strictly *behind* the icon sprite and text label, leaving the item icon completely crisp, vibrant, and un-tinted.
+  - No outline: clean, flat rectangular card.
+* Initial implementation used a child object with an outline and darker blue overlay, which rendered over the icon sprite and altered the yellow folder's color. The user provided visual feedback requesting exact parity with File Explorer.
+
+**Architectural Solutions & Implementation:**
+
+**1. Sibling Card Rendering Architecture (`DraggableIcon.cs`):**
+* Sibling Placement Under `Panel`:
+  - In uGUI, child GameObjects render on top of their parent. To ensure the card renders *behind* the icon sprite and label without modifying existing `GetComponent<Image>()` usages on the root, the selection card (`DesktopSelectionHighlightCard`) and hover card (`DesktopHoverHighlightCard`) are created as direct siblings under `Panel`.
+  - Implemented `PlaceBehind(Transform card, Transform target)`:
+    - Automatically sets `card.SetSiblingIndex(target.GetSiblingIndex() - 1)`, guaranteeing the card renders immediately before the target icon in the uGUI Canvas render pipeline.
+    - Zero tint on the icon sprite: the folder, app, and document icons sit on top in 100% full, vibrant, opaque color.
+* Translucent Desktop Styling (Windows Desktop Parity):
+  - To match standard Windows desktop behavior, the highlight cards are now translucent instead of solid opaque.
+  - This allows the desktop wallpaper to shine through smoothly while displaying a clearly recognizable, elegant blue selection rectangle behind the icon.
+  - Selected Fill: `new Color(144f / 255f, 198f / 255f, 244f / 255f, 0.45f)` (45% opacity translucent sky-blue).
+  - Hover Fill: `new Color(184f / 255f, 220f / 255f, 248f / 255f, 0.25f)` (25% opacity subtle translucent hover).
+  - Both values are enforced in `DraggableIcon.Awake()` to prevent stale inspector or scene serialized overrides.
+  - Clean flat rectangle without outline, matching the desktop aesthetic.
+* Dimensions & Sizing:
+  - `sizeDelta = new Vector2(124f, 146f)`, centered at `anchoredPosition = icon.anchoredPosition + (0, -11)`.
+  - Copies `anchorMin`, `anchorMax`, and `pivot` from the icon's `RectTransform` to ensure mathematical alignment across all resolutions.
+  - Leaves comfortable margins within the 150px grid spacing (120px icon + 30px spacing).
+* Dynamic Tracking & Pulsing:
+  - In `Update()` and `OnDrag()`, the card's position and scale (`transform.localScale`) track the icon in real-time, maintaining pixel-perfect synchronization during drags and level unlock pulsing.
+
+**2. Static Selection Coordinator (`DraggableIcon.cs`):**
+* Single Selection State:
+  - `public static DraggableIcon SelectedIcon { get; private set; }`
+  - `SelectIcon(DraggableIcon icon)`: Activates and positions `selectionCard` behind the newly selected icon; deselects any previously selected icon.
+  - `ClearSelection()`: Deactivates `selectionCard` and resets `SelectedIcon = null`.
+* Hover State:
+  - `hoverCard` appears behind any unselected icon on `OnPointerEnter`, and deactivates on `OnPointerExit`.
+  - When hovering over an already selected icon, `hoverCard` is suppressed in favor of the active `selectionCard`.
+
+**3. Pointer & Drag Integration:**
+* In `OnPointerDown`: Left click immediately selects the icon.
+* In `OnBeginDrag` & `OnDrag`: Dragged icon remains selected and the card smoothly moves with it.
+* In `OnPointerClick`: Right-click selects and opens context menu; double-click opens application.
+* Deselection on Background & Window Clicks:
+  - `DesktopContextMenuTrigger.cs`: Left-click down or click on `Panel`/`Background` calls `DraggableIcon.ClearSelection()`.
+  - `Window.cs`: Clicking any window calls `DraggableIcon.ClearSelection()`.
+  - `StartMenuController.cs`: Opening the Start Menu calls `DraggableIcon.ClearSelection()`.
+
+**4. Verification & Visual Testing:**
+* Translucent visual verification:
+  - Verified in Play Mode: `DesktopSelectionHighlightCard` active with `RGBA(0.565, 0.776, 0.957, 0.450)`.
+  - Over the desktop wallpaper, the background is visible through the translucent card, producing a soft, native Windows desktop selection look.
+  - Hovering, dragging, and clearing selection operate cleanly with 0 console errors.
+
+---
+
+### 94. DESKTOP GRID GEOMETRY (6 ICONS PER COLUMN), DYNAMIC HIGHLIGHT SIZING, & OVERLAP PREVENTION - 16/10/2026
+
+**Context & Motivation:**
+* Long icon names (such as "Recycle Bin") were breaking lines and stepping onto the icon directly below ("se pisan").
+* The static selection card (`124 x 146`) did not expand to accommodate multi-line or wide text, leaving parts of the name outside the blue highlight.
+* Desktop grid layout was unevenly distributed across the screen height, not fitting exactly 6 icons per column.
+* User requested:
+  1. Fix icon name overlap ("se pisan").
+  2. Adapt highlight card to completely cover multi-line and long names with generous margins.
+  3. Adjust desktop grid and icon spacing so exactly 6 icons fit per column vertically with a uniform pattern across the whole desktop.
+
+**Architectural Solutions & Implementation:**
+
+**1. Desktop Grid Geometry (`IconGrid.cs` & `VirtualDesktop.unity`):**
+* Panel & Canvas Dimensions:
+  - Reference resolution: `1920 x 1080`.
+  - Taskbar takes bottom 64px, leaving `Panel` rect at `1920 x 1016.25`.
+* Grid Math & Auto-Fitting:
+  - Target rows: `targetRows = 6`.
+  - `autoFitRows = true`: `GetCellHeight()` calculates `Mathf.Max(1f, (rect.height - initialPosY * 2f) / targetRows)`.
+  - For $1016.25\text{px}$, cell height is exactly `(1016.25 - 32) / 6 = 164f`.
+  - Cell width: `155f`.
+  - Top and bottom margins: Symmetric `16f` (`initialPosY = 16f`).
+  - Left and right margins: Symmetric `30f` (`initialPosX = 30f`, $12 \text{ cols} \times 155\text{px} + 60\text{px} = 1920\text{px}$).
+  - Total desktop capacity: 12 columns $\times$ 6 rows = 72 slots.
+  - Icons are positioned at the exact center of each cell:
+    `rect.rect.xMin + startX + col * stepX + stepX * 0.5f`
+    `rect.rect.yMax - startY - row * stepY - stepY * 0.5f`
+
+**2. Overlap Prevention & Text Expansion (`Application Icon.prefab`, `DraggableIcon.cs`):**
+* Icon Sprite Sizing:
+  - Standardized root icon `sizeDelta` to `105 x 105` (down from `120 x 120`), providing generous breathing room inside the $164\text{px}$ cell.
+* Text Box Sizing:
+  - Expanded child `ApplicationText` `sizeDelta` to `290 x 60` (from `200 x 50`) at `anchoredPosition = (0, -65)`.
+  - At child local scale of `0.44138`, this yields an effective width of $\approx 128\text{px}$, enabling "Recycle Bin" to render on a single clean line.
+  - Even with a 2-line title, the $164\text{px}$ cell height guarantees $>25\text{px}$ of clear space to the icon below, completely eliminating overlap.
+
+**3. Dynamic Adaptive Highlight Card (`DraggableIcon.cs`):**
+* Replaced hardcoded card dimensions with dynamic calculation in `UpdateCardTransform()`:
+  - Measures rendered text dimensions via `label.GetRenderedValues(false)` and icon sprite bounds via `iconRect.rect`.
+  - Evaluates sprite top (`spriteTop = iconRect.rect.yMax`) and text bottom (`textBottom = (labelRect.anchoredPosition.y - renderedTextHeight * 0.5f) * labelScale`).
+  - Card Height: `cardHeight = Mathf.Max(135f, (spriteTop + 7f) - (textBottom - 8f))`, ensuring symmetrical top padding ($7\text{px}$) and bottom padding ($8\text{px}$).
+  - Card Width: `cardWidth = Mathf.Clamp(Mathf.Max(iconRect.rect.width + 24f, renderedTextWidth * labelScale + 24f), 126f, 150f)`.
+  - Center Offset: `centerY = ((spriteTop + 7f) + (textBottom - 8f)) * 0.5f`.
+  - Highlight card automatically expands and contracts based on icon and text dimensions, ensuring all names (single-line or multi-line) are fully covered.
+  - Translucent fill color: `RGBA(144, 198, 244, 0.45)` for selection and `RGBA(184, 220, 248, 0.25)` for hover.
+
+**4. Verification & Testing:**
+* Verified in Unity Editor Play Mode:
+  - Checked `IconGrid` placement of 6 desktop icons in Column 0:
+    - Levels: Row 0 (`anchoredPosition.y = -98.00`)
+    - Files: Row 1 (`anchoredPosition.y = -262.00`)
+    - Minigames: Row 2 (`anchoredPosition.y = -426.00`)
+    - Notepad: Row 3 (`anchoredPosition.y = -590.00`)
+    - Recycle Bin: Row 4 (`anchoredPosition.y = -754.00`)
+    - Paint: Row 5 (`anchoredPosition.y = -918.00`)
+  - Exactly 6 icons placed in column 0 with identical $164\text{px}$ step and symmetric $16\text{px}$ top/bottom margins.
+  - Population across multiple columns confirmed a clean, uniform grid pattern across the full 1920x1080 screen.
+  - "Recycle Bin" text fits comfortably without overlapping "Paint", and the translucent blue highlight card expands to cover the entire label with clean padding.
+  - Zero compiler errors, zero warnings, and zero runtime errors in Unity console.
+
+
