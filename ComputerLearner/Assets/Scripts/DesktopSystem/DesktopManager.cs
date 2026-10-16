@@ -34,6 +34,8 @@ namespace ComputerLearning
         public LevelDefinition levelDefinition;
         [Tooltip("Should this icon start locked?")]
         public bool isLocked;
+        [System.NonSerialized] public bool isUserCreated;
+        [System.NonSerialized] public ExplorerItemData linkedExplorerItem;
     }
 
     /// <summary>
@@ -195,13 +197,22 @@ namespace ComputerLearning
                 if (!activeIcons.Contains(draggable)) activeIcons.Add(draggable);
             }
 
+            // Ensure text documents use Text_File_Icon_T01_Scaled.png
+            Sprite spriteToUse = iconData.iconSprite;
+            if (iconData.itemType == DesktopItemType.TextDocument &&
+                !string.Equals(iconData.iconName, "Notepad", System.StringComparison.OrdinalIgnoreCase))
+            {
+                Sprite txtSprite = FileExplorerApp.GetTextFileSprite();
+                if (txtSprite != null) spriteToUse = txtSprite;
+            }
+
             // Update the icon image if a sprite was provided
-            if (iconData.iconSprite != null)
+            if (spriteToUse != null)
             {
                 UnityEngine.UI.Image img = iconInstance.GetComponent<UnityEngine.UI.Image>();
                 if (img != null)
                 {
-                    img.sprite = iconData.iconSprite;
+                    img.sprite = spriteToUse;
                 }
             }
 
@@ -217,9 +228,18 @@ namespace ComputerLearning
             {
                 if (baseWindowPrefab == null) Debug.LogWarning("[DesktopManager] Base Window Prefab is not assigned! Icon might not open a window.");
                 draggable.SetupDynamicIcon(baseWindowPrefab, iconData.contentPrefab, iconData.levelDefinition, iconData.isLocked);
+                draggable.ConfigureMetadata(iconData.itemType, !iconData.isUserCreated, iconData.linkedExplorerItem);
             }
 
             return iconInstance;
+        }
+
+        public void UnregisterIcon(DraggableIcon icon)
+        {
+            if (icon != null)
+            {
+                activeIcons.Remove(icon);
+            }
         }
 
         private void Start()

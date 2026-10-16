@@ -117,16 +117,57 @@ namespace ComputerLearning
             }
         }
 
+        public GameObject BaseWindowPrefab => baseWindowPrefab;
+        public GameObject FileExplorerPrefab => fileExplorerPrefab;
+        public GameObject NotepadPrefab => notepadPrefab;
+
         public void OpenFileExplorer()
         {
             CloseMenu();
             OpenAppWindow("Explorador de Archivos", fileExplorerPrefab, ref fileExplorerWindow);
         }
 
+        public FileExplorerApp OpenFileExplorerAtFolder(string folderName)
+        {
+            CloseMenu();
+            OpenAppWindow(string.IsNullOrEmpty(folderName) ? "Explorador de Archivos" : folderName, fileExplorerPrefab, ref fileExplorerWindow);
+            if (fileExplorerWindow != null && fileExplorerWindow.Content != null)
+            {
+                FileExplorerApp explorer = fileExplorerWindow.Content.GetComponentInChildren<FileExplorerApp>();
+                if (explorer != null && !string.IsNullOrEmpty(folderName))
+                {
+                    explorer.OpenFolderByName(folderName);
+                }
+                return explorer;
+            }
+            return null;
+        }
+
         public void OpenNotepad()
         {
             CloseMenu();
             OpenAppWindow("Bloc de Notas", notepadPrefab, ref notepadWindow);
+        }
+
+        public NotepadApp OpenNotepadWithFile(ExplorerItemData fileItem)
+        {
+            CloseMenu();
+            string winTitle = fileItem != null ? $"Bloc de Notas - {fileItem.name}" : "Bloc de Notas";
+            OpenAppWindow(winTitle, notepadPrefab, ref notepadWindow);
+            if (notepadWindow != null)
+            {
+                notepadWindow.setTitle(winTitle);
+                if (notepadWindow.Content != null)
+                {
+                    NotepadApp notepad = notepadWindow.Content.GetComponentInChildren<NotepadApp>();
+                    if (notepad != null && fileItem != null)
+                    {
+                        notepad.LoadFile(fileItem, notepadWindow);
+                    }
+                    return notepad;
+                }
+            }
+            return null;
         }
 
         public void OpenMinigamesHub()

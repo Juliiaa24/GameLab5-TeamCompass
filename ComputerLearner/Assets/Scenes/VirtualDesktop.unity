@@ -714,7 +714,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ComputerLearning.DesktopContextMenuTrigger
   folderSprite: {fileID: 21300000, guid: 735c004f1ce73d54ba8fc28131a4c620, type: 3}
+  textDocumentSprite: {fileID: 21300000, guid: 1ee91fb1395357449bc80a3bb4fa13ac, type: 3}
   fileExplorerContentPrefab: {fileID: 1151618770349225396, guid: 85a1e0d569308e041b9a8b3a6bb2d6b5, type: 3}
+  notepadContentPrefab: {fileID: 1014635146025430949, guid: 0a99e06c5b2dc5849bf2e50fd391d95b, type: 3}
 --- !u!1001 &398662095
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1552,7 +1554,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ComputerLearning.DesktopContextMenuTrigger
   folderSprite: {fileID: 21300000, guid: 735c004f1ce73d54ba8fc28131a4c620, type: 3}
+  textDocumentSprite: {fileID: 21300000, guid: 1ee91fb1395357449bc80a3bb4fa13ac, type: 3}
   fileExplorerContentPrefab: {fileID: 1151618770349225396, guid: 85a1e0d569308e041b9a8b3a6bb2d6b5, type: 3}
+  notepadContentPrefab: {fileID: 1014635146025430949, guid: 0a99e06c5b2dc5849bf2e50fd391d95b, type: 3}
 --- !u!1 &686725375
 GameObject:
   m_ObjectHideFlags: 0

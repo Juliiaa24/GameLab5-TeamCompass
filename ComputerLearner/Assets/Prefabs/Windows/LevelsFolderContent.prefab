@@ -1010,8 +1010,8 @@ MonoBehaviour:
   itemsContainer: {fileID: 1568060795999586565}
   itemPrefab: {fileID: 4249944783558259120, guid: f45a192d80e152c4e86ed72415b54e32, type: 3}
   defaultFolderIcon: {fileID: 21300000, guid: 735c004f1ce73d54ba8fc28131a4c620, type: 3}
-  defaultTextIcon: {fileID: 21300000, guid: 2a82ab696d63987469e681038aa998ec, type: 3}
-  defaultImageIcon: {fileID: 0}
+  defaultTextIcon: {fileID: 21300000, guid: 1ee91fb1395357449bc80a3bb4fa13ac, type: 3}
+  defaultImageIcon: {fileID: 21300000, guid: 1a2cf4b2658908e40b13cd6baccd71c4, type: 3}
   defaultGameIcon: {fileID: 21300000, guid: 1d62b69168cb1854c804e38dd0f98710, type: 3}
   initialFolderName: Levels
   targetsLevel: {fileID: 11400000, guid: b89a2efc3ac0ef247928bb29fc8e084b, type: 2}

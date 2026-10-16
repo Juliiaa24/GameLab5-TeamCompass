@@ -1,8 +1,10 @@
 /**
  * Author: Julia Vera
  * Date: 14/09/2026
- * Description: Draggable desktop icon with one window instance per icon.
+ * Description: Draggable desktop icon with one window instance per icon, context menu, and Recycle Bin protection.
 */
+using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
@@ -14,6 +16,9 @@ namespace ComputerLearning
         public Window AppWindow => appWindow;
         public LevelDefinition LevelDef => levelDefinition;
         public bool AllowDoubleClick { get; set; } = true;
+        public DesktopItemType ItemType { get; private set; }
+        public bool IsProtected { get; private set; } = true;
+        public ExplorerItemData LinkedExplorerItem { get; private set; }
         #endregion
 
         #region Private Variables
@@ -114,6 +119,7 @@ namespace ComputerLearning
         private void OnDestroy()
         {
             if (grid != null) grid.Unregister(this);
+            if (DesktopManager.Instance != null) DesktopManager.Instance.UnregisterIcon(this);
         }
         #endregion
 
@@ -131,6 +137,19 @@ namespace ComputerLearning
                 if (!lockedState) img.color = Color.white;
                 originalColor = img.color;
             }
+        }
+
+        public void ConfigureMetadata(DesktopItemType type, bool isProtected, ExplorerItemData linkedItem)
+        {
+            this.ItemType = type;
+            this.IsProtected = isProtected;
+            this.LinkedExplorerItem = linkedItem;
+        }
+
+        public void ReturnToInitialPosition()
+        {
+            transform.position = initialPosition;
+            if (grid != null) grid.Register(this);
         }
 
         public void OnPointerDown(PointerEventData eventData)
@@ -175,9 +194,118 @@ namespace ComputerLearning
 
         public void OnPointerClick(PointerEventData eventData)
         {
+            if (eventData.button == PointerEventData.InputButton.Right)
+            {
+                ShowIconContextMenu(eventData.position);
+                return;
+            }
+
             if (!AllowDoubleClick) return;
             if (!dragging && eventData.button == PointerEventData.InputButton.Left && eventData.clickCount == 2)
                 OpenApplication();
+        }
+
+        private void ShowIconContextMenu(Vector2 screenPosition)
+        {
+            if (ContextMenuController.Instance == null) return;
+
+            var items = new List<ContextMenuItem>();
+            RecycleBinIcon bin = GetComponent<RecycleBinIcon>();
+
+            if (bin != null || gameObject.name.Equals("Recycle Bin", StringComparison.OrdinalIgnoreCase))
+            {
+                items.Add(new ContextMenuItem("Abrir Papelera de Reciclaje", () =>
+                {
+                    if (windowPrefab != null && contentPrefab != null)
+                    {
+                        OpenApplication();
+                    }
+                    else if (StartMenuController.Instance != null)
+                    {
+                        StartMenuController.Instance.OpenFileExplorerAtFolder("Recycle Bin");
+                    }
+                }, true));
+
+                int binCount = FileExplorerApp.GetRecycleBinCount();
+                items.Add(new ContextMenuItem($"Vaciar Papelera de Reciclaje ({binCount})", () =>
+                {
+                    FileExplorerApp.EmptyRecycleBin();
+                }, binCount > 0));
+            }
+            else
+            {
+                items.Add(new ContextMenuItem("Abrir", OpenApplication, true));
+                bool canModify = !IsProtected;
+                items.Add(new ContextMenuItem("Cambiar nombre", PromptRenameDesktopIcon, canModify));
+                items.Add(new ContextMenuItem("Eliminar", DeleteDesktopIconToRecycleBin, canModify));
+            }
+
+            ContextMenuController.Instance.Show(screenPosition, items);
+        }
+
+        public void PromptRenameDesktopIcon()
+        {
+            if (IsProtected || ContextMenuController.Instance == null) return;
+
+            TMPro.TextMeshProUGUI label = GetComponentInChildren<TMPro.TextMeshProUGUI>();
+            string currentName = label != null ? label.text : gameObject.name;
+
+            ContextMenuController.Instance.ShowInputModal("Cambiar nombre", currentName, "Guardar", (newName) =>
+            {
+                if (string.IsNullOrWhiteSpace(newName)) return;
+                newName = newName.Trim();
+
+                if (ItemType == DesktopItemType.TextDocument && !newName.EndsWith(".txt", StringComparison.OrdinalIgnoreCase))
+                {
+                    newName += ".txt";
+                }
+
+                gameObject.name = newName;
+                if (label != null) label.text = newName;
+
+                if (LinkedExplorerItem != null)
+                {
+                    LinkedExplorerItem.name = newName;
+                    FileExplorerApp.NotifyFileSystemChanged();
+                }
+
+                if (appWindow != null && !appWindow.IsClosed)
+                {
+                    appWindow.setTitle(newName);
+                }
+            });
+        }
+
+        public void DeleteDesktopIconToRecycleBin()
+        {
+            if (IsProtected) return;
+
+            if (LinkedExplorerItem != null)
+            {
+                FileExplorerApp.MoveItemToRecycleBin(LinkedExplorerItem);
+            }
+            else
+            {
+                TMPro.TextMeshProUGUI label = GetComponentInChildren<TMPro.TextMeshProUGUI>();
+                string itemName = label != null ? label.text : gameObject.name;
+                ExplorerFileType fType = ItemType == DesktopItemType.TextDocument ? ExplorerFileType.TextFile : ExplorerFileType.Folder;
+                UnityEngine.UI.Image img = GetComponent<UnityEngine.UI.Image>();
+                ExplorerItemData tempItem = new ExplorerItemData
+                {
+                    name = itemName,
+                    fileType = fType,
+                    icon = img != null ? img.sprite : null,
+                    isProtected = false
+                };
+                FileExplorerApp.MoveItemToRecycleBin(tempItem);
+            }
+
+            if (appWindow != null && !appWindow.IsClosed)
+            {
+                Destroy(appWindow.gameObject);
+            }
+
+            Destroy(gameObject);
         }
 
         public void OpenApplication()
@@ -190,6 +318,16 @@ namespace ComputerLearning
             if (!DesktopTour.IsTourRunning)
             {
                 VirtualMascot.HideMascot();
+            }
+
+            // If this is a user-created text document with a linked ExplorerItemData, open it directly in Notepad
+            if (LinkedExplorerItem != null && LinkedExplorerItem.fileType == ExplorerFileType.TextFile)
+            {
+                if (StartMenuController.Instance != null)
+                {
+                    StartMenuController.Instance.OpenNotepadWithFile(LinkedExplorerItem);
+                    return;
+                }
             }
             
             if (manager == null) manager = GetComponentInParent<WindowManager>();
@@ -246,7 +384,27 @@ namespace ComputerLearning
                 // Inject the dynamic content if this icon was configured with one
                 if (contentPrefab != null)
                 {
-                    appWindow.SetContent(Instantiate(contentPrefab));
+                    GameObject contentInstance = Instantiate(contentPrefab);
+                    appWindow.SetContent(contentInstance);
+
+                    if (LinkedExplorerItem != null)
+                    {
+                        if (LinkedExplorerItem.fileType == ExplorerFileType.TextFile)
+                        {
+                            NotepadApp notepad = contentInstance.GetComponentInChildren<NotepadApp>();
+                            if (notepad != null) notepad.LoadFile(LinkedExplorerItem, appWindow);
+                        }
+                        else if (LinkedExplorerItem.fileType == ExplorerFileType.Folder)
+                        {
+                            FileExplorerApp explorer = contentInstance.GetComponentInChildren<FileExplorerApp>();
+                            if (explorer != null) explorer.NavigateToFolder(LinkedExplorerItem, addToHistory: false);
+                        }
+                    }
+                    else if (ItemType == DesktopItemType.Folder && !IsProtected)
+                    {
+                        FileExplorerApp explorer = contentInstance.GetComponentInChildren<FileExplorerApp>();
+                        if (explorer != null) explorer.OpenFolderByName(resolvedTitle);
+                    }
                 }
                 
                 if (windowPrefab != null && windowPrefab.name.Contains("SkillsReport"))
