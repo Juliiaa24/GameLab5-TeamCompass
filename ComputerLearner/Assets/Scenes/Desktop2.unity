@@ -857,6 +857,10 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 1652979087}
     - target: {fileID: 1752656936260673201, guid: 8fd5d29b8e6b66b4aa43469e74eaad42, type: 3}
+      propertyPath: paintContentPrefab
+      value: 
+      objectReference: {fileID: 6729021528199283428, guid: 53de8dc874b096d4993662fd51f6d6f2, type: 3}
+    - target: {fileID: 1752656936260673201, guid: 8fd5d29b8e6b66b4aa43469e74eaad42, type: 3}
       propertyPath: desktopIconContainer
       value: 
       objectReference: {fileID: 678566843}

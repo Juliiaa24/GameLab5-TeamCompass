@@ -2,8 +2,8 @@
  * Author: Diego
  * Date: 16/10/2026
  * Description: Captures right clicks on the desktop canvas surface to open the multi-context Menu
- *              (New Folder, New Text Document, Empty Recycle Bin, etc.).
-*/
+ *              (New Folder, New Text Document, New Paint Image, Empty Recycle Bin, etc.).
+ */
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -17,8 +17,10 @@ namespace ComputerLearning
         [Header("Desktop Creation Configuration")]
         [SerializeField] private Sprite folderSprite;
         [SerializeField] private Sprite textDocumentSprite;
+        [SerializeField] private Sprite imageDocumentSprite;
         [SerializeField] private GameObject fileExplorerContentPrefab;
         [SerializeField] private GameObject notepadContentPrefab;
+        [SerializeField] private GameObject paintContentPrefab;
         #endregion
 
         #region Unity Methods
@@ -31,6 +33,10 @@ namespace ComputerLearning
             if (textDocumentSprite == null)
             {
                 textDocumentSprite = FileExplorerApp.GetTextFileSprite();
+            }
+            if (imageDocumentSprite == null)
+            {
+                imageDocumentSprite = FileExplorerApp.GetImageFileSprite();
             }
         }
         #endregion
@@ -45,17 +51,22 @@ namespace ComputerLearning
                     int binCount = FileExplorerApp.GetRecycleBinCount();
                     var menuItems = new List<ContextMenuItem>
                     {
-                        new ContextMenuItem("+ Nueva Carpeta", CreateFolderOnDesktop, true),
-                        new ContextMenuItem("+ Nuevo Documento de Texto", CreateTextDocumentOnDesktop, true),
-                        new ContextMenuItem("Abrir Explorador de Archivos", () =>
+                        new ContextMenuItem("+ New Folder", CreateFolderOnDesktop, true),
+                        new ContextMenuItem("+ New Text Document (.txt)", CreateTextDocumentOnDesktop, true),
+                        new ContextMenuItem("+ New Image (.png)", CreateImageDocumentOnDesktop, true),
+                        new ContextMenuItem("Open File Explorer", () =>
                         {
                             if (StartMenuController.Instance != null) StartMenuController.Instance.OpenFileExplorer();
                         }, StartMenuController.Instance != null),
-                        new ContextMenuItem("Abrir Bloc de Notas", () =>
+                        new ContextMenuItem("Open Notepad", () =>
                         {
                             if (StartMenuController.Instance != null) StartMenuController.Instance.OpenNotepad();
                         }, StartMenuController.Instance != null),
-                        new ContextMenuItem($"Vaciar Papelera de Reciclaje ({binCount})", () =>
+                        new ContextMenuItem("Open Paint", () =>
+                        {
+                            if (StartMenuController.Instance != null) StartMenuController.Instance.OpenPaint();
+                        }, StartMenuController.Instance != null),
+                        new ContextMenuItem($"Empty Recycle Bin ({binCount})", () =>
                         {
                             FileExplorerApp.EmptyRecycleBin();
                         }, binCount > 0)
@@ -82,7 +93,7 @@ namespace ComputerLearning
             {
                 foreach (var icon in desktopMgr.ActiveIcons)
                 {
-                    if (icon != null && (icon.name.Contains("Files") || icon.name.Contains("Folder") || icon.name.Contains("Archivos")))
+                    if (icon != null && (icon.name.Contains("Files") || icon.name.Contains("Folder")))
                     {
                         var img = icon.GetComponent<UnityEngine.UI.Image>();
                         if (img != null && img.sprite != null) { iconToUse = img.sprite; break; }
@@ -100,8 +111,20 @@ namespace ComputerLearning
                 explorerPrefabToUse = Resources.Load<GameObject>("FileExplorerContent");
             }
 
-            // Also register the folder in the persistent FileExplorerApp hierarchy so it persists and can hold files
-            ExplorerItemData linkedFolder = FileExplorerApp.FindOrCreateSystemFolder(folderName, isProtectedFolder: false);
+            ExplorerItemData desktopFolder = FileExplorerApp.GetDesktopFolder();
+            ExplorerItemData linkedFolder = new ExplorerItemData
+            {
+                name = folderName,
+                fileType = ExplorerFileType.Folder,
+                icon = iconToUse,
+                isProtected = false,
+                children = new List<ExplorerItemData>()
+            };
+
+            if (desktopFolder != null)
+            {
+                desktopFolder.children.Add(linkedFolder);
+            }
 
             DesktopIconData newIconData = new DesktopIconData
             {
@@ -116,6 +139,7 @@ namespace ComputerLearning
             };
 
             desktopMgr.SpawnIcon(newIconData);
+            FileExplorerApp.NotifyFileSystemChanged();
             Debug.Log($"[DesktopContextMenuTrigger] Created new desktop folder: {folderName}");
         }
 
@@ -138,30 +162,73 @@ namespace ComputerLearning
             {
                 notepadPrefabToUse = StartMenuController.Instance.NotepadPrefab;
             }
-#if UNITY_EDITOR
-            if (notepadPrefabToUse == null)
+
+            ExplorerItemData desktopFolder = FileExplorerApp.GetDesktopFolder();
+            ExplorerItemData linkedDoc = FileExplorerApp.SaveOrCreateTextDocument(docName, "", desktopFolder);
+
+            if (desktopMgr.GetIconByName(docName) == null)
             {
-                notepadPrefabToUse = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Windows/NotepadContent.prefab");
+                DesktopIconData newIconData = new DesktopIconData
+                {
+                    iconName = docName,
+                    itemType = DesktopItemType.TextDocument,
+                    iconSprite = iconToUse,
+                    contentPrefab = notepadPrefabToUse,
+                    levelDefinition = null,
+                    isLocked = false,
+                    isUserCreated = true,
+                    linkedExplorerItem = linkedDoc
+                };
+
+                desktopMgr.SpawnIcon(newIconData);
             }
-#endif
 
-            ExplorerItemData docsFolder = FileExplorerApp.FindOrCreateSystemFolder("Documents", true);
-            ExplorerItemData linkedDoc = FileExplorerApp.SaveOrCreateTextDocument(docName, "", docsFolder);
-
-            DesktopIconData newIconData = new DesktopIconData
-            {
-                iconName = docName,
-                itemType = DesktopItemType.TextDocument,
-                iconSprite = iconToUse,
-                contentPrefab = notepadPrefabToUse,
-                levelDefinition = null,
-                isLocked = false,
-                isUserCreated = true,
-                linkedExplorerItem = linkedDoc
-            };
-
-            desktopMgr.SpawnIcon(newIconData);
+            FileExplorerApp.NotifyFileSystemChanged();
             Debug.Log($"[DesktopContextMenuTrigger] Created new desktop text document: {docName}");
+        }
+
+        public void CreateImageDocumentOnDesktop()
+        {
+            DesktopManager desktopMgr = DesktopManager.Instance;
+            if (desktopMgr == null)
+            {
+                Debug.LogWarning("[DesktopContextMenuTrigger] DesktopManager instance not found.");
+                return;
+            }
+
+            string imgName = GetUniqueDesktopItemName(desktopMgr, "New Drawing", ".png");
+
+            Sprite iconToUse = FileExplorerApp.GetImageFileSprite();
+            if (iconToUse == null) iconToUse = imageDocumentSprite;
+
+            GameObject paintPrefabToUse = paintContentPrefab;
+            if (paintPrefabToUse == null && StartMenuController.Instance != null)
+            {
+                paintPrefabToUse = StartMenuController.Instance.PaintPrefab;
+            }
+
+            ExplorerItemData desktopFolder = FileExplorerApp.GetDesktopFolder();
+            ExplorerItemData linkedImg = FileExplorerApp.SaveOrCreateImageDocument(imgName, null, desktopFolder);
+
+            if (desktopMgr.GetIconByName(imgName) == null)
+            {
+                DesktopIconData newIconData = new DesktopIconData
+                {
+                    iconName = imgName,
+                    itemType = DesktopItemType.ImageDocument,
+                    iconSprite = iconToUse,
+                    contentPrefab = paintPrefabToUse,
+                    levelDefinition = null,
+                    isLocked = false,
+                    isUserCreated = true,
+                    linkedExplorerItem = linkedImg
+                };
+
+                desktopMgr.SpawnIcon(newIconData);
+            }
+
+            FileExplorerApp.NotifyFileSystemChanged();
+            Debug.Log($"[DesktopContextMenuTrigger] Created new desktop image (.png): {imgName}");
         }
         #endregion
 
@@ -171,6 +238,8 @@ namespace ComputerLearning
             int count = 0;
             string candidate = baseName + extension;
 
+            ExplorerItemData desktopFolder = FileExplorerApp.GetDesktopFolder();
+
             bool exists = true;
             while (exists)
             {
@@ -179,11 +248,27 @@ namespace ComputerLearning
                 {
                     if (icon != null && icon.name.Equals(candidate, StringComparison.OrdinalIgnoreCase))
                     {
-                        count++;
-                        candidate = $"{baseName} ({count}){extension}";
                         exists = true;
                         break;
                     }
+                }
+
+                if (!exists && desktopFolder != null && desktopFolder.children != null)
+                {
+                    foreach (var child in desktopFolder.children)
+                    {
+                        if (child != null && child.name.Equals(candidate, StringComparison.OrdinalIgnoreCase))
+                        {
+                            exists = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (exists)
+                {
+                    count++;
+                    candidate = $"{baseName} ({count}){extension}";
                 }
             }
 

@@ -42,6 +42,18 @@ namespace ComputerLearning
             Place(icon, GetGridPosition(rect.InverseTransformPoint(icon.transform.position)));
         }
 
+        public bool PlaceInNextAvailableSlot(DraggableIcon icon)
+        {
+            EnsureGrid();
+            if (icon == null) return false;
+            if (registered.Contains(icon))
+            {
+                Unregister(icon);
+            }
+            registered.Add(icon);
+            return Place(icon, new Vector2Int(0, 0));
+        }
+
         public void Unregister(DraggableIcon icon)
         {
             registered.Remove(icon);

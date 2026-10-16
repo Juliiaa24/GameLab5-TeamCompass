@@ -16,6 +16,7 @@ When suggesting code changes:
 * Use the existing namespace and code conventions whenever possible.
 * When I ask how something works, explain the underlying C# / Unity concept, not only what the code does.
 * When debugging, first reason about the current implementation instead of proposing a completely different system.
+* Always keep this document (Documentation/Specs/Diego.md) updated with all new implementations, features, refactors, bug fixes, and architectural decisions made in the project.
 
 I am studying Game Development and this project is part of Game Lab during an Erasmus semester in Norway.
 
@@ -2200,5 +2201,209 @@ To visually distinguish available and active challenges from locked future chall
 * Executed `ComputerLearning -> Setup Virtual Desktop OS`.
 * Clean compilation and execution: 0 errors in Unity Editor console.
 
+==================================================
+87. RESIZABLE WINDOW SYSTEM & INSPECTOR-FIRST UI ARCHITECTURE
 
+**Context & Requirements:**
+Windows in the Virtual Desktop originally had fixed dimensions or relied on basic maximize/minimize buttons. Users needed the ability to dynamically resize windows by dragging their borders and corners, similar to real-world desktop operating systems (Windows/macOS), while respecting minimum size boundaries and canvas bounds.
 
+---
+
+**Architectural Solutions & Implementation:**
+
+**1. Window Resizing Logic (`Window.cs`):**
+* Added `minSize` constraint (`Vector2(250f, 180f)`) and `maxSize` settings to ensure windows cannot be collapsed into an unreadable or unrecoverable state.
+* Added `Resize(Vector2 delta, ResizeDirection direction)`:
+  - Supports 8 resizing directions: `Left`, `Right`, `Top`, `Bottom`, `TopLeft`, `TopRight`, `BottomLeft`, `BottomRight`.
+  - Calculates updated `sizeDelta` and adjusts `anchoredPosition` accordingly depending on pivot and anchor positioning.
+  - Clamps new dimensions between `minSize` and available canvas dimensions.
+  - Ensures maximizing/restoring states properly handle manually resized window dimensions (`previousSize` and `previousPosition` cached before maximize).
+
+**2. Dedicated Resize Handles (`ResizeHandle.cs`):**
+* Implemented `ResizeHandle` component attached to borders and corner colliders/rects on the window prefab.
+* Implements Unity UI event interfaces: `IPointerDownHandler`, `IDragHandler`, `IPointerUpHandler`, `IPointerEnterHandler`, `IPointerExitHandler`.
+* On pointer enter/exit: changes mouse cursor to standard bidirectional resize cursor arrows (horizontal, vertical, diagonal).
+* On drag: passes screen position delta converted through parent canvas space directly to `Window.Resize()`.
+* Inspector-first setup: Configurable margins, thickness, and directional enum flags directly assignable in prefabs.
+
+**3. Verification:**
+* Verified in Unity Editor across various window types (`File Explorer`, `Paint`, `Notepad`, `ImageViewer`). Windows smoothly scale from all 8 handles while keeping content layouts responsive via Anchors and Layout Groups.
+
+==================================================
+88. NATIVE VIRTUAL APPLICATIONS & VIRTUAL FILE SYSTEM PERSISTENCE (PAINT, NOTEPAD, IMAGE VIEWER)
+
+**Context & Requirements:**
+To enrich the educational operating system simulation, the Virtual Desktop needed native productivity and creativity applications capable of interacting directly with the virtual file system.
+
+---
+
+**Architectural Solutions & Implementation:**
+
+**1. Virtual Paint Application (`PaintApp.cs`):**
+* Interactive canvas drawing tool with custom brush size, color picker palette, eraser tool, and canvas clearing.
+* Generates dynamic `Texture2D` runtime buffers.
+* Virtual File System integration: Supports saving user artwork directly as `.png` files into virtual folders (`Desktop`, `Pictures`, `Documents`).
+* Supports opening existing images from disk or virtual file system for viewing/editing.
+
+**2. Virtual Notepad Application (`NotepadApp.cs`):**
+* Interactive text editing application with `TMP_InputField`, word count, character count, and title bar file status (e.g. `*Untitled.txt`).
+* Operations: "New File", "Open File", "Save", and "Save As".
+* Creates and modifies `VirtualFile` items with `.txt` extension in the virtual file system.
+
+**3. Virtual Image Viewer (`ImageViewerApp.cs`):**
+* Lightweight photo/image viewer for inspecting exported `.png` drawings or picture files.
+* Supports zoom, pan, and fit-to-window controls.
+
+**4. Verification:**
+* Created files in Paint and Notepad persist in memory within the current session's virtual file system and appear in the File Explorer and Desktop.
+
+==================================================
+89. BIDIRECTIONAL DESKTOP DRAG & DROP: RECYCLE BIN DELETION & CORE APP PROTECTION
+
+**Context & Issues Identified:**
+1. **Recycle Bin Drag-to-Delete:** Users could not delete desktop files or shortcuts by dragging them onto the Recycle Bin icon.
+2. **Core App Deletion Risk:** Core desktop applications (such as `Paint`, `Notepad`, `Files`, `Recycle Bin`) could mistakenly be dropped into the Recycle Bin, breaking essential OS functionality.
+3. **App Deactivation / Freeze Bug on Drag:** When users attempted to drag protected icons (`Paint` or `Notepad`) to the Recycle Bin, the icons were prevented from deletion, but their click handlers broke completely—double clicking no longer opened the applications.
+
+---
+
+**Architectural Solutions & Implementation:**
+
+**1. Recycle Bin Drop Target (`RecycleBinIcon.cs`):**
+* Implements `IDropHandler`, `IPointerEnterHandler`, and `IPointerExitHandler`.
+* Highlights icon visuals on hover during active drag.
+* In `OnDrop(PointerEventData eventData)`:
+  - Extracts the dragged `DraggableIcon` from `eventData.pointerDrag`.
+  - Checks if the icon represents a protected core application (`IsProtectedApp`).
+  - If protected: rejects the drop with visual feedback and restores the icon to its grid slot.
+  - If deletable: unregisters the icon from `IconGrid`, moves the corresponding virtual item to the `Recycle Bin` virtual folder, and destroys/deactivates the desktop icon GameObject.
+
+**2. Drag State Recovery & Raycast Unblocking (`DraggableIcon.cs`):**
+* Root cause of app freeze: In `OnPointerDown` or `OnBeginDrag`, `CanvasGroup.blocksRaycasts` was set to `false` and the icon was unregistered from `grid`. If the drag was cancelled or rejected by Recycle Bin, `blocksRaycasts` remained `false` or the icon was left in a dragging state.
+* Fixed drag lifecycle:
+  - Moved `grid.Unregister(this)` out of `OnPointerDown` and strictly into `OnBeginDrag`. Pure clicks and double-clicks no longer vacate grid slots.
+  - Guaranteed in `OnEndDrag` and drop cancellation that `CanvasGroup.blocksRaycasts = true` and `dragging = false`.
+  - In `OpenApplication()`: Removed faulty checks that blocked launching if an icon had protected flags. Protected status only governs deletion, not execution.
+
+**3. Verification:**
+* Tested dragging user folders and files to Recycle Bin: successfully deleted and moved to trash.
+* Tested dragging Paint and Notepad to Recycle Bin: drop rejected, icon snaps back to grid, and double-clicking still opens the applications without issue.
+
+==================================================
+90. DYNAMIC DESKTOP INITIALIZATION & ICON GRID POSITIONING (FIXING ICON OVERLAPPING)
+
+**Context & Issues Identified:**
+1. **Desktop Clutter & Duplicate Icons:** Multiple duplicate folders and icons appeared on the desktop. The `VirtualDesktop.unity` scene contained hardcoded icon GameObjects under `Panel` (`Levels`, `Files`, `Minigames`, `Notepad`, `Recycle Bin`, `Paint`), while `DesktopManager.cs` was also spawning icons dynamically at runtime.
+2. **Icon Overlapping at (0, 0):** When creating a new folder from the desktop Context Menu, the new folder spawned at `(0, 0)` (Column 0, Row 0), overlapping directly over the existing top-left icon (`Levels`).
+3. **Empty Folder Spawning for Core Apps:** `DesktopManager` was generating placeholder yellow folder entries inside `This PC > Desktop` for system applications (`Paint`, `Notepad`, `Files`, `Recycle Bin`).
+
+---
+
+**Architectural Solutions & Implementation:**
+
+**1. Clean Scene Hierarchy (`VirtualDesktop.unity`):**
+* Removed all hardcoded static icon GameObjects from `Panel` in `VirtualDesktop.unity`. The desktop canvas starts cleanly with 0 children under the icon container.
+* Established `DesktopManager.cs` as the single authoritative source of truth for spawning initial desktop icons on startup (`Levels`, `Files`, `Minigames`, `Notepad`, `Recycle Bin`, `Paint`).
+
+**2. Dynamic Grid Slot Allocation (`IconGrid.cs`):**
+* Added `PlaceInNextAvailableSlot(DraggableIcon icon)`:
+  - Iterates through columns and rows based on screen width/height and grid dimensions (`cellSize = (100, 100)`, `spacing = (20, 20)`).
+  - Checks occupied slots in `Dictionary<Vector2Int, DraggableIcon> occupiedSlots`.
+  - Places the icon into the first unoccupied slot `(col, row)` and registers it.
+* In `DesktopManager.SpawnIcon()`:
+  - Immediately calls `grid.PlaceInNextAvailableSlot(draggable)` upon instantiating any desktop icon.
+  - When creating a new folder via Context Menu ("New Folder"), it automatically places the new folder into the next free cell (e.g., Column 1, Row 0 at position `(240, -90)`), completely resolving the overlap issue.
+
+**3. Application vs Folder Separation (`DesktopManager.cs`):**
+* Added `IsDesktopOnlyApplication(string name)` helper:
+  - Filters out `Paint`, `Notepad`, `Files`, `File Explorer`, and `Recycle Bin`.
+  - Prevents creating dummy yellow virtual folders for standalone executables inside the File Explorer's `This PC > Desktop` directory.
+
+**4. Verification:**
+* Tested in Unity Editor Play Mode via `Unity_RunCommand`. Clean desktop layout with exactly 6 icons, no duplicates. Created new folders via desktop context menu and verified they spawn in Column 1 without overlapping `Levels`.
+
+==================================================
+91. VIRTUAL FILE SYSTEM HIERARCHY, DIRECT LEVEL ACCESSIBILITY & DYNAMIC BREADCRUMBS
+
+**Context & Issues Identified:**
+1. **Flat File Explorer Structure:** Entering `Levels` from the desktop displayed `This PC > Levels` instead of reflecting the actual hierarchical desktop path (`This PC > Desktop > Levels`).
+2. **Missing Levels and Minigames:** Levels 1 through 10 and minigames were not reliably populated inside their corresponding directories in the File Explorer when opened from clean start.
+3. **Static File Explorer Fallback Shell:** If `FileExplorerApp.GetRootFolder()` was called before the prefab finished initializing, it created a blank root fallback folder with missing links.
+
+---
+
+**Architectural Solutions & Implementation:**
+
+**1. Realistic File System Hierarchy (`FileExplorerApp.cs`):**
+* Restructured root tree in `BuildInitialFileSystem()`:
+  - Root: `"This PC"`.
+  - Child folders of `This PC`: `"Desktop"`, `"Documents"`, `"Pictures"`, `"Recycle Bin"`.
+  - Child folders of `"Desktop"`: `"Levels"`, `"Minigames"`, and user-created folders.
+* Populated all 10 educational levels directly inside `"Levels"` (`Level 1` through `Level 9`, plus `Level 10 Copy-Paste`).
+* Populated all 4 minigames directly inside `"Minigames"` (`Targets & Clicks`, `Tracking & Hover`, `Fast Double Click`, `Adaptive Practice`).
+
+**2. Dynamic Breadcrumb Path Resolution (`FileExplorerApp.cs`):**
+* Added `GetBreadcrumbPath(VirtualFolder folder)` with recursive search `FindPathRecursive(VirtualFolder current, VirtualFolder target, List<string> path)`:
+  - Dynamically builds the full path from `"This PC"` down to any nested folder.
+  - When opening `Levels` from the desktop, the path display correctly renders:
+    `This PC > Desktop > Levels`
+  - When opening `Minigames`, displays:
+    `This PC > Desktop > Minigames`
+* Added `FindFolderChainRecursive()` to build the list of parent `VirtualFolder` objects, allowing the Explorer's "Back" (Up) navigation button to traverse back step-by-step (`Levels` -> `Desktop` -> `This PC`).
+
+**3. Robust Static Root Access (`FileExplorerApp.cs`):**
+* Updated `GetRootFolder()`:
+  - If `staticRootFolder` is not yet populated, loads the virtual file system directly from `FileExplorerContent.prefab` or runs `BuildInitialFileSystem()` to guarantee a fully populated tree rather than an empty shell.
+
+**4. Verification:**
+* Verified in Unity Editor Play Mode. Navigated to `Levels` and `Minigames`: breadcrumbs show full paths (`This PC > Desktop > Levels`), all 10 levels and 4 minigames are present and launchable, and back navigation smoothly traverses up the hierarchy.
+
+==================================================
+92. FILE EXPLORER SUBFOLDER BACK NAVIGATION, PNG GENERIC THUMBNAILS & SAVE AS DIALOG WORKFLOW
+
+**Context & Issues Identified:**
+1. **File Explorer Subfolder Back Navigation:** When opening desktop folders like `Levels`, `Minigames`, or user-created folders, the back button was disabled or failed to navigate back up to `Desktop` and `This PC`.
+2. **PNG Thumbnail vs Generic Icon:** Paint files saved as `.png` were displaying the raw drawn texture directly as their icon in File Explorer and on Desktop, cluttering the view instead of using the standard generic image icon. The actual drawn image was expected to display only upon opening the file.
+3. **Save As Destination Picker:** In Paint and Notepad, the "Save As" button lacked a folder browser, preventing users from selecting where to save their files in the virtual file system.
+
+---
+
+**Architectural Solutions & Implementation:**
+
+**1. Hierarchical Back Navigation & Parent Resolution (`FileExplorerApp.cs`, `DraggableIcon.cs`):**
+* Added `GetParentFolder(ExplorerItemData target)`:
+  - Traverses the virtual directory tree from `rootFolder` downward to resolve the exact parent `ExplorerItemData` of any given item or folder.
+* Upgraded `NavigateBack()`:
+  - If `navigationHistory` has entries, pops and navigates to the previous folder.
+  - If `navigationHistory` is empty but `currentFolder != rootFolder`, smoothly falls back to navigating up to `GetParentFolder(currentFolder)`.
+* Updated `UpdatePathDisplay()`:
+  - Back button (`btnBack.interactable`) is enabled whenever `navigationHistory.Count > 0` OR `(currentFolder != null && currentFolder != rootFolder && !currentFolder.name.Equals("This PC"))`.
+* Added `OpenFolder(ExplorerItemData target)`:
+  - Automatically reconstructs ancestor path history (e.g. `[This PC, Desktop]`) before setting the target folder, ensuring the Back button is immediately interactable when opened from desktop shortcuts.
+* Updated `DraggableIcon.cs`:
+  - Launching a folder shortcut delegates to `explorer.OpenFolder(LinkedExplorerItem)`.
+
+**2. Generic Image File Icons & Native Image Viewer (`FileExplorerApp.cs`, `DesktopManager.cs`, `StartMenuController.cs`, `DraggableIcon.cs`):**
+* Generic `.png` Icon Representation:
+  - In `FileExplorerApp.SaveOrCreateImageDocument()`: sets `item.icon = GetImageFileSprite()` while keeping the rendered drawing in `item.imageContent`.
+  - In `FileExplorerApp.CreateItemUI()`, `DesktopManager.SpawnIcon()`, `DesktopManager.SpawnIconForExplorerItem()`, and `DesktopManager.SyncDesktopWithExplorerFolder()`: strictly renders the default image file icon sprite for all `.png` files.
+* Native Image Viewer Launching:
+  - Double-clicking `.png` files in `FileExplorerApp` or desktop shortcuts opens `StartMenuController.OpenImageViewer(item)`.
+  - Added context menu options: "Open" (opens in Image Viewer) and "Open in Paint" (opens drawing in Paint for editing).
+
+**3. Interactive "Save As" File Dialog (`FileExplorerApp.cs`, `PaintApp.cs`, `NotepadApp.cs`, `Window.cs`):**
+* Dynamic File Dialog Mode (`FileExplorerApp.OpenSaveDialog`):
+  - Spawns a dedicated `FileExplorerContent.prefab` instance configured for file saving.
+  - Injects a bottom bar with a file name input field (`TMP_InputField`), "Save", and "Cancel" buttons.
+  - Users can freely browse through folders (`Desktop`, `Documents`, `Pictures`, custom folders) to choose where to save. Clicking an existing file automatically populates its name in the input field.
+  - Clicking "Save" validates against protected folders and invokes `onSaveCallback(enteredName, currentFolder)` before closing the window.
+* Paint & Notepad Integration:
+  - `PaintApp.OnSaveAsClicked()` calls `FileExplorerApp.OpenSaveDialog("Save As - Paint", defaultName, ".png", startFolder, callback)` and saves canvas data to the selected folder.
+  - `NotepadApp.OnSaveAsClicked()` calls `FileExplorerApp.OpenSaveDialog("Save As - Notepad", defaultFileName, ".txt", startFolder, callback)` and saves document text to the selected folder.
+* Added `Window.Close()` alias mapping to `CloseWindow()`.
+
+**4. Verification & Testing:**
+* Verified in Unity Editor Play Mode:
+  - Back button from `Levels` and `Minigames` traverses cleanly back to `Desktop` -> `This PC`.
+  - `.png` icons consistently display generic image file icons; double-clicking opens Image Viewer.
+  - Save As dialog allows folder selection and file writing with zero compiler or runtime errors.

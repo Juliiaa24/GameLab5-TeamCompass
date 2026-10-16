@@ -1,8 +1,9 @@
 /**
- * Author: Julia Vera
- * Date: 14/09/2026
- * Description: Draggable desktop icon with one window instance per icon, context menu, and Recycle Bin protection.
-*/
+ * Author: Julia Vera / Diego
+ * Date: 16/10/2026
+ * Description: Draggable desktop icon with one window instance per icon, English context menu,
+ *              Paint/Notepad/Explorer integration, and bidirectional Drag & Drop (to Recycle Bin & File Explorer).
+ */
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -18,14 +19,14 @@ namespace ComputerLearning
         public bool AllowDoubleClick { get; set; } = true;
         public DesktopItemType ItemType { get; private set; }
         public bool IsProtected { get; private set; } = true;
-        public ExplorerItemData LinkedExplorerItem { get; private set; }
+        [field: NonSerialized] public ExplorerItemData LinkedExplorerItem { get; private set; }
         #endregion
 
         #region Private Variables
         private IconGrid grid;
         [SerializeField] private GameObject windowPrefab;
         [SerializeField] private GameObject contentPrefab;
-        [SerializeField] private LevelDefinition levelDefinition; // The level to launch (optional)
+        [SerializeField] private LevelDefinition levelDefinition;
         [SerializeField] private bool isLocked = false;
         private Window appWindow;
         private WindowManager manager;
@@ -33,13 +34,30 @@ namespace ComputerLearning
         private Vector3 originalScale;
         private Color originalColor = Color.white;
         private bool dragging;
+        private bool dropHandled;
         private CanvasGroup canvasGroup;
+
+        public CanvasGroup CanvasGroup
+        {
+            get
+            {
+                if (canvasGroup == null) canvasGroup = GetComponent<CanvasGroup>();
+                if (canvasGroup == null) canvasGroup = gameObject.AddComponent<CanvasGroup>();
+                return canvasGroup;
+            }
+        }
         #endregion
 
         #region Unity Methods
+        private void Awake()
+        {
+            if (canvasGroup == null) canvasGroup = GetComponent<CanvasGroup>();
+            if (canvasGroup == null) canvasGroup = gameObject.AddComponent<CanvasGroup>();
+        }
+
         private void Start()
         {
-            canvasGroup = GetComponent<CanvasGroup>();
+            if (canvasGroup == null) canvasGroup = GetComponent<CanvasGroup>();
             if (canvasGroup == null) canvasGroup = gameObject.AddComponent<CanvasGroup>();
 
             grid = GetComponentInParent<IconGrid>();
@@ -47,11 +65,10 @@ namespace ComputerLearning
             manager = GetComponentInParent<WindowManager>();
             initialPosition = transform.position;
             originalScale = transform.localScale;
-            
+
             UnityEngine.UI.Image iconImg = GetComponent<UnityEngine.UI.Image>();
             if (iconImg != null) originalColor = iconImg.color;
-            
-            // Check ProgressData to see if this level is unlocked
+
             bool actuallyLocked = isLocked;
             if (levelDefinition != null && ProgressData.Instance != null)
             {
@@ -73,7 +90,6 @@ namespace ComputerLearning
             if (levelDefinition != null && ProgressData.Instance != null)
                 actuallyLocked = !ProgressData.Instance.IsLevelUnlocked(levelDefinition.levelId);
 
-            // Update color dynamically (darkened/dimmed when locked)
             UnityEngine.UI.Image img = GetComponent<UnityEngine.UI.Image>();
             if (img != null)
             {
@@ -96,12 +112,10 @@ namespace ComputerLearning
 
             if (levelDefinition != null)
             {
-                // Only pulse if this icon corresponds to the active NEXT level to complete
                 shouldPulse = !actuallyLocked && levelDefinition.levelId == currentNextLevel && (appWindow == null || appWindow.IsClosed);
             }
             else if (gameObject.name.Equals("Levels", System.StringComparison.OrdinalIgnoreCase) || (contentPrefab != null && contentPrefab.name.Contains("Levels")))
             {
-                // The Levels folder on the desktop pulses whenever there is a pending next level to complete!
                 shouldPulse = !string.IsNullOrEmpty(currentNextLevel) && (appWindow == null || appWindow.IsClosed);
             }
 
@@ -130,7 +144,7 @@ namespace ComputerLearning
             this.contentPrefab = contentPref;
             this.levelDefinition = levelDef;
             this.isLocked = lockedState;
-            
+
             UnityEngine.UI.Image img = GetComponent<UnityEngine.UI.Image>();
             if (img != null)
             {
@@ -142,14 +156,51 @@ namespace ComputerLearning
         public void ConfigureMetadata(DesktopItemType type, bool isProtected, ExplorerItemData linkedItem)
         {
             this.ItemType = type;
-            this.IsProtected = isProtected;
+            string currentName = gameObject.name;
+            TMPro.TextMeshProUGUI label = GetComponentInChildren<TMPro.TextMeshProUGUI>();
+            if (label != null && !string.IsNullOrWhiteSpace(label.text))
+            {
+                currentName = label.text.Trim();
+            }
+
+            if (DesktopManager.IsSystemProtectedName(currentName))
+            {
+                this.IsProtected = true;
+            }
+            else if (type == DesktopItemType.TextDocument || type == DesktopItemType.ImageDocument)
+            {
+                this.IsProtected = false;
+            }
+            else if (linkedItem != null)
+            {
+                this.IsProtected = linkedItem.isProtected;
+            }
+            else
+            {
+                this.IsProtected = isProtected;
+            }
             this.LinkedExplorerItem = linkedItem;
+            if (this.LinkedExplorerItem != null)
+            {
+                this.LinkedExplorerItem.isProtected = this.IsProtected;
+            }
+        }
+
+        public void MarkDropHandled()
+        {
+            dropHandled = true;
         }
 
         public void ReturnToInitialPosition()
         {
             transform.position = initialPosition;
-            if (grid != null) grid.Register(this);
+            CanvasGroup.blocksRaycasts = true;
+            dragging = false;
+            if (grid != null)
+            {
+                grid.Unregister(this);
+                grid.Register(this);
+            }
         }
 
         public void OnPointerDown(PointerEventData eventData)
@@ -162,20 +213,26 @@ namespace ComputerLearning
             if (eventData.button != PointerEventData.InputButton.Left) return;
             initialPosition = transform.position;
             dragging = false;
-            if (grid != null) grid.Unregister(this);
+            dropHandled = false;
+            CanvasGroup.blocksRaycasts = true;
             transform.SetAsLastSibling();
         }
 
         public void OnPointerUp(PointerEventData eventData)
         {
             if (eventData.button != PointerEventData.InputButton.Left) return;
-            if (grid != null)
-                grid.TryPlaceIcon(this, eventData.position, initialPosition, eventData.pressEventCamera);
+            CanvasGroup.blocksRaycasts = true;
+            dragging = false;
         }
 
-        public void OnBeginDrag(PointerEventData eventData) 
-        { 
-            if (canvasGroup != null) canvasGroup.blocksRaycasts = false;
+        public void OnBeginDrag(PointerEventData eventData)
+        {
+            if (eventData.button != PointerEventData.InputButton.Left) return;
+            dragging = true;
+            dropHandled = false;
+            CanvasGroup.blocksRaycasts = false;
+            if (grid != null) grid.Unregister(this);
+            transform.SetAsLastSibling();
         }
 
         public void OnDrag(PointerEventData eventData)
@@ -187,13 +244,197 @@ namespace ComputerLearning
                 transform.position = point;
         }
 
-        public void OnEndDrag(PointerEventData eventData) 
-        { 
-            if (canvasGroup != null) canvasGroup.blocksRaycasts = true;
+        public void OnEndDrag(PointerEventData eventData)
+        {
+            dragging = false;
+            CanvasGroup.blocksRaycasts = true;
+
+            if (eventData.button != PointerEventData.InputButton.Left)
+            {
+                return;
+            }
+
+            if (dropHandled)
+            {
+                return;
+            }
+
+            // 1. Check if dropped on the Recycle Bin icon on the Desktop
+            if (GetComponent<RecycleBinIcon>() == null)
+            {
+                RecycleBinIcon targetBin = RecycleBinIcon.FindBinAtScreenPoint(eventData.position, eventData.pressEventCamera, transform as RectTransform);
+                if (targetBin != null && targetBin.gameObject != this.gameObject)
+                {
+                    dropHandled = true;
+                    if (targetBin.HandleDesktopIconDropped(this))
+                    {
+                        CanvasGroup.blocksRaycasts = true;
+                        dragging = false;
+                        return;
+                    }
+                }
+            }
+
+            CanvasGroup.blocksRaycasts = true;
+
+            // 2. Check if dropped into an open FileExplorerApp window or another folder icon via RaycastAll
+            if (EventSystem.current != null && !IsProtected)
+            {
+                List<RaycastResult> results = new List<RaycastResult>();
+                EventSystem.current.RaycastAll(eventData, results);
+
+                // First check if dropped directly onto a folder item inside FileExplorerApp
+                foreach (var res in results)
+                {
+                    if (res.gameObject == null || res.gameObject == this.gameObject) continue;
+
+                    ExplorerItemPointerHandler itemHandler = res.gameObject.GetComponentInParent<ExplorerItemPointerHandler>();
+                    if (itemHandler != null && itemHandler.ItemData != null && itemHandler.ItemData.fileType == ExplorerFileType.Folder)
+                    {
+                        ExplorerItemData targetFolder = itemHandler.ItemData;
+                        if (targetFolder.name.Equals("Recycle Bin", StringComparison.OrdinalIgnoreCase))
+                        {
+                            DeleteDesktopIconToRecycleBin();
+                            return;
+                        }
+                        if (MoveDesktopIconIntoFolder(targetFolder))
+                        {
+                            return;
+                        }
+                    }
+                }
+
+                // Next check if dropped inside a FileExplorerApp window's general content area
+                foreach (var res in results)
+                {
+                    if (res.gameObject == null || res.gameObject == this.gameObject) continue;
+
+                    FileExplorerApp explorer = res.gameObject.GetComponentInParent<FileExplorerApp>();
+                    if (explorer != null && explorer.CurrentFolder != null)
+                    {
+                        ExplorerItemData targetFolder = explorer.CurrentFolder;
+                        if (targetFolder.name.Equals("Recycle Bin", StringComparison.OrdinalIgnoreCase))
+                        {
+                            DeleteDesktopIconToRecycleBin();
+                            return;
+                        }
+                        if (MoveDesktopIconIntoFolder(targetFolder))
+                        {
+                            return;
+                        }
+                    }
+                }
+
+                // Next check if dropped onto another Folder DraggableIcon on the Desktop
+                foreach (var res in results)
+                {
+                    if (res.gameObject == null || res.gameObject == this.gameObject) continue;
+
+                    DraggableIcon otherIcon = res.gameObject.GetComponentInParent<DraggableIcon>();
+                    if (otherIcon != null && otherIcon != this && otherIcon.GetComponent<RecycleBinIcon>() == null)
+                    {
+                        if (otherIcon.ItemType == DesktopItemType.Folder && otherIcon.LinkedExplorerItem != null &&
+                            otherIcon.LinkedExplorerItem != LinkedExplorerItem)
+                        {
+                            if (MoveDesktopIconIntoFolder(otherIcon.LinkedExplorerItem))
+                            {
+                                return;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 3. Otherwise place on the Desktop IconGrid at the new drop position
+            if (grid != null)
+            {
+                grid.TryPlaceIcon(this, eventData.position, initialPosition, eventData.pressEventCamera);
+            }
+        }
+
+        private bool MoveDesktopIconIntoFolder(ExplorerItemData targetFolder)
+        {
+            if (targetFolder == null || IsProtected) return false;
+
+            // Prevent dropping a folder into itself
+            if (LinkedExplorerItem != null && LinkedExplorerItem == targetFolder) return false;
+
+            // If dropped into "Desktop" folder, keep it on Desktop
+            if (targetFolder.name.Equals("Desktop", StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            // Prevent dropping into read-only system folders like Levels/Minigames/This PC root
+            if (targetFolder.name.Equals("This PC", StringComparison.OrdinalIgnoreCase) ||
+                targetFolder.name.Equals("Files", StringComparison.OrdinalIgnoreCase) ||
+                targetFolder.name.Equals("Levels", StringComparison.OrdinalIgnoreCase) ||
+                targetFolder.name.Equals("Mouse Levels", StringComparison.OrdinalIgnoreCase) ||
+                targetFolder.name.Equals("Minigames", StringComparison.OrdinalIgnoreCase))
+            {
+                ReturnToInitialPosition();
+                return true;
+            }
+
+            EnsureLinkedExplorerItem();
+            if (LinkedExplorerItem != null)
+            {
+                if (FileExplorerApp.MoveItemToFolder(LinkedExplorerItem, targetFolder))
+                {
+                    if (appWindow != null && !appWindow.IsClosed)
+                    {
+                        Destroy(appWindow.gameObject);
+                    }
+                    Destroy(gameObject);
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private void EnsureLinkedExplorerItem()
+        {
+            if (LinkedExplorerItem != null) return;
+
+            TMPro.TextMeshProUGUI label = GetComponentInChildren<TMPro.TextMeshProUGUI>();
+            string itemName = label != null && !string.IsNullOrWhiteSpace(label.text) ? label.text.Trim() : gameObject.name;
+
+            ExplorerItemData desktopFolder = FileExplorerApp.GetDesktopFolder();
+            if (desktopFolder != null && desktopFolder.children != null)
+            {
+                foreach (var child in desktopFolder.children)
+                {
+                    if (child != null && child.name.Equals(itemName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        LinkedExplorerItem = child;
+                        return;
+                    }
+                }
+            }
+
+            ExplorerFileType fType = ExplorerFileType.Folder;
+            if (ItemType == DesktopItemType.TextDocument || itemName.EndsWith(".txt", StringComparison.OrdinalIgnoreCase))
+                fType = ExplorerFileType.TextFile;
+            else if (ItemType == DesktopItemType.ImageDocument || itemName.EndsWith(".png", StringComparison.OrdinalIgnoreCase))
+                fType = ExplorerFileType.ImageFile;
+
+            UnityEngine.UI.Image img = GetComponent<UnityEngine.UI.Image>();
+            Sprite iconSpr = fType == ExplorerFileType.ImageFile
+                ? FileExplorerApp.GetImageFileSprite()
+                : (img != null ? img.sprite : null);
+
+            LinkedExplorerItem = new ExplorerItemData
+            {
+                name = itemName,
+                fileType = fType,
+                icon = iconSpr,
+                isProtected = IsProtected
+            };
         }
 
         public void OnPointerClick(PointerEventData eventData)
         {
+            if (canvasGroup != null) canvasGroup.blocksRaycasts = true;
             if (eventData.button == PointerEventData.InputButton.Right)
             {
                 ShowIconContextMenu(eventData.position);
@@ -201,8 +442,11 @@ namespace ComputerLearning
             }
 
             if (!AllowDoubleClick) return;
-            if (!dragging && eventData.button == PointerEventData.InputButton.Left && eventData.clickCount == 2)
+            if (eventData.button == PointerEventData.InputButton.Left && eventData.clickCount == 2)
+            {
+                dragging = false;
                 OpenApplication();
+            }
         }
 
         private void ShowIconContextMenu(Vector2 screenPosition)
@@ -214,7 +458,7 @@ namespace ComputerLearning
 
             if (bin != null || gameObject.name.Equals("Recycle Bin", StringComparison.OrdinalIgnoreCase))
             {
-                items.Add(new ContextMenuItem("Abrir Papelera de Reciclaje", () =>
+                items.Add(new ContextMenuItem("Open Recycle Bin", () =>
                 {
                     if (windowPrefab != null && contentPrefab != null)
                     {
@@ -227,17 +471,32 @@ namespace ComputerLearning
                 }, true));
 
                 int binCount = FileExplorerApp.GetRecycleBinCount();
-                items.Add(new ContextMenuItem($"Vaciar Papelera de Reciclaje ({binCount})", () =>
+                items.Add(new ContextMenuItem($"Empty Recycle Bin ({binCount})", () =>
                 {
                     FileExplorerApp.EmptyRecycleBin();
                 }, binCount > 0));
             }
             else
             {
-                items.Add(new ContextMenuItem("Abrir", OpenApplication, true));
+                items.Add(new ContextMenuItem("Open", OpenApplication, true));
+
+                bool isImage = (LinkedExplorerItem != null && LinkedExplorerItem.fileType == ExplorerFileType.ImageFile) ||
+                               ItemType == DesktopItemType.ImageDocument ||
+                               gameObject.name.EndsWith(".png", StringComparison.OrdinalIgnoreCase);
+
+                if (isImage)
+                {
+                    items.Add(new ContextMenuItem("Open in Paint", () =>
+                    {
+                        EnsureLinkedExplorerItem();
+                        StartMenuController c = StartMenuController.Instance ?? FindAnyObjectByType<StartMenuController>(FindObjectsInactive.Include);
+                        if (c != null) c.OpenPaintWithFile(LinkedExplorerItem, FileExplorerApp.GetDesktopFolder());
+                    }, true));
+                }
+
                 bool canModify = !IsProtected;
-                items.Add(new ContextMenuItem("Cambiar nombre", PromptRenameDesktopIcon, canModify));
-                items.Add(new ContextMenuItem("Eliminar", DeleteDesktopIconToRecycleBin, canModify));
+                items.Add(new ContextMenuItem("Rename", PromptRenameDesktopIcon, canModify));
+                items.Add(new ContextMenuItem("Delete", DeleteDesktopIconToRecycleBin, canModify));
             }
 
             ContextMenuController.Instance.Show(screenPosition, items);
@@ -250,7 +509,7 @@ namespace ComputerLearning
             TMPro.TextMeshProUGUI label = GetComponentInChildren<TMPro.TextMeshProUGUI>();
             string currentName = label != null ? label.text : gameObject.name;
 
-            ContextMenuController.Instance.ShowInputModal("Cambiar nombre", currentName, "Guardar", (newName) =>
+            ContextMenuController.Instance.ShowInputModal("Rename", currentName, "Save", (newName) =>
             {
                 if (string.IsNullOrWhiteSpace(newName)) return;
                 newName = newName.Trim();
@@ -258,6 +517,10 @@ namespace ComputerLearning
                 if (ItemType == DesktopItemType.TextDocument && !newName.EndsWith(".txt", StringComparison.OrdinalIgnoreCase))
                 {
                     newName += ".txt";
+                }
+                else if (ItemType == DesktopItemType.ImageDocument && !newName.EndsWith(".png", StringComparison.OrdinalIgnoreCase))
+                {
+                    newName += ".png";
                 }
 
                 gameObject.name = newName;
@@ -280,32 +543,33 @@ namespace ComputerLearning
         {
             if (IsProtected) return;
 
+            EnsureLinkedExplorerItem();
             if (LinkedExplorerItem != null)
             {
                 FileExplorerApp.MoveItemToRecycleBin(LinkedExplorerItem);
             }
-            else
-            {
-                TMPro.TextMeshProUGUI label = GetComponentInChildren<TMPro.TextMeshProUGUI>();
-                string itemName = label != null ? label.text : gameObject.name;
-                ExplorerFileType fType = ItemType == DesktopItemType.TextDocument ? ExplorerFileType.TextFile : ExplorerFileType.Folder;
-                UnityEngine.UI.Image img = GetComponent<UnityEngine.UI.Image>();
-                ExplorerItemData tempItem = new ExplorerItemData
-                {
-                    name = itemName,
-                    fileType = fType,
-                    icon = img != null ? img.sprite : null,
-                    isProtected = false
-                };
-                FileExplorerApp.MoveItemToRecycleBin(tempItem);
-            }
 
             if (appWindow != null && !appWindow.IsClosed)
             {
+#if UNITY_EDITOR
+                if (!Application.isPlaying) DestroyImmediate(appWindow.gameObject);
+                else Destroy(appWindow.gameObject);
+#else
                 Destroy(appWindow.gameObject);
+#endif
             }
 
+            if (DesktopManager.Instance != null)
+            {
+                DesktopManager.Instance.UnregisterIcon(this);
+            }
+
+#if UNITY_EDITOR
+            if (!Application.isPlaying) DestroyImmediate(gameObject);
+            else Destroy(gameObject);
+#else
             Destroy(gameObject);
+#endif
         }
 
         public void OpenApplication()
@@ -320,18 +584,80 @@ namespace ComputerLearning
                 VirtualMascot.HideMascot();
             }
 
-            // If this is a user-created text document with a linked ExplorerItemData, open it directly in Notepad
-            if (LinkedExplorerItem != null && LinkedExplorerItem.fileType == ExplorerFileType.TextFile)
+            StartMenuController smc = StartMenuController.Instance ?? FindAnyObjectByType<StartMenuController>(FindObjectsInactive.Include);
+
+            // 1. Check if this is the Paint desktop application shortcut
+            TMPro.TextMeshProUGUI currentLabel = GetComponentInChildren<TMPro.TextMeshProUGUI>();
+            string labelName = currentLabel != null && !string.IsNullOrWhiteSpace(currentLabel.text) ? currentLabel.text.Trim() : gameObject.name;
+
+            if (labelName.Equals("Paint", StringComparison.OrdinalIgnoreCase))
             {
-                if (StartMenuController.Instance != null)
+                if (smc != null)
                 {
-                    StartMenuController.Instance.OpenNotepadWithFile(LinkedExplorerItem);
+                    smc.OpenPaint();
                     return;
                 }
             }
-            
+
+            // 2. Check if this is the Notepad desktop application shortcut
+            if (labelName.Equals("Notepad", StringComparison.OrdinalIgnoreCase))
+            {
+                if (smc != null)
+                {
+                    smc.OpenNotepad();
+                    return;
+                }
+            }
+
+            // 3. Check if this is a user-created or linked text document -> Open in Notepad
+            if (LinkedExplorerItem != null && LinkedExplorerItem.fileType == ExplorerFileType.TextFile)
+            {
+                if (smc != null)
+                {
+                    smc.OpenNotepadWithFile(LinkedExplorerItem, FileExplorerApp.GetDesktopFolder());
+                    return;
+                }
+            }
+
+            // 4. Check if this is a user-created or linked .png image file -> Open in Image Viewer
+            if ((LinkedExplorerItem != null && LinkedExplorerItem.fileType == ExplorerFileType.ImageFile) ||
+                ItemType == DesktopItemType.ImageDocument ||
+                labelName.EndsWith(".png", StringComparison.OrdinalIgnoreCase))
+            {
+                EnsureLinkedExplorerItem();
+                if (smc != null)
+                {
+                    smc.OpenImageViewer(LinkedExplorerItem);
+                    return;
+                }
+            }
+
+            // Fallback: If contentPrefab is null for core apps, resolve from smc or DesktopManager
+            if (contentPrefab == null)
+            {
+                if (labelName.Equals("Paint", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (smc != null && smc.PaintPrefab != null) contentPrefab = smc.PaintPrefab;
+                    else if (DesktopManager.Instance != null) contentPrefab = DesktopManager.Instance.PaintContentPrefab;
+                }
+                else if (labelName.Equals("Notepad", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (smc != null && smc.NotepadPrefab != null) contentPrefab = smc.NotepadPrefab;
+                    else if (DesktopManager.Instance != null) contentPrefab = DesktopManager.Instance.NotepadContentPrefab;
+                }
+                else if (labelName.Equals("Files", StringComparison.OrdinalIgnoreCase) || labelName.Equals("This PC", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (smc != null && smc.FileExplorerPrefab != null) contentPrefab = smc.FileExplorerPrefab;
+                }
+            }
+
+            if (windowPrefab == null && DesktopManager.Instance != null)
+            {
+                windowPrefab = DesktopManager.Instance.BaseWindowPrefab;
+            }
+
             if (manager == null) manager = GetComponentInParent<WindowManager>();
-            
+
             string resolvedTitle = null;
             if (levelDefinition != null)
             {
@@ -339,10 +665,9 @@ namespace ComputerLearning
             }
             else
             {
-                TMPro.TextMeshProUGUI label = GetComponentInChildren<TMPro.TextMeshProUGUI>();
-                if (label != null && !string.IsNullOrWhiteSpace(label.text))
+                if (!string.IsNullOrWhiteSpace(labelName))
                 {
-                    resolvedTitle = label.text;
+                    resolvedTitle = labelName;
                 }
                 else
                 {
@@ -356,7 +681,7 @@ namespace ComputerLearning
             }
 
             bool isNewWindow = false;
-            
+
             if (manager != null)
             {
                 if (appWindow == null || appWindow.IsClosed) isNewWindow = true;
@@ -368,9 +693,8 @@ namespace ComputerLearning
             }
             else if (windowPrefab != null)
             {
-                // Compatibility with older scenes
                 Canvas canvas = GetComponentInParent<Canvas>();
-                if (canvas != null) 
+                if (canvas != null)
                 {
                     appWindow = Instantiate(windowPrefab, canvas.transform).GetComponent<Window>();
                     isNewWindow = true;
@@ -381,7 +705,6 @@ namespace ComputerLearning
             {
                 appWindow.setTitle(resolvedTitle);
 
-                // Inject the dynamic content if this icon was configured with one
                 if (contentPrefab != null)
                 {
                     GameObject contentInstance = Instantiate(contentPrefab);
@@ -392,21 +715,21 @@ namespace ComputerLearning
                         if (LinkedExplorerItem.fileType == ExplorerFileType.TextFile)
                         {
                             NotepadApp notepad = contentInstance.GetComponentInChildren<NotepadApp>();
-                            if (notepad != null) notepad.LoadFile(LinkedExplorerItem, appWindow);
+                            if (notepad != null) notepad.LoadFile(LinkedExplorerItem, appWindow, FileExplorerApp.GetDesktopFolder());
                         }
                         else if (LinkedExplorerItem.fileType == ExplorerFileType.Folder)
                         {
                             FileExplorerApp explorer = contentInstance.GetComponentInChildren<FileExplorerApp>();
-                            if (explorer != null) explorer.NavigateToFolder(LinkedExplorerItem, addToHistory: false);
+                            if (explorer != null) explorer.OpenFolder(LinkedExplorerItem);
                         }
                     }
-                    else if (ItemType == DesktopItemType.Folder && !IsProtected)
+                    else if (ItemType == DesktopItemType.Folder)
                     {
                         FileExplorerApp explorer = contentInstance.GetComponentInChildren<FileExplorerApp>();
                         if (explorer != null) explorer.OpenFolderByName(resolvedTitle);
                     }
                 }
-                
+
                 if (windowPrefab != null && windowPrefab.name.Contains("SkillsReport"))
                 {
                     if (appWindow.GetComponent<StatsUIBuilder>() == null)
@@ -414,12 +737,10 @@ namespace ComputerLearning
                 }
             }
 
-            // If a new window was just created and we have a level definition, start it!
             if (isNewWindow && appWindow != null && levelDefinition != null)
             {
                 appWindow.setTitle(levelDefinition.displayName);
-                
-                // Maximize the window automatically
+
                 if (!DesktopTour.IsTourRunning)
                 {
                     appWindow.toggleMaximize();
@@ -449,11 +770,11 @@ namespace ComputerLearning
                     {
                         runner = appWindow.gameObject.AddComponent<LevelRunner>();
                         runner.taskContentArea = appWindow.ContentArea;
-                        
+
                         if (runner.taskContentArea == null)
                             runner.taskContentArea = appWindow.GetComponent<RectTransform>();
                     }
-                    
+
                     if (!DesktopTour.IsTourRunning)
                     {
                         runner.StartLevel(levelDefinition);

@@ -1,9 +1,10 @@
 /**
  * Author: Diego
  * Date: 16/10/2026
- * Description: Deep interactive File Explorer system with persistent hierarchical file system,
- *              multi-context right-click menus, text & image file viewers, and Recycle Bin integration.
-*/
+ * Description: Deep interactive File Explorer system with persistent hierarchical file system ('This PC' + 'Desktop'),
+ *              Inspector-configured UI references and prefabs, bidirectional Drag & Drop, MS Paint (.png) & Notepad (.txt) integration,
+ *              and 100% English localization.
+ */
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -88,6 +89,8 @@ namespace ComputerLearning
 
         #region Public Variables
         public ExplorerItemData CurrentFolder => currentFolder;
+        public Color SelectedItemColor => selectedItemColor;
+        public Color HoverItemColor => hoverItemColor;
         #endregion
 
         #region Private Variables
@@ -95,20 +98,27 @@ namespace ComputerLearning
         [SerializeField] private TextMeshProUGUI pathText;
         [SerializeField] private Button btnBack;
         [SerializeField] private Button btnNewFolderToolbar;
+        [SerializeField] private Button btnNewImageToolbar;
         [SerializeField] private TextMeshProUGUI statusFooterText;
 
         [Header("Items Grid & Container")]
         [SerializeField] private Transform itemsContainer;
         [SerializeField] private GameObject itemPrefab;
+        [SerializeField] private Color selectedItemColor = new Color(0.80f, 0.90f, 1.0f, 0.85f);
+        [SerializeField] private Color hoverItemColor = new Color(0.90f, 0.95f, 1.0f, 0.75f);
 
-        [Header("Default Assets")]
+        [Header("Default Assets & Content Prefabs")]
         [SerializeField] private Sprite defaultFolderIcon;
         [SerializeField] private Sprite defaultTextIcon;
         [SerializeField] private Sprite defaultImageIcon;
         [SerializeField] private Sprite defaultGameIcon;
+        [SerializeField] private GameObject baseWindowPrefab;
+        [SerializeField] private GameObject notepadPrefab;
+        [SerializeField] private GameObject paintPrefab;
+        [SerializeField] private GameObject imageViewerPrefab;
 
         [Header("Folder Configuration")]
-        [Tooltip("If specified, navigates directly to this folder on startup (e.g. 'Minijuegos')")]
+        [Tooltip("If specified, navigates directly to this folder on startup (e.g. 'Minigames')")]
         [SerializeField] private string initialFolderName = "";
 
         [Header("Minigames Configuration")]
@@ -118,7 +128,6 @@ namespace ComputerLearning
         [SerializeField] private LevelDefinition adaptiveLevel;
         [SerializeField] private Sprite targetGameIcon;
         [SerializeField] private Sprite mazeGameIcon;
-        [SerializeField] private GameObject baseWindowPrefab;
 
         [Header("Levels Configuration")]
         [SerializeField] private LevelDefinition[] mouseLevels;
@@ -128,8 +137,14 @@ namespace ComputerLearning
         [NonSerialized] private ExplorerItemData currentFolder;
         private readonly Stack<ExplorerItemData> navigationHistory = new Stack<ExplorerItemData>();
         private GameObject selectedItemVisual;
-        private ExplorerItemData selectedItemData;
+        [NonSerialized] private ExplorerItemData selectedItemData;
         private readonly Dictionary<string, Window> openedWindows = new Dictionary<string, Window>();
+
+        private bool isSaveDialogMode = false;
+        private string saveDialogExtension = "";
+        private TMP_InputField saveDialogInputField;
+        private Action<string, ExplorerItemData> onSaveDialogConfirm;
+        private Window parentWindow;
         #endregion
 
         #region Unity Methods
@@ -137,8 +152,21 @@ namespace ComputerLearning
         {
             ResolveDefaultIcons();
 
-            if (btnBack != null) btnBack.onClick.AddListener(NavigateBack);
-            if (btnNewFolderToolbar != null) btnNewFolderToolbar.onClick.AddListener(() => CreateNewFolder());
+            if (btnBack != null)
+            {
+                btnBack.onClick.RemoveListener(NavigateBack);
+                btnBack.onClick.AddListener(NavigateBack);
+            }
+            if (btnNewFolderToolbar != null)
+            {
+                btnNewFolderToolbar.onClick.RemoveAllListeners();
+                btnNewFolderToolbar.onClick.AddListener(() => CreateNewFolder());
+            }
+            if (btnNewImageToolbar != null)
+            {
+                btnNewImageToolbar.onClick.RemoveAllListeners();
+                btnNewImageToolbar.onClick.AddListener(() => CreateNewImageDocument("New Drawing"));
+            }
 
             EnsureSharedFileSystem();
             rootFolder = sharedRootFolder;
@@ -166,9 +194,14 @@ namespace ComputerLearning
         {
             SetupClickRelays();
 
-            if (currentFolder != null)
+            if (isSaveDialogMode)
             {
-                NavigateToFolder(currentFolder, addToHistory: false);
+                return;
+            }
+
+            if (currentFolder != null && currentFolder != rootFolder)
+            {
+                OpenFolder(currentFolder);
             }
             else if (!string.IsNullOrEmpty(initialFolderName))
             {
@@ -195,24 +228,12 @@ namespace ComputerLearning
         private void EnsureClickRelay(GameObject target)
         {
             if (target == null) return;
-            Graphic g = target.GetComponent<Graphic>();
-            if (g == null)
-            {
-                Image img = target.AddComponent<Image>();
-                img.color = Color.clear;
-                img.raycastTarget = true;
-            }
-            else
-            {
-                g.raycastTarget = true;
-            }
-
             ExplorerClickRelay relay = target.GetComponent<ExplorerClickRelay>();
             if (relay == null)
             {
                 relay = target.AddComponent<ExplorerClickRelay>();
-                relay.targetExplorer = this;
             }
+            relay.targetExplorer = this;
         }
         #endregion
 
@@ -229,10 +250,43 @@ namespace ComputerLearning
                 }
                 else
                 {
-                    BuildFallbackStaticFileSystem();
+                    GameObject prefab = null;
+                    if (StartMenuController.Instance != null && StartMenuController.Instance.FileExplorerPrefab != null)
+                    {
+                        prefab = StartMenuController.Instance.FileExplorerPrefab;
+                    }
+                    if (prefab == null)
+                    {
+                        prefab = Resources.Load<GameObject>("FileExplorerContent");
+                    }
+#if UNITY_EDITOR
+                    if (prefab == null)
+                    {
+                        prefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Windows/FileExplorerContent.prefab");
+                    }
+#endif
+                    if (prefab != null)
+                    {
+                        FileExplorerApp prefabApp = prefab.GetComponent<FileExplorerApp>() ?? prefab.GetComponentInChildren<FileExplorerApp>();
+                        if (prefabApp != null)
+                        {
+                            prefabApp.ResolveDefaultIcons();
+                            prefabApp.EnsureSharedFileSystem();
+                        }
+                    }
+
+                    if (sharedRootFolder == null)
+                    {
+                        BuildFallbackStaticFileSystem();
+                    }
                 }
             }
             return sharedRootFolder;
+        }
+
+        public static ExplorerItemData GetDesktopFolder()
+        {
+            return FindOrCreateSystemFolder("Desktop", isProtectedFolder: true);
         }
 
         public static ExplorerItemData FindOrCreateSystemFolder(string folderName, bool isProtectedFolder = true)
@@ -262,7 +316,7 @@ namespace ComputerLearning
         public static ExplorerItemData SaveOrCreateTextDocument(string requestedName, string content, ExplorerItemData targetFolder = null)
         {
             if (string.IsNullOrWhiteSpace(requestedName))
-                requestedName = "Nuevo Documento.txt";
+                requestedName = "New Document.txt";
 
             requestedName = requestedName.Trim();
             if (!requestedName.EndsWith(".txt", StringComparison.OrdinalIgnoreCase))
@@ -272,12 +326,7 @@ namespace ComputerLearning
 
             if (targetFolder == null)
             {
-                // Prefer current active non-protected/Documents folder, otherwise Documents
-                if (ActiveExplorerFolder != null &&
-                    !ActiveExplorerFolder.name.Equals("Levels", StringComparison.OrdinalIgnoreCase) &&
-                    !ActiveExplorerFolder.name.Equals("Mouse Levels", StringComparison.OrdinalIgnoreCase) &&
-                    !ActiveExplorerFolder.name.Equals("Minigames", StringComparison.OrdinalIgnoreCase) &&
-                    !ActiveExplorerFolder.name.Equals("Recycle Bin", StringComparison.OrdinalIgnoreCase))
+                if (ActiveExplorerFolder != null && !IsReadOnlySystemFolderStatic(ActiveExplorerFolder))
                 {
                     targetFolder = ActiveExplorerFolder;
                 }
@@ -289,7 +338,6 @@ namespace ComputerLearning
 
             if (targetFolder == null) return null;
 
-            // Check if a text file with that exact name already exists in targetFolder
             foreach (var child in targetFolder.children)
             {
                 if (child.fileType == ExplorerFileType.TextFile && child.name.Equals(requestedName, StringComparison.OrdinalIgnoreCase))
@@ -315,6 +363,136 @@ namespace ComputerLearning
             return newDoc;
         }
 
+        public static ExplorerItemData SaveOrCreateImageDocument(string requestedName, Sprite imageSprite, ExplorerItemData targetFolder = null)
+        {
+            if (string.IsNullOrWhiteSpace(requestedName))
+                requestedName = "New Drawing.png";
+
+            requestedName = requestedName.Trim();
+            if (!requestedName.EndsWith(".png", StringComparison.OrdinalIgnoreCase))
+            {
+                requestedName += ".png";
+            }
+
+            if (targetFolder == null)
+            {
+                if (ActiveExplorerFolder != null && !IsReadOnlySystemFolderStatic(ActiveExplorerFolder))
+                {
+                    targetFolder = ActiveExplorerFolder;
+                }
+                else
+                {
+                    targetFolder = FindOrCreateSystemFolder("Pictures", true);
+                }
+            }
+
+            if (targetFolder == null) return null;
+
+            Sprite defaultIcon = GetImageFileSprite();
+
+            foreach (var child in targetFolder.children)
+            {
+                if (child.fileType == ExplorerFileType.ImageFile && child.name.Equals(requestedName, StringComparison.OrdinalIgnoreCase))
+                {
+                    child.imageContent = imageSprite;
+                    child.icon = defaultIcon;
+                    NotifyFileSystemChanged();
+                    return child;
+                }
+            }
+
+            ExplorerItemData newImg = new ExplorerItemData
+            {
+                name = requestedName,
+                fileType = ExplorerFileType.ImageFile,
+                icon = defaultIcon,
+                imageContent = imageSprite,
+                isProtected = false
+            };
+
+            targetFolder.children.Add(newImg);
+            NotifyFileSystemChanged();
+            return newImg;
+        }
+
+        /// <summary>
+        /// Moves an item from its current folder in the virtual file system into destinationFolder,
+        /// and syncs with the Desktop if moved to or from 'Desktop'.
+        /// </summary>
+        public static bool MoveItemToFolder(ExplorerItemData item, ExplorerItemData destinationFolder, Vector2? desktopDropScreenPos = null)
+        {
+            if (item == null || destinationFolder == null || item.isProtected) return false;
+            if (item == destinationFolder) return false;
+            if (IsReadOnlySystemFolderStatic(destinationFolder)) return false;
+
+            if (item.fileType == ExplorerFileType.Folder && FindFolderRecursiveStatic(item, destinationFolder.name) != null)
+            {
+                return false;
+            }
+
+            if (destinationFolder.children.Contains(item)) return false;
+
+            ExplorerItemData root = GetRootFolder();
+            if (root != null)
+            {
+                RemoveItemRecursive(root, item);
+            }
+
+            string baseName = item.name;
+            string ext = "";
+            if (item.fileType == ExplorerFileType.TextFile && baseName.EndsWith(".txt", StringComparison.OrdinalIgnoreCase))
+            {
+                ext = ".txt";
+                baseName = baseName.Substring(0, baseName.Length - 4);
+            }
+            else if (item.fileType == ExplorerFileType.ImageFile && baseName.EndsWith(".png", StringComparison.OrdinalIgnoreCase))
+            {
+                ext = ".png";
+                baseName = baseName.Substring(0, baseName.Length - 4);
+            }
+
+            string candidate = item.name;
+            int counter = 0;
+            bool exists = true;
+            while (exists)
+            {
+                exists = false;
+                foreach (var sibling in destinationFolder.children)
+                {
+                    if (sibling != item && sibling.name.Equals(candidate, StringComparison.OrdinalIgnoreCase))
+                    {
+                        counter++;
+                        candidate = $"{baseName} ({counter}){ext}";
+                        exists = true;
+                        break;
+                    }
+                }
+            }
+            item.name = candidate;
+
+            destinationFolder.children.Add(item);
+
+            if (destinationFolder.name.Equals("Desktop", StringComparison.OrdinalIgnoreCase) &&
+                desktopDropScreenPos.HasValue && DesktopManager.Instance != null)
+            {
+                DesktopManager.Instance.SpawnIconForExplorerItem(item, desktopDropScreenPos.Value);
+            }
+
+            NotifyFileSystemChanged();
+            return true;
+        }
+
+        private static bool IsReadOnlySystemFolderStatic(ExplorerItemData folder)
+        {
+            if (folder == null) return true;
+            return folder.name.Equals("This PC", StringComparison.OrdinalIgnoreCase) ||
+                   folder.name.Equals("Files", StringComparison.OrdinalIgnoreCase) ||
+                   folder.name.Equals("Levels", StringComparison.OrdinalIgnoreCase) ||
+                   folder.name.Equals("Mouse Levels", StringComparison.OrdinalIgnoreCase) ||
+                   folder.name.Equals("Minigames", StringComparison.OrdinalIgnoreCase) ||
+                   folder.name.Equals("Recycle Bin", StringComparison.OrdinalIgnoreCase);
+        }
+
         public static bool MoveItemToRecycleBin(ExplorerItemData item)
         {
             if (item == null || item.isProtected) return false;
@@ -328,7 +506,6 @@ namespace ComputerLearning
                 recycleBin = FindOrCreateSystemFolder("Recycle Bin", true);
             }
 
-            // If already inside Recycle Bin, don't re-add
             if (recycleBin.children.Contains(item)) return false;
 
             RemoveItemRecursive(root, item);
@@ -390,9 +567,6 @@ namespace ComputerLearning
         #endregion
 
         #region Public Instance Methods
-        /// <summary>
-        /// Captures right clicks on the empty area of the File Explorer window.
-        /// </summary>
         public void OnPointerClick(PointerEventData eventData)
         {
             if (eventData.button == PointerEventData.InputButton.Right)
@@ -405,14 +579,13 @@ namespace ComputerLearning
             }
         }
 
-        /// <summary>
-        /// Creates a new user-modifiable folder inside the current directory.
-        /// </summary>
         public ExplorerItemData CreateNewFolder(string customBaseName = "New Folder")
         {
             if (currentFolder == null) return null;
 
-            string uniqueName = GetUniqueItemName(currentFolder, customBaseName, "");
+            ExplorerItemData target = currentFolder;
+
+            string uniqueName = GetUniqueItemName(target, customBaseName, "");
             ExplorerItemData newFolder = new ExplorerItemData
             {
                 name = uniqueName,
@@ -422,20 +595,21 @@ namespace ComputerLearning
                 children = new List<ExplorerItemData>()
             };
 
-            currentFolder.children.Add(newFolder);
+            target.children.Add(newFolder);
             NotifyFileSystemChanged();
             SetStatusMessage($"Created folder '{uniqueName}'");
             return newFolder;
         }
 
-        /// <summary>
-        /// Creates a new user-modifiable text document inside the current directory.
-        /// </summary>
         public ExplorerItemData CreateNewTextDocument(string customBaseName = "New Document")
         {
             if (currentFolder == null) return null;
 
-            string uniqueName = GetUniqueItemName(currentFolder, customBaseName, ".txt");
+            ExplorerItemData target = IsReadOnlySystemFolderStatic(currentFolder)
+                ? FindOrCreateSystemFolder("Documents", true)
+                : currentFolder;
+
+            string uniqueName = GetUniqueItemName(target, customBaseName, ".txt");
             ExplorerItemData newDoc = new ExplorerItemData
             {
                 name = uniqueName,
@@ -445,10 +619,24 @@ namespace ComputerLearning
                 isProtected = false
             };
 
-            currentFolder.children.Add(newDoc);
+            target.children.Add(newDoc);
             NotifyFileSystemChanged();
             SetStatusMessage($"Created text file '{uniqueName}'");
             return newDoc;
+        }
+
+        public ExplorerItemData CreateNewImageDocument(string customBaseName = "New Drawing")
+        {
+            if (currentFolder == null) return null;
+
+            ExplorerItemData target = IsReadOnlySystemFolderStatic(currentFolder)
+                ? FindOrCreateSystemFolder("Pictures", true)
+                : currentFolder;
+
+            string uniqueName = GetUniqueItemName(target, customBaseName, ".png");
+            ExplorerItemData newImg = SaveOrCreateImageDocument(uniqueName, null, target);
+            SetStatusMessage($"Created image file '{uniqueName}'");
+            return newImg;
         }
 
         public void NavigateToFolder(ExplorerItemData folder, bool addToHistory = true)
@@ -467,6 +655,19 @@ namespace ComputerLearning
             RefreshItemsView();
         }
 
+        public ExplorerItemData GetParentFolder(ExplorerItemData target)
+        {
+            if (target == null || target == rootFolder || target.name.Equals("This PC", StringComparison.OrdinalIgnoreCase))
+                return null;
+
+            List<ExplorerItemData> chain = new List<ExplorerItemData>();
+            if (FindFolderChainRecursive(rootFolder, target, chain) && chain.Count > 1)
+            {
+                return chain[chain.Count - 2];
+            }
+            return rootFolder;
+        }
+
         public void NavigateBack()
         {
             if (navigationHistory.Count > 0)
@@ -474,11 +675,40 @@ namespace ComputerLearning
                 ExplorerItemData previousFolder = navigationHistory.Pop();
                 NavigateToFolder(previousFolder, addToHistory: false);
             }
+            else if (currentFolder != null && currentFolder != rootFolder && !currentFolder.name.Equals("This PC", StringComparison.OrdinalIgnoreCase))
+            {
+                ExplorerItemData parent = GetParentFolder(currentFolder);
+                if (parent != null)
+                {
+                    NavigateToFolder(parent, addToHistory: false);
+                }
+                else
+                {
+                    NavigateToFolder(rootFolder, addToHistory: false);
+                }
+            }
         }
 
         public void OnItemDoubleClicked(ExplorerItemData item)
         {
             if (item == null) return;
+
+            if (isSaveDialogMode)
+            {
+                if (item.fileType == ExplorerFileType.Folder)
+                {
+                    NavigateToFolder(item);
+                }
+                else
+                {
+                    if (saveDialogInputField != null)
+                    {
+                        saveDialogInputField.text = item.name;
+                    }
+                    ConfirmSaveDialog();
+                }
+                return;
+            }
 
             switch (item.fileType)
             {
@@ -510,23 +740,31 @@ namespace ComputerLearning
             var menuItems = new List<ContextMenuItem>();
             bool inRecycleBin = currentFolder != null && currentFolder.name.Equals("Recycle Bin", StringComparison.OrdinalIgnoreCase);
 
-            menuItems.Add(new ContextMenuItem("Abrir", () => OnItemDoubleClicked(item), true));
+            if (item.fileType == ExplorerFileType.ImageFile)
+            {
+                menuItems.Add(new ContextMenuItem("Open", () => OpenImageFile(item), true));
+                menuItems.Add(new ContextMenuItem("Open in Paint", () => OpenImageInPaint(item), true));
+            }
+            else
+            {
+                menuItems.Add(new ContextMenuItem("Open", () => OnItemDoubleClicked(item), true));
+            }
 
             if (inRecycleBin)
             {
-                menuItems.Add(new ContextMenuItem("Restaurar", () => RestoreItemFromRecycleBin(item), true));
-                menuItems.Add(new ContextMenuItem("Eliminar permanentemente", () => DeleteItemPermanently(item), true));
+                menuItems.Add(new ContextMenuItem("Restore", () => RestoreItemFromRecycleBin(item), true));
+                menuItems.Add(new ContextMenuItem("Delete Permanently", () => DeleteItemPermanently(item), true));
             }
             else
             {
                 bool canModify = !item.isProtected;
-                menuItems.Add(new ContextMenuItem("Cambiar nombre", () => PromptRenameItem(item), canModify));
-                menuItems.Add(new ContextMenuItem("Eliminar", () => DeleteItemToRecycleBin(item), canModify));
+                menuItems.Add(new ContextMenuItem("Rename", () => PromptRenameItem(item), canModify));
+                menuItems.Add(new ContextMenuItem("Delete", () => DeleteItemToRecycleBin(item), canModify));
 
                 if (item.name.Equals("Recycle Bin", StringComparison.OrdinalIgnoreCase))
                 {
                     int binCount = item.children != null ? item.children.Count : 0;
-                    menuItems.Add(new ContextMenuItem($"Vaciar Papelera ({binCount})", () =>
+                    menuItems.Add(new ContextMenuItem($"Empty Recycle Bin ({binCount})", () =>
                     {
                         EmptyRecycleBin();
                         SetStatusMessage("Recycle Bin emptied.");
@@ -537,22 +775,52 @@ namespace ComputerLearning
             ContextMenuController.Instance.Show(screenPos, menuItems);
         }
 
-        public void OpenFolderByName(string folderName)
+        public void OpenFolder(ExplorerItemData target)
         {
             EnsureSharedFileSystem();
             rootFolder = sharedRootFolder;
 
-            if (string.IsNullOrEmpty(folderName) || folderName.Equals("Files", StringComparison.OrdinalIgnoreCase) || folderName.Equals("File Explorer", StringComparison.OrdinalIgnoreCase))
+            if (target == null || target == rootFolder || target.name.Equals("This PC", StringComparison.OrdinalIgnoreCase))
             {
                 navigationHistory.Clear();
                 NavigateToFolder(rootFolder, addToHistory: false);
                 return;
             }
 
+            navigationHistory.Clear();
+            List<ExplorerItemData> chain = new List<ExplorerItemData>();
+            if (FindFolderChainRecursive(rootFolder, target, chain))
+            {
+                for (int i = 0; i < chain.Count - 1; i++)
+                {
+                    navigationHistory.Push(chain[i]);
+                }
+            }
+            else
+            {
+                navigationHistory.Push(rootFolder);
+            }
+
+            NavigateToFolder(target, addToHistory: false);
+        }
+
+        public void OpenFolderByName(string folderName)
+        {
+            EnsureSharedFileSystem();
+            rootFolder = sharedRootFolder;
+
+            if (string.IsNullOrEmpty(folderName) ||
+                folderName.Equals("This PC", StringComparison.OrdinalIgnoreCase) ||
+                folderName.Equals("Files", StringComparison.OrdinalIgnoreCase) ||
+                folderName.Equals("File Explorer", StringComparison.OrdinalIgnoreCase))
+            {
+                OpenFolder(rootFolder);
+                return;
+            }
+
             ExplorerItemData target = FindFolderRecursive(rootFolder, folderName);
             if (target == null)
             {
-                // If this was a user-created desktop folder, create it in root so it persists!
                 target = new ExplorerItemData
                 {
                     name = folderName,
@@ -561,12 +829,18 @@ namespace ComputerLearning
                     isProtected = false,
                     children = new List<ExplorerItemData>()
                 };
-                rootFolder.children.Add(target);
+                ExplorerItemData desktop = GetDesktopFolder();
+                if (desktop != null)
+                {
+                    desktop.children.Add(target);
+                }
+                else
+                {
+                    rootFolder.children.Add(target);
+                }
             }
 
-            navigationHistory.Clear();
-            navigationHistory.Push(rootFolder);
-            NavigateToFolder(target, addToHistory: false);
+            OpenFolder(target);
         }
         #endregion
 
@@ -585,22 +859,23 @@ namespace ComputerLearning
             if (isRecycleBin)
             {
                 int count = currentFolder.children != null ? currentFolder.children.Count : 0;
-                menuItems.Add(new ContextMenuItem($"Vaciar Papelera de Reciclaje ({count})", () =>
+                menuItems.Add(new ContextMenuItem($"Empty Recycle Bin ({count})", () =>
                 {
                     EmptyRecycleBin();
                     SetStatusMessage("Recycle Bin emptied.");
                 }, count > 0));
-                menuItems.Add(new ContextMenuItem("Actualizar", RefreshItemsView, true));
+                menuItems.Add(new ContextMenuItem("Refresh", RefreshItemsView, true));
             }
             else if (isSystemReadOnlyFolder)
             {
-                menuItems.Add(new ContextMenuItem("Actualizar", RefreshItemsView, true));
+                menuItems.Add(new ContextMenuItem("Refresh", RefreshItemsView, true));
             }
             else
             {
-                menuItems.Add(new ContextMenuItem("+ Nueva Carpeta", () => CreateNewFolder("New Folder"), true));
-                menuItems.Add(new ContextMenuItem("+ Nuevo Documento de Texto", () => CreateNewTextDocument("New Document"), true));
-                menuItems.Add(new ContextMenuItem("Actualizar", RefreshItemsView, true));
+                menuItems.Add(new ContextMenuItem("+ New Folder", () => CreateNewFolder("New Folder"), true));
+                menuItems.Add(new ContextMenuItem("+ New Text Document (.txt)", () => CreateNewTextDocument("New Document"), true));
+                menuItems.Add(new ContextMenuItem("+ New Image (.png)", () => CreateNewImageDocument("New Drawing"), true));
+                menuItems.Add(new ContextMenuItem("Refresh", RefreshItemsView, true));
             }
 
             ContextMenuController.Instance.Show(screenPosition, menuItems);
@@ -616,8 +891,8 @@ namespace ComputerLearning
 
             if (ContextMenuController.Instance == null) return;
 
-            string title = item.fileType == ExplorerFileType.Folder ? "Cambiar nombre de carpeta" : "Cambiar nombre de archivo";
-            ContextMenuController.Instance.ShowInputModal(title, item.name, "Guardar", (newName) =>
+            string title = item.fileType == ExplorerFileType.Folder ? "Rename Folder" : "Rename File";
+            ContextMenuController.Instance.ShowInputModal(title, item.name, "Save", (newName) =>
             {
                 if (string.IsNullOrWhiteSpace(newName)) return;
                 newName = newName.Trim();
@@ -631,7 +906,6 @@ namespace ComputerLearning
                     newName += ".png";
                 }
 
-                // Prevent duplicate sibling names
                 if (currentFolder != null && currentFolder.children != null)
                 {
                     foreach (var sibling in currentFolder.children)
@@ -671,14 +945,14 @@ namespace ComputerLearning
             if (item == null || currentFolder == null) return;
             currentFolder.children.Remove(item);
 
-            ExplorerItemData targetDest = rootFolder;
+            ExplorerItemData targetDest = GetDesktopFolder() ?? rootFolder;
             if (item.fileType == ExplorerFileType.TextFile)
             {
-                targetDest = FindFolderRecursive(rootFolder, "Documents") ?? rootFolder;
+                targetDest = FindFolderRecursive(rootFolder, "Documents") ?? targetDest;
             }
             else if (item.fileType == ExplorerFileType.ImageFile)
             {
-                targetDest = FindFolderRecursive(rootFolder, "Pictures") ?? rootFolder;
+                targetDest = FindFolderRecursive(rootFolder, "Pictures") ?? targetDest;
             }
 
             if (!targetDest.children.Contains(item))
@@ -737,9 +1011,218 @@ namespace ComputerLearning
             }
             else
             {
-                // Ensure icons and levels are up-to-date on the shared hierarchy
+                ExplorerItemData desktop = FindFolderRecursiveStatic(sharedRootFolder, "Desktop");
+                if (desktop == null)
+                {
+                    desktop = new ExplorerItemData
+                    {
+                        name = "Desktop",
+                        fileType = ExplorerFileType.Folder,
+                        icon = GetFolderSprite(),
+                        isProtected = true,
+                        children = new List<ExplorerItemData>()
+                    };
+                    sharedRootFolder.children.Insert(0, desktop);
+                }
+
+                // Ensure Levels is inside Desktop
+                ExplorerItemData levels = FindFolderRecursiveStatic(sharedRootFolder, "Levels");
+                if (levels == null)
+                {
+                    levels = new ExplorerItemData
+                    {
+                        name = "Levels",
+                        fileType = ExplorerFileType.Folder,
+                        icon = GetFolderSprite(),
+                        isProtected = true,
+                        children = new List<ExplorerItemData>()
+                    };
+                    desktop.children.Add(levels);
+                }
+                else if (!desktop.children.Contains(levels))
+                {
+                    sharedRootFolder.children.Remove(levels);
+                    desktop.children.Add(levels);
+                }
+
+                // Ensure Minigames is inside Desktop
+                ExplorerItemData games = FindFolderRecursiveStatic(sharedRootFolder, "Minigames");
+                if (games == null)
+                {
+                    games = new ExplorerItemData
+                    {
+                        name = "Minigames",
+                        fileType = ExplorerFileType.Folder,
+                        icon = GetFolderSprite(),
+                        isProtected = true,
+                        children = new List<ExplorerItemData>()
+                    };
+                    desktop.children.Add(games);
+                }
+                else if (!desktop.children.Contains(games))
+                {
+                    sharedRootFolder.children.Remove(games);
+                    desktop.children.Add(games);
+                }
+
+                if (levels.children == null || levels.children.Count == 0)
+                {
+                    PopulateLevelsFolder(levels);
+                }
+                if (games.children == null || games.children.Count == 0)
+                {
+                    PopulateGamesFolder(games);
+                }
+
+                sharedRootFolder.name = "This PC";
                 RefreshIconsRecursive(sharedRootFolder);
             }
+        }
+
+        private void PopulateLevelsFolder(ExplorerItemData folder)
+        {
+            if (folder == null) return;
+            if (folder.children == null) folder.children = new List<ExplorerItemData>();
+            if (folder.children.Count > 0) return;
+
+            Sprite defGameIcon = defaultGameIcon != null ? defaultGameIcon : SharedGameIcon;
+            Sprite icon = targetGameIcon != null ? targetGameIcon : defGameIcon;
+
+            if (mouseLevels != null && mouseLevels.Length > 0)
+            {
+                foreach (var lvl in mouseLevels)
+                {
+                    if (lvl != null)
+                    {
+                        folder.children.Add(new ExplorerItemData
+                        {
+                            name = lvl.displayName,
+                            fileType = ExplorerFileType.Minigame,
+                            icon = icon,
+                            levelToLaunch = lvl,
+                            isProtected = true
+                        });
+                    }
+                }
+            }
+
+            if (level10CopyPaste != null)
+            {
+                folder.children.Add(new ExplorerItemData
+                {
+                    name = level10CopyPaste.displayName,
+                    fileType = ExplorerFileType.Minigame,
+                    icon = icon,
+                    levelToLaunch = level10CopyPaste,
+                    isProtected = true
+                });
+            }
+        }
+
+        private void PopulateGamesFolder(ExplorerItemData folder)
+        {
+            if (folder == null) return;
+            if (folder.children == null) folder.children = new List<ExplorerItemData>();
+            if (folder.children.Count > 0) return;
+
+            Sprite defGameIcon = defaultGameIcon != null ? defaultGameIcon : SharedGameIcon;
+
+            if (targetsLevel != null)
+            {
+                folder.children.Add(new ExplorerItemData
+                {
+                    name = "Targets & Clicks",
+                    fileType = ExplorerFileType.Minigame,
+                    icon = targetGameIcon != null ? targetGameIcon : defGameIcon,
+                    levelToLaunch = targetsLevel,
+                    isProtected = true
+                });
+            }
+            if (hoverLevel != null)
+            {
+                folder.children.Add(new ExplorerItemData
+                {
+                    name = "Tracking & Hover",
+                    fileType = ExplorerFileType.Minigame,
+                    icon = mazeGameIcon != null ? mazeGameIcon : defGameIcon,
+                    levelToLaunch = hoverLevel,
+                    isProtected = true
+                });
+            }
+            if (doubleClickLevel != null)
+            {
+                folder.children.Add(new ExplorerItemData
+                {
+                    name = "Fast Double Click",
+                    fileType = ExplorerFileType.Minigame,
+                    icon = targetGameIcon != null ? targetGameIcon : defGameIcon,
+                    levelToLaunch = doubleClickLevel,
+                    isProtected = true
+                });
+            }
+            if (adaptiveLevel != null)
+            {
+                folder.children.Add(new ExplorerItemData
+                {
+                    name = "Adaptive Practice",
+                    fileType = ExplorerFileType.Minigame,
+                    icon = mazeGameIcon != null ? mazeGameIcon : defGameIcon,
+                    levelToLaunch = adaptiveLevel,
+                    isProtected = true
+                });
+            }
+        }
+
+        private string GetBreadcrumbPath(ExplorerItemData root, ExplorerItemData target)
+        {
+            if (target == null || target == root || target.name.Equals("This PC", StringComparison.OrdinalIgnoreCase))
+                return "This PC";
+
+            List<string> path = new List<string>();
+            if (FindPathRecursive(root, target, path))
+            {
+                return string.Join("  >  ", path);
+            }
+            return $"This PC  >  {target.name}";
+        }
+
+        private static bool FindPathRecursive(ExplorerItemData current, ExplorerItemData target, List<string> path)
+        {
+            if (current == null) return false;
+            path.Add(current.name);
+            if (current == target) return true;
+
+            if (current.children != null)
+            {
+                foreach (var child in current.children)
+                {
+                    if (child != null && FindPathRecursive(child, target, path))
+                        return true;
+                }
+            }
+
+            path.RemoveAt(path.Count - 1);
+            return false;
+        }
+
+        private static bool FindFolderChainRecursive(ExplorerItemData current, ExplorerItemData target, List<ExplorerItemData> chain)
+        {
+            if (current == null || target == null) return false;
+            chain.Add(current);
+            if (current == target || (current.fileType == ExplorerFileType.Folder && current.name.Equals(target.name, StringComparison.OrdinalIgnoreCase)))
+                return true;
+
+            if (current.children != null)
+            {
+                foreach (var child in current.children)
+                {
+                    if (child != null && child.fileType == ExplorerFileType.Folder && FindFolderChainRecursive(child, target, chain))
+                        return true;
+                }
+            }
+
+            chain.RemoveAt(chain.Count - 1);
+            return false;
         }
 
         private void RefreshIconsRecursive(ExplorerItemData node)
@@ -753,7 +1236,7 @@ namespace ComputerLearning
             }
             else if (node.fileType == ExplorerFileType.ImageFile)
             {
-                if (node.icon == null) node.icon = GetDefaultIcon(ExplorerFileType.ImageFile);
+                node.icon = GetImageFileSprite() ?? GetDefaultIcon(ExplorerFileType.ImageFile);
                 if (node.imageContent == null) node.imageContent = node.icon;
             }
             else if (node.fileType == ExplorerFileType.Folder && node.icon == null)
@@ -782,12 +1265,21 @@ namespace ComputerLearning
         {
             if (pathText != null)
             {
-                pathText.text = currentFolder != null ? $"This PC > {currentFolder.name}" : "This PC";
+                if (currentFolder == null || currentFolder == rootFolder || currentFolder.name.Equals("This PC", StringComparison.OrdinalIgnoreCase))
+                {
+                    pathText.text = "This PC";
+                }
+                else
+                {
+                    pathText.text = GetBreadcrumbPath(rootFolder, currentFolder);
+                }
             }
 
             if (btnBack != null)
             {
-                btnBack.interactable = navigationHistory.Count > 0;
+                bool canGoBack = navigationHistory.Count > 0 ||
+                    (currentFolder != null && currentFolder != rootFolder && !currentFolder.name.Equals("This PC", StringComparison.OrdinalIgnoreCase));
+                btnBack.interactable = canGoBack;
             }
         }
 
@@ -797,7 +1289,10 @@ namespace ComputerLearning
 
             foreach (Transform child in itemsContainer)
             {
-                Destroy(child.gameObject);
+                if (Application.isPlaying)
+                    Destroy(child.gameObject);
+                else
+                    DestroyImmediate(child.gameObject);
             }
 
             int count = currentFolder != null && currentFolder.children != null ? currentFolder.children.Count : 0;
@@ -816,58 +1311,13 @@ namespace ComputerLearning
 
         private void CreateItemUI(ExplorerItemData item)
         {
-            GameObject go = null;
-            Image iconImg = null;
-            TextMeshProUGUI label = null;
+            if (itemPrefab == null || itemsContainer == null) return;
 
-            if (itemPrefab != null)
-            {
-                go = Instantiate(itemPrefab, itemsContainer);
-                iconImg = go.transform.Find("Icon")?.GetComponent<Image>();
-                label = go.transform.Find("Label")?.GetComponent<TextMeshProUGUI>();
-            }
-            else
-            {
-                go = new GameObject(item.name, typeof(RectTransform), typeof(Image), typeof(Button));
-                go.transform.SetParent(itemsContainer, false);
-                RectTransform rt = go.GetComponent<RectTransform>();
-                rt.sizeDelta = new Vector2(110, 110);
-
-                Image cardBg = go.GetComponent<Image>();
-                cardBg.color = Color.clear;
-
-                GameObject iconGo = new GameObject("Icon", typeof(RectTransform), typeof(Image));
-                iconGo.transform.SetParent(go.transform, false);
-                RectTransform iconRt = iconGo.GetComponent<RectTransform>();
-                iconRt.anchorMin = new Vector2(0.5f, 1f);
-                iconRt.anchorMax = new Vector2(0.5f, 1f);
-                iconRt.pivot = new Vector2(0.5f, 1f);
-                iconRt.anchoredPosition = new Vector2(0, -8);
-                iconRt.sizeDelta = new Vector2(64, 64);
-
-                iconImg = iconGo.GetComponent<Image>();
-                iconImg.color = Color.white;
-                iconImg.preserveAspect = true;
-                iconImg.raycastTarget = false;
-
-                GameObject labelGo = new GameObject("Label", typeof(RectTransform), typeof(TextMeshProUGUI));
-                labelGo.transform.SetParent(go.transform, false);
-                RectTransform labelRt = labelGo.GetComponent<RectTransform>();
-                labelRt.anchorMin = new Vector2(0, 0);
-                labelRt.anchorMax = new Vector2(1, 0);
-                labelRt.pivot = new Vector2(0.5f, 0);
-                labelRt.anchoredPosition = new Vector2(0, 6);
-                labelRt.sizeDelta = new Vector2(-6, 32);
-
-                label = labelGo.GetComponent<TextMeshProUGUI>();
-                label.fontSize = 12;
-                label.alignment = TextAlignmentOptions.Top;
-                label.color = new Color(0.09f, 0.13f, 0.24f, 1f);
-                label.raycastTarget = false;
-                label.overflowMode = TextOverflowModes.Ellipsis;
-            }
-
+            GameObject go = Instantiate(itemPrefab, itemsContainer);
             go.name = item.name;
+
+            Image iconImg = go.transform.Find("Icon")?.GetComponent<Image>();
+            TextMeshProUGUI label = go.transform.Find("Label")?.GetComponent<TextMeshProUGUI>();
 
             bool isLevelItem = item.fileType == ExplorerFileType.Minigame && item.levelToLaunch != null;
             bool isUnlocked = true;
@@ -878,9 +1328,13 @@ namespace ComputerLearning
 
             if (iconImg != null)
             {
-                Sprite s = item.fileType == ExplorerFileType.TextFile
-                    ? (GetTextFileSprite() ?? item.icon ?? GetDefaultIcon(item.fileType))
-                    : (item.icon != null ? item.icon : GetDefaultIcon(item.fileType));
+                Sprite s;
+                if (item.fileType == ExplorerFileType.TextFile)
+                    s = GetTextFileSprite() ?? item.icon ?? GetDefaultIcon(item.fileType);
+                else if (item.fileType == ExplorerFileType.ImageFile)
+                    s = GetImageFileSprite() ?? GetDefaultIcon(item.fileType);
+                else
+                    s = item.icon != null ? item.icon : GetDefaultIcon(item.fileType);
 
                 if (s != null) iconImg.sprite = s;
                 iconImg.color = isUnlocked ? Color.white : new Color(0.28f, 0.28f, 0.28f, 0.7f);
@@ -889,17 +1343,17 @@ namespace ComputerLearning
             }
 
             CanvasGroup cg = go.GetComponent<CanvasGroup>();
-            if (cg == null) cg = go.AddComponent<CanvasGroup>();
-            cg.alpha = isUnlocked ? 1f : 0.6f;
+            if (cg != null)
+            {
+                cg.alpha = isUnlocked ? 1f : 0.6f;
+            }
 
             if (label != null)
             {
                 label.text = isUnlocked ? item.name : $"{item.name} <color=#777777>[Locked]</color>";
-                label.color = isUnlocked ? new Color(0.09f, 0.13f, 0.24f, 1f) : new Color(0.45f, 0.45f, 0.45f, 0.7f);
                 label.raycastTarget = false;
             }
 
-            // Remove old Button onClick listener and use ExplorerItemPointerHandler for unified left/double/right-click & drag
             Button btn = go.GetComponent<Button>();
             if (btn != null)
             {
@@ -913,23 +1367,23 @@ namespace ComputerLearning
             }
             pointerHandler.Initialize(this, item, isUnlocked);
 
-            // Pulsing highlight effect for the next actionable level or containing folder
             PulsingIcon pulsing = go.GetComponent<PulsingIcon>();
-            if (pulsing == null) pulsing = go.AddComponent<PulsingIcon>();
-
-            string nextLevelId = ProgressData.Instance != null ? ProgressData.Instance.GetCurrentNextLevelId() : null;
-            bool shouldPulse = false;
-
-            if (item.fileType == ExplorerFileType.Minigame)
+            if (pulsing != null)
             {
-                shouldPulse = isUnlocked && item.levelToLaunch != null && item.levelToLaunch.levelId == nextLevelId;
-            }
-            else if (item.fileType == ExplorerFileType.Folder)
-            {
-                shouldPulse = FolderContainsLevel(item, nextLevelId);
-            }
+                string nextLevelId = ProgressData.Instance != null ? ProgressData.Instance.GetCurrentNextLevelId() : null;
+                bool shouldPulse = false;
 
-            pulsing.SetPulsing(shouldPulse);
+                if (item.fileType == ExplorerFileType.Minigame)
+                {
+                    shouldPulse = isUnlocked && item.levelToLaunch != null && item.levelToLaunch.levelId == nextLevelId;
+                }
+                else if (item.fileType == ExplorerFileType.Folder)
+                {
+                    shouldPulse = FolderContainsLevel(item, nextLevelId);
+                }
+
+                pulsing.SetPulsing(shouldPulse);
+            }
         }
 
         private bool FolderContainsLevel(ExplorerItemData folder, string targetLevelId)
@@ -960,9 +1414,22 @@ namespace ComputerLearning
                 Image img = itemGo.GetComponent<Image>();
                 if (img != null)
                 {
-                    img.color = new Color(0.2f, 0.6f, 1f, 0.25f);
+                    img.color = selectedItemColor;
                 }
             }
+
+            if (isSaveDialogMode && item != null && item.fileType != ExplorerFileType.Folder)
+            {
+                if (saveDialogInputField != null)
+                {
+                    saveDialogInputField.text = item.name;
+                }
+            }
+        }
+
+        public bool IsItemSelected(GameObject itemGo)
+        {
+            return selectedItemVisual == itemGo && itemGo != null;
         }
 
         public void ClearSelection()
@@ -1035,39 +1502,73 @@ namespace ComputerLearning
 
             if (StartMenuController.Instance != null)
             {
-                NotepadApp app = StartMenuController.Instance.OpenNotepadWithFile(item);
+                NotepadApp app = StartMenuController.Instance.OpenNotepadWithFile(item, currentFolder);
                 if (app != null) return;
             }
 
-            // Direct fallback via WindowManager if StartMenuController isn't present or missing prefab
             WindowManager winManager = WindowManager.Instance != null ? WindowManager.Instance : GetComponentInParent<WindowManager>();
             if (winManager != null)
             {
                 GameObject winPrefab = baseWindowPrefab != null ? baseWindowPrefab : Resources.Load<GameObject>("BaseWindow");
-                string winTitle = $"Bloc de Notas - {item.name}";
+                string winTitle = $"Notepad - {item.name}";
                 Window win = winManager.OpenWindow(winPrefab, null, winTitle);
                 if (win != null)
                 {
                     win.setTitle(winTitle);
-                    GameObject notepadPrefab = StartMenuController.Instance != null ? StartMenuController.Instance.NotepadPrefab : null;
-#if UNITY_EDITOR
-                    if (notepadPrefab == null)
+                    GameObject notepadPrefabToUse = notepadPrefab != null
+                        ? notepadPrefab
+                        : (StartMenuController.Instance != null ? StartMenuController.Instance.NotepadPrefab : null);
+
+                    if (notepadPrefabToUse != null)
                     {
-                        notepadPrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Windows/NotepadContent.prefab");
-                    }
-#endif
-                    if (notepadPrefab != null)
-                    {
-                        GameObject contentGo = Instantiate(notepadPrefab);
+                        GameObject contentGo = Instantiate(notepadPrefabToUse);
                         win.SetContent(contentGo);
                         NotepadApp notepad = contentGo.GetComponentInChildren<NotepadApp>();
                         if (notepad != null)
                         {
-                            notepad.LoadFile(item, win);
+                            notepad.LoadFile(item, win, currentFolder);
                         }
                     }
                     win.BringToFront();
                 }
+            }
+        }
+
+        public void OpenImageInPaint(ExplorerItemData item)
+        {
+            if (item == null) return;
+
+            if (StartMenuController.Instance != null)
+            {
+                PaintApp paint = StartMenuController.Instance.OpenPaintWithFile(item, currentFolder);
+                if (paint != null) return;
+            }
+
+            WindowManager winManager = WindowManager.Instance != null ? WindowManager.Instance : GetComponentInParent<WindowManager>();
+            if (winManager == null) winManager = FindAnyObjectByType<WindowManager>();
+            if (winManager == null) return;
+
+            GameObject winPrefab = baseWindowPrefab != null ? baseWindowPrefab : Resources.Load<GameObject>("BaseWindow");
+            if (winPrefab == null) return;
+
+            GameObject paintPrefabToUse = paintPrefab != null
+                ? paintPrefab
+                : (StartMenuController.Instance != null ? StartMenuController.Instance.PaintPrefab : null);
+            if (paintPrefabToUse == null) return;
+
+            string winTitle = $"Paint - {item.name}";
+            Window win = winManager.OpenWindow(winPrefab, null, winTitle);
+            if (win != null)
+            {
+                win.setTitle(winTitle);
+                GameObject paintContent = Instantiate(paintPrefabToUse);
+                win.SetContent(paintContent);
+                PaintApp app = paintContent.GetComponentInChildren<PaintApp>();
+                if (app != null)
+                {
+                    app.LoadImageFile(item, win, currentFolder);
+                }
+                win.BringToFront();
             }
         }
 
@@ -1096,15 +1597,9 @@ namespace ComputerLearning
                     ? StartMenuController.Instance.BaseWindowPrefab
                     : Resources.Load<GameObject>("BaseWindow"));
 
-#if UNITY_EDITOR
-            if (winPrefab == null)
-            {
-                winPrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Windows/BaseWindow.prefab");
-            }
-#endif
-            if (winPrefab == null) return;
+            if (winPrefab == null || imageViewerPrefab == null) return;
 
-            string winTitle = $"Visor de Imágenes - {item.name}";
+            string winTitle = $"Image Viewer - {item.name}";
             Window win = winManager.OpenWindow(winPrefab, null, winTitle);
             if (win != null)
             {
@@ -1115,124 +1610,16 @@ namespace ComputerLearning
                     ? item.imageContent
                     : (item.icon != null ? item.icon : GetDefaultIcon(ExplorerFileType.ImageFile));
 
-                GameObject viewerContent = BuildImageViewerContent(item.name, spriteToDisplay);
+                GameObject viewerContent = Instantiate(imageViewerPrefab);
                 win.SetContent(viewerContent);
+
+                ImageViewerApp viewer = viewerContent.GetComponentInChildren<ImageViewerApp>();
+                if (viewer != null)
+                {
+                    viewer.Initialize(item, spriteToDisplay, () => OpenImageInPaint(item));
+                }
                 win.BringToFront();
             }
-        }
-
-        private GameObject BuildImageViewerContent(string imageName, Sprite sprite)
-        {
-            TMP_FontAsset fontAsset = statusFooterText != null ? statusFooterText.font : (pathText != null ? pathText.font : null);
-
-            GameObject root = new GameObject("ImageViewerContent", typeof(RectTransform), typeof(Image));
-            Image bg = root.GetComponent<Image>();
-            bg.color = new Color(0.11f, 0.14f, 0.20f, 1f);
-
-            // Top Toolbar
-            GameObject topBar = new GameObject("Toolbar", typeof(RectTransform), typeof(Image));
-            topBar.transform.SetParent(root.transform, false);
-            RectTransform topRt = topBar.GetComponent<RectTransform>();
-            topRt.anchorMin = new Vector2(0f, 1f);
-            topRt.anchorMax = new Vector2(1f, 1f);
-            topRt.pivot = new Vector2(0.5f, 1f);
-            topRt.anchoredPosition = Vector2.zero;
-            topRt.sizeDelta = new Vector2(0f, 40f);
-            topBar.GetComponent<Image>().color = new Color(0.16f, 0.20f, 0.28f, 1f);
-
-            GameObject titleGo = new GameObject("ImageInfo", typeof(RectTransform), typeof(TextMeshProUGUI));
-            titleGo.transform.SetParent(topBar.transform, false);
-            RectTransform titleRt = titleGo.GetComponent<RectTransform>();
-            titleRt.anchorMin = new Vector2(0f, 0f);
-            titleRt.anchorMax = new Vector2(0.6f, 1f);
-            titleRt.offsetMin = new Vector2(14f, 0f);
-            titleRt.offsetMax = Vector2.zero;
-
-            TextMeshProUGUI infoTmp = titleGo.GetComponent<TextMeshProUGUI>();
-            if (fontAsset != null) infoTmp.font = fontAsset;
-            string dimensions = sprite != null && sprite.texture != null ? $" ({sprite.texture.width}x{sprite.texture.height}px)" : "";
-            infoTmp.text = $"{imageName}{dimensions}";
-            infoTmp.fontSize = 13f;
-            infoTmp.color = new Color(0.85f, 0.9f, 1f, 1f);
-            infoTmp.alignment = TextAlignmentOptions.MidlineLeft;
-
-            // Image viewport area
-            GameObject viewport = new GameObject("Viewport", typeof(RectTransform), typeof(Image), typeof(RectMask2D));
-            viewport.transform.SetParent(root.transform, false);
-            RectTransform vpRt = viewport.GetComponent<RectTransform>();
-            vpRt.anchorMin = Vector2.zero;
-            vpRt.anchorMax = Vector2.one;
-            vpRt.offsetMin = new Vector2(12f, 12f);
-            vpRt.offsetMax = new Vector2(-12f, -48f);
-            viewport.GetComponent<Image>().color = new Color(0.08f, 0.10f, 0.15f, 1f);
-
-            // Displayed Image
-            GameObject imgHolder = new GameObject("DisplayedImage", typeof(RectTransform), typeof(Image));
-            imgHolder.transform.SetParent(viewport.transform, false);
-            RectTransform imgRt = imgHolder.GetComponent<RectTransform>();
-            imgRt.anchorMin = new Vector2(0.1f, 0.1f);
-            imgRt.anchorMax = new Vector2(0.9f, 0.9f);
-            imgRt.offsetMin = Vector2.zero;
-            imgRt.offsetMax = Vector2.zero;
-            imgRt.pivot = new Vector2(0.5f, 0.5f);
-
-            Image displayImg = imgHolder.GetComponent<Image>();
-            displayImg.sprite = sprite;
-            displayImg.preserveAspect = true;
-            displayImg.color = Color.white;
-
-            // Zoom buttons
-            CreateZoomButton(topBar.transform, "- Zoom", new Vector2(-135f, 0f), fontAsset, () =>
-            {
-                float nextScale = Mathf.Clamp(imgRt.localScale.x - 0.25f, 0.5f, 3f);
-                imgRt.localScale = new Vector3(nextScale, nextScale, 1f);
-            });
-
-            CreateZoomButton(topBar.transform, "100%", new Vector2(-75f, 0f), fontAsset, () =>
-            {
-                imgRt.localScale = Vector3.one;
-            });
-
-            CreateZoomButton(topBar.transform, "+ Zoom", new Vector2(-15f, 0f), fontAsset, () =>
-            {
-                float nextScale = Mathf.Clamp(imgRt.localScale.x + 0.25f, 0.5f, 3f);
-                imgRt.localScale = new Vector3(nextScale, nextScale, 1f);
-            });
-
-            return root;
-        }
-
-        private void CreateZoomButton(Transform parent, string text, Vector2 anchoredPos, TMP_FontAsset fontAsset, Action onClick)
-        {
-            GameObject btnGo = new GameObject($"Btn_{text}", typeof(RectTransform), typeof(Image), typeof(Button));
-            btnGo.transform.SetParent(parent, false);
-            RectTransform rt = btnGo.GetComponent<RectTransform>();
-            rt.anchorMin = new Vector2(1f, 0.5f);
-            rt.anchorMax = new Vector2(1f, 0.5f);
-            rt.pivot = new Vector2(1f, 0.5f);
-            rt.anchoredPosition = anchoredPos;
-            rt.sizeDelta = new Vector2(54f, 26f);
-
-            Image img = btnGo.GetComponent<Image>();
-            img.color = new Color(0.25f, 0.34f, 0.48f, 1f);
-
-            GameObject txtGo = new GameObject("Text", typeof(RectTransform), typeof(TextMeshProUGUI));
-            txtGo.transform.SetParent(btnGo.transform, false);
-            RectTransform txtRt = txtGo.GetComponent<RectTransform>();
-            txtRt.anchorMin = Vector2.zero;
-            txtRt.anchorMax = Vector2.one;
-            txtRt.offsetMin = Vector2.zero;
-            txtRt.offsetMax = Vector2.zero;
-
-            TextMeshProUGUI tmp = txtGo.GetComponent<TextMeshProUGUI>();
-            if (fontAsset != null) tmp.font = fontAsset;
-            tmp.text = text;
-            tmp.fontSize = 11f;
-            tmp.color = Color.white;
-            tmp.alignment = TextAlignmentOptions.Center;
-            tmp.raycastTarget = false;
-
-            btnGo.GetComponent<Button>().onClick.AddListener(() => onClick?.Invoke());
         }
 
         private void OpenMinigame(ExplorerItemData item)
@@ -1296,13 +1683,22 @@ namespace ComputerLearning
 
             rootFolder = new ExplorerItemData
             {
-                name = "Files",
+                name = "This PC",
                 fileType = ExplorerFileType.Folder,
                 icon = folderSprite,
                 isProtected = true
             };
 
-            // 1. Folder Documents (System container protected, files inside are modifiable & deletable)
+            // 0. Folder Desktop (Synced with Desktop surface icons!)
+            ExplorerItemData desktopFolder = new ExplorerItemData
+            {
+                name = "Desktop",
+                fileType = ExplorerFileType.Folder,
+                icon = folderSprite,
+                isProtected = true
+            };
+
+            // 1. Folder Documents
             ExplorerItemData docsFolder = new ExplorerItemData
             {
                 name = "Documents",
@@ -1352,7 +1748,7 @@ namespace ComputerLearning
                 isProtected = false
             });
 
-            // 3. Folder Minigames with all educational minigames (Protected)
+            // 3. Folder Minigames inside Desktop!
             ExplorerItemData gamesFolder = new ExplorerItemData
             {
                 name = "Minigames",
@@ -1360,44 +1756,9 @@ namespace ComputerLearning
                 icon = folderSprite,
                 isProtected = true
             };
-            gamesFolder.children.Add(new ExplorerItemData
-            {
-                name = "Targets & Clicks",
-                fileType = ExplorerFileType.Minigame,
-                icon = targetGameIcon != null ? targetGameIcon : defaultGameIcon,
-                levelToLaunch = targetsLevel,
-                isProtected = true
-            });
-            gamesFolder.children.Add(new ExplorerItemData
-            {
-                name = "Tracking & Hover",
-                fileType = ExplorerFileType.Minigame,
-                icon = mazeGameIcon != null ? mazeGameIcon : defaultGameIcon,
-                levelToLaunch = hoverLevel,
-                isProtected = true
-            });
-            gamesFolder.children.Add(new ExplorerItemData
-            {
-                name = "Fast Double Click",
-                fileType = ExplorerFileType.Minigame,
-                icon = targetGameIcon != null ? targetGameIcon : defaultGameIcon,
-                levelToLaunch = doubleClickLevel,
-                isProtected = true
-            });
-            gamesFolder.children.Add(new ExplorerItemData
-            {
-                name = "Adaptive Practice",
-                fileType = ExplorerFileType.Minigame,
-                icon = mazeGameIcon != null ? mazeGameIcon : defaultGameIcon,
-                levelToLaunch = adaptiveLevel,
-                isProtected = true
-            });
+            PopulateGamesFolder(gamesFolder);
 
-            rootFolder.children.Add(docsFolder);
-            rootFolder.children.Add(imagesFolder);
-            rootFolder.children.Add(gamesFolder);
-
-            // 4. Folder Levels (Protected)
+            // 4. Folder Levels inside Desktop!
             ExplorerItemData levelsFolder = new ExplorerItemData
             {
                 name = "Levels",
@@ -1405,48 +1766,12 @@ namespace ComputerLearning
                 icon = folderSprite,
                 isProtected = true
             };
+            PopulateLevelsFolder(levelsFolder);
 
-            ExplorerItemData mouseFolder = new ExplorerItemData
-            {
-                name = "Mouse Levels",
-                fileType = ExplorerFileType.Folder,
-                icon = folderSprite,
-                isProtected = true
-            };
+            desktopFolder.children.Add(levelsFolder);
+            desktopFolder.children.Add(gamesFolder);
 
-            if (mouseLevels != null && mouseLevels.Length > 0)
-            {
-                foreach (var lvl in mouseLevels)
-                {
-                    if (lvl != null)
-                    {
-                        mouseFolder.children.Add(new ExplorerItemData
-                        {
-                            name = lvl.displayName,
-                            fileType = ExplorerFileType.Minigame,
-                            icon = targetGameIcon != null ? targetGameIcon : defaultGameIcon,
-                            levelToLaunch = lvl,
-                            isProtected = true
-                        });
-                    }
-                }
-            }
-
-            levelsFolder.children.Add(mouseFolder);
-
-            if (level10CopyPaste != null)
-            {
-                levelsFolder.children.Add(new ExplorerItemData
-                {
-                    name = level10CopyPaste.displayName,
-                    fileType = ExplorerFileType.Minigame,
-                    icon = targetGameIcon != null ? targetGameIcon : defaultGameIcon,
-                    levelToLaunch = level10CopyPaste,
-                    isProtected = true
-                });
-            }
-
-            // 5. Folder Recycle Bin (Container protected, items inside are user-manageable)
+            // 5. Folder Recycle Bin
             ExplorerItemData recycleFolder = new ExplorerItemData
             {
                 name = "Recycle Bin",
@@ -1479,178 +1804,390 @@ namespace ComputerLearning
                 isProtected = false
             });
 
-            rootFolder.children.Add(levelsFolder);
+            rootFolder.children.Add(desktopFolder);
+            rootFolder.children.Add(docsFolder);
+            rootFolder.children.Add(imagesFolder);
             rootFolder.children.Add(recycleFolder);
         }
 
         private static void BuildFallbackStaticFileSystem()
         {
+            Sprite folderSprite = GetFolderSprite();
             Sprite txtSprite = GetTextFileSprite();
             Sprite imgSprite = GetImageFileSprite();
-            Sprite folderSprite = GetFolderSprite();
 
             sharedRootFolder = new ExplorerItemData
             {
-                name = "Files",
+                name = "This PC",
                 fileType = ExplorerFileType.Folder,
                 icon = folderSprite,
                 isProtected = true
             };
 
-            sharedRootFolder.children.Add(new ExplorerItemData
+            ExplorerItemData desktopFolder = new ExplorerItemData
+            {
+                name = "Desktop",
+                fileType = ExplorerFileType.Folder,
+                icon = folderSprite,
+                isProtected = true
+            };
+
+            ExplorerItemData docsFolder = new ExplorerItemData
             {
                 name = "Documents",
                 fileType = ExplorerFileType.Folder,
                 icon = folderSprite,
                 isProtected = true
+            };
+            docsFolder.children.Add(new ExplorerItemData
+            {
+                name = "Welcome.txt",
+                fileType = ExplorerFileType.TextFile,
+                icon = txtSprite,
+                textContent = "Welcome to your virtual computer!\nHere you will learn how to use all the tools.\n\nYou can edit this text and click Save in Notepad!",
+                isProtected = false
+            });
+            docsFolder.children.Add(new ExplorerItemData
+            {
+                name = "Mouse_Guide.txt",
+                fileType = ExplorerFileType.TextFile,
+                icon = txtSprite,
+                textContent = "Tip: Use left click to select, double click quickly to open programs, and right click to open the Context Menu!",
+                isProtected = false
             });
 
-            sharedRootFolder.children.Add(new ExplorerItemData
+            ExplorerItemData imagesFolder = new ExplorerItemData
             {
                 name = "Pictures",
                 fileType = ExplorerFileType.Folder,
                 icon = folderSprite,
                 isProtected = true
+            };
+            imagesFolder.children.Add(new ExplorerItemData
+            {
+                name = "Mascot.png",
+                fileType = ExplorerFileType.ImageFile,
+                icon = imgSprite,
+                imageContent = imgSprite,
+                isProtected = false
             });
 
-            sharedRootFolder.children.Add(new ExplorerItemData
+            ExplorerItemData recycleFolder = new ExplorerItemData
             {
                 name = "Recycle Bin",
                 fileType = ExplorerFileType.Folder,
                 icon = folderSprite,
                 isProtected = true
+            };
+            recycleFolder.children.Add(new ExplorerItemData
+            {
+                name = "Old_Drawing.png",
+                fileType = ExplorerFileType.ImageFile,
+                icon = imgSprite,
+                imageContent = imgSprite,
+                isProtected = false
             });
+            recycleFolder.children.Add(new ExplorerItemData
+            {
+                name = "Draft_Notes.txt",
+                fileType = ExplorerFileType.TextFile,
+                icon = txtSprite,
+                textContent = "This is a discarded draft document inside the Recycle Bin.",
+                isProtected = false
+            });
+
+            ExplorerItemData levelsFolder = new ExplorerItemData
+            {
+                name = "Levels",
+                fileType = ExplorerFileType.Folder,
+                icon = folderSprite,
+                isProtected = true
+            };
+
+            ExplorerItemData gamesFolder = new ExplorerItemData
+            {
+                name = "Minigames",
+                fileType = ExplorerFileType.Folder,
+                icon = folderSprite,
+                isProtected = true
+            };
+
+            LevelDefinition[] levels = Resources.FindObjectsOfTypeAll<LevelDefinition>();
+            if (levels != null && levels.Length > 0)
+            {
+                Array.Sort(levels, (a, b) => string.Compare(a.name, b.name, StringComparison.OrdinalIgnoreCase));
+                foreach (var lvl in levels)
+                {
+                    if (lvl == null) continue;
+                    if (lvl.name.StartsWith("L_Level", StringComparison.OrdinalIgnoreCase))
+                    {
+                        levelsFolder.children.Add(new ExplorerItemData
+                        {
+                            name = lvl.displayName,
+                            fileType = ExplorerFileType.Minigame,
+                            icon = SharedGameIcon,
+                            levelToLaunch = lvl,
+                            isProtected = true
+                        });
+                    }
+                    else if (lvl.name.IndexOf("Assessment", StringComparison.OrdinalIgnoreCase) < 0)
+                    {
+                        gamesFolder.children.Add(new ExplorerItemData
+                        {
+                            name = lvl.displayName,
+                            fileType = ExplorerFileType.Minigame,
+                            icon = SharedGameIcon,
+                            levelToLaunch = lvl,
+                            isProtected = true
+                        });
+                    }
+                }
+            }
+
+            desktopFolder.children.Add(levelsFolder);
+            desktopFolder.children.Add(gamesFolder);
+
+            sharedRootFolder.children.Add(desktopFolder);
+            sharedRootFolder.children.Add(docsFolder);
+            sharedRootFolder.children.Add(imagesFolder);
+            sharedRootFolder.children.Add(recycleFolder);
         }
         #endregion
-    }
 
-    /// <summary>
-    /// Handles left click (selection), double click (open), right click (context menu), and drag-to-recycle on Explorer items.
-    /// </summary>
-    public class ExplorerItemPointerHandler : MonoBehaviour, IPointerClickHandler, IBeginDragHandler, IDragHandler, IEndDragHandler
-    {
-        private FileExplorerApp explorer;
-        private ExplorerItemData itemData;
-        private bool isUnlocked = true;
-        private float lastLeftClickTime;
-        private GameObject dragGhost;
-
-        public ExplorerItemData ItemData => itemData;
-        public FileExplorerApp Explorer => explorer;
-
-        public void Initialize(FileExplorerApp owner, ExplorerItemData data, bool unlocked)
+        #region Save As Dialog Mode
+        public static void OpenSaveDialog(string dialogTitle, string defaultFileName, string extension, ExplorerItemData initialFolder, Action<string, ExplorerItemData> onSaveCallback)
         {
-            explorer = owner;
-            itemData = data;
-            isUnlocked = unlocked;
-        }
-
-        public void OnPointerClick(PointerEventData eventData)
-        {
-            if (explorer == null || itemData == null) return;
-
-            if (eventData.button == PointerEventData.InputButton.Right)
+            WindowManager winManager = WindowManager.Instance != null ? WindowManager.Instance : UnityEngine.Object.FindAnyObjectByType<WindowManager>();
+            if (winManager == null)
             {
-                explorer.OnItemRightClicked(gameObject, itemData, eventData.position);
+                Debug.LogWarning("[FileExplorerApp] WindowManager not found for OpenSaveDialog.");
+                onSaveCallback?.Invoke(defaultFileName, initialFolder);
                 return;
             }
 
-            if (eventData.button == PointerEventData.InputButton.Left)
+            GameObject winPrefab = null;
+            if (StartMenuController.Instance != null && StartMenuController.Instance.BaseWindowPrefab != null)
             {
-                float now = Time.unscaledTime;
-                bool isDoubleClick = eventData.clickCount >= 2 || (now - lastLeftClickTime) < 0.45f;
-                lastLeftClickTime = now;
+                winPrefab = StartMenuController.Instance.BaseWindowPrefab;
+            }
+            if (winPrefab == null)
+            {
+                winPrefab = Resources.Load<GameObject>("BaseWindow");
+#if UNITY_EDITOR
+                if (winPrefab == null) winPrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Windows/BaseWindow.prefab");
+#endif
+            }
 
-                if (isDoubleClick)
+            GameObject explorerPrefab = null;
+            if (StartMenuController.Instance != null && StartMenuController.Instance.FileExplorerPrefab != null)
+            {
+                explorerPrefab = StartMenuController.Instance.FileExplorerPrefab;
+            }
+            if (explorerPrefab == null)
+            {
+                explorerPrefab = Resources.Load<GameObject>("FileExplorerContent");
+#if UNITY_EDITOR
+                if (explorerPrefab == null) explorerPrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Windows/FileExplorerContent.prefab");
+#endif
+            }
+
+            if (winPrefab == null || explorerPrefab == null)
+            {
+                Debug.LogError("[FileExplorerApp] BaseWindow or FileExplorerContent prefab not found.");
+                onSaveCallback?.Invoke(defaultFileName, initialFolder);
+                return;
+            }
+
+            Window win = winManager.OpenWindow(winPrefab, null, dialogTitle);
+            if (win == null) return;
+
+            win.setTitle(dialogTitle);
+            RectTransform winRt = win.GetComponent<RectTransform>();
+            if (winRt != null)
+            {
+                winRt.sizeDelta = new Vector2(620, 480);
+            }
+
+            GameObject contentInstance = UnityEngine.Object.Instantiate(explorerPrefab);
+            win.SetContent(contentInstance);
+
+            FileExplorerApp explorer = contentInstance.GetComponentInChildren<FileExplorerApp>();
+            if (explorer != null)
+            {
+                explorer.SetupSaveDialogMode(defaultFileName, extension, onSaveCallback, initialFolder, win);
+            }
+        }
+
+        public void SetupSaveDialogMode(string defaultFileName, string extension, Action<string, ExplorerItemData> onConfirm, ExplorerItemData initialFolder, Window window)
+        {
+            isSaveDialogMode = true;
+            saveDialogExtension = extension;
+            onSaveDialogConfirm = onConfirm;
+            parentWindow = window;
+
+            if (btnNewImageToolbar != null)
+            {
+                btnNewImageToolbar.gameObject.SetActive(false);
+            }
+
+            EnsureSharedFileSystem();
+            rootFolder = sharedRootFolder;
+
+            ExplorerItemData folderToOpen = initialFolder ?? GetDesktopFolder() ?? rootFolder;
+            OpenFolder(folderToOpen);
+
+            CreateSaveDialogBottomBar(defaultFileName);
+        }
+
+        private void CreateSaveDialogBottomBar(string initialFileName)
+        {
+            Transform footerT = transform.Find("Footer");
+            if (footerT != null)
+            {
+                footerT.gameObject.SetActive(false);
+            }
+
+            Transform scrollT = transform.Find("ScrollView");
+            if (scrollT is RectTransform scrollRt)
+            {
+                scrollRt.offsetMin = new Vector2(scrollRt.offsetMin.x, 56);
+            }
+
+            GameObject modalPrefab = null;
+            if (ContextMenuController.Instance != null && ContextMenuController.Instance.InputModalPrefab != null)
+            {
+                modalPrefab = ContextMenuController.Instance.InputModalPrefab;
+            }
+            if (modalPrefab == null)
+            {
+                modalPrefab = Resources.Load<GameObject>("InputModalDialog");
+#if UNITY_EDITOR
+                if (modalPrefab == null) modalPrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Windows/InputModalDialog.prefab");
+#endif
+            }
+
+            GameObject saveBar = new GameObject("SaveDialogBar", typeof(RectTransform), typeof(UnityEngine.UI.Image));
+            saveBar.transform.SetParent(transform, false);
+            RectTransform rt = saveBar.GetComponent<RectTransform>();
+            rt.anchorMin = new Vector2(0, 0);
+            rt.anchorMax = new Vector2(1, 0);
+            rt.pivot = new Vector2(0.5f, 0);
+            rt.offsetMin = new Vector2(0, 0);
+            rt.offsetMax = new Vector2(0, 50);
+
+            UnityEngine.UI.Image bg = saveBar.GetComponent<UnityEngine.UI.Image>();
+            bg.color = new Color(0.14f, 0.14f, 0.17f, 0.98f);
+
+            GameObject labelGo = new GameObject("Label", typeof(RectTransform), typeof(TextMeshProUGUI));
+            labelGo.transform.SetParent(saveBar.transform, false);
+            RectTransform labelRt = labelGo.GetComponent<RectTransform>();
+            labelRt.anchorMin = new Vector2(0, 0);
+            labelRt.anchorMax = new Vector2(0, 1);
+            labelRt.offsetMin = new Vector2(12, 0);
+            labelRt.offsetMax = new Vector2(90, 0);
+            TextMeshProUGUI label = labelGo.GetComponent<TextMeshProUGUI>();
+            label.text = "File name:";
+            label.fontSize = 13;
+            label.alignment = TextAlignmentOptions.MidlineLeft;
+            label.color = Color.white;
+
+            if (modalPrefab != null)
+            {
+                TMP_InputField modalInput = modalPrefab.GetComponentInChildren<TMP_InputField>(true);
+                if (modalInput != null)
                 {
-                    lastLeftClickTime = 0f;
-                    if (!isUnlocked)
-                    {
-                        explorer.NotifyLockedItemClicked(itemData, true);
-                        return;
-                    }
-                    explorer.OnItemDoubleClicked(itemData);
+                    saveDialogInputField = UnityEngine.Object.Instantiate(modalInput, saveBar.transform);
+                    saveDialogInputField.name = "SaveFileNameInput";
+                    RectTransform inputRt = saveDialogInputField.GetComponent<RectTransform>();
+                    inputRt.anchorMin = new Vector2(0, 0.15f);
+                    inputRt.anchorMax = new Vector2(1, 0.85f);
+                    inputRt.offsetMin = new Vector2(95, 0);
+                    inputRt.offsetMax = new Vector2(-155, 0);
+                    saveDialogInputField.text = initialFileName ?? string.Empty;
+                    saveDialogInputField.onSubmit.RemoveAllListeners();
+                    saveDialogInputField.onSubmit.AddListener((_) => ConfirmSaveDialog());
                 }
-                else
+
+                UnityEngine.UI.Button modalConfirm = modalPrefab.transform.Find("DialogPanel/Btn_Confirm")?.GetComponent<UnityEngine.UI.Button>();
+                if (modalConfirm != null)
                 {
-                    explorer.SelectItem(gameObject, itemData);
-                    if (!isUnlocked)
-                    {
-                        explorer.NotifyLockedItemClicked(itemData, false);
-                    }
+                    UnityEngine.UI.Button btnSave = UnityEngine.Object.Instantiate(modalConfirm, saveBar.transform);
+                    btnSave.name = "Btn_Save";
+                    RectTransform saveRt = btnSave.GetComponent<RectTransform>();
+                    saveRt.anchorMin = new Vector2(1, 0.15f);
+                    saveRt.anchorMax = new Vector2(1, 0.85f);
+                    saveRt.offsetMin = new Vector2(-148, 0);
+                    saveRt.offsetMax = new Vector2(-80, 0);
+                    TextMeshProUGUI saveText = btnSave.GetComponentInChildren<TextMeshProUGUI>();
+                    if (saveText != null) saveText.text = "Save";
+                    btnSave.onClick.RemoveAllListeners();
+                    btnSave.onClick.AddListener(ConfirmSaveDialog);
+                }
+
+                UnityEngine.UI.Button modalCancel = modalPrefab.transform.Find("DialogPanel/Btn_Cancel")?.GetComponent<UnityEngine.UI.Button>();
+                if (modalCancel != null)
+                {
+                    UnityEngine.UI.Button btnCancel = UnityEngine.Object.Instantiate(modalCancel, saveBar.transform);
+                    btnCancel.name = "Btn_Cancel";
+                    RectTransform cancelRt = btnCancel.GetComponent<RectTransform>();
+                    cancelRt.anchorMin = new Vector2(1, 0.15f);
+                    cancelRt.anchorMax = new Vector2(1, 0.85f);
+                    cancelRt.offsetMin = new Vector2(-74, 0);
+                    cancelRt.offsetMax = new Vector2(-8, 0);
+                    TextMeshProUGUI cancelText = btnCancel.GetComponentInChildren<TextMeshProUGUI>();
+                    if (cancelText != null) cancelText.text = "Cancel";
+                    btnCancel.onClick.RemoveAllListeners();
+                    btnCancel.onClick.AddListener(CancelSaveDialog);
                 }
             }
         }
 
-        public void OnBeginDrag(PointerEventData eventData)
+        public void ConfirmSaveDialog()
         {
-            if (eventData.button != PointerEventData.InputButton.Left) return;
-            if (itemData == null || itemData.isProtected) return;
+            if (!isSaveDialogMode) return;
 
-            Canvas rootCanvas = GetComponentInParent<Canvas>();
-            if (rootCanvas == null) return;
+            string enteredName = saveDialogInputField != null ? saveDialogInputField.text.Trim() : "";
+            if (string.IsNullOrEmpty(enteredName))
+            {
+                SetStatusMessage("<color=#D9534F>Please enter a file name.</color>");
+                return;
+            }
 
-            dragGhost = new GameObject($"Drag_{itemData.name}", typeof(RectTransform), typeof(CanvasGroup), typeof(Image));
-            dragGhost.transform.SetParent(rootCanvas.transform, false);
-            dragGhost.transform.SetAsLastSibling();
+            if (!string.IsNullOrEmpty(saveDialogExtension) && !enteredName.EndsWith(saveDialogExtension, StringComparison.OrdinalIgnoreCase))
+            {
+                enteredName += saveDialogExtension;
+            }
 
-            RectTransform rt = dragGhost.GetComponent<RectTransform>();
-            rt.sizeDelta = new Vector2(56f, 56f);
+            if (currentFolder == null)
+            {
+                SetStatusMessage("<color=#D9534F>No folder selected.</color>");
+                return;
+            }
 
-            CanvasGroup cg = dragGhost.GetComponent<CanvasGroup>();
-            cg.alpha = 0.75f;
-            cg.blocksRaycasts = false;
+            if (IsReadOnlySystemFolderStatic(currentFolder))
+            {
+                SetStatusMessage($"<color=#D9534F>Cannot save inside '{currentFolder.name}'. Choose Desktop, Documents, Pictures or a user folder.</color>");
+                return;
+            }
 
-            Image ghostImg = dragGhost.GetComponent<Image>();
-            Image sourceImg = transform.Find("Icon")?.GetComponent<Image>();
-            if (sourceImg != null) ghostImg.sprite = sourceImg.sprite;
-            ghostImg.preserveAspect = true;
-            ghostImg.raycastTarget = false;
+            Action<string, ExplorerItemData> callback = onSaveDialogConfirm;
+            Window winToClose = parentWindow;
 
-            UpdateGhostPosition(eventData);
+            if (winToClose != null)
+            {
+                winToClose.CloseWindow();
+            }
+
+            callback?.Invoke(enteredName, currentFolder);
         }
 
-        public void OnDrag(PointerEventData eventData)
+        public void CancelSaveDialog()
         {
-            if (dragGhost != null)
+            if (parentWindow != null)
             {
-                UpdateGhostPosition(eventData);
+                parentWindow.CloseWindow();
             }
         }
-
-        public void OnEndDrag(PointerEventData eventData)
-        {
-            if (dragGhost != null)
-            {
-                Destroy(dragGhost);
-                dragGhost = null;
-            }
-        }
-
-        private void UpdateGhostPosition(PointerEventData eventData)
-        {
-            if (dragGhost == null) return;
-            Canvas rootCanvas = dragGhost.GetComponentInParent<Canvas>();
-            if (rootCanvas == null) return;
-
-            RectTransform canvasRect = rootCanvas.transform as RectTransform;
-            Camera cam = rootCanvas.renderMode != RenderMode.ScreenSpaceOverlay ? rootCanvas.worldCamera : null;
-            if (RectTransformUtility.ScreenPointToLocalPointInRectangle(canvasRect, eventData.position, cam, out Vector2 localPos))
-            {
-                (dragGhost.transform as RectTransform).anchoredPosition = localPos;
-            }
-        }
-    }
-
-    /// <summary>
-    /// Forwards pointer click events from empty explorer container/scroll areas to FileExplorerApp.
-    /// </summary>
-    public class ExplorerClickRelay : MonoBehaviour, IPointerClickHandler
-    {
-        public FileExplorerApp targetExplorer;
-        public void OnPointerClick(PointerEventData eventData)
-        {
-            if (targetExplorer != null) targetExplorer.OnPointerClick(eventData);
-        }
+        #endregion
     }
 }

@@ -2,33 +2,18 @@
  * Author: Diego
  * Date: 11/09/26
  * Description: Window resizing script
-*/
-
-
+ */
 using System;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
 namespace ComputerLearning
 {
-    /// <summary>
-    /// 
-    /// </summary>
     public class ResizeHandle : MonoBehaviour,
-    IBeginDragHandler,
-    IDragHandler
+        IBeginDragHandler,
+        IDragHandler
     {
-
         #region Public Variables
-        // Public Variables [Public Constant Variables, Public Component References, Public Variables]
-
-        // Public Constant Variables
-
-
-        // Public Component References
-
-
-        // Public Variables
         [Flags]
         public enum ResizeDirection
         {
@@ -38,67 +23,47 @@ namespace ComputerLearning
             Top = 4,
             Bottom = 8
         }
-
         #endregion
 
         #region Private Variables
-        // Private Variables [Private Constant Variables, Private Component References, Private Variables]
-
-        // Private Constant Variables
-
-
-        // Private Component References
         [SerializeField] private RectTransform window;
         private RectTransform parentRect;
         private Window controller;
         private bool resizing;
 
-
-        // Private Variables
         private float startLeft;
         private float startRight;
         private float startTop;
         private float startBottom;
         private Vector2 startPointerPosition;
         [SerializeField] private ResizeDirection direction;
-        [SerializeField] private Vector2 minSize = new Vector2(380, 260);
+        [SerializeField] private Vector2 minSize = new Vector2(490, 300);
         public Vector2 MinSize { get => minSize; set => minSize = value; }
         #endregion
 
         #region Unity Methods
-        // Unity Methods including (Awake, Start, Update, LateUpdate...)
-
         private void Awake()
         {
+            if (window == null) window = transform.parent as RectTransform;
             if (window == null) return;
             parentRect = window.parent as RectTransform;
             controller = window.GetComponent<Window>();
         }
-        private void Start()
-        {
-
-        }
-
-        private void Update()
-        {
-
-        }
-
         #endregion
 
         #region Public Methods
-        // Public Methods accessible from other classes
-
         public void OnBeginDrag(PointerEventData eventData)
         {
             resizing = false;
+            if (window == null) window = transform.parent as RectTransform;
             if (window == null || eventData.button != PointerEventData.InputButton.Left) return;
+            if (controller == null) controller = window.GetComponent<Window>();
             controller?.BringToFront();
             if (controller != null && controller.IsMaximized) return;
+
             parentRect = window.parent as RectTransform;
             resizing = true;
-            // Guardamos d�nde empez� el rat�n,
-            // pero en coordenadas del padre de la ventana.
+
             RectTransformUtility.ScreenPointToLocalPointInRectangle(
                 parentRect,
                 eventData.pressPosition,
@@ -106,7 +71,6 @@ namespace ComputerLearning
                 out startPointerPosition
             );
 
-            // Guardamos los 4 bordes actuales de la ventana.
             Rect rect = window.rect;
             Vector3 position = window.localPosition;
 
@@ -119,6 +83,7 @@ namespace ComputerLearning
         public void OnDrag(PointerEventData eventData)
         {
             if (!resizing || window == null || (controller != null && controller.IsMaximized)) return;
+
             RectTransformUtility.ScreenPointToLocalPointInRectangle(
                 parentRect,
                 eventData.position,
@@ -133,8 +98,6 @@ namespace ComputerLearning
             float top = startTop;
             float bottom = startBottom;
 
-            // Movemos �nicamente los lados que controla este handle.
-
             if (HasDirection(ResizeDirection.Left))
                 left += delta.x;
 
@@ -147,8 +110,21 @@ namespace ComputerLearning
             if (HasDirection(ResizeDirection.Bottom))
                 bottom += delta.y;
 
+            // Clamp dragged edges to parent desktop container bounds
+            if (parentRect != null && parentRect.rect.width > 0f && parentRect.rect.height > 0f)
+            {
+                Rect pRect = parentRect.rect;
+                if (HasDirection(ResizeDirection.Left))
+                    left = Mathf.Max(left, pRect.xMin);
+                if (HasDirection(ResizeDirection.Right))
+                    right = Mathf.Min(right, pRect.xMax);
+                if (HasDirection(ResizeDirection.Top))
+                    top = Mathf.Min(top, pRect.yMax);
+                if (HasDirection(ResizeDirection.Bottom))
+                    bottom = Mathf.Max(bottom, pRect.yMin);
+            }
 
-            // Tama�o m�nimo horizontal
+            // Enforce minimum horizontal size
             if (right - left < minSize.x)
             {
                 if (HasDirection(ResizeDirection.Left))
@@ -157,7 +133,7 @@ namespace ComputerLearning
                     right = left + minSize.x;
             }
 
-            // Tama�o m�nimo vertical
+            // Enforce minimum vertical size
             if (top - bottom < minSize.y)
             {
                 if (HasDirection(ResizeDirection.Bottom))
@@ -166,11 +142,11 @@ namespace ComputerLearning
                     top = bottom + minSize.y;
             }
 
-
             float width = right - left;
             float height = top - bottom;
 
-            // Cambiamos tama�o.
+            if (controller != null) controller.IsResizing = true;
+
             window.SetSizeWithCurrentAnchors(
                 RectTransform.Axis.Horizontal,
                 width
@@ -181,22 +157,20 @@ namespace ComputerLearning
                 height
             );
 
-            // Y recolocamos la ventana para mantener
-            // el borde contrario en su sitio.
             Vector3 newPosition = window.localPosition;
-
             newPosition.x = left + width * window.pivot.x;
             newPosition.y = bottom + height * window.pivot.y;
-
             window.localPosition = newPosition;
-            controller?.KeepTitleVisible();
-        }
 
+            if (controller != null)
+            {
+                controller.IsResizing = false;
+                controller.KeepTitleVisible();
+            }
+        }
         #endregion
 
         #region Private Methods
-        // Private Methods accessible only from this class
-
         private bool HasDirection(ResizeDirection value)
         {
             return (direction & value) != 0;

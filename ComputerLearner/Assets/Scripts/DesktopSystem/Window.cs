@@ -1,12 +1,14 @@
 /**
  * Author: Diego
  * Date: 11/09/26
- * Description: Window prefab state, geometry and content.
-*/
+ * Description: Window prefab state, geometry, and content management using Inspector-configured UI references.
+ */
 using System;
 using System.Collections;
 using UnityEngine;
+using UnityEngine.UI;
 using UnityEngine.EventSystems;
+using TMPro;
 
 namespace ComputerLearning
 {
@@ -27,15 +29,18 @@ namespace ComputerLearning
         #region Private Variables
         [Header("Window References")]
         [SerializeField] private RectTransform titleBar;
+        [SerializeField] private TextMeshProUGUI titleLabelTmp;
+        [SerializeField] private Image windowIconImg;
         [SerializeField] private RectTransform closeButton;
         [SerializeField] private RectTransform maximizeButton;
         [SerializeField] private RectTransform minimizeButton;
         [SerializeField] private RectTransform contentArea;
-        
+
         [Header("Configuration")]
         [SerializeField] private GameObject contentPrefab;
         [SerializeField] private string windowTitle;
         [SerializeField] private Sprite windowIcon;
+
         private RectTransform windowRectTransform;
         private WindowManager manager;
         private bool maximized;
@@ -60,12 +65,21 @@ namespace ComputerLearning
         {
             windowRectTransform = GetComponent<RectTransform>();
 
-            // Fallback for unassigned references (maintains backward compatibility with old prefabs)
-            if (titleBar == null) titleBar = transform.Find("WindowTop") as RectTransform;
-            if (closeButton == null) closeButton = transform.Find("WindowTop/Buttons/Close") as RectTransform;
-            if (maximizeButton == null) maximizeButton = transform.Find("WindowTop/Buttons/Maximize") as RectTransform;
-            if (minimizeButton == null) minimizeButton = transform.Find("WindowTop/Buttons/Minimize") as RectTransform;
-            if (contentArea == null) contentArea = transform.Find("WindowContents") as RectTransform;
+            if (titleBar == null) titleBar = (transform.Find("WindowTop") ?? transform.Find("TopBar")) as RectTransform;
+            if (titleLabelTmp == null && titleBar != null)
+            {
+                Transform t = titleBar.Find("WindowTitleText");
+                if (t != null) titleLabelTmp = t.GetComponent<TextMeshProUGUI>();
+            }
+            if (closeButton == null) closeButton = (transform.Find("WindowTop/Buttons/Close") ?? transform.Find("TopBar/Buttons/CloseButton")) as RectTransform;
+            if (maximizeButton == null) maximizeButton = (transform.Find("WindowTop/Buttons/Maximize") ?? transform.Find("TopBar/Buttons/MaximizeButton")) as RectTransform;
+            if (minimizeButton == null) minimizeButton = (transform.Find("WindowTop/Buttons/Minimize") ?? transform.Find("TopBar/Buttons/MinimizeButton")) as RectTransform;
+            if (contentArea == null) contentArea = (transform.Find("WindowContents") ?? transform.Find("ContentArea")) as RectTransform;
+
+            if (titleLabelTmp != null && !string.IsNullOrWhiteSpace(windowTitle))
+            {
+                titleLabelTmp.text = Title;
+            }
 
             windowRectTransform.localScale = Vector3.zero; // Start small for open animation
             if (contentPrefab != null) SetContent(Instantiate(contentPrefab));
@@ -91,9 +105,11 @@ namespace ComputerLearning
             if (manager != null) manager.UnregisterWindow(this);
         }
 
+        public bool IsResizing { get; set; }
+
         private void OnRectTransformDimensionsChange()
         {
-            if (windowRectTransform != null && !maximized) KeepTitleVisible();
+            if (windowRectTransform != null && !maximized && !IsResizing) KeepTitleVisible();
         }
         #endregion
 
@@ -103,8 +119,7 @@ namespace ComputerLearning
             if (content == null || contentArea == null) return;
             if (Content != null) { Content.SetActive(false); Destroy(Content); }
             Content = content;
-            // IMPORTANTE: El false evita que Unity intente compensar la escala cuando la ventana está a 0
-            Content.transform.SetParent(contentArea, false); 
+            Content.transform.SetParent(contentArea, false);
             RectTransform rect = Content.GetComponent<RectTransform>();
             if (rect != null)
             {
@@ -112,7 +127,7 @@ namespace ComputerLearning
                 rect.anchorMax = Vector2.one;
                 rect.offsetMin = Vector2.zero;
                 rect.offsetMax = Vector2.zero;
-                rect.localScale = Vector3.one; // Reseteamos la escala por seguridad
+                rect.localScale = Vector3.one;
             }
             InstallFocusRelays();
         }
@@ -133,7 +148,6 @@ namespace ComputerLearning
             Restore();
             if (!maximized)
             {
-                // Save all geometry before modifying anchors.
                 lastAnchorMin = windowRectTransform.anchorMin;
                 lastAnchorMax = windowRectTransform.anchorMax;
                 lastPosition = windowRectTransform.anchoredPosition;
@@ -166,12 +180,10 @@ namespace ComputerLearning
         public void Restore()
         {
             if (IsClosed) return;
-            
+
             bool wasInactive = !gameObject.activeSelf;
             gameObject.SetActive(true);
-            
-            // If it was already active (e.g., halfway minimizing or just clicking icon again),
-            // OnEnable won't fire, so we trigger the animation and bring to front manually.
+
             if (!wasInactive)
             {
                 BringToFront();
@@ -180,12 +192,13 @@ namespace ComputerLearning
             }
         }
 
+        public void Close() => CloseWindow();
+
         public void CloseWindow()
         {
             if (IsClosed) return;
             IsClosed = true;
-            
-            // Ocultar mascota si estaba señalando a esta ventana
+
             VirtualMascot.HideMascotIfTargeting(transform);
 
             StateChanged?.Invoke(this);
@@ -215,10 +228,14 @@ namespace ComputerLearning
         public void setTitle(string title)
         {
             windowTitle = title;
-            if (titleBar != null)
+            if (titleLabelTmp != null)
             {
-                TMPro.TMP_Text txt = titleBar.GetComponentInChildren<TMPro.TMP_Text>();
-                if (txt != null) txt.text = title;
+                titleLabelTmp.text = Title;
+            }
+            else if (titleBar != null)
+            {
+                TMP_Text txt = titleBar.GetComponentInChildren<TMP_Text>();
+                if (txt != null) txt.text = Title;
             }
             StateChanged?.Invoke(this);
         }
@@ -226,6 +243,11 @@ namespace ComputerLearning
         public void setIcon(Sprite icon)
         {
             windowIcon = icon;
+            if (windowIconImg != null)
+            {
+                windowIconImg.sprite = icon;
+                windowIconImg.gameObject.SetActive(icon != null);
+            }
         }
 
         internal void SetManager(WindowManager value) { manager = value; }
@@ -234,7 +256,6 @@ namespace ComputerLearning
         #region Private Methods
         private void InstallFocusRelays()
         {
-            // uGUI does not bubble pointer-down through controls that already handle it.
             foreach (MonoBehaviour control in GetComponentsInChildren<MonoBehaviour>(true))
             {
                 if (control == null || control == this || control is WindowFocusRelay) continue;
@@ -251,19 +272,16 @@ namespace ComputerLearning
 
             while (elapsed < animationDuration)
             {
-                elapsed += Time.deltaTime;
-                float t = Mathf.Clamp01(elapsed / animationDuration);
-                // Ease out cubic
-                t = 1f - Mathf.Pow(1f - t, 3f);
-                windowRectTransform.localScale = Vector3.Lerp(fromScale, toScale, t);
+                elapsed += Time.unscaledDeltaTime;
+                float progress = Mathf.Clamp01(elapsed / animationDuration);
+                float curve = Mathf.SmoothStep(0f, 1f, progress);
+                windowRectTransform.localScale = Vector3.Lerp(fromScale, toScale, curve);
                 yield return null;
             }
 
             windowRectTransform.localScale = toScale;
             onComplete?.Invoke();
-            animationCoroutine = null;
         }
         #endregion
     }
 }
-

@@ -1,19 +1,30 @@
 /**
  * Author: Diego
  * Date: 13/10/2026
- * Description: Controller for the Simulated OS Start Menu, app launching, and system navigation.
-*/
+ * Description: Controller for the Simulated OS Start Menu, app launching (File Explorer, Notepad, Paint, Minigames), and system navigation.
+ */
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
-using TMPro;
 
 namespace ComputerLearning
 {
     public class StartMenuController : MonoBehaviour
     {
         #region Public Variables
-        public static StartMenuController Instance { get; private set; }
+        private static StartMenuController instance;
+        public static StartMenuController Instance
+        {
+            get
+            {
+                if (instance == null)
+                {
+                    instance = Object.FindAnyObjectByType<StartMenuController>(FindObjectsInactive.Include);
+                }
+                return instance;
+            }
+            private set => instance = value;
+        }
         public bool IsMenuOpen => startMenuPanel != null && startMenuPanel.activeSelf;
         #endregion
 
@@ -25,6 +36,7 @@ namespace ComputerLearning
         [Header("Application Launch Buttons")]
         [SerializeField] private Button btnFileExplorer;
         [SerializeField] private Button btnNotepad;
+        [SerializeField] private Button btnPaint;
         [SerializeField] private Button btnMinigamesHub;
         [SerializeField] private Button btnStats;
         [SerializeField] private Button btnExitMenu;
@@ -33,24 +45,32 @@ namespace ComputerLearning
         [SerializeField] private GameObject baseWindowPrefab;
         [SerializeField] private GameObject fileExplorerPrefab;
         [SerializeField] private GameObject notepadPrefab;
+        [SerializeField] private GameObject paintPrefab;
         [SerializeField] private GameObject minigamesHubPrefab;
 
         private Window fileExplorerWindow;
         private Window notepadWindow;
+        private Window paintWindow;
         private Window minigamesHubWindow;
         #endregion
 
         #region Unity Methods
         private void Awake()
         {
-            if (Instance == null)
+            if (instance == null)
             {
-                Instance = this;
+                instance = this;
             }
-            else
+            else if (instance != this)
             {
                 Destroy(gameObject);
                 return;
+            }
+
+            if (startButton != null)
+            {
+                startButton.onClick.RemoveListener(ToggleMenu);
+                startButton.onClick.AddListener(ToggleMenu);
             }
         }
 
@@ -58,6 +78,7 @@ namespace ComputerLearning
         {
             if (startButton != null)
             {
+                startButton.onClick.RemoveListener(ToggleMenu);
                 startButton.onClick.AddListener(ToggleMenu);
             }
 
@@ -66,25 +87,42 @@ namespace ComputerLearning
                 startMenuPanel.SetActive(false);
             }
 
-            // Wire up menu button clicks
-            if (btnFileExplorer != null) btnFileExplorer.onClick.AddListener(OpenFileExplorer);
-            if (btnNotepad != null) btnNotepad.onClick.AddListener(OpenNotepad);
-            if (btnMinigamesHub != null) btnMinigamesHub.onClick.AddListener(OpenMinigamesHub);
-            if (btnStats != null) btnStats.onClick.AddListener(OpenStats);
-            if (btnExitMenu != null) btnExitMenu.onClick.AddListener(ExitToMainMenu);
+            if (btnFileExplorer != null)
+            {
+                btnFileExplorer.onClick.AddListener(OpenFileExplorer);
+            }
+            if (btnNotepad != null)
+            {
+                btnNotepad.onClick.AddListener(OpenNotepad);
+            }
+            if (btnPaint != null)
+            {
+                btnPaint.onClick.AddListener(OpenPaint);
+            }
+            if (btnMinigamesHub != null)
+            {
+                btnMinigamesHub.onClick.AddListener(OpenMinigamesHub);
+            }
+            if (btnStats != null)
+            {
+                btnStats.onClick.AddListener(OpenStats);
+            }
+            if (btnExitMenu != null)
+            {
+                btnExitMenu.onClick.AddListener(ExitToMainMenu);
+            }
         }
 
         private void Update()
         {
-            // Close Start Menu if clicking outside
-            if (IsMenuOpen && UnityEngine.InputSystem.Mouse.current.leftButton.wasPressedThisFrame)
+            if (IsMenuOpen && UnityEngine.InputSystem.Mouse.current != null && UnityEngine.InputSystem.Mouse.current.leftButton.wasPressedThisFrame)
             {
                 Vector2 mousePos = UnityEngine.InputSystem.Mouse.current.position.ReadValue();
                 if (startMenuPanel != null && startButton != null)
                 {
                     RectTransform panelRect = startMenuPanel.GetComponent<RectTransform>();
                     RectTransform btnRect = startButton.GetComponent<RectTransform>();
-                    
+
                     bool insidePanel = RectTransformUtility.RectangleContainsScreenPoint(panelRect, mousePos);
                     bool insideButton = RectTransformUtility.RectangleContainsScreenPoint(btnRect, mousePos);
 
@@ -120,17 +158,19 @@ namespace ComputerLearning
         public GameObject BaseWindowPrefab => baseWindowPrefab;
         public GameObject FileExplorerPrefab => fileExplorerPrefab;
         public GameObject NotepadPrefab => notepadPrefab;
+        public GameObject PaintPrefab => paintPrefab;
 
         public void OpenFileExplorer()
         {
             CloseMenu();
-            OpenAppWindow("Explorador de Archivos", fileExplorerPrefab, ref fileExplorerWindow);
+            OpenAppWindow("File Explorer", fileExplorerPrefab, ref fileExplorerWindow);
         }
 
         public FileExplorerApp OpenFileExplorerAtFolder(string folderName)
         {
             CloseMenu();
-            OpenAppWindow(string.IsNullOrEmpty(folderName) ? "Explorador de Archivos" : folderName, fileExplorerPrefab, ref fileExplorerWindow);
+            string winTitle = string.IsNullOrEmpty(folderName) ? "File Explorer" : $"File Explorer - {folderName}";
+            OpenAppWindow(winTitle, fileExplorerPrefab, ref fileExplorerWindow);
             if (fileExplorerWindow != null && fileExplorerWindow.Content != null)
             {
                 FileExplorerApp explorer = fileExplorerWindow.Content.GetComponentInChildren<FileExplorerApp>();
@@ -146,13 +186,13 @@ namespace ComputerLearning
         public void OpenNotepad()
         {
             CloseMenu();
-            OpenAppWindow("Bloc de Notas", notepadPrefab, ref notepadWindow);
+            OpenAppWindow("Notepad", notepadPrefab, ref notepadWindow);
         }
 
-        public NotepadApp OpenNotepadWithFile(ExplorerItemData fileItem)
+        public NotepadApp OpenNotepadWithFile(ExplorerItemData fileItem, ExplorerItemData folder = null)
         {
             CloseMenu();
-            string winTitle = fileItem != null ? $"Bloc de Notas - {fileItem.name}" : "Bloc de Notas";
+            string winTitle = fileItem != null ? $"Notepad - {fileItem.name}" : "Notepad";
             OpenAppWindow(winTitle, notepadPrefab, ref notepadWindow);
             if (notepadWindow != null)
             {
@@ -162,7 +202,7 @@ namespace ComputerLearning
                     NotepadApp notepad = notepadWindow.Content.GetComponentInChildren<NotepadApp>();
                     if (notepad != null && fileItem != null)
                     {
-                        notepad.LoadFile(fileItem, notepadWindow);
+                        notepad.LoadFile(fileItem, notepadWindow, folder);
                     }
                     return notepad;
                 }
@@ -170,10 +210,93 @@ namespace ComputerLearning
             return null;
         }
 
+        public void OpenPaint()
+        {
+            CloseMenu();
+            OpenPaintWithFile(null);
+        }
+
+        public PaintApp OpenPaintWithFile(ExplorerItemData fileItem, ExplorerItemData folder = null)
+        {
+            CloseMenu();
+            string winTitle = fileItem != null ? $"Paint - {fileItem.name}" : "Paint - Untitled.png";
+
+            OpenAppWindow(winTitle, paintPrefab, ref paintWindow);
+            if (paintWindow != null)
+            {
+                paintWindow.setTitle(winTitle);
+                PaintApp app = paintWindow.Content != null ? paintWindow.Content.GetComponentInChildren<PaintApp>() : null;
+                if (app != null)
+                {
+                    if (fileItem != null)
+                    {
+                        app.LoadImageFile(fileItem, paintWindow, folder);
+                    }
+                    else if (folder != null)
+                    {
+                        app.SetTargetSaveFolder(folder);
+                    }
+                }
+                paintWindow.BringToFront();
+                return app;
+            }
+
+            return null;
+        }
+
+        public ImageViewerApp OpenImageViewer(ExplorerItemData fileItem)
+        {
+            CloseMenu();
+            if (fileItem == null) return null;
+
+            WindowManager winManager = WindowManager.Instance != null ? WindowManager.Instance : FindAnyObjectByType<WindowManager>();
+            if (winManager == null) return null;
+
+            Window existingWin = winManager.FindOpenWindowByTitle($"Image Viewer - {fileItem.name}");
+            if (existingWin != null && !existingWin.IsClosed)
+            {
+                existingWin.Restore();
+                existingWin.BringToFront();
+                return existingWin.Content != null ? existingWin.Content.GetComponentInChildren<ImageViewerApp>() : null;
+            }
+
+            GameObject winPrefab = baseWindowPrefab != null ? baseWindowPrefab : Resources.Load<GameObject>("BaseWindow");
+            GameObject viewerPrefab = Resources.Load<GameObject>("ImageViewerContent");
+#if UNITY_EDITOR
+            if (viewerPrefab == null) viewerPrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Windows/ImageViewerContent.prefab");
+#endif
+
+            if (winPrefab == null || viewerPrefab == null) return null;
+
+            string winTitle = $"Image Viewer - {fileItem.name}";
+            Window win = winManager.OpenWindow(winPrefab, null, winTitle);
+            if (win != null)
+            {
+                win.setTitle(winTitle);
+                GameObject viewerContent = Instantiate(viewerPrefab);
+                win.SetContent(viewerContent);
+                ImageViewerApp viewer = viewerContent.GetComponentInChildren<ImageViewerApp>();
+                if (viewer != null)
+                {
+                    Sprite spriteToDisplay = fileItem.imageContent != null
+                        ? fileItem.imageContent
+                        : (fileItem.icon != null ? fileItem.icon : FileExplorerApp.GetImageFileSprite());
+
+                    viewer.Initialize(fileItem, spriteToDisplay, () =>
+                    {
+                        OpenPaintWithFile(fileItem);
+                    });
+                }
+                win.BringToFront();
+                return viewer;
+            }
+            return null;
+        }
+
         public void OpenMinigamesHub()
         {
             CloseMenu();
-            OpenAppWindow("Centro de Juegos", minigamesHubPrefab, ref minigamesHubWindow);
+            OpenAppWindow("Minigames Hub", minigamesHubPrefab, ref minigamesHubWindow);
         }
 
         public void OpenStats()
@@ -211,6 +334,10 @@ namespace ComputerLearning
             WindowManager winManager = WindowManager.Instance;
             if (winManager == null)
             {
+                winManager = FindAnyObjectByType<WindowManager>();
+            }
+            if (winManager == null)
+            {
                 Debug.LogWarning("[StartMenuController] WindowManager instance not found in scene.");
                 return;
             }
@@ -223,6 +350,10 @@ namespace ComputerLearning
             }
 
             GameObject winPrefabToUse = baseWindowPrefab;
+            if (winPrefabToUse == null && DesktopManager.Instance != null)
+            {
+                winPrefabToUse = DesktopManager.Instance.BaseWindowPrefab;
+            }
             if (winPrefabToUse == null)
             {
                 winPrefabToUse = Resources.Load<GameObject>("BaseWindow");
