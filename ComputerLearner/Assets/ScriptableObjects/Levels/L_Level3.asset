@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ComputerLearning.LevelDefinition
   levelId: level3
   displayName: 'Level 3: Click'
-  instructionText: 'LEFT CLICK on the blue targets
+  instructionText: 'LEFT CLICK on the red targets
 
     to earn practice points.'
   isAdaptive: 0

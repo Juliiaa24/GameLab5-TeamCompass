@@ -57,21 +57,18 @@ namespace ComputerLearning
         #region Unity Methods
         private void Awake()
         {
-            if (instance == null)
-            {
-                instance = this;
-            }
-            else if (instance != this)
-            {
-                Destroy(gameObject);
-                return;
-            }
+            instance = this;
 
             if (startButton != null)
             {
                 startButton.onClick.RemoveListener(ToggleMenu);
                 startButton.onClick.AddListener(ToggleMenu);
             }
+        }
+
+        private void OnDestroy()
+        {
+            if (instance == this) instance = null;
         }
 
         private void Start()

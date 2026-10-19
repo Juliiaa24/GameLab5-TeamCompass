@@ -19,8 +19,7 @@ namespace ComputerLearning
 
         private void Awake()
         {
-            if (Instance == null) Instance = this;
-            else Destroy(gameObject);
+            Instance = this;
 
             // Give the blocker its own Canvas sorting layer to guarantee it's always above all windows
             Canvas canvas = gameObject.AddComponent<Canvas>();

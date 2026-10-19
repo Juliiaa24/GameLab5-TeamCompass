@@ -70,11 +70,6 @@ namespace ComputerLearning
         #region Unity Methods
         private void Awake()
         {
-            if (_instance != null && _instance != this)
-            {
-                Destroy(gameObject);
-                return;
-            }
             _instance = this;
 
             if (targetCanvas == null)
@@ -91,6 +86,11 @@ namespace ComputerLearning
             {
                 btnNewFolder.gameObject.SetActive(false);
             }
+        }
+
+        private void OnDestroy()
+        {
+            if (_instance == this) _instance = null;
         }
 
         private void Start()

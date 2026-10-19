@@ -2528,4 +2528,55 @@ To enrich the educational operating system simulation, the Virtual Desktop neede
   - "Recycle Bin" text fits comfortably without overlapping "Paint", and the translucent blue highlight card expands to cover the entire label with clean padding.
   - Zero compiler errors, zero warnings, and zero runtime errors in Unity console.
 
+---
 
+### 95. PRESENTATION BUILD PREPARATION: CONTINUOUS SCENE FLOW, VIRTUAL DESKTOP INTRO WITH INPUT BLOCKER, & 100% ENGLISH LOCALIZATION AUDIT - 19/10/2026
+
+**Context & Motivation:**
+* Prepared the project for a functional, robust presentation build with three core technical requirements:
+  1. Continuous linear scene flow: `Desktop1 -> Tutorial1 -> Desktop2 -> Tutorial2 -> VirtualDesktop`, ensuring the transition from `Tutorial2` to `VirtualDesktop` happens reliably right at the end of the `Tutorial2` sequence.
+  2. A guided `VirtualDesktop` introduction (`VirtualDesktopIntro.cs`) that blocks all player input via `TutorialBlocker` while the `VirtualMascot` introduces the desktop, folders, apps, and Start button, before releasing control and transitioning into `DesktopCompanion` mode.
+  3. 100% English localization across all UI elements, mascot dialogues, task instructions, and default settings.
+
+**Architectural Solutions & Implementation:**
+
+**1. Continuous Scene Flow (`Desktop1 -> Tutorial1 -> Desktop2 -> Tutorial2 -> VirtualDesktop`):**
+* `FirstDesktopTutorial.cs` (`Desktop1 -> Tutorial1`):
+  - Added `forcePlayTutorial = true` so `Desktop1` reliably runs `AutoOnboardingSequence()`, sets `AutoSequenceCompleted = 1`, and loads `"Tutorial1"`.
+* `DesktopTour.cs` (`Tutorial1 -> Desktop2`):
+  - Verified window tour completion saves `DesktopTourCompleted = 1` and transitions to `"Desktop2"`.
+* `SecondDesktopTutorial.cs` (`Desktop2 -> Tutorial2`):
+  - Added `forcePlayTutorial = true` and localized `TutorialDialogs` strings with English fallbacks, saving `SemiGuidedSequenceCompleted = 1` and loading `"Tutorial2"` upon completing Level 9.
+* `AdvancedDesktopTour.cs` (`Tutorial2 -> VirtualDesktop`):
+  - Hardened Step 7 (Recycle Bin) so dragging any application icon on `Tutorial2`'s desktop grid into the Recycle Bin completes the step (`onRecycled = (icon) => { if (icon != null) recycled = true; };`).
+  - Re-enabled `TutorialBlocker` (`SetAllowedTarget(null)`) during the final congratulatory speech so player input is blocked until the scene transition occurs.
+  - Added `CompleteAndTransitionToVirtualDesktop()` which sets `AdvancedDesktopTourCompleted = 1`, resets `VirtualDesktopIntroCompleted = 0`, saves `PlayerPrefs`, and loads `"VirtualDesktop"`.
+* `SceneSystem.cs` & `InitialTestManager.cs`:
+  - Updated `ResetProgress()` to also reset `VirtualDesktopIntroCompleted = 0` and force `SelectedLanguage` to `LocalizationManager.LANG_EN` (`"EN"`).
+  - Added `InitializeSessionFlags()` with `[RuntimeInitializeOnLoadMethod]` to clear incomplete intermediate tutorial flags on new session startup, and updated `InitialTestManager.FinishTest()` to transition cleanly to `"Desktop1"`.
+* Per-Scene `Managers` Lifecycle Fix (`ProgressData.cs`, `SkillManager.cs`, `TaskManager.cs`, `LearningSessionManager.cs`, `DesktopManager.cs`, `VirtualMascot.cs`, `TutorialBlocker.cs`):
+  - Fixed a critical bug where `ProgressData.Awake()` called `DontDestroyOnLoad(gameObject)` on the shared `Managers` GameObject in `AssessmentScene` and `Tutorial1`. When transitioning to `Desktop1` or `Desktop2`, the surviving `Managers` GameObject from the previous scene caused `SkillManager`, `ProgressData`, and `DesktopManager` in the new scene to execute `Destroy(gameObject)` on the new scene's `Managers` (destroying `DesktopManager`, `FirstDesktopTutorial`, and `SecondDesktopTutorial` before icons or the mascot could spawn).
+  - Removed `DontDestroyOnLoad(gameObject)` from `ProgressData` (data persists across scenes via `PlayerPrefs`) and updated manager `Awake()` methods so each scene's `Managers` instance cleanly becomes the active singleton.
+  - Restricted `FileExplorerApp` desktop folder mirroring (`RegisterSceneIconsIntoDesktopFolder` / `SyncDesktopWithExplorerFolder`) to `VirtualDesktop` so tutorial level icons from `Desktop1` and `Desktop2` are not mirrored into `This PC > Desktop`.
+
+**2. Virtual Desktop Introduction with Input Blocker (`VirtualDesktopIntro.cs`, `VirtualMascot.cs`, `DesktopManager.cs`, `VirtualDesktop.unity`):**
+* Created `VirtualDesktopIntro.cs` (`Assets/Scripts/DesktopSystem/VirtualDesktopIntro.cs`):
+  - Instantiates/reuses `TutorialBlocker` with `SetAllowedTarget(null)` to block 100% of mouse clicks on the desktop, icons, and taskbar during the intro sequence.
+  - Runs `IntroSequence()` using `VirtualMascot.Show(...)` across 4 guided steps (`virtual_welcome`, `virtual_levels`, `virtual_apps`, `virtual_start_and_pet`), pointing to the desktop center, `"Levels"` folder, `"Paint"`/`"Minigames"`/`"Notepad"`, and `"StartButton"`.
+  - On completion (`CompleteIntro()`), saves `VirtualDesktopIntroCompleted = 1`, destroys the `TutorialBlocker`, and calls `VirtualMascot.HideMascot()`.
+* Updated `VirtualMascot.cs`:
+  - `ShowMessage(...)` temporarily suspends `isDesktopCompanion`, stops `hideBubbleCoroutine`, restores pointer pivot `(0.125f, 1.13f)`, and disables raycast blocking so the mascot acts as a pointer during `VirtualDesktopIntro`.
+  - `Hide()` / `HideMascot()` checks `DesktopManager.Instance.EnableMascotCompanion` and automatically calls `InitAsDesktopCompanion()` so the mascot returns to the top-right corner as an interactive desktop pet after the intro finishes.
+* Attached `VirtualDesktopIntro` to the `Managers` GameObject in `VirtualDesktop.unity` and added automatic attachment fallback in `DesktopManager.Start()`.
+
+**3. 100% English Localization Audit:**
+* `LocalizationManager.cs`: Added `[RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]` to ensure `SelectedLanguage` defaults to `"EN"` at session startup.
+* `Menu.unity`: Updated language `TMP_Dropdown` default serialized value from `1` (`Español (ES)`) to `0` (`English (EN)`).
+* `TutorialDialogs.cs`, `EN-TutorialDialogs.json`, `TutorialDialogs.json`, `ES-TutorialDialogs.json`: Added `virtual_welcome`, `virtual_levels`, `virtual_apps`, and `virtual_start_and_pet` fields and ensured all dialog JSON files contain 100% English text.
+* `VirtualMascot.cs`: Replaced remaining Spanish fallback strings in companion mode with English.
+* `LevelRunner.cs`: Removed the debug placeholder string `"\n\n(Animated tutorial will go here)"` from `ShowInstructionScreen()`.
+
+**4. Direct Main Menu Button to `VirtualDesktop` (`Menu.unity`, `ProgressData.cs`, `StartMenuController.cs`, `ContextMenuController.cs`):**
+* Added `Btn-VirtualDesktop` (`"Virtual Desktop"`) inside `MenuBtnLayout` in `Menu.unity` right below `Btn-Play`, wired to `SceneSystem.ChangeToVirtualDesktop()`.
+* Updated `ProgressData.IsLevelUnlocked()` to return `true` when the active scene is `"VirtualDesktop"`, so all levels and minigames inside `VirtualDesktop` are immediately playable even if the user enters `VirtualDesktop` directly from the Main Menu without completing `Desktop1` and `Desktop2` first, while keeping the normal `"Play"` tutorial progression untouched.
+* Updated `StartMenuController` and `ContextMenuController` `Awake()`/`OnDestroy()` singleton lifecycles to cleanly bind per scene without destroying scene instances.

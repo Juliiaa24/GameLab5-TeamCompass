@@ -78,12 +78,13 @@ namespace ComputerLearning
             UnityEngine.UI.Text text = textObj.GetComponent<UnityEngine.UI.Text>();
             text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
             if (text.font == null) text.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
-            text.text = currentLevel.instructionText + "\n\n(Animated tutorial will go here)";
+            text.text = currentLevel.instructionText;
             text.fontSize = 36;
             text.alignment = TextAnchor.MiddleCenter;
             text.color = Color.white;
 
-            bool isAutoSequence = PlayerPrefs.GetInt("AutoSequenceCompleted", 0) == 0;
+            bool isAutoSequence = PlayerPrefs.GetInt("AutoSequenceCompleted", 0) == 0 ||
+                                  UnityEngine.Object.FindAnyObjectByType<FirstDesktopTutorial>() != null;
 
             if (isAutoSequence)
             {

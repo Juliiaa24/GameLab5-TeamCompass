@@ -14,12 +14,15 @@ namespace ComputerLearning
             else dialogs = new TutorialDialogs();
         }
 
+        [Tooltip("If true, the semi-guided onboarding sequence always runs when Desktop2 is loaded.")]
+        public bool forcePlayTutorial = true;
+
         private DesktopManager desktopManager;
 
         private void Start()
         {
             desktopManager = GetComponent<DesktopManager>();
-            if (PlayerPrefs.GetInt("SemiGuidedSequenceCompleted", 0) == 0)
+            if (forcePlayTutorial || PlayerPrefs.GetInt("SemiGuidedSequenceCompleted", 0) == 0)
             {
                 StartCoroutine(SemiGuidedOnboardingSequence());
             }
@@ -61,10 +64,14 @@ namespace ComputerLearning
                     targetIcon.GetType().GetField("isLocked", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)?.SetValue(targetIcon, false);
                     
                     string introMessage = "Double click here to start the next practice!";
-                    if (targetLevelId == "level6") introMessage = "Let's learn something new: Right Click! Double click here to start.";
-                    else if (targetLevelId == "level7") introMessage = "Great! Now let's try Click and Hold. Open this app.";
-                    else if (targetLevelId == "level8") introMessage = "Awesome! Time for Drag and Drop. Double click!";
-                    else if (targetLevelId == "level9") introMessage = "You're a master! Let's mix everything together in a final challenge!";
+                    if (targetLevelId == "level6")
+                        introMessage = !string.IsNullOrEmpty(dialogs?.second_right_click) ? dialogs.second_right_click : "Let's learn something new: Right Click! Double click here to start.";
+                    else if (targetLevelId == "level7")
+                        introMessage = !string.IsNullOrEmpty(dialogs?.second_click_hold) ? dialogs.second_click_hold : "Great! Now let's try Click and Hold. Open this app.";
+                    else if (targetLevelId == "level8")
+                        introMessage = !string.IsNullOrEmpty(dialogs?.second_drag_drop) ? dialogs.second_drag_drop : "Awesome! Time for Drag and Drop. Double click!";
+                    else if (targetLevelId == "level9")
+                        introMessage = !string.IsNullOrEmpty(dialogs?.second_mixed) ? dialogs.second_mixed : "You're a master! Let's mix everything together in a final challenge!";
 
                     while (true)
                     {

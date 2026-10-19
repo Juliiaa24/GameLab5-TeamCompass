@@ -40,6 +40,12 @@ namespace ComputerLearning
         public string adaptive_welcome;
         public string adaptive_explanation;
         public string adaptive_done;
+
+        // Virtual Desktop Intro
+        public string virtual_welcome;
+        public string virtual_levels;
+        public string virtual_apps;
+        public string virtual_start_and_pet;
     }
 }
 

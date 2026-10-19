@@ -34,7 +34,6 @@ namespace ComputerLearning
                     {
                         GameObject go = new GameObject("ProgressData");
                         _instance = go.AddComponent<ProgressData>();
-                        DontDestroyOnLoad(go);
                     }
                 }
                 return _instance;
@@ -62,9 +61,14 @@ namespace ComputerLearning
         #region Unity Methods
         private void Awake()
         {
-            if (_instance != null && _instance != this) { Destroy(gameObject); return; }
+            if (_instance != null && _instance != this)
+            {
+                if (_instance.GetComponent<DesktopManager>() == null && _instance.gameObject.name == "ProgressData")
+                {
+                    Destroy(_instance.gameObject);
+                }
+            }
             _instance = this;
-            DontDestroyOnLoad(gameObject);
             Load();
         }
 
@@ -91,6 +95,7 @@ namespace ComputerLearning
         public bool IsLevelUnlocked(string levelId)
         {
             if (string.IsNullOrEmpty(levelId)) return true;
+            if (UnityEngine.SceneManagement.SceneManager.GetActiveScene().name == "VirtualDesktop") return true;
             if (levelId == "level1") return true;
             if (completedLevels != null && completedLevels.Contains(levelId)) return true;
             if (unlockedLevels != null && unlockedLevels.Contains(levelId)) return true;

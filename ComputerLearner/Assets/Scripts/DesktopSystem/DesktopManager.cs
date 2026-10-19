@@ -43,6 +43,7 @@ namespace ComputerLearning
     /// Handles spawning dynamic elements like the Virtual Mascot, Desktop Icons,
     /// and two-way synchronization with the 'This PC > Desktop' folder.
     /// </summary>
+    [DefaultExecutionOrder(-50)]
     public class DesktopManager : MonoBehaviour
     {
         #region Public Variables
@@ -98,20 +99,21 @@ namespace ComputerLearning
             return null;
         }
 
+        private bool IsVirtualDesktopScene()
+        {
+            return enableMascotCompanion || UnityEngine.SceneManagement.SceneManager.GetActiveScene().name == "VirtualDesktop";
+        }
+
         #region Unity Methods
         private void Awake()
         {
-            if (Instance == null)
-            {
-                Instance = this;
-            }
-            else
-            {
-                Destroy(gameObject);
-                return;
-            }
-
+            Instance = this;
             InitializeDesktop();
+        }
+
+        private void OnDestroy()
+        {
+            if (Instance == this) Instance = null;
         }
 
         private void OnEnable()
@@ -128,7 +130,15 @@ namespace ComputerLearning
         {
             SpawnInitialIcons();
             RegisterSceneIconsIntoDesktopFolder();
-            SyncDesktopWithExplorerFolder();
+            if (IsVirtualDesktopScene())
+            {
+                SyncDesktopWithExplorerFolder();
+
+                if (UnityEngine.Object.FindFirstObjectByType<VirtualDesktopIntro>() == null)
+                {
+                    gameObject.AddComponent<VirtualDesktopIntro>();
+                }
+            }
         }
         #endregion
 
@@ -238,6 +248,8 @@ namespace ComputerLearning
                 }
             }
 
+            if (!IsVirtualDesktopScene()) return;
+
             // Mirror desktop icons into This PC > Desktop folder
             ExplorerItemData desktopFolder = FileExplorerApp.GetDesktopFolder();
             if (desktopFolder == null) return;
@@ -317,6 +329,7 @@ namespace ComputerLearning
         /// </summary>
         public void SyncDesktopWithExplorerFolder()
         {
+            if (!IsVirtualDesktopScene()) return;
             if (isSyncingDesktop) return;
             isSyncingDesktop = true;
 

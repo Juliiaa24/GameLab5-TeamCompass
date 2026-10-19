@@ -40,14 +40,7 @@ namespace ComputerLearning
 
         private void Awake()
         {
-            if (Instance == null)
-            {
-                Instance = this;
-            }
-            else
-            {
-                Destroy(gameObject);
-            }
+            Instance = this;
         }
 
         private void OnDestroy()
@@ -218,7 +211,7 @@ namespace ComputerLearning
 
         public static void HideMascot()
         {
-            if (Instance != null && !Instance.isDesktopCompanion) Instance.Hide();
+            if (Instance != null) Instance.Hide();
         }
 
         public static void HideMascotIfTargeting(Transform potentialParent)
@@ -235,8 +228,31 @@ namespace ComputerLearning
 
         public void ShowMessage(string message, RectTransform target, Vector2? offset = null)
         {
+            if (hideBubbleCoroutine != null)
+            {
+                StopCoroutine(hideBubbleCoroutine);
+                hideBubbleCoroutine = null;
+            }
+
+            // Temporarily exit companion mode while showing targeted tutorial/intro messages
+            isDesktopCompanion = false;
+
             gameObject.SetActive(true);
             targetRect = target;
+
+            if (mascotRect == null) mascotRect = GetComponent<RectTransform>();
+            if (mascotRect != null)
+            {
+                mascotRect.anchorMin = new Vector2(0.5f, 0.5f);
+                mascotRect.anchorMax = new Vector2(0.5f, 0.5f);
+                mascotRect.pivot = new Vector2(0.125f, 1.13f);
+            }
+
+            CanvasGroup cg = GetComponent<CanvasGroup>();
+            if (cg == null) cg = gameObject.AddComponent<CanvasGroup>();
+            cg.interactable = false;
+            cg.blocksRaycasts = false;
+
             // The offset parameter is now ignored because the mascot acts as a direct cursor
 
             if (speechBubble != null && speechText != null)
@@ -277,6 +293,11 @@ namespace ComputerLearning
 
         public void Hide()
         {
+            if (DesktopManager.Instance != null && DesktopManager.Instance.EnableMascotCompanion)
+            {
+                InitAsDesktopCompanion();
+                return;
+            }
             if (isDesktopCompanion) return; // Companion is always visible!
             gameObject.SetActive(false);
             targetRect = null;
@@ -322,10 +343,7 @@ namespace ComputerLearning
             }
 
             // Welcome greeting on desktop startup
-            bool isEn = LocalizationManager.CurrentLanguage == "EN";
-            string welcome = isEn
-                ? "Hello! I'm your desktop pet! Click on me whenever you want tips."
-                : "¡Hola! ¡Soy tu compañero virtual! Haz clic sobre mí si quieres consejos.";
+            string welcome = "Hello! I'm your desktop pet! Click on me whenever you want tips.";
             ShowCompanionMessage(welcome);
         }
 
@@ -429,9 +447,8 @@ namespace ComputerLearning
 
         private string GetNextCompanionMessage()
         {
-            bool isEn = LocalizationManager.CurrentLanguage == "EN";
-            string[] pool = isEn ? englishCompanionMessages : spanishCompanionMessages;
-            if (pool == null || pool.Length == 0) return "¡Hola!";
+            string[] pool = englishCompanionMessages;
+            if (pool == null || pool.Length == 0) return "Hello!";
 
             int newIndex;
             if (pool.Length == 1) newIndex = 0;

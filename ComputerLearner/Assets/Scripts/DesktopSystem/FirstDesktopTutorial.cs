@@ -14,12 +14,15 @@ namespace ComputerLearning
             else dialogs = new TutorialDialogs();
         }
 
+        [Tooltip("If true, the onboarding sequence always runs when Desktop1 is loaded.")]
+        public bool forcePlayTutorial = true;
+
         private DesktopManager desktopManager;
 
         private void Start()
         {
             desktopManager = GetComponent<DesktopManager>();
-            if (PlayerPrefs.GetInt("AutoSequenceCompleted", 0) == 0)
+            if (forcePlayTutorial || PlayerPrefs.GetInt("AutoSequenceCompleted", 0) == 0)
             {
                 StartCoroutine(AutoOnboardingSequence());
             }

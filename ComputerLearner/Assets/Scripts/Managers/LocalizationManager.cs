@@ -19,11 +19,29 @@ namespace ComputerLearning
 
         public static event Action OnLanguageChanged;
 
+        private static bool sessionLanguageInitialized = false;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetStaticState()
+        {
+            sessionLanguageInitialized = false;
+        }
+
         public static string CurrentLanguage
         {
-            get => PlayerPrefs.GetString("SelectedLanguage", LANG_EN);
+            get
+            {
+                if (!sessionLanguageInitialized)
+                {
+                    sessionLanguageInitialized = true;
+                    PlayerPrefs.SetString("SelectedLanguage", LANG_EN);
+                    PlayerPrefs.Save();
+                }
+                return PlayerPrefs.GetString("SelectedLanguage", LANG_EN);
+            }
             private set
             {
+                sessionLanguageInitialized = true;
                 PlayerPrefs.SetString("SelectedLanguage", value);
                 PlayerPrefs.Save();
             }

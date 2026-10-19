@@ -42,7 +42,6 @@ namespace ComputerLearning
         #region Unity Methods
         private void Awake()
         {
-            if (Instance != null && Instance != this) { Destroy(gameObject); return; }
             Instance = this;
             InitialiseSkills();
         }

@@ -1,0 +1,65 @@
+{
+    "timestamp": "2026-10-19T09:13:45.5963281Z",
+    "formattedTime": "11:13:45",
+    "totalTasksTested": 7,
+    "completedTasks": 7,
+    "averageScore": 100.0,
+    "skills": [
+        {
+            "skillId": "mouse_move",
+            "skillName": "Mover el cursor",
+            "completed": true,
+            "score": 100.0,
+            "extraAttempts": 0,
+            "timeTakenSeconds": 1.1399999856948853
+        },
+        {
+            "skillId": "hover",
+            "skillName": "Mantener encima",
+            "completed": true,
+            "score": 100.0,
+            "extraAttempts": 0,
+            "timeTakenSeconds": 2.880000114440918
+        },
+        {
+            "skillId": "click",
+            "skillName": "Clic simple",
+            "completed": true,
+            "score": 100.0,
+            "extraAttempts": 0,
+            "timeTakenSeconds": 0.8399999737739563
+        },
+        {
+            "skillId": "double_click",
+            "skillName": "Doble clic",
+            "completed": true,
+            "score": 100.0,
+            "extraAttempts": 0,
+            "timeTakenSeconds": 0.9300000071525574
+        },
+        {
+            "skillId": "right_click",
+            "skillName": "Clic derecho",
+            "completed": true,
+            "score": 100.0,
+            "extraAttempts": 0,
+            "timeTakenSeconds": 0.800000011920929
+        },
+        {
+            "skillId": "click_hold",
+            "skillName": "Mantener pulsado",
+            "completed": true,
+            "score": 100.0,
+            "extraAttempts": 0,
+            "timeTakenSeconds": 2.559999942779541
+        },
+        {
+            "skillId": "drag_drop",
+            "skillName": "Arrastrar y soltar",
+            "completed": true,
+            "score": 100.0,
+            "extraAttempts": 0,
+            "timeTakenSeconds": 1.2300000190734864
+        }
+    ]
+}

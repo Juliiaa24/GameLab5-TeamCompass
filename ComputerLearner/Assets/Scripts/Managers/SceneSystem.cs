@@ -43,6 +43,21 @@ namespace ComputerLearning
 
         #region Unity Methods
         // Unity Methods including (Awake, Start, Update, LateUpdate...)
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void InitializeSessionFlags()
+        {
+            // If a previous session was aborted mid-onboarding before reaching VirtualDesktop,
+            // clear intermediate tutorial flags so pressing Play in Menu starts cleanly at Desktop1.
+            if (PlayerPrefs.GetInt("AdvancedDesktopTourCompleted", 0) == 0)
+            {
+                PlayerPrefs.SetInt("AutoSequenceCompleted", 0);
+                PlayerPrefs.SetInt("DesktopTourCompleted", 0);
+                PlayerPrefs.SetInt("SemiGuidedSequenceCompleted", 0);
+                PlayerPrefs.SetInt("VirtualDesktopIntroCompleted", 0);
+                PlayerPrefs.Save();
+            }
+        }
+
         private void Awake()
         {
             if (Instance != null && Instance != this)
@@ -114,8 +129,6 @@ namespace ComputerLearning
 
         public void ResetProgress()
         {
-            string lang = PlayerPrefs.GetString("SelectedLanguage", "EN");
-
             if (ProgressData.Instance != null)
             {
                 ProgressData.Instance.ClearHistory();
@@ -132,13 +145,16 @@ namespace ComputerLearning
             }
 
             PlayerPrefs.DeleteAll();
-            PlayerPrefs.SetString("SelectedLanguage", lang);
+            PlayerPrefs.SetString("SelectedLanguage", LocalizationManager.LANG_EN);
             PlayerPrefs.SetInt("InitialAssessmentCompleted", 0);
             PlayerPrefs.SetInt("AutoSequenceCompleted", 0);
             PlayerPrefs.SetInt("DesktopTourCompleted", 0);
             PlayerPrefs.SetInt("SemiGuidedSequenceCompleted", 0);
             PlayerPrefs.SetInt("AdvancedDesktopTourCompleted", 0);
+            PlayerPrefs.SetInt("VirtualDesktopIntroCompleted", 0);
             PlayerPrefs.Save();
+
+            LocalizationManager.SetLanguage(LocalizationManager.LANG_EN);
 
             Debug.Log("[SceneSystem] Game progress has been successfully reset.");
         }

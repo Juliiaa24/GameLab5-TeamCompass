@@ -28,5 +28,10 @@
 
   "adaptive_welcome": "Welcome to Level 4!\nKeep practicing to improve your skills.",
   "adaptive_explanation": "I will give you tasks based on what you need to learn.\nGood luck!",
-  "adaptive_done": "Great practice!\nYou can click the 'X' to close this window now."
+  "adaptive_done": "Great practice!\nYou can click the 'X' to close this window now.",
+
+  "virtual_welcome": "Welcome to your full Virtual Desktop! Here you can explore and practice freely.",
+  "virtual_levels": "Double-click the Levels folder anytime to challenge yourself with more tasks.",
+  "virtual_apps": "You can also open fun apps like Paint, Notepad, and Minigames to create and play!",
+  "virtual_start_and_pet": "Use the Start button on the bottom-left for all options, and click me in the corner whenever you want tips!"
 }
