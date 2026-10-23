@@ -4321,7 +4321,7 @@ PrefabInstance:
     - target: {fileID: 1752656936260673201, guid: 8fd5d29b8e6b66b4aa43469e74eaad42, type: 3}
       propertyPath: initialDesktopIcons.Array.data[3].iconSprite
       value: 
-      objectReference: {fileID: 21300000, guid: 2a82ab696d63987469e681038aa998ec, type: 3}
+      objectReference: {fileID: 21300000, guid: 1ee91fb1395357449bc80a3bb4fa13ac, type: 3}
     - target: {fileID: 1752656936260673201, guid: 8fd5d29b8e6b66b4aa43469e74eaad42, type: 3}
       propertyPath: initialDesktopIcons.Array.data[4].iconSprite
       value: 
