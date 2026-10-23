@@ -78,7 +78,13 @@ namespace ComputerLearning
             piece.SetStartPosition(rt.anchoredPosition);
 
             piece.OnPieceDropped += HandlePieceDropped;
-            piece.OnPieceMissed += RegisterAttempt;
+            piece.OnPieceMissed += HandlePieceMissed;
+        }
+
+        private void HandlePieceMissed()
+        {
+            RegisterAttempt();
+            VirtualMascot.ShowContextualFeedback("Almost! Drag the item all the way into the target zone!", dropTarget, 3.0f);
         }
 
         private void HandlePieceDropped(DraggablePiece piece)
@@ -95,4 +101,3 @@ namespace ComputerLearning
         }
     }
 }
-

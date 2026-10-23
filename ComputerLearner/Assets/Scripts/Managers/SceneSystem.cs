@@ -1,7 +1,7 @@
 /**
- * Author: Julia Vera
+ * Author: Julia Vera & TeamCompass
  * Date: 11/09
- * Description:
+ * Description: Controls changes between scenes with DontDestroyOnLoad persistence.
 */
 
 using System;
@@ -15,9 +15,7 @@ namespace ComputerLearning
     /// </summary>
     public class SceneSystem : MonoBehaviour
     {
-
         #region Public Variables
-
         /** Instance of the SceneManager to apply the singleton method*/
         public static SceneSystem Instance { get; private set; }
 
@@ -28,21 +26,11 @@ namespace ComputerLearning
             AssessmentScene,
             StatsScene,
             Desktop1,
-            Tutorial1,
-            Desktop2,
-            Tutorial2,
             VirtualDesktop
         }
-
-
-        #endregion
-
-        #region Private Variables
-
         #endregion
 
         #region Unity Methods
-        // Unity Methods including (Awake, Start, Update, LateUpdate...)
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void InitializeSessionFlags()
         {
@@ -67,15 +55,15 @@ namespace ComputerLearning
             }
 
             Instance = this;
+            if (transform.parent == null)
+            {
+                DontDestroyOnLoad(gameObject);
+            }
         }
 
         private void OnDestroy()
         {
             if (Instance == this) Instance = null;
-        }
-        private void Start()
-        {
-
         }
 
         private void Update()
@@ -86,11 +74,9 @@ namespace ComputerLearning
                 else ChangeToMenu();
             }
         }
-
         #endregion
 
         #region Public Methods
-        // Public Methods accessible from other classes
         public void ChangeToMain() 
         { 
             // If the initial assessment has not been completed, it serves as the first screen!
@@ -100,32 +86,40 @@ namespace ComputerLearning
                 return;
             }
 
-            if (PlayerPrefs.GetInt("AdvancedDesktopTourCompleted", 0) == 1)
+            if (PlayerPrefs.GetInt("AutoSequenceCompleted", 0) == 1)
             {
                 SceneManager.LoadScene("VirtualDesktop");
-            }
-            else if (PlayerPrefs.GetInt("SemiGuidedSequenceCompleted", 0) == 1)
-            {
-                SceneManager.LoadScene("Tutorial2");
-            }
-            else if (PlayerPrefs.GetInt("DesktopTourCompleted", 0) == 1)
-            {
-                SceneManager.LoadScene("Desktop2");
-            }
-            else if (PlayerPrefs.GetInt("AutoSequenceCompleted", 0) == 1)
-            {
-                SceneManager.LoadScene("Tutorial1");
             }
             else
             {
                 SceneManager.LoadScene("Desktop1");
             }
         }
-        public void ChangeToMenu() { ChangeScene(SceneNames.Menu); }
-        public void ChangeToVirtualDesktop() { SceneManager.LoadScene("VirtualDesktop"); }
-        public void ChangeToAssessment() { ChangeScene(SceneNames.AssessmentScene); }
-        public void ChangeToStats() { ChangeScene(SceneNames.StatsScene); }
-        public void Exit() { Application.Quit(); }
+
+        public void ChangeToMenu() 
+        { 
+            ChangeScene(SceneNames.Menu); 
+        }
+
+        public void ChangeToVirtualDesktop() 
+        { 
+            SceneManager.LoadScene("VirtualDesktop"); 
+        }
+
+        public void ChangeToAssessment() 
+        { 
+            ChangeScene(SceneNames.AssessmentScene); 
+        }
+
+        public void ChangeToStats() 
+        { 
+            ChangeScene(SceneNames.StatsScene); 
+        }
+
+        public void Exit() 
+        { 
+            Application.Quit(); 
+        }
 
         public void ResetProgress()
         {
@@ -158,12 +152,9 @@ namespace ComputerLearning
 
             Debug.Log("[SceneSystem] Game progress has been successfully reset.");
         }
-
         #endregion
 
         #region Private Methods
-        // Private Methods accessible only from this class
-
         private void ChangeScene(SceneNames scene)
         {
             switch (scene)
@@ -174,15 +165,6 @@ namespace ComputerLearning
                 case SceneNames.Main:
                 case SceneNames.Desktop1:
                     SceneManager.LoadScene("Desktop1");
-                    break;
-                case SceneNames.Tutorial1:
-                    SceneManager.LoadScene("Tutorial1");
-                    break;
-                case SceneNames.Desktop2:
-                    SceneManager.LoadScene("Desktop2");
-                    break;
-                case SceneNames.Tutorial2:
-                    SceneManager.LoadScene("Tutorial2");
                     break;
                 case SceneNames.VirtualDesktop:
                     SceneManager.LoadScene("VirtualDesktop");
@@ -197,8 +179,6 @@ namespace ComputerLearning
                     break;
             }
         }
-
-
         #endregion
     }
 }

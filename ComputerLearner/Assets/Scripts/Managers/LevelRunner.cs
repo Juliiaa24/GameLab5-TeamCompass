@@ -7,6 +7,7 @@ namespace ComputerLearning
     /// Executes a specific LevelDefinition (sequence of tasks) inside a Window.
     /// Replaces the old Level1/Level2 hardcoded classes.
     /// Tracks attempts, completion time, accuracy, and evaluates medals.
+    /// Enhanced with animated Angry Birds style celebration sequence.
     /// </summary>
     public class LevelRunner : MonoBehaviour
     {
@@ -186,7 +187,8 @@ namespace ComputerLearning
                 
                 float totalDuration = hasRecordedLevelStartTime ? Mathf.Max(0.5f, Time.time - levelStartTime) : 1f;
                 int totalMistakes = tasksFailed + extraTaskMistakes;
-                float accuracy = tasksAttempted > 0 ? ((float)tasksSucceeded / tasksAttempted) * 100f : 100f;
+                int totalActions = Mathf.Max(1, tasksSucceeded + totalMistakes);
+                float accuracy = ((float)tasksSucceeded / totalActions) * 100f;
 
                 LevelMedal medal = ProgressData.CalculateMedal(accuracy, totalMistakes);
 
@@ -196,16 +198,21 @@ namespace ComputerLearning
                     ProgressData.Instance.MarkLevelCompleted(currentLevel.levelId);
                 }
 
-                string medalEmoji = LevelScoreRecord.GetMedalEmoji(medal);
                 string medalName = LevelScoreRecord.GetMedalName(medal);
-                string medalColorHex = LevelScoreRecord.GetMedalColorHex(medal);
-                string completedDialog = !string.IsNullOrEmpty(dialogs?.level_completed) ? dialogs.level_completed : "Level completed!";
+                string celebrationMsg = $"Awesome job! You earned the {medalName.ToUpper()} Medal!\nAccuracy: {accuracy:F0}%  Time: {totalDuration:F1}s";
 
-                string celebrationMsg = $"{completedDialog}\n\n<color={medalColorHex}><b>{medalEmoji} {medalName.ToUpper()} MEDAL!</b></color>\nAccuracy: {accuracy:F0}%  Time: {totalDuration:F1}s";
-
-                VirtualMascot.Show(celebrationMsg, appWindow != null ? appWindow.ContentArea : null, new Vector2(0, -80));
+                VirtualMascot.ShowContextualFeedback(celebrationMsg, appWindow != null ? appWindow.ContentArea : null, 5f);
                 IsCompleted = true;
-                StartCoroutine(AutoCloseAfterDelay(4.0f));
+
+                Transform modalParent = appWindow != null ? appWindow.ContentArea : (taskContentArea != null ? taskContentArea : transform);
+                LevelCelebrationModal.Show(modalParent, currentLevel, medal, accuracy, totalDuration, totalMistakes, () =>
+                {
+                    if (currentLevel != null && string.Equals(currentLevel.levelId, "level9", System.StringComparison.OrdinalIgnoreCase))
+                    {
+                        DesktopManager.Instance?.TriggerAdvancedDesktopTourAfterLevel9();
+                    }
+                    if (appWindow != null) appWindow.CloseWindow();
+                });
 
                 return;
             }
@@ -308,9 +315,9 @@ namespace ComputerLearning
                 if (result.success) tasksSucceeded++;
                 else tasksFailed++;
 
-                if (result.attempts > 1)
+                if (result.attempts > 0)
                 {
-                    extraTaskMistakes += (result.attempts - 1);
+                    extraTaskMistakes += result.attempts;
                 }
 
                 // Inject Level info for Stats
@@ -331,6 +338,10 @@ namespace ComputerLearning
                     ProgressData.Instance.RecordResult(result);
                 }
             }
+            else
+            {
+                tasksSucceeded++;
+            }
 
             // Move to next
             currentTaskIndex++;
@@ -342,6 +353,10 @@ namespace ComputerLearning
             if (activeTask != null)
             {
                 activeTask.OnTaskCompleted -= HandleTaskCompleted;
+            }
+            if (IsCompleted && currentLevel != null && string.Equals(currentLevel.levelId, "level9", System.StringComparison.OrdinalIgnoreCase))
+            {
+                DesktopManager.Instance?.TriggerAdvancedDesktopTourAfterLevel9();
             }
         }
     }

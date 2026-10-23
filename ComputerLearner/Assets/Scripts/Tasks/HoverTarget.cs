@@ -18,7 +18,7 @@ namespace ComputerLearning
     /// The parent HoverTargetTask listens to OnHoverComplete and calls Complete().
     /// </summary>
     [RequireComponent(typeof(RectTransform))]
-    public class HoverTarget : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
+    public class HoverTarget : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerClickHandler
     {
         #region Public Variables
         /// <summary>Fired when the player hovers for the full required duration.</summary>
@@ -26,6 +26,12 @@ namespace ComputerLearning
         
         /// <summary>Fired when the player exits the target before completion.</summary>
         public event Action OnFailedAttempt;
+
+        /// <summary>Fired when the player clicks on the hover target instead of just hovering.</summary>
+        public event Action OnTargetClicked;
+
+        /// <summary>Fired while the player is actively hovering.</summary>
+        public event Action OnHoverActive;
         #endregion
 
         #region Private Variables
@@ -91,6 +97,7 @@ namespace ComputerLearning
             if (isHovering)
             {
                 hoverTime += Time.deltaTime;
+                OnHoverActive?.Invoke();
             }
             else
             {
@@ -126,16 +133,26 @@ namespace ComputerLearning
             parentRect = parent;
         }
 
-        public void OnPointerEnter(PointerEventData eventData) { isHovering = true; }
+        public void OnPointerEnter(PointerEventData eventData)
+        {
+            isHovering = true;
+            OnHoverActive?.Invoke();
+        }
         
         public void OnPointerExit(PointerEventData eventData)  
         { 
             isHovering = false; 
-            // If they started hovering but exited before it finished, it's an error.
-            if (!completed && hoverTime > 0.1f)
+            // If they started hovering and exited before completion, notify the task for mascot feedback
+            if (!completed)
             {
                 OnFailedAttempt?.Invoke();
             }
+        }
+
+        public void OnPointerClick(PointerEventData eventData)
+        {
+            if (completed) return;
+            OnTargetClicked?.Invoke();
         }
         #endregion
     }

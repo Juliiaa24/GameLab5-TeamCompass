@@ -38,5 +38,8 @@ namespace ComputerLearning
 
         /// <summary>ProgressData — task history and JSON persistence.</summary>
         public static ProgressData Progress() => ProgressData.Instance;
+
+        /// <summary>SoundManager singleton.</summary>
+        public static SoundManager Sound() => SoundManager.Instance;
     }
 }

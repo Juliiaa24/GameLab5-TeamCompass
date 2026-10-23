@@ -45,6 +45,8 @@ namespace ComputerLearning
 
         public bool IsMenuOpen => menuPanel != null && menuPanel.gameObject.activeSelf;
         public GameObject InputModalPrefab => inputModalPrefab;
+        public static event Action OnContextMenuOpened;
+        public static event Action<string> OnMenuItemClicked;
         #endregion
 
         #region Private Variables
@@ -65,6 +67,7 @@ namespace ComputerLearning
         private Action onNewFolderCallback;
         private readonly List<Button> spawnedButtons = new List<Button>();
         private GameObject activeModalObject;
+        private GameObject activeColorPaletteObject;
         #endregion
 
         #region Unity Methods
@@ -100,6 +103,27 @@ namespace ComputerLearning
 
         private void Update()
         {
+            if (activeColorPaletteObject != null)
+            {
+                if (UnityEngine.InputSystem.Keyboard.current != null && UnityEngine.InputSystem.Keyboard.current.escapeKey.wasPressedThisFrame)
+                {
+                    Destroy(activeColorPaletteObject);
+                    activeColorPaletteObject = null;
+                }
+                else if (UnityEngine.InputSystem.Mouse.current != null &&
+                         (UnityEngine.InputSystem.Mouse.current.leftButton.wasPressedThisFrame || UnityEngine.InputSystem.Mouse.current.rightButton.wasPressedThisFrame))
+                {
+                    Vector2 mousePos = UnityEngine.InputSystem.Mouse.current.position.ReadValue();
+                    Camera cam = targetCanvas != null && targetCanvas.renderMode != RenderMode.ScreenSpaceOverlay ? targetCanvas.worldCamera : null;
+                    RectTransform palRect = activeColorPaletteObject.GetComponent<RectTransform>();
+                    if (palRect != null && !RectTransformUtility.RectangleContainsScreenPoint(palRect, mousePos, cam))
+                    {
+                        Destroy(activeColorPaletteObject);
+                        activeColorPaletteObject = null;
+                    }
+                }
+            }
+
             if (!IsMenuOpen) return;
 
             if (UnityEngine.InputSystem.Mouse.current != null)
@@ -160,6 +184,7 @@ namespace ComputerLearning
             menuPanel.transform.SetAsLastSibling();
 
             PositionMenuAt(screenPosition);
+            OnContextMenuOpened?.Invoke();
         }
 
         /// <summary>
@@ -177,6 +202,26 @@ namespace ComputerLearning
         /// <summary>
         /// Instantiates the InputModalDialog prefab on the main Canvas to prompt the user for a name (Rename / Save As).
         /// </summary>
+                private Canvas GetTargetCanvas()
+        {
+            if (targetCanvas != null && targetCanvas.GetComponent<CRTOverlayController>() == null)
+                return targetCanvas;
+
+            targetCanvas = GetComponentInParent<Canvas>();
+            if (targetCanvas != null && targetCanvas.GetComponent<CRTOverlayController>() == null)
+                return targetCanvas;
+
+            Canvas[] canvases = FindObjectsByType<Canvas>(FindObjectsSortMode.None);
+            foreach (var c in canvases)
+            {
+                if (c != null && c.GetComponent<CRTOverlayController>() == null && c.GetComponent<GraphicRaycaster>() != null)
+                {
+                    targetCanvas = c;
+                    return targetCanvas;
+                }
+            }
+            return targetCanvas;
+        }
         public void ShowInputModal(string title, string initialValue, string confirmText, Action<string> onConfirm)
         {
             Hide();
@@ -187,8 +232,7 @@ namespace ComputerLearning
                 activeModalObject = null;
             }
 
-            if (targetCanvas == null) targetCanvas = GetComponentInParent<Canvas>();
-            if (targetCanvas == null) targetCanvas = FindAnyObjectByType<Canvas>();
+            targetCanvas = GetTargetCanvas();
             if (targetCanvas == null) return;
 
             if (inputModalPrefab == null)
@@ -229,6 +273,187 @@ namespace ComputerLearning
                         activeModalObject = null;
                     }
                 );
+            }
+        }
+                /// <summary>
+        /// Displays an interactive retro folder color palette to change folder colors.
+        /// </summary>
+        public void ShowFolderColorPicker(Vector2 screenPosition, Action<Sprite> onColorSelected)
+        {
+            Hide();
+
+            if (activeColorPaletteObject != null)
+            {
+                Destroy(activeColorPaletteObject);
+                activeColorPaletteObject = null;
+            }
+
+            targetCanvas = GetTargetCanvas();
+            if (targetCanvas == null) return;
+
+            // Build the Retro Folder Color Palette UI
+            GameObject paletteObj = new GameObject("FolderColorPaletteModal", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+            activeColorPaletteObject = paletteObj;
+            paletteObj.transform.SetParent(targetCanvas.transform, false);
+            paletteObj.transform.SetAsLastSibling();
+
+            RectTransform panelRect = paletteObj.GetComponent<RectTransform>();
+            panelRect.sizeDelta = new Vector2(250f, 155f);
+
+            // Retro 90s OS Window background styling
+            Image bgImg = paletteObj.GetComponent<Image>();
+            bgImg.color = new Color(0.76f, 0.77f, 0.80f, 1f);
+
+            Outline outline = paletteObj.AddComponent<Outline>();
+            outline.effectColor = new Color(0.2f, 0.2f, 0.2f, 0.8f);
+            outline.effectDistance = new Vector2(2f, -2f);
+
+            // Title Bar
+            GameObject titleBarObj = new GameObject("TitleBar", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+            titleBarObj.transform.SetParent(panelRect, false);
+            RectTransform titleBarRect = titleBarObj.GetComponent<RectTransform>();
+            titleBarRect.anchorMin = new Vector2(0f, 1f);
+            titleBarRect.anchorMax = new Vector2(1f, 1f);
+            titleBarRect.pivot = new Vector2(0.5f, 1f);
+            titleBarRect.anchoredPosition = new Vector2(0f, -3f);
+            titleBarRect.sizeDelta = new Vector2(-6f, 26f);
+            Image titleBarImg = titleBarObj.GetComponent<Image>();
+            titleBarImg.color = new Color(0.08f, 0.21f, 0.52f, 1f);
+
+            // Title Text
+            GameObject titleTxtObj = new GameObject("TitleText", typeof(RectTransform), typeof(TextMeshProUGUI));
+            titleTxtObj.transform.SetParent(titleBarRect, false);
+            RectTransform titleTxtRect = titleTxtObj.GetComponent<RectTransform>();
+            titleTxtRect.anchorMin = Vector2.zero;
+            titleTxtRect.anchorMax = Vector2.one;
+            titleTxtRect.offsetMin = new Vector2(8f, 0f);
+            titleTxtRect.offsetMax = new Vector2(-30f, 0f);
+            TextMeshProUGUI titleTmp = titleTxtObj.GetComponent<TextMeshProUGUI>();
+            titleTmp.text = "Folder Color";
+            titleTmp.fontSize = 13;
+            titleTmp.fontStyle = FontStyles.Bold;
+            titleTmp.color = Color.white;
+            titleTmp.alignment = TextAlignmentOptions.MidlineLeft;
+
+            // Close Button
+            GameObject closeBtnObj = new GameObject("CloseBtn", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button));
+            closeBtnObj.transform.SetParent(titleBarRect, false);
+            RectTransform closeBtnRect = closeBtnObj.GetComponent<RectTransform>();
+            closeBtnRect.anchorMin = new Vector2(1f, 0.5f);
+            closeBtnRect.anchorMax = new Vector2(1f, 0.5f);
+            closeBtnRect.pivot = new Vector2(1f, 0.5f);
+            closeBtnRect.anchoredPosition = new Vector2(-3f, 0f);
+            closeBtnRect.sizeDelta = new Vector2(20f, 20f);
+            Image closeBtnImg = closeBtnObj.GetComponent<Image>();
+            closeBtnImg.color = new Color(0.76f, 0.77f, 0.80f, 1f);
+            Button closeBtn = closeBtnObj.GetComponent<Button>();
+            closeBtn.onClick.AddListener(() =>
+            {
+                FeedbackManager.PlayClick();
+                if (activeColorPaletteObject != null)
+                {
+                    Destroy(activeColorPaletteObject);
+                    activeColorPaletteObject = null;
+                }
+            });
+
+            GameObject closeTxtObj = new GameObject("X", typeof(RectTransform), typeof(TextMeshProUGUI));
+            closeTxtObj.transform.SetParent(closeBtnRect, false);
+            RectTransform closeTxtRect = closeTxtObj.GetComponent<RectTransform>();
+            closeTxtRect.anchorMin = Vector2.zero;
+            closeTxtRect.anchorMax = Vector2.one;
+            TextMeshProUGUI closeTmp = closeTxtObj.GetComponent<TextMeshProUGUI>();
+            closeTmp.text = "x";
+            closeTmp.fontSize = 13;
+            closeTmp.fontStyle = FontStyles.Bold;
+            closeTmp.color = Color.black;
+            closeTmp.alignment = TextAlignmentOptions.Center;
+
+            // Swatch Grid
+            GameObject gridObj = new GameObject("ColorGrid", typeof(RectTransform), typeof(GridLayoutGroup));
+            gridObj.transform.SetParent(panelRect, false);
+            RectTransform gridRect = gridObj.GetComponent<RectTransform>();
+            gridRect.anchorMin = new Vector2(0f, 0f);
+            gridRect.anchorMax = new Vector2(1f, 1f);
+            gridRect.offsetMin = new Vector2(10f, 10f);
+            gridRect.offsetMax = new Vector2(-10f, -34f);
+
+            GridLayoutGroup grid = gridObj.GetComponent<GridLayoutGroup>();
+            grid.cellSize = new Vector2(40f, 44f);
+            grid.spacing = new Vector2(6f, 6f);
+            grid.startCorner = GridLayoutGroup.Corner.UpperLeft;
+            grid.startAxis = GridLayoutGroup.Axis.Horizontal;
+            grid.childAlignment = TextAnchor.MiddleCenter;
+
+            foreach (var opt in FolderColorUtility.Options)
+            {
+                GameObject swatchObj = new GameObject($"Color_{opt.name}", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button));
+                swatchObj.transform.SetParent(gridRect, false);
+
+                Image swatchBg = swatchObj.GetComponent<Image>();
+                swatchBg.color = new Color(0.92f, 0.93f, 0.95f, 1f);
+
+                Outline swatchOutline = swatchObj.AddComponent<Outline>();
+                swatchOutline.effectColor = new Color(0.35f, 0.35f, 0.35f, 0.6f);
+                swatchOutline.effectDistance = new Vector2(1f, -1f);
+
+                // Preview icon child
+                GameObject iconChild = new GameObject("Icon", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+                iconChild.transform.SetParent(swatchObj.transform, false);
+                RectTransform iconChildRect = iconChild.GetComponent<RectTransform>();
+                iconChildRect.anchorMin = new Vector2(0.5f, 0.5f);
+                iconChildRect.anchorMax = new Vector2(0.5f, 0.5f);
+                iconChildRect.sizeDelta = new Vector2(28f, 28f);
+                iconChildRect.anchoredPosition = new Vector2(0f, 3f);
+                Image iconImg = iconChild.GetComponent<Image>();
+                Sprite spr = FolderColorUtility.GetSprite(opt.spriteName);
+                if (spr != null)
+                {
+                    iconImg.sprite = spr;
+                }
+                else
+                {
+                    iconImg.color = opt.color;
+                }
+                iconImg.preserveAspect = true;
+                iconImg.raycastTarget = false;
+
+                // Color accent strip
+                GameObject dotChild = new GameObject("Dot", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+                dotChild.transform.SetParent(swatchObj.transform, false);
+                RectTransform dotRect = dotChild.GetComponent<RectTransform>();
+                dotRect.anchorMin = new Vector2(0.5f, 0f);
+                dotRect.anchorMax = new Vector2(0.5f, 0f);
+                dotRect.pivot = new Vector2(0.5f, 0f);
+                dotRect.sizeDelta = new Vector2(26f, 4f);
+                dotRect.anchoredPosition = new Vector2(0f, 2f);
+                Image dotImg = dotChild.GetComponent<Image>();
+                dotImg.color = opt.color;
+                dotImg.raycastTarget = false;
+
+                Button swatchBtn = swatchObj.GetComponent<Button>();
+                string capturedSpriteName = opt.spriteName;
+                swatchBtn.onClick.AddListener(() =>
+                {
+                    FeedbackManager.PlayClick();
+                    Sprite chosen = FolderColorUtility.GetSprite(capturedSpriteName);
+                    onColorSelected?.Invoke(chosen);
+                    if (activeColorPaletteObject != null)
+                    {
+                        Destroy(activeColorPaletteObject);
+                        activeColorPaletteObject = null;
+                    }
+                });
+            }
+
+            // Smart positioning near screenPosition
+            Camera cam = targetCanvas.renderMode != RenderMode.ScreenSpaceOverlay ? targetCanvas.worldCamera : null;
+            RectTransform canvasRect = targetCanvas.transform as RectTransform;
+            if (RectTransformUtility.ScreenPointToLocalPointInRectangle(canvasRect, screenPosition, cam, out Vector2 localPoint))
+            {
+                float x = Mathf.Clamp(localPoint.x + 130f, -canvasRect.rect.width / 2f + 135f, canvasRect.rect.width / 2f - 135f);
+                float y = Mathf.Clamp(localPoint.y - 80f, -canvasRect.rect.height / 2f + 90f, canvasRect.rect.height / 2f - 90f);
+                panelRect.anchoredPosition = new Vector2(x, y);
             }
         }
         #endregion
@@ -282,9 +507,11 @@ namespace ComputerLearning
                     if (item.isEnabled && item.action != null)
                     {
                         Action callback = item.action;
+                        string itemLabel = item.label;
                         btn.onClick.AddListener(() =>
                         {
                             Hide();
+                            OnMenuItemClicked?.Invoke(itemLabel);
                             callback.Invoke();
                         });
                     }

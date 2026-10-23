@@ -4,6 +4,8 @@
  * Description: Task where the player must hover the cursor over a target for a required duration.
  */
 using UnityEngine;
+using UnityEngine.UI;
+using UnityEngine.EventSystems;
 
 namespace ComputerLearning
 {
@@ -18,7 +20,7 @@ namespace ComputerLearning
     ///   moveSpeed             – speed of movement
     ///   timeLimit             – total task time limit; 0 = unlimited
     /// </summary>
-    public class HoverTargetTask : BaseTask
+    public class HoverTargetTask : BaseTask, IPointerClickHandler
     {
         #region Private Variables
         [Tooltip("The HoverTarget prefab to instantiate.")]
@@ -27,14 +29,27 @@ namespace ComputerLearning
         [Tooltip("The RectTransform the target is placed inside.")]
         [SerializeField] private RectTransform spawnArea;
 
+        private HoverTarget spawnedTarget;
+        private bool isTargetMoving;
         private float timeLimit;
         private float elapsed;
         private bool  timeLimitActive;
         #endregion
 
         #region Unity Methods
-        private void Update()
+        protected override void Start()
         {
+            base.Start();
+            // Ensure background receives clicks so clicking outside the hover target triggers mascot feedback
+            Image img = GetComponent<Image>();
+            if (img == null) img = gameObject.AddComponent<Image>();
+            img.color = new Color(0f, 0f, 0f, 0f);
+            img.raycastTarget = true;
+        }
+
+        protected override void Update()
+        {
+            base.Update();
             if (IsFinished || !timeLimitActive) return;
             elapsed += Time.deltaTime;
             if (elapsed >= timeLimit) Complete(false); // Time ran out → failure
@@ -49,6 +64,7 @@ namespace ComputerLearning
             timeLimit       = cfg.timeLimit;
             timeLimitActive = timeLimit > 0f;
             elapsed         = 0f;
+            isTargetMoving  = cfg.isMoving;
 
             if (targetPrefab == null)
             {
@@ -62,6 +78,7 @@ namespace ComputerLearning
             }
 
             HoverTarget target = Instantiate(targetPrefab, spawnArea, false);
+            spawnedTarget = target;
             target.SetParentRect(spawnArea);
             target.Configure(cfg.targetSize, cfg.requiredHoverDuration, cfg.isMoving, cfg.moveSpeed);
 
@@ -77,9 +94,42 @@ namespace ComputerLearning
             float x = (maxX > minX) ? Random.Range(minX, maxX) : 0f;
             float y = (maxY > minY) ? Random.Range(minY, maxY) : 0f;
 
-            target.GetComponent<RectTransform>().anchoredPosition = new Vector2(x, y);
+            RectTransform targetRect = target.GetComponent<RectTransform>();
+            targetRect.anchoredPosition = new Vector2(x, y);
+
+            RectTransform feedbackAnchor = cfg.isMoving ? spawnArea : targetRect;
+
+            target.OnHoverActive += NotifyUserInteraction;
             target.OnHoverComplete += () => Complete(true);
-            target.OnFailedAttempt += () => RecordIntermediateResult(false);
+            target.OnFailedAttempt += () =>
+            {
+                if (IsFinished) return;
+                NotifyUserInteraction();
+                FeedbackManager.PlayError(false);
+                VirtualMascot.ShowContextualFeedback("Oops! Keep the cursor steady inside the target until the bar fills!", feedbackAnchor, 3.0f);
+            };
+            target.OnTargetClicked += () =>
+            {
+                if (IsFinished) return;
+                NotifyUserInteraction();
+                FeedbackManager.PlayError(false);
+                VirtualMascot.ShowContextualFeedback("No need to click! Just hold the mouse cursor over the circle!", feedbackAnchor, 3.0f);
+            };
+        }
+        #endregion
+
+        #region Public Methods
+        public void OnPointerClick(PointerEventData eventData)
+        {
+            if (IsFinished) return;
+            NotifyUserInteraction();
+            FeedbackManager.PlayError(true);
+
+            RectTransform feedbackAnchor = (!isTargetMoving && spawnedTarget != null)
+                ? spawnedTarget.GetComponent<RectTransform>()
+                : (spawnArea != null ? spawnArea : GetComponent<RectTransform>());
+
+            VirtualMascot.ShowContextualFeedback("Don't click outside! Move your mouse inside the circle and hold it steady!", feedbackAnchor, 3.0f);
         }
         #endregion
     }

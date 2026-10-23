@@ -35,8 +35,10 @@ namespace ComputerLearning
 
         private void Start()
         {
-            if (!forcePlayIntro && PlayerPrefs.GetInt("VirtualDesktopIntroCompleted", 0) == 1)
+            if (PlayerPrefs.GetInt("DesktopTourCompleted", 0) == 0 ||
+                (!forcePlayIntro && PlayerPrefs.GetInt("VirtualDesktopIntroCompleted", 0) == 1))
             {
+                Destroy(this);
                 return;
             }
 
@@ -129,6 +131,7 @@ namespace ComputerLearning
 
             // HideMascot transitions the mascot back to DesktopCompanion mode in the top-right corner
             VirtualMascot.HideMascot();
+            Destroy(this);
         }
 
         private void OnDestroy()

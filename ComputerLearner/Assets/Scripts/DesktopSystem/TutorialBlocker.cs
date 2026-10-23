@@ -118,6 +118,19 @@ namespace ComputerLearning
 
             // Check if the screen point is inside the allowed target
             bool isInsideTarget = RectTransformUtility.RectangleContainsScreenPoint(allowedTarget, sp, cam);
+            if (!isInsideTarget)
+            {
+                ResizeHandle[] handles = allowedTarget.GetComponentsInChildren<ResizeHandle>();
+                for (int i = 0; i < handles.Length; i++)
+                {
+                    RectTransform hRect = handles[i] != null ? handles[i].GetComponent<RectTransform>() : null;
+                    if (hRect != null && RectTransformUtility.RectangleContainsScreenPoint(hRect, sp, cam))
+                    {
+                        isInsideTarget = true;
+                        break;
+                    }
+                }
+            }
 
             // If it's inside the target, we do NOT want the blocker to catch the raycast (return false).
             // If it's outside, the blocker catches it (return true).
@@ -133,4 +146,3 @@ namespace ComputerLearning
         public void OnEndDrag(PointerEventData eventData) { }
     }
 }
-

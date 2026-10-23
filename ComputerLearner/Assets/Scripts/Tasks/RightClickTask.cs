@@ -24,6 +24,7 @@ namespace ComputerLearning
             else if (eventData.button == PointerEventData.InputButton.Left)
             {
                 RegisterAttempt(); // Wrong button
+                VirtualMascot.ShowWrongClickFeedback(transform as RectTransform, true);
             }
         }
     }

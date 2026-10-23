@@ -24,13 +24,15 @@ namespace ComputerLearning
             if (fillImage != null) fillImage.fillAmount = 0f;
         }
 
-        private void Update()
+        protected override void Update()
         {
+            base.Update();
             if (IsFinished) return;
 
             if (isHolding)
             {
                 currentHoldTime += Time.deltaTime;
+                NotifyUserInteraction();
                 
                 if (fillImage != null)
                 {
@@ -56,10 +58,20 @@ namespace ComputerLearning
 
         public void OnPointerDown(PointerEventData eventData)
         {
-            if (IsFinished || eventData.button != PointerEventData.InputButton.Left) return;
+            if (IsFinished) return;
+            
+            if (eventData.button == PointerEventData.InputButton.Right)
+            {
+                FeedbackManager.PlayError(true);
+                VirtualMascot.ShowWrongClickFeedback(transform as RectTransform, false);
+                return;
+            }
+
+            if (eventData.button != PointerEventData.InputButton.Left) return;
             
             isHolding = true;
             currentHoldTime = 0f;
+            NotifyUserInteraction();
         }
 
         public void OnPointerUp(PointerEventData eventData)
@@ -72,6 +84,7 @@ namespace ComputerLearning
                 if (currentHoldTime < requiredHoldTime)
                 {
                     RegisterAttempt();
+                    VirtualMascot.ShowContextualFeedback("Keep pressing! Hold the button down a bit longer!", transform as RectTransform, 2.5f);
                 }
                 currentHoldTime = 0f;
             }
@@ -85,6 +98,7 @@ namespace ComputerLearning
                 isHolding = false;
                 currentHoldTime = 0f;
                 RegisterAttempt();
+                VirtualMascot.ShowContextualFeedback("Stay inside the circle while holding down!", transform as RectTransform, 2.5f);
             }
         }
     }

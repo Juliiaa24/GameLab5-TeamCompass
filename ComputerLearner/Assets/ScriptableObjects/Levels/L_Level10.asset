@@ -13,12 +13,10 @@ MonoBehaviour:
   m_Name: L_Level10
   m_EditorClassIdentifier: Assembly-CSharp::ComputerLearning.LevelDefinition
   levelId: level10
-  displayName: 'Level 10: Copy & Paste'
-  instructionText: 'Learn how to use keyboard shortcuts!
+  displayName: 'Level 10: Context Menu'
+  instructionText: 'Learn how to use the desktop Context Menu!
 
-    Press Ctrl + C to copy
-    and Ctrl + V to paste.'
+    Right-click on the desktop to explore options.'
   isAdaptive: 0
   adaptiveTaskCount: 5
-  tasks:
-  - {fileID: 11400000, guid: e87aa3cbff5c8b94388feb7a366fc5af, type: 2}
+  tasks: []

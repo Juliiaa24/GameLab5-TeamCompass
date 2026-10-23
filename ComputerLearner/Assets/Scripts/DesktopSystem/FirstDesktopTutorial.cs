@@ -105,12 +105,15 @@ namespace ComputerLearning
             PlayerPrefs.SetInt("AutoSequenceCompleted", 1);
             PlayerPrefs.Save();
             
-            // Transition to Desktop Tour (Tutorial1)
-            UnityEngine.SceneManagement.SceneManager.LoadScene("Tutorial1");
+            // Transition directly to VirtualDesktop
+            if (SceneSystem.Instance != null)
+            {
+                SceneSystem.Instance.ChangeToVirtualDesktop();
+            }
+            else
+            {
+                UnityEngine.SceneManagement.SceneManager.LoadScene("VirtualDesktop");
+            }
         }
     }
 }
-
-
-
-

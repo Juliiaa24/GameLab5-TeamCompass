@@ -2,6 +2,7 @@
  * Author: Diego
  * Date: 30/09/26
  * Description: Abstract base class for all task prefab components.
+ *              Enhanced with audio/haptic feedback integration and inactivity reminders.
  */
 using System;
 using UnityEngine;
@@ -19,13 +20,30 @@ namespace ComputerLearning
         #region Protected Variables
         protected float startTime;
         protected int attempts;
+        protected float lastInteractionTime;
+        protected bool hasShownInactivityReminder;
         #endregion
 
         #region Unity Methods
         protected virtual void Start()
         {
             startTime = Time.time;
-            attempts  = 0;
+            lastInteractionTime = Time.time;
+            hasShownInactivityReminder = false;
+            attempts = 0;
+        }
+
+        protected virtual void Update()
+        {
+            if (IsFinished) return;
+
+            // Check for 7 seconds of player inactivity during the task
+            if (!hasShownInactivityReminder && (Time.time - lastInteractionTime) >= 7f)
+            {
+                hasShownInactivityReminder = true;
+                RectTransform myRect = GetComponent<RectTransform>();
+                VirtualMascot.ShowInactivityReminder(myRect);
+            }
         }
         #endregion
 
@@ -34,7 +52,19 @@ namespace ComputerLearning
         {
             Definition = definition;
             IsFinished = false;
+            lastInteractionTime = Time.time;
+            hasShownInactivityReminder = false;
+            attempts = 0;
             SetupTask(definition);
+        }
+
+        /// <summary>
+        /// Resets the 7-second inactivity timer when the user hovers, moves, or interacts.
+        /// </summary>
+        public void NotifyUserInteraction()
+        {
+            lastInteractionTime = Time.time;
+            hasShownInactivityReminder = false;
         }
         #endregion
 
@@ -49,6 +79,18 @@ namespace ComputerLearning
         {
             if (IsFinished) return;
 
+            NotifyUserInteraction();
+
+            if (success)
+            {
+                FeedbackManager.PlaySuccess();
+            }
+            else
+            {
+                attempts++;
+                FeedbackManager.PlayError(true);
+            }
+
             float elapsed  = Time.time - startTime;
             string skillId = Definition?.primarySkill?.skillId ?? "unknown";
             int difficulty = Definition?.difficulty ?? 1;
@@ -62,7 +104,7 @@ namespace ComputerLearning
                 skillId,
                 difficulty,
                 success,
-                attempts,
+                success ? 0 : 1,
                 elapsed,
                 scoreChange
             );
@@ -78,15 +120,25 @@ namespace ComputerLearning
             if (SkillManager.Instance != null) SkillManager.Instance.ApplyResult(result);
             if (ProgressData.Instance != null) ProgressData.Instance.RecordResult(result);
             
-            // Reset timer and attempts for the next sub-task
+            // Reset sub-task timer (preserve cumulative attempts for final Complete call)
             startTime = Time.time;
-            attempts = 0;
         }
 
         protected void Complete(bool success)
         {
             if (IsFinished) return;
             IsFinished = true;
+
+            NotifyUserInteraction();
+
+            if (success)
+            {
+                FeedbackManager.PlaySuccess();
+            }
+            else
+            {
+                FeedbackManager.PlayError(true);
+            }
 
             float elapsed  = Time.time - startTime;
             string skillId = Definition?.primarySkill?.skillId ?? "unknown";
@@ -120,12 +172,15 @@ namespace ComputerLearning
         {
             if (IsFinished) return;
             IsFinished = true;
+            NotifyUserInteraction();
             OnTaskCompleted?.Invoke(null);
         }
 
         protected void RegisterAttempt()
         {
             attempts++;
+            NotifyUserInteraction();
+            FeedbackManager.PlayError(true);
         }
         #endregion
     }

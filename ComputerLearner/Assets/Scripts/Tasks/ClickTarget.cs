@@ -2,6 +2,7 @@
  * Author: Diego
  * Date: 30/09/26
  * Description: A single clickable target UI element used inside ClickTargetTask.
+ *              Enhanced with edge-accuracy detection and contextual mascot feedback.
  */
 using System;
 using UnityEngine;
@@ -34,6 +35,7 @@ namespace ComputerLearning
         private RectTransform rectTransform;
         private RectTransform parentRect;
         private Vector2 moveDirection;
+        private bool hasBeenClicked;
         #endregion
 
         #region Unity Methods
@@ -87,6 +89,7 @@ namespace ComputerLearning
             rectTransform.sizeDelta = new Vector2(size, size);
             isMoving  = moving;
             moveSpeed = speed;
+            hasBeenClicked = false;
         }
 
         /// <summary>Sets the parent rect used as movement boundary.</summary>
@@ -97,7 +100,35 @@ namespace ComputerLearning
 
         public void OnPointerClick(PointerEventData eventData)
         {
+            if (hasBeenClicked) return;
+
+            // Contextual Feedback 1: Wrong click button (Right click instead of Left click)
+            if (eventData.button == PointerEventData.InputButton.Right)
+            {
+                FeedbackManager.PlayError(true);
+                VirtualMascot.ShowWrongClickFeedback(rectTransform, false);
+                return;
+            }
+
             if (eventData.button != PointerEventData.InputButton.Left) return;
+
+            hasBeenClicked = true;
+
+            // Contextual Feedback 2: Edge hit ("Almost out! Aim closer to the center!")
+            if (rectTransform != null)
+            {
+                Camera eventCamera = eventData.pressEventCamera;
+                if (RectTransformUtility.ScreenPointToLocalPointInRectangle(rectTransform, eventData.position, eventCamera, out Vector2 localPoint))
+                {
+                    float radius = Mathf.Max(rectTransform.rect.width, rectTransform.rect.height) * 0.5f;
+                    float distFromCenter = localPoint.magnitude;
+                    if (radius > 1f && (distFromCenter / radius) >= 0.75f)
+                    {
+                        VirtualMascot.ShowAlmostOutFeedback(rectTransform);
+                    }
+                }
+            }
+
             OnClicked?.Invoke();
         }
         #endregion

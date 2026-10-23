@@ -26,6 +26,9 @@ namespace ComputerLearning
 
         #region Public Variables
         public ExplorerItemData CurrentFileItem => currentFileItem;
+        public static event Action OnPaintUndo;
+        public static event Action OnPaintSaveShortcut;
+        public static event Action OnStrokeDrawn;
         #endregion
 
         #region Private Variables
@@ -75,6 +78,7 @@ namespace ComputerLearning
         [NonSerialized] private ExplorerItemData targetSaveFolder;
         private Window parentWindow;
         private bool listenersBound;
+        private readonly Stack<Color32[]> undoHistory = new Stack<Color32[]>();
         #endregion
 
         #region Unity Methods
@@ -92,6 +96,43 @@ namespace ComputerLearning
             BindUIListeners();
             UpdateToolHighlight();
             UpdateStatusText();
+        }
+
+        private void Update()
+        {
+            if (parentWindow == null) parentWindow = GetComponentInParent<Window>();
+
+            bool isAppFocused = parentWindow != null ? parentWindow.IsFocused : true;
+            if (!isAppFocused) return;
+
+            bool isCtrl = false;
+            bool isZ = false;
+            bool isS = false;
+
+            if (UnityEngine.InputSystem.Keyboard.current != null)
+            {
+                var kb = UnityEngine.InputSystem.Keyboard.current;
+                isCtrl = kb.ctrlKey.isPressed;
+                isZ = kb.zKey.wasPressedThisFrame;
+                isS = kb.sKey.wasPressedThisFrame;
+            }
+            else
+            {
+                isCtrl = Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl);
+                isZ = Input.GetKeyDown(KeyCode.Z);
+                isS = Input.GetKeyDown(KeyCode.S);
+            }
+
+            if (!isCtrl) return;
+
+            if (isZ)
+            {
+                HandleUndoShortcut();
+            }
+            else if (isS)
+            {
+                HandleSaveShortcut();
+            }
         }
 
         private void OnDestroy()
@@ -144,8 +185,44 @@ namespace ComputerLearning
             targetSaveFolder = folder;
         }
 
+        public void PushUndo()
+        {
+            EnsureTexture();
+            if (drawingTexture != null)
+            {
+                Color32[] snapshot = drawingTexture.GetPixels32();
+                undoHistory.Push((Color32[])snapshot.Clone());
+            }
+        }
+
+        public void HandleUndoShortcut()
+        {
+            if (undoHistory.Count > 0)
+            {
+                EnsureTexture();
+                Color32[] prev = undoHistory.Pop();
+                drawingTexture.SetPixels32(prev);
+                drawingTexture.Apply();
+                ShowFeedback("Undo!");
+                FeedbackManager.PlaySuccess();
+                OnPaintUndo?.Invoke();
+            }
+            else
+            {
+                ShowFeedback("Nothing to undo");
+            }
+        }
+
+        public void HandleSaveShortcut()
+        {
+            OnSaveClicked();
+            OnPaintSaveShortcut?.Invoke();
+            FeedbackManager.PlayClick();
+        }
+
         public void ClearCanvas()
         {
+            PushUndo();
             EnsureTexture();
             drawingTexture.SetPixels32(clearBuffer);
             drawingTexture.Apply();
@@ -191,6 +268,9 @@ namespace ComputerLearning
         {
             if (eventData.button != PointerEventData.InputButton.Left) return;
             if (!TryGetPixelCoord(eventData, out int px, out int py)) return;
+
+            PushUndo();
+            OnStrokeDrawn?.Invoke();
 
             if (activeTool == PaintTool.Fill)
             {

@@ -81,7 +81,7 @@ namespace ComputerLearning
         private void OnApplicationQuit() { Save(); }
         #endregion
 
-        public static readonly string[] LevelOrder = { "level1", "level2", "level3", "level4", "level5", "level6", "level7", "level8", "level9", "level10" };
+        public static readonly string[] LevelOrder = { "level1", "level2", "level3", "level4", "level5", "level6", "level7", "level8", "level9", "level10", "level11", "level12", "level13", "level14", "level15", "level16" };
 
         public bool HasSeenDesktopTour { get; private set; }
         private List<string> unlockedLevels = new List<string> { "level1" }; // Level 1 always unlocked
@@ -98,10 +98,15 @@ namespace ComputerLearning
         public bool IsLevelUnlocked(string levelId)
         {
             if (string.IsNullOrEmpty(levelId)) return true;
-            if (UnityEngine.SceneManagement.SceneManager.GetActiveScene().name == "VirtualDesktop") return true;
             if (levelId == "level1") return true;
             if (completedLevels != null && completedLevels.Contains(levelId)) return true;
             if (unlockedLevels != null && unlockedLevels.Contains(levelId)) return true;
+
+            int orderIdx = Array.IndexOf(LevelOrder, levelId);
+            if (UnityEngine.SceneManagement.SceneManager.GetActiveScene().name == "VirtualDesktop")
+            {
+                if (orderIdx >= 0 && orderIdx <= 8) return true; // levels 1-9 available for free practice
+            }
 
             string nextLvl = GetCurrentNextLevelId();
             if (levelId == nextLvl) return true;
@@ -146,7 +151,6 @@ namespace ComputerLearning
             if (!completedLevels.Contains(levelId))
             {
                 completedLevels.Add(levelId);
-                OnLevelCompleted?.Invoke(levelId);
             }
 
             // Unlock next level in sequence
@@ -156,6 +160,7 @@ namespace ComputerLearning
                 UnlockLevel(LevelOrder[idx + 1]);
             }
 
+            OnLevelCompleted?.Invoke(levelId);
             OnProgressChanged?.Invoke();
             if (autoSaveAfterEachResult) Save();
         }
@@ -199,9 +204,9 @@ namespace ComputerLearning
         /// </summary>
         public static LevelMedal CalculateMedal(float accuracyPercentage, int mistakesCount)
         {
-            if (accuracyPercentage >= 99.9f && mistakesCount == 0) return LevelMedal.Gold;
-            if (accuracyPercentage >= 80f && mistakesCount <= 2) return LevelMedal.Silver;
-            if (accuracyPercentage >= 50f) return LevelMedal.Bronze;
+            if (accuracyPercentage >= 90f && mistakesCount <= 1) return LevelMedal.Gold;
+            if (accuracyPercentage >= 75f && mistakesCount <= 4) return LevelMedal.Silver;
+            if (accuracyPercentage >= 40f) return LevelMedal.Bronze;
             return LevelMedal.None;
         }
 

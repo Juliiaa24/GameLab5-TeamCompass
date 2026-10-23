@@ -825,71 +825,19 @@ namespace ComputerLearning.EditorTools
 
         private static void EnsureCopyPasteLevelAssets()
         {
-            // 1. Skill Definition
-            string skillPath = "Assets/ScriptableObjects/Skills/SK_KeyboardShortcuts.asset";
-            SkillDefinition skill = AssetDatabase.LoadAssetAtPath<SkillDefinition>(skillPath);
-            if (skill == null)
-            {
-                skill = ScriptableObject.CreateInstance<SkillDefinition>();
-                skill.skillId = "shortcuts";
-                skill.displayName = "Keyboard Shortcuts";
-                skill.description = "Using keyboard shortcuts like Ctrl+C and Ctrl+V";
-                AssetDatabase.CreateAsset(skill, skillPath);
-            }
-
-            // 2. Task Prefab
-            string taskPrefabPath = "Assets/Prefabs/Tasks/Task_CopyPaste.prefab";
-            GameObject taskPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(taskPrefabPath);
-            if (taskPrefab == null)
-            {
-                GameObject go = new GameObject("Task_CopyPaste", typeof(RectTransform), typeof(CopyPasteTask));
-                RectTransform rt = go.GetComponent<RectTransform>();
-                rt.anchorMin = Vector2.zero;
-                rt.anchorMax = Vector2.one;
-                rt.offsetMin = Vector2.zero;
-                rt.offsetMax = Vector2.zero;
-                taskPrefab = PrefabUtility.SaveAsPrefabAsset(go, taskPrefabPath);
-                Object.DestroyImmediate(go);
-            }
-
-            // 3. Task Definition
-            string taskDefPath = "Assets/ScriptableObjects/Tasks/T_CopyPaste.asset";
-            TaskDefinition taskDef = AssetDatabase.LoadAssetAtPath<TaskDefinition>(taskDefPath);
-            if (taskDef == null)
-            {
-                taskDef = ScriptableObject.CreateInstance<TaskDefinition>();
-                taskDef.taskId = "task_copypaste";
-                taskDef.displayName = "Copy & Paste Task";
-                taskDef.primarySkill = skill;
-                taskDef.difficulty = 1;
-                taskDef.taskPrefab = taskPrefab;
-                AssetDatabase.CreateAsset(taskDef, taskDefPath);
-            }
-            else if (taskDef.taskPrefab == null)
-            {
-                taskDef.taskPrefab = taskPrefab;
-                EditorUtility.SetDirty(taskDef);
-            }
-
-            // 4. Level Definition
+            // Level 10: Context Menu (desktop guided level)
             string levelPath = "Assets/ScriptableObjects/Levels/L_Level10.asset";
             LevelDefinition level10 = AssetDatabase.LoadAssetAtPath<LevelDefinition>(levelPath);
             if (level10 == null)
             {
                 level10 = ScriptableObject.CreateInstance<LevelDefinition>();
                 level10.levelId = "level10";
-                level10.displayName = "Level 10: Copy & Paste";
-                level10.instructionText = "Learn how to use keyboard shortcuts!\nPress Ctrl + C to copy and Ctrl + V to paste.";
+                level10.displayName = "Level 10: Context Menu";
+                level10.instructionText = "Learn how to use the desktop Context Menu!\nRight-click on the desktop to explore options.";
                 level10.isAdaptive = false;
-                level10.tasks = new System.Collections.Generic.List<TaskDefinition> { taskDef };
+                level10.tasks = new System.Collections.Generic.List<TaskDefinition>();
                 AssetDatabase.CreateAsset(level10, levelPath);
             }
-            else if (level10.tasks == null || level10.tasks.Count == 0)
-            {
-                level10.tasks = new System.Collections.Generic.List<TaskDefinition> { taskDef };
-                EditorUtility.SetDirty(level10);
-            }
-
             AssetDatabase.SaveAssets();
         }
 

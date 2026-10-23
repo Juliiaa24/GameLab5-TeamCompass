@@ -41,6 +41,8 @@ namespace ComputerLearning
         private void Awake()
         {
             Instance = this;
+            if (mascotRect == null) mascotRect = GetComponent<RectTransform>();
+            EnsureSpeechBubbleLayout();
         }
 
         private void OnDestroy()
@@ -51,6 +53,7 @@ namespace ComputerLearning
         private void Start()
         {
             if (mascotRect == null) mascotRect = GetComponent<RectTransform>();
+            EnsureSpeechBubbleLayout();
 
             if (isDesktopCompanion)
             {
@@ -63,24 +66,74 @@ namespace ComputerLearning
             if (cg == null) cg = gameObject.AddComponent<CanvasGroup>();
             cg.interactable = false;
             cg.blocksRaycasts = false;
-            
-            // Ensure speech bubble has layout components
-            if (speechBubble != null)
+        }
+
+        private void EnsureSpeechBubbleLayout()
+        {
+            if (speechBubble == null) return;
+
+            Image bubbleImg = speechBubble.GetComponent<Image>();
+            if (bubbleImg != null) bubbleImg.raycastTarget = false;
+
+            UnityEngine.UI.HorizontalLayoutGroup hlg = speechBubble.GetComponent<UnityEngine.UI.HorizontalLayoutGroup>();
+            if (hlg == null && speechBubble.GetComponent<UnityEngine.UI.VerticalLayoutGroup>() == null)
             {
-                UnityEngine.UI.ContentSizeFitter csf = speechBubble.GetComponent<UnityEngine.UI.ContentSizeFitter>();
-                if (csf == null) csf = speechBubble.AddComponent<UnityEngine.UI.ContentSizeFitter>();
-                csf.horizontalFit = UnityEngine.UI.ContentSizeFitter.FitMode.PreferredSize;
-                csf.verticalFit = UnityEngine.UI.ContentSizeFitter.FitMode.PreferredSize;
-                
-                UnityEngine.UI.HorizontalLayoutGroup hlg = speechBubble.GetComponent<UnityEngine.UI.HorizontalLayoutGroup>();
-                if (hlg == null && speechBubble.GetComponent<UnityEngine.UI.VerticalLayoutGroup>() == null)
+                hlg = speechBubble.AddComponent<UnityEngine.UI.HorizontalLayoutGroup>();
+                hlg.padding = new RectOffset(22, 22, 16, 16);
+                hlg.childAlignment = TextAnchor.MiddleCenter;
+                hlg.childControlHeight = true;
+                hlg.childControlWidth = true;
+                hlg.childForceExpandHeight = false;
+                hlg.childForceExpandWidth = false;
+            }
+
+            UnityEngine.UI.ContentSizeFitter csf = speechBubble.GetComponent<UnityEngine.UI.ContentSizeFitter>();
+            if (csf == null) csf = speechBubble.AddComponent<UnityEngine.UI.ContentSizeFitter>();
+            csf.horizontalFit = UnityEngine.UI.ContentSizeFitter.FitMode.PreferredSize;
+            csf.verticalFit = UnityEngine.UI.ContentSizeFitter.FitMode.PreferredSize;
+
+            if (speechText != null)
+            {
+                speechText.raycastTarget = false;
+                speechText.horizontalOverflow = HorizontalWrapMode.Wrap;
+                speechText.verticalOverflow = VerticalWrapMode.Overflow;
+                if (speechText.fontSize > 22)
                 {
-                    hlg = speechBubble.AddComponent<UnityEngine.UI.HorizontalLayoutGroup>();
-                    hlg.padding = new RectOffset(20, 20, 15, 15);
-                    hlg.childAlignment = TextAnchor.MiddleCenter;
-                    hlg.childControlHeight = true;
-                    hlg.childControlWidth = true;
+                    speechText.fontSize = 22;
                 }
+            }
+        }
+
+        private void ApplyTextAndRebuildBubble(string message)
+        {
+            EnsureSpeechBubbleLayout();
+            if (speechBubble == null || speechText == null) return;
+
+            bool hasMessage = !string.IsNullOrEmpty(message);
+            speechBubble.SetActive(hasMessage);
+            speechText.text = message ?? string.Empty;
+
+            if (hasMessage)
+            {
+                UnityEngine.UI.LayoutElement layoutElement = speechText.GetComponent<UnityEngine.UI.LayoutElement>();
+                if (layoutElement == null)
+                {
+                    layoutElement = speechText.gameObject.AddComponent<UnityEngine.UI.LayoutElement>();
+                }
+
+                // Reset to unconstrained to calculate raw width
+                layoutElement.preferredWidth = -1;
+                layoutElement.preferredHeight = -1;
+
+                float rawWidth = speechText.preferredWidth;
+                if (rawWidth > 380f)
+                {
+                    layoutElement.preferredWidth = 380f;
+                }
+
+                // Force the layout to rebuild immediately so it resizes vertically before the next frame
+                UnityEngine.UI.LayoutRebuilder.ForceRebuildLayoutImmediate(speechText.GetComponent<RectTransform>());
+                UnityEngine.UI.LayoutRebuilder.ForceRebuildLayoutImmediate(speechBubble.GetComponent<RectTransform>());
             }
         }
 
@@ -91,6 +144,17 @@ namespace ComputerLearning
                 UpdateCompanionPosition();
                 return;
             }
+
+            if (targetRect != null && !targetRect.gameObject.activeInHierarchy)
+            {
+                // If target was destroyed or hidden, hide mascot
+                Hide();
+                return;
+            }
+
+            Canvas canvas = GetComponentInParent<Canvas>();
+            float scale = canvas != null ? canvas.scaleFactor : 1f;
+
             if (targetRect != null && targetRect.gameObject.activeInHierarchy)
             {
                 // Get the true visual center of the target, regardless of where its pivot is set
@@ -102,94 +166,76 @@ namespace ComputerLearning
                 floatTimer += Time.deltaTime;
                 float floatOffset = Mathf.Sin(floatTimer * 4f) * 5f; 
                 
-                Canvas canvas = GetComponentInParent<Canvas>();
-                float scale = canvas != null ? canvas.scaleFactor : 1f;
-                
-                // IGNORE currentOffset from old code, because now we act as a direct cursor
                 Vector3 finalTargetPos = basePos + new Vector3(0, floatOffset * scale, 0);
 
-                // Clamp to screen bounds to prevent going completely off-screen, 
-                // but keep margin very small so the tip can reach top/right buttons like the 'X'.
+                // Clamp to screen bounds to prevent going completely off-screen
                 float margin = 5f * scale; 
                 finalTargetPos.x = Mathf.Clamp(finalTargetPos.x, margin, Screen.width - margin);
                 finalTargetPos.y = Mathf.Clamp(finalTargetPos.y, margin, Screen.height - margin);
 
                 mascotRect.position = Vector3.Lerp(mascotRect.position, finalTargetPos, Time.deltaTime * followSpeed);
-
-                // Flip the mascot horizontally if it's on the right side of the screen
-                // We use Camera.main if possible, or screen pixels, to robustly determine side.
-                bool isOnRightSide = false;
-                if (autoFlipMascot)
-                {
-                    Camera cam = canvas != null ? canvas.worldCamera : null;
-                    Vector3 screenPoint = RectTransformUtility.WorldToScreenPoint(cam, mascotRect.position);
-                    isOnRightSide = screenPoint.x > Screen.width * 0.5f;
-                }
-
-                float flipScale = isOnRightSide ? -1f : 1f;
-                mascotRect.localScale = new Vector3(flipScale, 1f, 1f);
-
-                if (speechBubble != null)
-                {
-                    // Counter-flip the speech bubble so the text remains readable
-                    speechBubble.transform.localScale = new Vector3(flipScale, 1f, 1f);
-                    
-                    RectTransform bubbleRect = speechBubble.GetComponent<RectTransform>();
-                    
-                    // Use the exposed variable instead of magic numbers
-                    Vector2 finalBubblePos = new Vector2(speechBubbleOffset.x, speechBubbleOffset.y);
-
-                    if (isOnRightSide)
-                    {
-                        // Mascot body goes LEFT. Speech bubble is pushed LEFT.
-                        bubbleRect.pivot = new Vector2(1f, 1f);
-                    }
-                    else
-                    {
-                        // Mascot body goes RIGHT. Speech bubble is pushed RIGHT.
-                        bubbleRect.pivot = new Vector2(0f, 1f);
-                    }
-                    
-                    // Apply position temporarily to calculate world corners
-                    bubbleRect.anchoredPosition = finalBubblePos;
-                    
-                    // Force a layout update so the ContentSizeFitter calculates the correct size based on text
-                    UnityEngine.UI.LayoutRebuilder.ForceRebuildLayoutImmediate(bubbleRect);
-
-                    // Clamp vertically to screen bounds
-                    Vector3[] bubbleCorners = new Vector3[4];
-                    bubbleRect.GetWorldCorners(bubbleCorners);
-                    
-                    // Convert world corners to screen space to check bounds
-                    Camera cam = canvas != null ? canvas.worldCamera : null;
-                    Vector3 bottomEdge = RectTransformUtility.WorldToScreenPoint(cam, bubbleCorners[0]);
-                    Vector3 topEdge = RectTransformUtility.WorldToScreenPoint(cam, bubbleCorners[1]);
-                    
-                    float marginY = 10f;
-                    float currentScale = canvas != null ? canvas.scaleFactor : 1f;
-                    
-                    // If bubble goes below screen
-                    if (bottomEdge.y < marginY)
-                    {
-                        // Shift it up by the difference
-                        float difference = (marginY - bottomEdge.y) / currentScale;
-                        finalBubblePos.y += difference;
-                    }
-                    // If bubble goes above screen
-                    else if (topEdge.y > Screen.height - marginY)
-                    {
-                        // Shift it down by the difference
-                        float difference = (topEdge.y - (Screen.height - marginY)) / currentScale;
-                        finalBubblePos.y -= difference;
-                    }
-                    
-                    bubbleRect.anchoredPosition = finalBubblePos;
-                }
             }
-            else if (targetRect != null && !targetRect.gameObject.activeInHierarchy)
+
+            UpdateSpeechBubblePlacement(canvas);
+        }
+
+        private void UpdateSpeechBubblePlacement(Canvas canvas)
+        {
+            if (mascotRect == null) return;
+
+            bool isOnRightSide = false;
+            Camera cam = canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay ? canvas.worldCamera : null;
+            if (autoFlipMascot)
             {
-                // If target was destroyed or hidden, hide mascot
-                Hide();
+                Vector3 screenPoint = RectTransformUtility.WorldToScreenPoint(cam, mascotRect.position);
+                isOnRightSide = screenPoint.x > Screen.width * 0.5f;
+            }
+
+            float flipScale = isOnRightSide ? -1f : 1f;
+            mascotRect.localScale = new Vector3(flipScale, 1f, 1f);
+
+            if (speechBubble != null && speechBubble.activeSelf)
+            {
+                // Counter-flip the speech bubble so the text remains readable
+                speechBubble.transform.localScale = new Vector3(flipScale, 1f, 1f);
+                
+                RectTransform bubbleRect = speechBubble.GetComponent<RectTransform>();
+                Vector2 finalBubblePos = new Vector2(speechBubbleOffset.x, speechBubbleOffset.y);
+
+                if (isOnRightSide)
+                {
+                    bubbleRect.pivot = new Vector2(1f, 1f);
+                }
+                else
+                {
+                    bubbleRect.pivot = new Vector2(0f, 1f);
+                }
+                
+                bubbleRect.anchoredPosition = finalBubblePos;
+                UnityEngine.UI.LayoutRebuilder.ForceRebuildLayoutImmediate(bubbleRect);
+
+                // Clamp vertically and horizontally to screen bounds
+                Vector3[] bubbleCorners = new Vector3[4];
+                bubbleRect.GetWorldCorners(bubbleCorners);
+                
+                Vector3 bottomEdge = RectTransformUtility.WorldToScreenPoint(cam, bubbleCorners[0]);
+                Vector3 topEdge = RectTransformUtility.WorldToScreenPoint(cam, bubbleCorners[1]);
+                
+                float marginY = 14f;
+                float currentScale = canvas != null ? canvas.scaleFactor : 1f;
+                
+                if (bottomEdge.y < marginY)
+                {
+                    float difference = (marginY - bottomEdge.y) / currentScale;
+                    finalBubblePos.y += difference;
+                }
+                else if (topEdge.y > Screen.height - marginY)
+                {
+                    float difference = (topEdge.y - (Screen.height - marginY)) / currentScale;
+                    finalBubblePos.y -= difference;
+                }
+                
+                bubbleRect.anchoredPosition = finalBubblePos;
             }
         }
 
@@ -197,7 +243,6 @@ namespace ComputerLearning
         {
             if (Instance == null)
             {
-                // Busca en la escena aunque esté desactivado
                 Instance = Object.FindFirstObjectByType<VirtualMascot>(FindObjectsInactive.Include);
                 
                 if (Instance == null)
@@ -218,13 +263,74 @@ namespace ComputerLearning
         {
             if (Instance != null && !Instance.isDesktopCompanion && Instance.targetRect != null)
             {
-                // If the current target is the window itself, or a child of the window (like the X button)
                 if (Instance.targetRect.IsChildOf(potentialParent) || Instance.targetRect == potentialParent)
                 {
                     Instance.Hide();
                 }
             }
         }
+
+        #region Contextual Mistake & Feedback System
+        public static void ShowContextualFeedback(string message, RectTransform target = null, float duration = 3.5f)
+        {
+            if (Instance == null)
+            {
+                Instance = Object.FindFirstObjectByType<VirtualMascot>(FindObjectsInactive.Include);
+            }
+            if (Instance != null)
+            {
+                Instance.ShowTemporaryFeedback(message, target, duration);
+            }
+        }
+
+        public static void ShowWrongClickFeedback(RectTransform target, bool isRightClickExpected)
+        {
+            string msg = isRightClickExpected
+                ? "That was a left click! Try using the right mouse button!"
+                : "Wrong click! Try using the left mouse button.";
+            ShowContextualFeedback(msg, target, 3.5f);
+        }
+
+        public static void ShowAlmostOutFeedback(RectTransform target)
+        {
+            ShowContextualFeedback("Almost out! Aim closer to the center!", target, 3.0f);
+        }
+
+        public static void ShowSingleClickFeedback(RectTransform target)
+        {
+            ShowContextualFeedback("Just a single click here!", target, 3.0f);
+        }
+
+        public static void ShowInactivityReminder(RectTransform target = null)
+        {
+            string[] inactivityPool = new string[]
+            {
+                "Take your time! Whenever you're ready, give it a click!",
+                "Need a hand? Aim carefully at the target area!",
+                "You're doing great! Keep going!",
+                "Don't worry, take all the time you need!"
+            };
+            string msg = inactivityPool[UnityEngine.Random.Range(0, inactivityPool.Length)];
+            ShowContextualFeedback(msg, target, 4.0f);
+        }
+
+        public void ShowTemporaryFeedback(string message, RectTransform target, float duration)
+        {
+            ShowMessage(message, target);
+            if (bounceCoroutine != null) StopCoroutine(bounceCoroutine);
+            bounceCoroutine = StartCoroutine(BounceAnimation());
+
+            if (hideBubbleCoroutine != null) StopCoroutine(hideBubbleCoroutine);
+            hideBubbleCoroutine = StartCoroutine(AutoHideFeedback(duration));
+        }
+
+        private IEnumerator AutoHideFeedback(float delay)
+        {
+            yield return new WaitForSeconds(delay);
+            Hide();
+            hideBubbleCoroutine = null;
+        }
+        #endregion
 
         public void ShowMessage(string message, RectTransform target, Vector2? offset = null)
         {
@@ -246,6 +352,10 @@ namespace ComputerLearning
                 mascotRect.anchorMin = new Vector2(0.5f, 0.5f);
                 mascotRect.anchorMax = new Vector2(0.5f, 0.5f);
                 mascotRect.pivot = new Vector2(0.125f, 1.13f);
+                if (targetRect == null)
+                {
+                    mascotRect.anchoredPosition = offset ?? new Vector2(-120f, 60f);
+                }
             }
 
             CanvasGroup cg = GetComponent<CanvasGroup>();
@@ -253,41 +363,11 @@ namespace ComputerLearning
             cg.interactable = false;
             cg.blocksRaycasts = false;
 
-            // The offset parameter is now ignored because the mascot acts as a direct cursor
+            ApplyTextAndRebuildBubble(message);
 
-            if (speechBubble != null && speechText != null)
-            {
-                bool hasMessage = !string.IsNullOrEmpty(message);
-                speechBubble.SetActive(hasMessage);
-                speechText.text = message;
+            Canvas canvas = GetComponentInParent<Canvas>();
+            UpdateSpeechBubblePlacement(canvas);
 
-                if (hasMessage)
-                {
-                    // Ensure the text wraps properly
-                    speechText.horizontalOverflow = HorizontalWrapMode.Wrap;
-
-                    // Add a LayoutElement to constrain maximum width
-                    UnityEngine.UI.LayoutElement layoutElement = speechText.GetComponent<UnityEngine.UI.LayoutElement>();
-                    if (layoutElement == null)
-                    {
-                        layoutElement = speechText.gameObject.AddComponent<UnityEngine.UI.LayoutElement>();
-                    }
-                    
-                    // Reset to unconstrained to calculate raw width
-                    layoutElement.preferredWidth = -1;
-                    float rawWidth = speechText.preferredWidth;
-                    
-                    // Constrain width to 350 max, otherwise let it fit tightly
-                    if (rawWidth > 350f)
-                    {
-                        layoutElement.preferredWidth = 350f;
-                    }
-                    
-                    // Force the layout to rebuild immediately so it resizes vertically before the next frame
-                    UnityEngine.UI.LayoutRebuilder.ForceRebuildLayoutImmediate(speechBubble.GetComponent<RectTransform>());
-                }
-            }
-            
             transform.SetAsLastSibling(); 
         }
 
@@ -312,6 +392,8 @@ namespace ComputerLearning
             isDesktopCompanion = true;
             targetRect = null;
             gameObject.SetActive(true);
+
+            EnsureSpeechBubbleLayout();
 
             if (mascotRect == null) mascotRect = GetComponent<RectTransform>();
 
@@ -383,8 +465,7 @@ namespace ComputerLearning
 
             if (hideBubbleCoroutine != null) StopCoroutine(hideBubbleCoroutine);
 
-            speechBubble.SetActive(true);
-            speechText.text = message;
+            ApplyTextAndRebuildBubble(message);
 
             RectTransform bubbleRt = speechBubble.GetComponent<RectTransform>();
             if (bubbleRt != null)

@@ -80,7 +80,9 @@ namespace ComputerLearning
 
         #region Private Variables
         private Window appWindow;
-        private RectTransform taskContentArea;
+        [Header("Scene Canvas References")]
+        [SerializeField] private RectTransform taskContentArea;
+        [SerializeField] private Canvas sceneCanvas;
         private LevelDefinition currentLevel;
 
         private AssessmentConfig config;
@@ -243,11 +245,47 @@ namespace ComputerLearning
         #endregion
 
         #region UI Construction (Light Mode)
+        private Canvas FindAssessmentCanvas()
+        {
+            if (sceneCanvas != null && sceneCanvas.GetComponent<GraphicRaycaster>() != null)
+                return sceneCanvas;
+
+            Canvas[] canvases = FindObjectsByType<Canvas>(FindObjectsSortMode.None);
+
+            // 1. Same scene + GraphicRaycaster + Not CRT Overlay or Blocker
+            foreach (var c in canvases)
+            {
+                if (c == null) continue;
+                if (c.gameObject.scene != gameObject.scene) continue;
+                if (c.GetComponent<CRTOverlayController>() != null || c.GetComponent<TutorialBlocker>() != null) continue;
+                if (c.GetComponent<GraphicRaycaster>() != null) return c;
+            }
+
+            // 2. Any Canvas in active scene that is not overlay
+            foreach (var c in canvases)
+            {
+                if (c == null) continue;
+                if (c.gameObject.scene != gameObject.scene) continue;
+                if (c.GetComponent<CRTOverlayController>() != null || c.GetComponent<TutorialBlocker>() != null) continue;
+                return c;
+            }
+
+            // 3. Any Canvas with GraphicRaycaster that is NOT an overlay or blocker
+            foreach (var c in canvases)
+            {
+                if (c == null) continue;
+                if (c.GetComponent<CRTOverlayController>() != null || c.GetComponent<TutorialBlocker>() != null) continue;
+                if (c.GetComponent<GraphicRaycaster>() != null) return c;
+            }
+
+            return null;
+        }
+
         private void BuildCleanUI()
         {
             if (taskContentArea == null)
             {
-                Canvas canvas = UnityEngine.Object.FindFirstObjectByType<Canvas>();
+                Canvas canvas = FindAssessmentCanvas();
                 if (canvas != null) taskContentArea = canvas.GetComponent<RectTransform>();
             }
 
@@ -268,8 +306,10 @@ namespace ComputerLearning
             rootRect.anchorMax = Vector2.one;
             rootRect.offsetMin = Vector2.zero;
             rootRect.offsetMax = Vector2.zero;
-            rootContainer.GetComponent<Image>().color = new Color(0.95f, 0.96f, 0.98f, 1f);
 
+            Image rootImg = rootContainer.GetComponent<Image>();
+            rootImg.color = new Color(0.95f, 0.96f, 0.98f, 1f);
+            rootImg.raycastTarget = false; // Never block raycasts for buttons or interactive targets!
             // Top Header Panel (Pure white #FFFFFF)
             GameObject headerObj = new GameObject("HeaderPanel", typeof(RectTransform), typeof(Image));
             headerObj.transform.SetParent(rootContainer.transform, false);

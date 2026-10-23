@@ -5,7 +5,6 @@
 */
 using System;
 using System.Collections.Generic;
-using System.Reflection.Metadata;
 using UnityEngine;
 
 namespace ComputerLearning
@@ -119,6 +118,18 @@ namespace ComputerLearning
             if (window.IsMinimized) window.Restore();
             else if (ActiveWindow == window) window.Minimize();
             else FocusWindow(window);
+        }
+
+        public void CloseAllWindows()
+        {
+            List<Window> copy = new List<Window>(windows);
+            foreach (var w in copy)
+            {
+                if (w != null && !w.IsClosed)
+                {
+                    w.CloseWindow();
+                }
+            }
         }
         #endregion
 

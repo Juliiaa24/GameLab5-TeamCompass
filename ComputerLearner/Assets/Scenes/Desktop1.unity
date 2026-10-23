@@ -1077,6 +1077,10 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 678566843}
     - target: {fileID: 1752656936260673201, guid: 8fd5d29b8e6b66b4aa43469e74eaad42, type: 3}
+      propertyPath: enableScoresAppIcon
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1752656936260673201, guid: 8fd5d29b8e6b66b4aa43469e74eaad42, type: 3}
       propertyPath: initialDesktopIcons.Array.data[0].iconName
       value: Move
       objectReference: {fileID: 0}

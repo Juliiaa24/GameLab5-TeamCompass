@@ -718,6 +718,34 @@ namespace ComputerLearning
                     }, true));
                 }
 
+                bool isFolder = (ItemType == DesktopItemType.Folder) ||
+                                (LinkedExplorerItem != null && LinkedExplorerItem.fileType == ExplorerFileType.Folder) ||
+                                gameObject.name.Equals("Levels", StringComparison.OrdinalIgnoreCase) ||
+                                gameObject.name.Equals("Files", StringComparison.OrdinalIgnoreCase);
+
+                if (isFolder)
+                {
+                    items.Add(new ContextMenuItem("Change Folder Color", () =>
+                    {
+                        ContextMenuController.Instance.ShowFolderColorPicker(screenPosition, (selectedSprite) =>
+                        {
+                            if (selectedSprite == null) return;
+                            EnsureLinkedExplorerItem();
+                            if (LinkedExplorerItem != null)
+                            {
+                                LinkedExplorerItem.icon = selectedSprite;
+                                FileExplorerApp.NotifyFileSystemChanged();
+                            }
+                            UnityEngine.UI.Image iconImg = GetComponent<UnityEngine.UI.Image>();
+                            if (iconImg != null)
+                            {
+                                iconImg.sprite = selectedSprite;
+                            }
+                            FeedbackManager.PlaySuccess();
+                        });
+                    }, true));
+                }
+
                 bool canModify = !IsProtected;
                 items.Add(new ContextMenuItem("Rename", PromptRenameDesktopIcon, canModify));
                 items.Add(new ContextMenuItem("Delete", DeleteDesktopIconToRecycleBin, canModify));

@@ -47,7 +47,19 @@ namespace ComputerLearning
     public class DesktopManager : MonoBehaviour
     {
         #region Public Variables
-        public static DesktopManager Instance { get; private set; }
+        private static DesktopManager _instance;
+        public static DesktopManager Instance
+        {
+            get
+            {
+                if (_instance == null)
+                {
+                    _instance = UnityEngine.Object.FindAnyObjectByType<DesktopManager>();
+                }
+                return _instance;
+            }
+            private set => _instance = value;
+        }
         #endregion
 
         #region Private Component References
@@ -67,6 +79,8 @@ namespace ComputerLearning
         [SerializeField] private GameObject paintContentPrefab;
         [SerializeField] private GameObject notepadContentPrefab;
         [SerializeField] private GameObject scoresContentPrefab;
+        [Tooltip("If true, automatically ensures the Scores app icon is placed on this desktop")]
+        [SerializeField] private bool enableScoresAppIcon = true;
 
         [Header("Initial Desktop Icons")]
         [Tooltip("List of icons to spawn automatically on start")]
@@ -82,6 +96,7 @@ namespace ComputerLearning
         public GameObject PaintContentPrefab => paintContentPrefab;
         public GameObject NotepadContentPrefab => notepadContentPrefab;
         public GameObject ScoresContentPrefab => scoresContentPrefab;
+        public bool EnableScoresAppIcon { get => enableScoresAppIcon; set => enableScoresAppIcon = value; }
 
         public DraggableIcon GetIconByLevelId(string levelId)
         {
@@ -111,11 +126,34 @@ namespace ComputerLearning
         {
             Instance = this;
             InitializeDesktop();
+
+            // Self-healing: ensure desktop wallpaper stretches across full screen regardless of aspect ratio (16:10, 21:9, etc.)
+            Transform bg = transform.Find("Background");
+            if (bg == null)
+            {
+                Canvas canvas = GetComponentInParent<Canvas>();
+                if (canvas != null) bg = canvas.transform.Find("Background");
+            }
+            if (bg != null)
+            {
+                RectTransform rt = bg as RectTransform;
+                if (rt != null)
+                {
+                    rt.anchorMin = Vector2.zero;
+                    rt.anchorMax = Vector2.one;
+                    rt.anchoredPosition = Vector2.zero;
+                    rt.sizeDelta = Vector2.zero;
+                }
+            }
         }
 
         private void OnDestroy()
         {
             if (Instance == this) Instance = null;
+            if (ProgressData.Instance != null)
+            {
+                ProgressData.Instance.OnLevelCompleted -= HandleLevelCompletedForAdvancedTour;
+            }
         }
 
         private void OnEnable()
@@ -132,15 +170,94 @@ namespace ComputerLearning
         {
             SpawnInitialIcons();
             EnsureScoresAppIcon();
+            if (string.Equals(UnityEngine.SceneManagement.SceneManager.GetActiveScene().name, "Desktop1", StringComparison.OrdinalIgnoreCase) || !enableScoresAppIcon)
+            {
+                RemoveScoresIconIfExists();
+            }
             RegisterSceneIconsIntoDesktopFolder();
             if (IsVirtualDesktopScene())
             {
                 SyncDesktopWithExplorerFolder();
 
-                if (UnityEngine.Object.FindAnyObjectByType<VirtualDesktopIntro>() == null)
+                // Tutorial 1: DesktopTour on first entry to VirtualDesktop
+                if (PlayerPrefs.GetInt("DesktopTourCompleted", 0) == 0)
                 {
-                    gameObject.AddComponent<VirtualDesktopIntro>();
+                    if (UnityEngine.Object.FindAnyObjectByType<DesktopTour>() == null)
+                    {
+                        gameObject.AddComponent<DesktopTour>();
+                    }
                 }
+                else if (PlayerPrefs.GetInt("VirtualDesktopIntroCompleted", 0) == 0)
+                {
+                    if (UnityEngine.Object.FindAnyObjectByType<VirtualDesktopIntro>() == null)
+                    {
+                        gameObject.AddComponent<VirtualDesktopIntro>();
+                    }
+                }
+
+                // Tutorial 2: Trigger AdvancedDesktopTour after Level 9 is completed
+                SetupAdvancedDesktopTourTrigger();
+            }
+        }
+
+        private bool isStartingAdvancedTour = false;
+
+        private void SetupAdvancedDesktopTourTrigger()
+        {
+            if (ProgressData.Instance != null)
+            {
+                ProgressData.Instance.OnLevelCompleted -= HandleLevelCompletedForAdvancedTour;
+                ProgressData.Instance.OnLevelCompleted += HandleLevelCompletedForAdvancedTour;
+            }
+        }
+
+        private void HandleLevelCompletedForAdvancedTour(string levelId)
+        {
+            if (string.Equals(levelId, "level9", StringComparison.OrdinalIgnoreCase))
+            {
+                TriggerAdvancedDesktopTourAfterLevel9();
+            }
+        }
+
+        public void TriggerAdvancedDesktopTourAfterLevel9()
+        {
+            if (!IsVirtualDesktopScene()) return;
+            if (isStartingAdvancedTour || AdvancedDesktopTour.IsTourRunning || UnityEngine.Object.FindAnyObjectByType<AdvancedDesktopTour>() != null) return;
+
+            Debug.Log("[DesktopManager] Level 9 completed! Scheduling AdvancedDesktopTour...");
+            PlayerPrefs.SetInt("AdvancedDesktopTourCompleted", 0);
+            PlayerPrefs.Save();
+            StartCoroutine(CheckAndStartAdvancedDesktopTour());
+        }
+
+        private System.Collections.IEnumerator CheckAndStartAdvancedDesktopTour()
+        {
+            if (isStartingAdvancedTour) yield break;
+            isStartingAdvancedTour = true;
+
+            // Give LevelCelebrationModal a brief moment to spawn if triggered via ProgressData.OnLevelCompleted
+            yield return new WaitForSeconds(0.25f);
+
+            while (UnityEngine.Object.FindAnyObjectByType<LevelCelebrationModal>() != null ||
+                   DesktopTour.IsTourRunning)
+            {
+                yield return new WaitForSeconds(0.2f);
+            }
+
+            if (WindowManager.Instance != null)
+            {
+                WindowManager.Instance.CloseAllWindows();
+            }
+
+            yield return new WaitForSeconds(0.45f);
+
+            isStartingAdvancedTour = false;
+
+            if (UnityEngine.Object.FindAnyObjectByType<AdvancedDesktopTour>() == null &&
+                !DesktopTour.IsTourRunning)
+            {
+                Debug.Log("[DesktopManager] Starting AdvancedDesktopTour now!");
+                gameObject.AddComponent<AdvancedDesktopTour>();
             }
         }
         #endregion
@@ -586,7 +703,14 @@ namespace ComputerLearning
         /// </summary>
         private void EnsureScoresAppIcon()
         {
+            if (!enableScoresAppIcon) return;
             if (desktopIconContainer == null) return;
+
+            string currentScene = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
+            if (string.Equals(currentScene, "Desktop1", StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
 
             foreach (var icon in activeIcons)
             {
@@ -628,6 +752,31 @@ namespace ComputerLearning
             };
 
             SpawnIcon(scoresData);
+        }
+
+        /// <summary>
+        /// Removes any Scores / Medals icons that may exist in the desktop icon container.
+        /// </summary>
+        private void RemoveScoresIconIfExists()
+        {
+            if (desktopIconContainer == null) return;
+
+            for (int i = desktopIconContainer.childCount - 1; i >= 0; i--)
+            {
+                Transform child = desktopIconContainer.GetChild(i);
+                if (child == null) continue;
+                var label = child.GetComponentInChildren<TMPro.TextMeshProUGUI>();
+                string title = label != null && !string.IsNullOrWhiteSpace(label.text) ? label.text.Trim() : child.name;
+                if (title.Equals("Scores", StringComparison.OrdinalIgnoreCase) ||
+                    title.Equals("Medals", StringComparison.OrdinalIgnoreCase) ||
+                    title.Equals("High Scores", StringComparison.OrdinalIgnoreCase) ||
+                    title.Equals("Leaderboard", StringComparison.OrdinalIgnoreCase))
+                {
+                    DraggableIcon di = child.GetComponent<DraggableIcon>();
+                    if (di != null) activeIcons.Remove(di);
+                    Destroy(child.gameObject);
+                }
+            }
         }
 
         [ContextMenu("Spawn Initial Icons (Test)")]

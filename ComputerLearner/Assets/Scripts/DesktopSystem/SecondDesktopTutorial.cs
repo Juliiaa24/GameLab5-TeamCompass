@@ -120,10 +120,15 @@ namespace ComputerLearning
             PlayerPrefs.SetInt("SemiGuidedSequenceCompleted", 1);
             PlayerPrefs.Save();
             
-            // Flow: Go to Tutorial2 (Advanced Desktop Tour) after level 9!
-            UnityEngine.SceneManagement.SceneManager.LoadScene("Tutorial2");
+            // Flow: Transition cleanly to VirtualDesktop
+            if (SceneSystem.Instance != null)
+            {
+                SceneSystem.Instance.ChangeToVirtualDesktop();
+            }
+            else
+            {
+                UnityEngine.SceneManagement.SceneManager.LoadScene("VirtualDesktop");
+            }
         }
     }
 }
-
-

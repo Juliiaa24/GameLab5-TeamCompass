@@ -12,10 +12,25 @@ namespace ComputerLearning
         private RectTransform myRect;
         private Image binImage;
 
+        [Header("Dynamic Bin Sprites")]
+        [SerializeField] private Sprite emptyBinSprite;
+        [SerializeField] private Sprite fullBinSprite;
+
         private void Awake()
         {
             myRect = GetComponent<RectTransform>();
             binImage = GetComponent<Image>();
+        }
+
+        private void OnEnable()
+        {
+            FileExplorerApp.OnFileSystemChanged += UpdateVisualState;
+            UpdateVisualState();
+        }
+
+        private void OnDisable()
+        {
+            FileExplorerApp.OnFileSystemChanged -= UpdateVisualState;
         }
 
         private void Start()
@@ -37,16 +52,71 @@ namespace ComputerLearning
 
             TMPro.TextMeshProUGUI tmp = GetComponentInChildren<TMPro.TextMeshProUGUI>();
             if (tmp != null) tmp.text = "Recycle Bin";
+
+            UpdateVisualState();
+        }
+
+        public void EnsureSpritesLoaded()
+        {
+            if (emptyBinSprite == null)
+            {
+#if UNITY_EDITOR
+                emptyBinSprite = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Art/UI/App icons/RecyclingBin_Icon_01_Empty.png");
+#endif
+                if (emptyBinSprite == null)
+                    emptyBinSprite = Resources.Load<Sprite>("RecyclingBin_Icon_01_Empty");
+            }
+
+            if (fullBinSprite == null)
+            {
+#if UNITY_EDITOR
+                fullBinSprite = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Art/UI/App icons/RecyclingBin_Icon_01.png");
+#endif
+                if (fullBinSprite == null)
+                    fullBinSprite = Resources.Load<Sprite>("RecyclingBin_Icon_01");
+            }
+        }
+
+        public void UpdateVisualState()
+        {
+            if (binImage == null) binImage = GetComponent<Image>();
+            EnsureSpritesLoaded();
+
+            int count = FileExplorerApp.GetRecycleBinCount();
+            if (binImage != null)
+            {
+                if (count > 0 && fullBinSprite != null)
+                {
+                    binImage.sprite = fullBinSprite;
+                }
+                else if (emptyBinSprite != null)
+                {
+                    binImage.sprite = emptyBinSprite;
+                }
+            }
+        }
+
+        public static void UpdateAllBinVisuals()
+        {
+            RecycleBinIcon[] bins = FindObjectsByType<RecycleBinIcon>();
+            if (bins != null)
+            {
+                foreach (var b in bins)
+                {
+                    if (b != null) b.UpdateVisualState();
+                }
+            }
         }
 
         public static void NotifyIconRecycled(DraggableIcon icon)
         {
             OnIconRecycled?.Invoke(icon);
+            UpdateAllBinVisuals();
         }
 
         /// <summary>
         /// Checks if a screen position overlaps any active and enabled RecycleBinIcon on the canvas.
-        /// Also supports proximity detection (within 100px) and dragged RectTransform overlap.
+        /// Also supports proximity detection (within 120px) and dragged RectTransform overlap.
         /// </summary>
         public static RecycleBinIcon FindBinAtScreenPoint(Vector2 screenPosition, Camera eventCamera, RectTransform draggedRect = null)
         {
@@ -68,7 +138,7 @@ namespace ComputerLearning
             }
 
             // 2. Discover all active RecycleBinIcon instances
-            RecycleBinIcon[] bins = FindObjectsByType<RecycleBinIcon>(FindObjectsSortMode.None);
+            RecycleBinIcon[] bins = FindObjectsByType<RecycleBinIcon>();
             if (bins == null || bins.Length == 0)
             {
                 // Self-healing fallback: find any Desktop icon named "Recycle Bin" and attach RecycleBinIcon
@@ -106,9 +176,9 @@ namespace ComputerLearning
                         return bin;
                     }
 
-                    // Distance-based proximity check (within 100 screen pixels of bin center)
+                    // Distance-based proximity check (within 120 screen pixels of bin center)
                     Vector2 binScreenCenter = RectTransformUtility.WorldToScreenPoint(cam, rt.position);
-                    if (Vector2.Distance(binScreenCenter, screenPosition) <= 100f)
+                    if (Vector2.Distance(binScreenCenter, screenPosition) <= 120f)
                     {
                         return bin;
                     }
@@ -117,7 +187,7 @@ namespace ComputerLearning
                     if (draggedRect != null)
                     {
                         Vector2 draggedScreenCenter = RectTransformUtility.WorldToScreenPoint(cam, draggedRect.position);
-                        if (Vector2.Distance(binScreenCenter, draggedScreenCenter) <= 100f)
+                        if (Vector2.Distance(binScreenCenter, draggedScreenCenter) <= 120f)
                         {
                             return bin;
                         }
@@ -168,6 +238,7 @@ namespace ComputerLearning
                         new ContextMenuItem($"Empty Recycle Bin ({binCount})", () =>
                         {
                             FileExplorerApp.EmptyRecycleBin();
+                            UpdateAllBinVisuals();
                         }, binCount > 0)
                     };
                     ContextMenuController.Instance.Show(eventData.position, items);
@@ -187,6 +258,8 @@ namespace ComputerLearning
                 if (!explorerItem.ItemData.isProtected)
                 {
                     FileExplorerApp.MoveItemToRecycleBin(explorerItem.ItemData);
+                    UpdateAllBinVisuals();
+                    NotifyIconRecycled(null);
                     Debug.Log($"[RecycleBin] Moved explorer item '{explorerItem.ItemData.name}' to Recycle Bin.");
                 }
                 else
@@ -235,6 +308,8 @@ namespace ComputerLearning
             {
                 icon.DeleteDesktopIconToRecycleBin();
             }
+
+            UpdateAllBinVisuals();
             return true;
         }
     }

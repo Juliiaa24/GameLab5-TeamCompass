@@ -2,7 +2,9 @@
  * Author: TeamCompass (Diego & AI)
  * Date: 23/10/2026
  * Description: Procedural and cached visual assets (Sprites, Colors, Badges) for Medals & Trophy UI.
+ *              Loads real medal sprites from Art/UI/Medals with procedural fallbacks.
  */
+using System.IO;
 using UnityEngine;
 
 namespace ComputerLearning
@@ -12,6 +14,7 @@ namespace ComputerLearning
         private static Sprite goldMedalSprite;
         private static Sprite silverMedalSprite;
         private static Sprite bronzeMedalSprite;
+        private static Sprite emptyMedalSprite;
         private static Sprite trophyAppSprite;
 
         public static Sprite GetMedalSprite(LevelMedal medal)
@@ -19,17 +22,89 @@ namespace ComputerLearning
             switch (medal)
             {
                 case LevelMedal.Gold:
-                    if (goldMedalSprite == null) goldMedalSprite = CreateCircularMedalSprite(new Color(1f, 0.84f, 0.0f), new Color(0.9f, 0.65f, 0.0f), "1");
+                    if (goldMedalSprite == null) goldMedalSprite = LoadMedalSprite("GoldMedalNoRibbon", new Color(1f, 0.84f, 0.0f), new Color(0.9f, 0.65f, 0.0f), "1");
                     return goldMedalSprite;
                 case LevelMedal.Silver:
-                    if (silverMedalSprite == null) silverMedalSprite = CreateCircularMedalSprite(new Color(0.85f, 0.88f, 0.92f), new Color(0.65f, 0.70f, 0.75f), "2");
+                    if (silverMedalSprite == null) silverMedalSprite = LoadMedalSprite("SilverMedalNoRibbon", new Color(0.85f, 0.88f, 0.92f), new Color(0.65f, 0.70f, 0.75f), "2");
                     return silverMedalSprite;
                 case LevelMedal.Bronze:
-                    if (bronzeMedalSprite == null) bronzeMedalSprite = CreateCircularMedalSprite(new Color(0.82f, 0.52f, 0.25f), new Color(0.60f, 0.35f, 0.15f), "3");
+                    if (bronzeMedalSprite == null) bronzeMedalSprite = LoadMedalSprite("BronzeMedalNoRibbon", new Color(0.82f, 0.52f, 0.25f), new Color(0.60f, 0.35f, 0.15f), "3");
                     return bronzeMedalSprite;
                 default:
-                    return null;
+                    return GetEmptyMedalSlotSprite();
             }
+        }
+
+        public static Sprite GetEmptyMedalSlotSprite()
+        {
+            if (emptyMedalSprite != null) return emptyMedalSprite;
+
+            int size = 32;
+            Texture2D tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
+            Color transparent = new Color(0, 0, 0, 0);
+            Color darkSlot = new Color(0.20f, 0.22f, 0.26f, 0.45f);
+            Color slotBorder = new Color(0.40f, 0.44f, 0.50f, 0.75f);
+            float radius = (size / 2f) - 1.5f;
+            Vector2 center = new Vector2((size - 1) / 2f, (size - 1) / 2f);
+
+            for (int y = 0; y < size; y++)
+            {
+                for (int x = 0; x < size; x++)
+                {
+                    float dist = Vector2.Distance(new Vector2(x, y), center);
+                    if (dist > radius)
+                    {
+                        tex.SetPixel(x, y, transparent);
+                    }
+                    else if (dist >= radius - 2f)
+                    {
+                        tex.SetPixel(x, y, slotBorder);
+                    }
+                    else
+                    {
+                        tex.SetPixel(x, y, darkSlot);
+                    }
+                }
+            }
+
+            tex.filterMode = FilterMode.Point;
+            tex.Apply();
+
+            emptyMedalSprite = Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100f);
+            emptyMedalSprite.name = "MedalSlot_Empty";
+            return emptyMedalSprite;
+        }
+
+        private static Sprite LoadMedalSprite(string fileNameNoExt, Color fallbackMain, Color fallbackShadow, string label)
+        {
+            // 1. Try Resources.Load
+            Sprite loaded = Resources.Load<Sprite>("Medals/" + fileNameNoExt);
+            if (loaded != null) return loaded;
+
+            // 2. Try loading from Application.dataPath/Art/UI/Medals/
+            try
+            {
+                string diskPath = Path.Combine(Application.dataPath, "Art", "UI", "Medals", fileNameNoExt + ".png");
+                if (File.Exists(diskPath))
+                {
+                    byte[] bytes = File.ReadAllBytes(diskPath);
+                    Texture2D tex = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+                    if (tex.LoadImage(bytes))
+                    {
+                        tex.filterMode = FilterMode.Point;
+                        Sprite s = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), new Vector2(0.5f, 0.5f), 32f);
+                        s.name = fileNameNoExt;
+                        return s;
+                    }
+                }
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogWarning($"[MedalVisualUtility] Could not load medal from disk: {ex.Message}");
+            }
+
+            // 3. Procedural Fallback
+            return CreateCircularMedalSprite(fallbackMain, fallbackShadow, label);
         }
 
         public static Sprite GetTrophyAppSprite()

@@ -141,6 +141,7 @@ namespace ComputerLearning
         private readonly Dictionary<string, Window> openedWindows = new Dictionary<string, Window>();
 
         private bool isSaveDialogMode = false;
+        public static bool IsSaveDialogOpen { get; private set; }
         private string saveDialogExtension = "";
         private TMP_InputField saveDialogInputField;
         private Action<string, ExplorerItemData> onSaveDialogConfirm;
@@ -757,6 +758,20 @@ namespace ComputerLearning
             }
             else
             {
+                if (item.fileType == ExplorerFileType.Folder && !item.name.Equals("Recycle Bin", StringComparison.OrdinalIgnoreCase))
+                {
+                    menuItems.Add(new ContextMenuItem("Change Folder Color", () =>
+                    {
+                        ContextMenuController.Instance.ShowFolderColorPicker(screenPos, (selectedSprite) =>
+                        {
+                            if (selectedSprite == null) return;
+                            item.icon = selectedSprite;
+                            NotifyFileSystemChanged();
+                            FeedbackManager.PlaySuccess();
+                        });
+                    }, true));
+                }
+
                 bool canModify = !item.isProtected;
                 menuItems.Add(new ContextMenuItem("Rename", () => PromptRenameItem(item), canModify));
                 menuItems.Add(new ContextMenuItem("Delete", () => DeleteItemToRecycleBin(item), canModify));
@@ -1083,12 +1098,11 @@ namespace ComputerLearning
         {
             if (folder == null) return;
             if (folder.children == null) folder.children = new List<ExplorerItemData>();
-            if (folder.children.Count > 0) return;
 
             Sprite defGameIcon = defaultGameIcon != null ? defaultGameIcon : SharedGameIcon;
             Sprite icon = targetGameIcon != null ? targetGameIcon : defGameIcon;
 
-            if (mouseLevels != null && mouseLevels.Length > 0)
+            if (folder.children.Count == 0 && mouseLevels != null && mouseLevels.Length > 0)
             {
                 foreach (var lvl in mouseLevels)
                 {
@@ -1106,17 +1120,63 @@ namespace ComputerLearning
                 }
             }
 
-            if (level10CopyPaste != null)
+            EnsureGuidedLevelsInFolder(folder, icon);
+        }
+
+        private static void EnsureGuidedLevelsInFolder(ExplorerItemData folder, Sprite icon)
+        {
+            if (folder == null || folder.children == null) return;
+
+            string[] guidedLevelIds = { "level10", "level11", "level12", "level13", "level14", "level15", "level16" };
+            foreach (string lvlId in guidedLevelIds)
             {
-                folder.children.Add(new ExplorerItemData
+                bool alreadyExists = false;
+                foreach (var child in folder.children)
                 {
-                    name = level10CopyPaste.displayName,
-                    fileType = ExplorerFileType.Minigame,
-                    icon = icon,
-                    levelToLaunch = level10CopyPaste,
-                    isProtected = true
-                });
+                    if (child.levelToLaunch != null && string.Equals(child.levelToLaunch.levelId, lvlId, StringComparison.OrdinalIgnoreCase))
+                    {
+                        child.levelToLaunch = VirtualDesktopGuidedLevels.GetOrCreateLevelDefinition(lvlId);
+                        child.name = child.levelToLaunch.displayName;
+                        alreadyExists = true;
+                        break;
+                    }
+                }
+
+                if (!alreadyExists)
+                {
+                    LevelDefinition def = VirtualDesktopGuidedLevels.GetOrCreateLevelDefinition(lvlId);
+                    if (def != null)
+                    {
+                        folder.children.Add(new ExplorerItemData
+                        {
+                            name = def.displayName,
+                            fileType = ExplorerFileType.Minigame,
+                            icon = icon,
+                            levelToLaunch = def,
+                            isProtected = true
+                        });
+                    }
+                }
             }
+
+            folder.children.Sort((a, b) =>
+            {
+                int idxA = GetLevelSortOrder(a?.levelToLaunch?.levelId);
+                int idxB = GetLevelSortOrder(b?.levelToLaunch?.levelId);
+                if (idxA != idxB) return idxA.CompareTo(idxB);
+                return string.Compare(a?.name, b?.name, StringComparison.OrdinalIgnoreCase);
+            });
+        }
+
+        private static int GetLevelSortOrder(string levelId)
+        {
+            if (string.IsNullOrEmpty(levelId)) return 999;
+            for (int i = 0; i < ProgressData.LevelOrder.Length; i++)
+            {
+                if (string.Equals(ProgressData.LevelOrder[i], levelId, StringComparison.OrdinalIgnoreCase))
+                    return i;
+            }
+            return 999;
         }
 
         private void PopulateGamesFolder(ExplorerItemData folder)
@@ -1671,6 +1731,12 @@ namespace ComputerLearning
                     return;
                 }
 
+                if (VirtualDesktopGuidedLevels.IsGuidedDesktopLevel(item.levelToLaunch.levelId))
+                {
+                    VirtualDesktopGuidedLevels.StartGuidedLevel(item.levelToLaunch);
+                    return;
+                }
+
                 string key = item.levelToLaunch.levelId;
                 if (openedWindows.TryGetValue(key, out Window existingWin) && existingWin != null && !existingWin.IsClosed)
                 {
@@ -1805,6 +1871,8 @@ namespace ComputerLearning
                 isProtected = true
             };
             PopulateLevelsFolder(levelsFolder);
+
+            EnsureGuidedLevelsInFolder(levelsFolder, SharedGameIcon);
 
             desktopFolder.children.Add(levelsFolder);
             desktopFolder.children.Add(gamesFolder);
@@ -1982,6 +2050,8 @@ namespace ComputerLearning
                 }
             }
 
+            EnsureGuidedLevelsInFolder(levelsFolder, SharedGameIcon);
+
             desktopFolder.children.Add(levelsFolder);
             desktopFolder.children.Add(gamesFolder);
 
@@ -2059,6 +2129,7 @@ namespace ComputerLearning
         public void SetupSaveDialogMode(string defaultFileName, string extension, Action<string, ExplorerItemData> onConfirm, ExplorerItemData initialFolder, Window window)
         {
             isSaveDialogMode = true;
+            IsSaveDialogOpen = true;
             saveDialogExtension = extension;
             onSaveDialogConfirm = onConfirm;
             parentWindow = window;
@@ -2208,6 +2279,7 @@ namespace ComputerLearning
                 return;
             }
 
+            IsSaveDialogOpen = false;
             Action<string, ExplorerItemData> callback = onSaveDialogConfirm;
             Window winToClose = parentWindow;
 
@@ -2219,8 +2291,17 @@ namespace ComputerLearning
             callback?.Invoke(enteredName, currentFolder);
         }
 
+        private void OnDestroy()
+        {
+            if (isSaveDialogMode)
+            {
+                IsSaveDialogOpen = false;
+            }
+        }
+
         public void CancelSaveDialog()
         {
+            IsSaveDialogOpen = false;
             if (parentWindow != null)
             {
                 parentWindow.CloseWindow();

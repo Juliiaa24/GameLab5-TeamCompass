@@ -42,7 +42,7 @@ namespace ComputerLearning
     public class DesktopTour : MonoBehaviour
     {
         public event Action OnIntroductionCompleted;
-        public bool forcePlayTutorial = true; // Added for testing
+        public bool forcePlayTutorial = false;
         
         public static bool IsTourRunning { get; private set; }
         
@@ -68,11 +68,22 @@ namespace ComputerLearning
             tutorialBlocker = blockerObj.AddComponent<TutorialBlocker>();
         }
 
+        private void OnDestroy()
+        {
+            IsTourRunning = false;
+            if (tutorialBlocker != null)
+            {
+                Destroy(tutorialBlocker.gameObject);
+                tutorialBlocker = null;
+            }
+        }
+
         private IEnumerator Start()
         {
             if (!forcePlayTutorial && PlayerPrefs.GetInt("DesktopTourCompleted", 0) == 1)
             {
                 OnIntroductionCompleted?.Invoke();
+                Destroy(this);
                 yield break; 
             }
 
@@ -83,20 +94,45 @@ namespace ComputerLearning
             // Give time for UI layout
             yield return new WaitForSeconds(0.5f);
 
-            // Find the Application Icon explicitly first
-            DraggableIcon level1Icon = DesktopManager.Instance?.GetIconByLevelId("level1");
-            if (level1Icon == null) 
+            // Find the Levels folder icon on the desktop
+            DraggableIcon levelsIcon = null;
+            if (DesktopManager.Instance != null)
             {
-                level1Icon = UnityEngine.Object.FindAnyObjectByType<DraggableIcon>();
+                levelsIcon = DesktopManager.Instance.GetIconByName("Levels");
+            }
+            if (levelsIcon == null)
+            {
+                DraggableIcon[] allIcons = UnityEngine.Object.FindObjectsByType<DraggableIcon>(FindObjectsSortMode.None);
+                foreach (var icon in allIcons)
+                {
+                    if (icon == null || !icon.gameObject.activeInHierarchy) continue;
+                    if (icon.name.IndexOf("Levels", StringComparison.OrdinalIgnoreCase) >= 0)
+                    {
+                        levelsIcon = icon;
+                        break;
+                    }
+                    var tmp = icon.GetComponentInChildren<TMPro.TMP_Text>();
+                    if (tmp != null && tmp.text != null && tmp.text.IndexOf("Levels", StringComparison.OrdinalIgnoreCase) >= 0)
+                    {
+                        levelsIcon = icon;
+                        break;
+                    }
+                }
+            }
+            if (levelsIcon == null) 
+            {
+                levelsIcon = UnityEngine.Object.FindAnyObjectByType<DraggableIcon>();
             }
             
-            if (level1Icon == null) 
+            if (levelsIcon == null) 
             {
                 Debug.LogWarning("[DesktopTour] Could not find any DraggableIcon to start the tour!");
+                IsTourRunning = false;
+                Destroy(this);
                 yield break;
             }
 
-            RectTransform iconRect = level1Icon.GetComponent<RectTransform>();
+            RectTransform iconRect = levelsIcon.GetComponent<RectTransform>();
 
             // STEP 1 — Welcome
             VirtualMascot.Show(dialogs.step1_welcome, iconRect, new Vector2(250, -50));
@@ -113,14 +149,12 @@ namespace ComputerLearning
             VirtualMascot.Show(dialogs.step2_apps, iconRect, new Vector2(160, -80));
             yield return new WaitForSeconds(3.0f);
 
-            // STEP 3 — Open Application (Double Click)
+            // STEP 3 — Open Levels Folder (Double Click)
             VirtualMascot.Show(dialogs.step3_openApp, iconRect, new Vector2(160, -80));
-            DraggableIcon dragIcon = level1Icon.GetComponent<DraggableIcon>();
-            
+            DraggableIcon dragIcon = levelsIcon.GetComponent<DraggableIcon>();
             
             tutorialBlocker?.SetAllowedTarget(iconRect);
             yield return StartCoroutine(WaitWithReminder(() => dragIcon.AppWindow != null && !dragIcon.AppWindow.IsClosed, dialogs.step3_reminder, iconRect, new Vector2(160, -80)));
-            
             
             tutorialBlocker?.SetAllowedTarget(null);
             Window targetWindow = dragIcon.AppWindow;
@@ -141,7 +175,6 @@ namespace ComputerLearning
             
             VirtualMascot.Show(dialogs.step7_maximize, maxBtnRect, new Vector2(-250, 50));
             
-            
             tutorialBlocker?.SetAllowedTarget(maxBtnRect);
             yield return StartCoroutine(WaitWithReminder(
                 () => targetWindow == null || targetWindow.IsClosed || targetWindow.IsMaximized, 
@@ -150,7 +183,6 @@ namespace ComputerLearning
                 new Vector2(-250, 50),
                 targetWindow));
 
-            
             tutorialBlocker?.SetAllowedTarget(null);
             if (IsWindowClosedEarly(targetWindow)) yield break;
             
@@ -160,7 +192,6 @@ namespace ComputerLearning
             // STEP 8 — Restore
             VirtualMascot.Show(dialogs.step8_restore, maxBtnRect, new Vector2(-250, 50));
             
-            
             tutorialBlocker?.SetAllowedTarget(maxBtnRect);
             yield return StartCoroutine(WaitWithReminder(
                 () => targetWindow == null || targetWindow.IsClosed || !targetWindow.IsMaximized, 
@@ -169,7 +200,6 @@ namespace ComputerLearning
                 new Vector2(-250, 50),
                 targetWindow));
 
-            
             tutorialBlocker?.SetAllowedTarget(null);
             if (IsWindowClosedEarly(targetWindow)) yield break;
 
@@ -181,16 +211,13 @@ namespace ComputerLearning
 
             VirtualMascot.Show(dialogs.step9_minimize, minBtnRect, new Vector2(-250, 50));
             
-            
             tutorialBlocker?.SetAllowedTarget(minBtnRect);
-            // Do NOT pass associatedWindow here, because getting minimized is the goal of this step!
             yield return StartCoroutine(WaitWithReminder(
                 () => targetWindow == null || targetWindow.IsClosed || targetWindow.IsMinimized, 
                 dialogs.step9_reminder, 
                 minBtnRect, 
                 new Vector2(-250, 50)));
                 
-            
             tutorialBlocker?.SetAllowedTarget(null);
             if (IsWindowClosedEarly(targetWindow)) yield break;
             
@@ -207,7 +234,6 @@ namespace ComputerLearning
                 yield return new WaitForSeconds(3.0f);
                 
                 VirtualMascot.Show(dialogs.step10_clickTaskbar, targetBtnRect, new Vector2(100, 200));
-                
                 
                 tutorialBlocker?.SetAllowedTarget(targetBtnRect);
                 yield return StartCoroutine(WaitWithReminder(
@@ -229,7 +255,6 @@ namespace ComputerLearning
 
             VirtualMascot.Show(dialogs.step11_close, closeBtnRect, new Vector2(-250, 50));
             
-            
             tutorialBlocker?.SetAllowedTarget(closeBtnRect);
             yield return StartCoroutine(WaitWithReminder(
                 () => targetWindow == null || targetWindow.IsClosed, 
@@ -246,16 +271,22 @@ namespace ComputerLearning
             VirtualMascot.Show(dialogs.step12_ready, iconRect, new Vector2(160, -80));
             yield return new WaitForSeconds(3.0f);
             
+            if (tutorialBlocker != null)
+            {
+                tutorialBlocker.ClearTarget();
+                Destroy(tutorialBlocker.gameObject);
+                tutorialBlocker = null;
+            }
+
             VirtualMascot.HideMascot();
 
             PlayerPrefs.SetInt("DesktopTourCompleted", 1);
+            PlayerPrefs.SetInt("VirtualDesktopIntroCompleted", 1);
             PlayerPrefs.Save();
 
             IsTourRunning = false;
             OnIntroductionCompleted?.Invoke();
-
-            // Transition to the second desktop scene (Desktop2) for advanced levels
-            UnityEngine.SceneManagement.SceneManager.LoadScene("Desktop2");
+            Destroy(this);
         }
 
         private TaskbarWindowButton FindTaskbarButton(Window targetWindow)
@@ -301,8 +332,16 @@ namespace ComputerLearning
         {
             if (window == null || window.IsClosed)
             {
+                if (tutorialBlocker != null)
+                {
+                    tutorialBlocker.ClearTarget();
+                    Destroy(tutorialBlocker.gameObject);
+                    tutorialBlocker = null;
+                }
                 VirtualMascot.HideMascot();
                 IsTourRunning = false;
+                OnIntroductionCompleted?.Invoke();
+                Destroy(this);
                 return true;
             }
             return false;
@@ -324,6 +363,3 @@ namespace ComputerLearning
         }
     }
 }
-
-
-

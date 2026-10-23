@@ -1,0 +1,65 @@
+{
+    "timestamp": "2026-10-23T12:30:00.5670412Z",
+    "formattedTime": "14:30:00",
+    "totalTasksTested": 7,
+    "completedTasks": 7,
+    "averageScore": 98.5999984741211,
+    "skills": [
+        {
+            "skillId": "mouse_move",
+            "skillName": "Move Cursor",
+            "completed": true,
+            "score": 100.0,
+            "extraAttempts": 0,
+            "timeTakenSeconds": 0.699999988079071
+        },
+        {
+            "skillId": "hover",
+            "skillName": "Hover",
+            "completed": true,
+            "score": 90.0,
+            "extraAttempts": 1,
+            "timeTakenSeconds": 2.359999895095825
+        },
+        {
+            "skillId": "click",
+            "skillName": "Single Click",
+            "completed": true,
+            "score": 100.0,
+            "extraAttempts": 0,
+            "timeTakenSeconds": 1.0800000429153443
+        },
+        {
+            "skillId": "double_click",
+            "skillName": "Double Click",
+            "completed": true,
+            "score": 100.0,
+            "extraAttempts": 0,
+            "timeTakenSeconds": 0.9700000286102295
+        },
+        {
+            "skillId": "right_click",
+            "skillName": "Right Click",
+            "completed": true,
+            "score": 100.0,
+            "extraAttempts": 0,
+            "timeTakenSeconds": 0.5899999737739563
+        },
+        {
+            "skillId": "click_hold",
+            "skillName": "Click and Hold",
+            "completed": true,
+            "score": 100.0,
+            "extraAttempts": 0,
+            "timeTakenSeconds": 2.6500000953674318
+        },
+        {
+            "skillId": "drag_drop",
+            "skillName": "Drag and Drop",
+            "completed": true,
+            "score": 100.0,
+            "extraAttempts": 0,
+            "timeTakenSeconds": 1.2899999618530274
+        }
+    ]
+}

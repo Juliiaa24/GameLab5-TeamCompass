@@ -395,6 +395,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f54ca6201b7bed34986f1f2867bc44ce, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ComputerLearning.InitialTestManager
+  taskContentArea: {fileID: 2134714347}
+  sceneCanvas: {fileID: 2134714350}
 --- !u!1001 &1786250270
 PrefabInstance:
   m_ObjectHideFlags: 0

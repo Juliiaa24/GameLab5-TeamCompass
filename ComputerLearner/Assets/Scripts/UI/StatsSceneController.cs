@@ -4,12 +4,14 @@
  * Description: UI Controller for the Stats & Assessment scene.
  *              Populates existing scene UI elements with historical assessment results
  *              and live skill proficiency metrics.
+ *              Enhanced with self-healing navigation and sibling ordering.
  */
 using System;
 using System.IO;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.SceneManagement;
 using TMPro;
 
 namespace ComputerLearning
@@ -30,6 +32,21 @@ namespace ComputerLearning
         [Header("Skills Card")]
         [SerializeField] private Transform skillsTableContainer;
 
+        private void Awake()
+        {
+            // Ensure HeaderBar is rendered on top of cards so raycasts are never blocked
+            Transform headerBar = transform.Find("HeaderBar");
+            if (headerBar == null)
+            {
+                Canvas canvas = GetComponentInParent<Canvas>();
+                if (canvas != null) headerBar = canvas.transform.Find("HeaderBar");
+            }
+            if (headerBar != null)
+            {
+                headerBar.SetAsLastSibling();
+            }
+        }
+
         private void Start()
         {
             SetupNavigation();
@@ -39,24 +56,65 @@ namespace ComputerLearning
 
         private void SetupNavigation()
         {
+            // Self-healing fallback if buttons are unassigned in Inspector
+            if (backToMenuButton == null)
+            {
+                Transform btnT = transform.Find("HeaderBar/Btn-Back");
+                if (btnT == null)
+                {
+                    Canvas canvas = GetComponentInParent<Canvas>();
+                    if (canvas != null) btnT = canvas.transform.Find("HeaderBar/Btn-Back");
+                }
+                if (btnT != null) backToMenuButton = btnT.GetComponent<Button>();
+            }
+
+            if (retakeAssessmentButton == null)
+            {
+                Transform btnT = transform.Find("HeaderBar/Btn-Retake");
+                if (btnT == null)
+                {
+                    Canvas canvas = GetComponentInParent<Canvas>();
+                    if (canvas != null) btnT = canvas.transform.Find("HeaderBar/Btn-Retake");
+                }
+                if (btnT != null) retakeAssessmentButton = btnT.GetComponent<Button>();
+            }
+
             if (backToMenuButton != null)
             {
                 backToMenuButton.onClick.RemoveAllListeners();
-                backToMenuButton.onClick.AddListener(() =>
-                {
-                    if (SceneSystem.Instance != null) SceneSystem.Instance.ChangeToMenu();
-                    else UnityEngine.SceneManagement.SceneManager.LoadScene("Menu");
-                });
+                backToMenuButton.onClick.AddListener(OnBackToMenuClicked);
             }
 
             if (retakeAssessmentButton != null)
             {
                 retakeAssessmentButton.onClick.RemoveAllListeners();
-                retakeAssessmentButton.onClick.AddListener(() =>
-                {
-                    if (SceneSystem.Instance != null) SceneSystem.Instance.ChangeToAssessment();
-                    else UnityEngine.SceneManagement.SceneManager.LoadScene("AssessmentScene");
-                });
+                retakeAssessmentButton.onClick.AddListener(OnRetakeAssessmentClicked);
+            }
+        }
+
+        public void OnBackToMenuClicked()
+        {
+            FeedbackManager.PlayClick();
+            if (SceneSystem.Instance != null)
+            {
+                SceneSystem.Instance.ChangeToMenu();
+            }
+            else
+            {
+                SceneManager.LoadScene("Menu");
+            }
+        }
+
+        public void OnRetakeAssessmentClicked()
+        {
+            FeedbackManager.PlayClick();
+            if (SceneSystem.Instance != null)
+            {
+                SceneSystem.Instance.ChangeToAssessment();
+            }
+            else
+            {
+                SceneManager.LoadScene("AssessmentScene");
             }
         }
 
