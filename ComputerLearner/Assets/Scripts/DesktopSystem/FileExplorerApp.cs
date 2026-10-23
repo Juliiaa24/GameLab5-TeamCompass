@@ -1321,9 +1321,11 @@ namespace ComputerLearning
 
             bool isLevelItem = item.fileType == ExplorerFileType.Minigame && item.levelToLaunch != null;
             bool isUnlocked = true;
+            LevelMedal levelMedal = LevelMedal.None;
             if (isLevelItem && ProgressData.Instance != null)
             {
                 isUnlocked = ProgressData.Instance.IsLevelUnlocked(item.levelToLaunch.levelId);
+                levelMedal = ProgressData.Instance.GetBestMedal(item.levelToLaunch.levelId);
             }
 
             if (iconImg != null)
@@ -1340,6 +1342,28 @@ namespace ComputerLearning
                 iconImg.color = isUnlocked ? Color.white : new Color(0.28f, 0.28f, 0.28f, 0.7f);
                 iconImg.preserveAspect = true;
                 iconImg.raycastTarget = false;
+
+                // Display medal badge under/on the icon if level has an achieved medal
+                if (levelMedal != LevelMedal.None)
+                {
+                    Transform existingBadge = go.transform.Find("MedalBadge");
+                    if (existingBadge == null)
+                    {
+                        GameObject badgeObj = new GameObject("MedalBadge", typeof(RectTransform), typeof(Image));
+                        badgeObj.transform.SetParent(go.transform, false);
+                        RectTransform badgeRect = badgeObj.GetComponent<RectTransform>();
+                        badgeRect.anchorMin = new Vector2(0.5f, 0.5f);
+                        badgeRect.anchorMax = new Vector2(0.5f, 0.5f);
+                        badgeRect.pivot = new Vector2(0.5f, 0.5f);
+                        badgeRect.sizeDelta = new Vector2(22, 22);
+                        badgeRect.anchoredPosition = new Vector2(16, -6);
+
+                        Image badgeImg = badgeObj.GetComponent<Image>();
+                        badgeImg.sprite = MedalVisualUtility.GetMedalSprite(levelMedal);
+                        badgeImg.preserveAspect = true;
+                        badgeImg.raycastTarget = false;
+                    }
+                }
             }
 
             CanvasGroup cg = go.GetComponent<CanvasGroup>();
@@ -1350,7 +1374,21 @@ namespace ComputerLearning
 
             if (label != null)
             {
-                label.text = isUnlocked ? item.name : $"{item.name} <color=#777777>[Locked]</color>";
+                if (!isUnlocked)
+                {
+                    label.text = $"{item.name} <color=#777777>[Locked]</color>";
+                }
+                else if (levelMedal != LevelMedal.None)
+                {
+                    string emoji = LevelScoreRecord.GetMedalEmoji(levelMedal);
+                    string hex = LevelScoreRecord.GetMedalColorHex(levelMedal);
+                    string medalName = LevelScoreRecord.GetMedalName(levelMedal);
+                    label.text = $"{item.name}\n<size=11><color={hex}><b>{emoji} {medalName}</b></color></size>";
+                }
+                else
+                {
+                    label.text = item.name;
+                }
                 label.raycastTarget = false;
             }
 

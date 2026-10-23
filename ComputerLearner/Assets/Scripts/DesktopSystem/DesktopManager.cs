@@ -66,6 +66,7 @@ namespace ComputerLearning
         [SerializeField] private GameObject defaultIconPrefab;
         [SerializeField] private GameObject paintContentPrefab;
         [SerializeField] private GameObject notepadContentPrefab;
+        [SerializeField] private GameObject scoresContentPrefab;
 
         [Header("Initial Desktop Icons")]
         [Tooltip("List of icons to spawn automatically on start")]
@@ -80,6 +81,7 @@ namespace ComputerLearning
         public GameObject BaseWindowPrefab => baseWindowPrefab;
         public GameObject PaintContentPrefab => paintContentPrefab;
         public GameObject NotepadContentPrefab => notepadContentPrefab;
+        public GameObject ScoresContentPrefab => scoresContentPrefab;
 
         public DraggableIcon GetIconByLevelId(string levelId)
         {
@@ -129,12 +131,13 @@ namespace ComputerLearning
         private void Start()
         {
             SpawnInitialIcons();
+            EnsureScoresAppIcon();
             RegisterSceneIconsIntoDesktopFolder();
             if (IsVirtualDesktopScene())
             {
                 SyncDesktopWithExplorerFolder();
 
-                if (UnityEngine.Object.FindFirstObjectByType<VirtualDesktopIntro>() == null)
+                if (UnityEngine.Object.FindAnyObjectByType<VirtualDesktopIntro>() == null)
                 {
                     gameObject.AddComponent<VirtualDesktopIntro>();
                 }
@@ -198,7 +201,11 @@ namespace ComputerLearning
                    clean.Equals("Minigames", StringComparison.OrdinalIgnoreCase) ||
                    clean.Equals("Mouse Levels", StringComparison.OrdinalIgnoreCase) ||
                    clean.Equals("Paint", StringComparison.OrdinalIgnoreCase) ||
-                   clean.Equals("Notepad", StringComparison.OrdinalIgnoreCase);
+                   clean.Equals("Notepad", StringComparison.OrdinalIgnoreCase) ||
+                   clean.Equals("Scores", StringComparison.OrdinalIgnoreCase) ||
+                   clean.Equals("Medals", StringComparison.OrdinalIgnoreCase) ||
+                   clean.Equals("High Scores", StringComparison.OrdinalIgnoreCase) ||
+                   clean.Equals("Leaderboard", StringComparison.OrdinalIgnoreCase);
         }
 
         /// <summary>
@@ -214,7 +221,11 @@ namespace ComputerLearning
                    clean.Equals("File Explorer", StringComparison.OrdinalIgnoreCase) ||
                    clean.Equals("Recycle Bin", StringComparison.OrdinalIgnoreCase) ||
                    clean.Equals("Paint", StringComparison.OrdinalIgnoreCase) ||
-                   clean.Equals("Notepad", StringComparison.OrdinalIgnoreCase);
+                   clean.Equals("Notepad", StringComparison.OrdinalIgnoreCase) ||
+                   clean.Equals("Scores", StringComparison.OrdinalIgnoreCase) ||
+                   clean.Equals("Medals", StringComparison.OrdinalIgnoreCase) ||
+                   clean.Equals("High Scores", StringComparison.OrdinalIgnoreCase) ||
+                   clean.Equals("Leaderboard", StringComparison.OrdinalIgnoreCase);
         }
 
         /// <summary>
@@ -524,6 +535,12 @@ namespace ComputerLearning
             {
                 spriteToUse = FileExplorerApp.GetImageFileSprite();
             }
+            else if (spriteToUse == null && (iconData.iconName.Equals("Scores", StringComparison.OrdinalIgnoreCase) ||
+                                             iconData.iconName.Equals("Medals", StringComparison.OrdinalIgnoreCase) ||
+                                             iconData.iconName.Equals("High Scores", StringComparison.OrdinalIgnoreCase)))
+            {
+                spriteToUse = MedalVisualUtility.GetTrophyAppSprite();
+            }
 
             if (spriteToUse != null)
             {
@@ -562,6 +579,55 @@ namespace ComputerLearning
             {
                 activeIcons.Remove(icon);
             }
+        }
+
+        /// <summary>
+        /// Ensures the 'Scores' Hall of Fame shortcut is available on the virtual desktop.
+        /// </summary>
+        private void EnsureScoresAppIcon()
+        {
+            if (desktopIconContainer == null) return;
+
+            foreach (var icon in activeIcons)
+            {
+                if (icon == null) continue;
+                var label = icon.GetComponentInChildren<TMPro.TextMeshProUGUI>();
+                string title = label != null && !string.IsNullOrWhiteSpace(label.text) ? label.text.Trim() : icon.gameObject.name;
+                if (title.Equals("Scores", StringComparison.OrdinalIgnoreCase) ||
+                    title.Equals("Medals", StringComparison.OrdinalIgnoreCase) ||
+                    title.Equals("High Scores", StringComparison.OrdinalIgnoreCase) ||
+                    title.Equals("Leaderboard", StringComparison.OrdinalIgnoreCase))
+                {
+                    return;
+                }
+            }
+
+            foreach (Transform child in desktopIconContainer)
+            {
+                if (child == null) continue;
+                var label = child.GetComponentInChildren<TMPro.TextMeshProUGUI>();
+                string title = label != null && !string.IsNullOrWhiteSpace(label.text) ? label.text.Trim() : child.name;
+                if (title.Equals("Scores", StringComparison.OrdinalIgnoreCase) ||
+                    title.Equals("Medals", StringComparison.OrdinalIgnoreCase) ||
+                    title.Equals("High Scores", StringComparison.OrdinalIgnoreCase) ||
+                    title.Equals("Leaderboard", StringComparison.OrdinalIgnoreCase))
+                {
+                    return;
+                }
+            }
+
+            DesktopIconData scoresData = new DesktopIconData
+            {
+                iconName = "Scores",
+                itemType = DesktopItemType.Application,
+                iconSprite = MedalVisualUtility.GetTrophyAppSprite(),
+                contentPrefab = scoresContentPrefab,
+                levelDefinition = null,
+                isLocked = false,
+                isUserCreated = false
+            };
+
+            SpawnIcon(scoresData);
         }
 
         [ContextMenu("Spawn Initial Icons (Test)")]

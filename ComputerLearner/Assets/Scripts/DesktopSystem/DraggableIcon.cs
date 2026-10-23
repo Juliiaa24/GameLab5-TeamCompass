@@ -873,6 +873,14 @@ namespace ComputerLearning
                 {
                     if (smc != null && smc.FileExplorerPrefab != null) contentPrefab = smc.FileExplorerPrefab;
                 }
+                else if (labelName.Equals("Scores", StringComparison.OrdinalIgnoreCase) ||
+                         labelName.Equals("Medals", StringComparison.OrdinalIgnoreCase) ||
+                         labelName.Equals("High Scores", StringComparison.OrdinalIgnoreCase) ||
+                         labelName.Equals("Leaderboard", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (DesktopManager.Instance != null && DesktopManager.Instance.ScoresContentPrefab != null)
+                        contentPrefab = DesktopManager.Instance.ScoresContentPrefab;
+                }
             }
 
             if (windowPrefab == null && DesktopManager.Instance != null)
@@ -958,6 +966,19 @@ namespace ComputerLearning
                 {
                     if (appWindow.GetComponent<StatsUIBuilder>() == null)
                         appWindow.gameObject.AddComponent<StatsUIBuilder>();
+                }
+
+                if (resolvedTitle.Equals("Scores", StringComparison.OrdinalIgnoreCase) ||
+                    resolvedTitle.Equals("Medals", StringComparison.OrdinalIgnoreCase) ||
+                    resolvedTitle.Equals("High Scores", StringComparison.OrdinalIgnoreCase) ||
+                    resolvedTitle.Equals("Leaderboard", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (appWindow.GetComponentInChildren<ScoresApp>() == null)
+                    {
+                        GameObject scoresContent = new GameObject("ScoresContent", typeof(RectTransform));
+                        scoresContent.AddComponent<ScoresApp>();
+                        appWindow.SetContent(scoresContent);
+                    }
                 }
             }
 

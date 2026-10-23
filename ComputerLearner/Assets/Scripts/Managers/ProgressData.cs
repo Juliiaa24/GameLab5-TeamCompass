@@ -86,6 +86,9 @@ namespace ComputerLearning
         public bool HasSeenDesktopTour { get; private set; }
         private List<string> unlockedLevels = new List<string> { "level1" }; // Level 1 always unlocked
         private List<string> completedLevels = new List<string>();
+        private List<LevelScoreRecord> levelRecords = new List<LevelScoreRecord>();
+
+        public IReadOnlyList<LevelScoreRecord> LevelRecords => levelRecords;
 
         #region Public Methods
         public System.Action<string> OnLevelUnlocked;
@@ -164,6 +167,110 @@ namespace ComputerLearning
         }
 
         /// <summary>
+        /// Returns the best recorded attempt for a level, or null if unplayed.
+        /// </summary>
+        public LevelScoreRecord GetLevelRecord(string levelId)
+        {
+            if (string.IsNullOrEmpty(levelId)) return null;
+            for (int i = 0; i < levelRecords.Count; i++)
+            {
+                if (string.Equals(levelRecords[i].levelId, levelId, StringComparison.OrdinalIgnoreCase))
+                {
+                    return levelRecords[i];
+                }
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Returns the best medal achieved for a level.
+        /// </summary>
+        public LevelMedal GetBestMedal(string levelId)
+        {
+            LevelScoreRecord record = GetLevelRecord(levelId);
+            return record != null ? record.bestMedal : LevelMedal.None;
+        }
+
+        /// <summary>
+        /// Calculates the medal achieved based on accuracy and mistakes.
+        /// Gold: 100% accuracy, 0 mistakes.
+        /// Silver: >= 80% accuracy, <= 2 mistakes.
+        /// Bronze: >= 50% accuracy.
+        /// </summary>
+        public static LevelMedal CalculateMedal(float accuracyPercentage, int mistakesCount)
+        {
+            if (accuracyPercentage >= 99.9f && mistakesCount == 0) return LevelMedal.Gold;
+            if (accuracyPercentage >= 80f && mistakesCount <= 2) return LevelMedal.Silver;
+            if (accuracyPercentage >= 50f) return LevelMedal.Bronze;
+            return LevelMedal.None;
+        }
+
+        /// <summary>
+        /// Records a level attempt, updating the stored record only if this attempt is superior.
+        /// </summary>
+        public LevelScoreRecord RecordLevelAttempt(string levelId, float accuracyScore, float timeSeconds, int mistakesCount = 0)
+        {
+            LevelMedal earnedMedal = CalculateMedal(accuracyScore, mistakesCount);
+            return RecordLevelAttempt(levelId, earnedMedal, accuracyScore, timeSeconds, mistakesCount);
+        }
+
+        /// <summary>
+        /// Records a level attempt with an explicit medal, preserving the best attempt.
+        /// </summary>
+        public LevelScoreRecord RecordLevelAttempt(string levelId, LevelMedal earnedMedal, float accuracyScore, float timeSeconds, int mistakesCount = 0)
+        {
+            if (string.IsNullOrEmpty(levelId)) return null;
+
+            LevelScoreRecord record = GetLevelRecord(levelId);
+            bool isBetter = false;
+
+            if (record == null)
+            {
+                record = new LevelScoreRecord(levelId, earnedMedal, accuracyScore, timeSeconds, mistakesCount);
+                levelRecords.Add(record);
+                isBetter = true;
+            }
+            else
+            {
+                record.attemptsCount++;
+                record.lastCompletedTicks = DateTime.UtcNow.Ticks;
+
+                // Determine if this run was superior to the previous best
+                if ((int)earnedMedal > (int)record.bestMedal)
+                {
+                    isBetter = true;
+                }
+                else if (earnedMedal == record.bestMedal)
+                {
+                    if (accuracyScore > record.bestScore + 0.1f)
+                    {
+                        isBetter = true;
+                    }
+                    else if (Mathf.Abs(accuracyScore - record.bestScore) <= 0.1f)
+                    {
+                        if (record.bestTimeSeconds <= 0f || (timeSeconds > 0f && timeSeconds < record.bestTimeSeconds))
+                        {
+                            isBetter = true;
+                        }
+                    }
+                }
+
+                if (isBetter)
+                {
+                    record.bestMedal = earnedMedal;
+                    record.bestScore = accuracyScore;
+                    record.bestTimeSeconds = timeSeconds;
+                    record.bestMistakes = mistakesCount;
+                }
+            }
+
+            OnProgressChanged?.Invoke();
+            if (autoSaveAfterEachResult) Save();
+
+            return record;
+        }
+
+        /// <summary>
         /// Adds a TaskResult to the history.
         /// Saves immediately if autoSaveAfterEachResult is enabled.
         /// </summary>
@@ -226,7 +333,8 @@ namespace ComputerLearning
                     results = taskHistory,
                     unlockedLevels = this.unlockedLevels,
                     completedLevels = this.completedLevels,
-                    hasSeenDesktopTour = this.HasSeenDesktopTour
+                    hasSeenDesktopTour = this.HasSeenDesktopTour,
+                    levelRecords = this.levelRecords
                 };
                 string json = JsonUtility.ToJson(wrapper);
                 PlayerPrefs.SetString(SaveKey, json);
@@ -278,8 +386,9 @@ namespace ComputerLearning
                     }
                 }
                 if (wrapper != null) HasSeenDesktopTour = wrapper.hasSeenDesktopTour;
+                if (wrapper?.levelRecords != null) levelRecords = wrapper.levelRecords;
                 
-                Debug.Log($"[ProgressData] Loaded {taskHistory.Count} task results.");
+                Debug.Log($"[ProgressData] Loaded {taskHistory.Count} task results and {levelRecords.Count} level records.");
             }
             catch (Exception e)
             {
@@ -296,8 +405,10 @@ namespace ComputerLearning
             taskHistory.Clear();
             unlockedLevels = new List<string> { "level1" };
             completedLevels.Clear();
+            levelRecords.Clear();
             HasSeenDesktopTour = false;
             PlayerPrefs.DeleteKey(SaveKey);
+            OnProgressChanged?.Invoke();
             Debug.Log("[ProgressData] History cleared.");
         }
         #endregion
@@ -311,6 +422,7 @@ namespace ComputerLearning
             public List<string> unlockedLevels;
             public List<string> completedLevels;
             public bool hasSeenDesktopTour;
+            public List<LevelScoreRecord> levelRecords;
         }
         #endregion
     }

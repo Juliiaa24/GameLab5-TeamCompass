@@ -6,6 +6,7 @@ namespace ComputerLearning
     /// <summary>
     /// Executes a specific LevelDefinition (sequence of tasks) inside a Window.
     /// Replaces the old Level1/Level2 hardcoded classes.
+    /// Tracks attempts, completion time, accuracy, and evaluates medals.
     /// </summary>
     public class LevelRunner : MonoBehaviour
     {
@@ -22,6 +23,14 @@ namespace ComputerLearning
         private BaseTask activeTask;
         private Window appWindow;
         private TutorialDialogs dialogs;
+
+        // Session performance tracking for medal evaluation
+        private float levelStartTime = 0f;
+        private bool hasRecordedLevelStartTime = false;
+        private int tasksAttempted = 0;
+        private int tasksSucceeded = 0;
+        private int tasksFailed = 0;
+        private int extraTaskMistakes = 0;
 
         private void Awake()
         {
@@ -41,6 +50,14 @@ namespace ComputerLearning
 
             _currentLevel = level;
             currentTaskIndex = 0;
+            IsCompleted = false;
+
+            // Reset run metrics
+            tasksAttempted = 0;
+            tasksSucceeded = 0;
+            tasksFailed = 0;
+            extraTaskMistakes = 0;
+            hasRecordedLevelStartTime = false;
             
             if (appWindow != null && !string.IsNullOrEmpty(level.displayName))
             {
@@ -167,16 +184,36 @@ namespace ComputerLearning
             {
                 Debug.Log($"[LevelRunner] Level '{currentLevel.displayName}' completed!");
                 
-                VirtualMascot.Show(dialogs.level_completed, appWindow != null ? appWindow.ContentArea : null, new Vector2(0, -80));
-                IsCompleted = true;
-                StartCoroutine(AutoCloseAfterDelay(3.5f));
+                float totalDuration = hasRecordedLevelStartTime ? Mathf.Max(0.5f, Time.time - levelStartTime) : 1f;
+                int totalMistakes = tasksFailed + extraTaskMistakes;
+                float accuracy = tasksAttempted > 0 ? ((float)tasksSucceeded / tasksAttempted) * 100f : 100f;
+
+                LevelMedal medal = ProgressData.CalculateMedal(accuracy, totalMistakes);
 
                 if (ProgressData.Instance != null && currentLevel != null && !string.IsNullOrEmpty(currentLevel.levelId))
                 {
+                    ProgressData.Instance.RecordLevelAttempt(currentLevel.levelId, medal, accuracy, totalDuration, totalMistakes);
                     ProgressData.Instance.MarkLevelCompleted(currentLevel.levelId);
                 }
 
+                string medalEmoji = LevelScoreRecord.GetMedalEmoji(medal);
+                string medalName = LevelScoreRecord.GetMedalName(medal);
+                string medalColorHex = LevelScoreRecord.GetMedalColorHex(medal);
+                string completedDialog = !string.IsNullOrEmpty(dialogs?.level_completed) ? dialogs.level_completed : "Level completed!";
+
+                string celebrationMsg = $"{completedDialog}\n\n<color={medalColorHex}><b>{medalEmoji} {medalName.ToUpper()} MEDAL!</b></color>\nAccuracy: {accuracy:F0}%  Time: {totalDuration:F1}s";
+
+                VirtualMascot.Show(celebrationMsg, appWindow != null ? appWindow.ContentArea : null, new Vector2(0, -80));
+                IsCompleted = true;
+                StartCoroutine(AutoCloseAfterDelay(4.0f));
+
                 return;
+            }
+
+            if (!hasRecordedLevelStartTime)
+            {
+                levelStartTime = Time.time;
+                hasRecordedLevelStartTime = true;
             }
 
             TaskDefinition def = null;
@@ -264,8 +301,18 @@ namespace ComputerLearning
                 activeTask = null;
             }
 
+            tasksAttempted++;
+
             if (result != null)
             {
+                if (result.success) tasksSucceeded++;
+                else tasksFailed++;
+
+                if (result.attempts > 1)
+                {
+                    extraTaskMistakes += (result.attempts - 1);
+                }
+
                 // Inject Level info for Stats
                 if (currentLevel != null)
                 {
@@ -299,6 +346,3 @@ namespace ComputerLearning
         }
     }
 }
-
-
-
