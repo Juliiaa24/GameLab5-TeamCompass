@@ -1,14 +1,16 @@
 /**
  * Author: TeamCompass (Diego & AI)
  * Date: 23/10/2026
- * Description: Animated level results modal in the style of Angry Birds star reveal.
- *              Sequentially animates earned medals (Bronze, Silver, Gold) with scale pops and audio chimes.
+ * Description: Animated level results modal displaying a single earned medal (Bronze, Silver, Gold).
+ *              Featuring a large rewarding hero medal reveal with overshoot pop and audio chime.
+ *              Includes automated progression (railroading) for the first few levels where clicking
+ *              has not yet been introduced.
  */
 using System;
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
 using TMPro;
 
 namespace ComputerLearning
@@ -22,7 +24,8 @@ namespace ComputerLearning
             float accuracy, 
             float duration, 
             int mistakes, 
-            Action onClosed)
+            Action onClosed,
+            bool? autoAdvance = null)
         {
             GameObject modalObj = new GameObject("LevelCelebrationModal", typeof(RectTransform), typeof(CanvasGroup), typeof(LevelCelebrationModal));
             modalObj.transform.SetParent(parent, false);
@@ -34,8 +37,17 @@ namespace ComputerLearning
             rt.offsetMax = Vector2.zero;
 
             LevelCelebrationModal modal = modalObj.GetComponent<LevelCelebrationModal>();
-            modal.Initialize(level, medal, accuracy, duration, mistakes, onClosed);
+            modal.Initialize(level, medal, accuracy, duration, mistakes, onClosed, autoAdvance);
             return modal;
+        }
+
+        public static bool ShouldAutoAdvance(LevelDefinition level)
+        {
+            if (level == null) return false;
+            string id = level.levelId != null ? level.levelId.Trim().ToLowerInvariant() : "";
+            // First few tutorial levels: player hasn't learned how to click yet (Level 1: Move, Level 2: Hover).
+            // Railroad the results screen so player doesn't get stuck.
+            return id == "level1" || id == "level2" || id == "assessment";
         }
 
         private LevelDefinition levelDef;
@@ -44,9 +56,15 @@ namespace ComputerLearning
         private float durationVal;
         private int mistakesVal;
         private Action onClosedCallback;
+        private bool isAutoAdvancing;
+        private bool isClosed = false;
 
-        private Image[] medalImages = new Image[3];
-        private RectTransform[] medalRects = new RectTransform[3];
+        private Image medalImage;
+        private RectTransform medalRect;
+        private TextMeshProUGUI medalBadgeText;
+        private TextMeshProUGUI btnTxt;
+        private Button continueBtn;
+        private Coroutine autoAdvanceCoroutine;
 
         public void Initialize(
             LevelDefinition level, 
@@ -54,7 +72,8 @@ namespace ComputerLearning
             float accuracy, 
             float duration, 
             int mistakes, 
-            Action onClosed)
+            Action onClosed,
+            bool? autoAdvance = null)
         {
             levelDef = level;
             earnedMedal = medal;
@@ -62,6 +81,7 @@ namespace ComputerLearning
             durationVal = duration;
             mistakesVal = mistakes;
             onClosedCallback = onClosed;
+            isAutoAdvancing = autoAdvance.HasValue ? autoAdvance.Value : ShouldAutoAdvance(level);
 
             BuildVisuals();
             StartCoroutine(AnimateSequence());
@@ -85,15 +105,15 @@ namespace ComputerLearning
             RectTransform cardRt = card.GetComponent<RectTransform>();
             cardRt.anchorMin = new Vector2(0.5f, 0.5f);
             cardRt.anchorMax = new Vector2(0.5f, 0.5f);
-            cardRt.sizeDelta = new Vector2(460f, 370f);
+            cardRt.sizeDelta = new Vector2(460f, 380f);
             cardRt.anchoredPosition = Vector2.zero;
 
             Image cardImg = card.GetComponent<Image>();
-            cardImg.color = new Color(0.92f, 0.94f, 0.97f, 1f);
+            cardImg.color = new Color(0.93f, 0.95f, 0.98f, 1f);
 
             VerticalLayoutGroup vlg = card.GetComponent<VerticalLayoutGroup>();
-            vlg.padding = new RectOffset(20, 20, 18, 18);
-            vlg.spacing = 12;
+            vlg.padding = new RectOffset(22, 22, 20, 20);
+            vlg.spacing = 10;
             vlg.childControlWidth = true;
             vlg.childControlHeight = false;
             vlg.childAlignment = TextAnchor.UpperCenter;
@@ -106,7 +126,7 @@ namespace ComputerLearning
             title.fontSize = 24;
             title.alignment = TextAlignmentOptions.Center;
             title.color = new Color(0.12f, 0.22f, 0.38f);
-            title.GetComponent<RectTransform>().sizeDelta = new Vector2(0, 32);
+            title.GetComponent<RectTransform>().sizeDelta = new Vector2(0, 30);
 
             // Subtitle (Level Name)
             GameObject subObj = new GameObject("SubTitle", typeof(RectTransform), typeof(TextMeshProUGUI));
@@ -116,37 +136,61 @@ namespace ComputerLearning
             subtitle.fontSize = 17;
             subtitle.alignment = TextAlignmentOptions.Center;
             subtitle.color = new Color(0.35f, 0.40f, 0.48f);
-            subtitle.GetComponent<RectTransform>().sizeDelta = new Vector2(0, 24);
+            subtitle.GetComponent<RectTransform>().sizeDelta = new Vector2(0, 22);
 
-            // ── Medals Showcase Row (Angry Birds style 3 pedestal slots) ──
-            GameObject medalsRow = new GameObject("MedalsRow", typeof(RectTransform), typeof(HorizontalLayoutGroup));
-            medalsRow.transform.SetParent(card.transform, false);
-            RectTransform mrRt = medalsRow.GetComponent<RectTransform>();
-            mrRt.sizeDelta = new Vector2(0, 110);
+            // ── Single Hero Medal Showcase (Only the earned medal, scaled up to feel rewarding) ──
+            GameObject medalShowcase = new GameObject("MedalShowcase", typeof(RectTransform), typeof(VerticalLayoutGroup));
+            medalShowcase.transform.SetParent(card.transform, false);
+            RectTransform msRt = medalShowcase.GetComponent<RectTransform>();
+            msRt.sizeDelta = new Vector2(0, 150f);
 
-            HorizontalLayoutGroup hlg = medalsRow.GetComponent<HorizontalLayoutGroup>();
-            hlg.spacing = 28;
-            hlg.childControlWidth = false;
-            hlg.childControlHeight = false;
-            hlg.childAlignment = TextAnchor.MiddleCenter;
+            VerticalLayoutGroup msVlg = medalShowcase.GetComponent<VerticalLayoutGroup>();
+            msVlg.spacing = 6;
+            msVlg.childControlWidth = false;
+            msVlg.childControlHeight = false;
+            msVlg.childAlignment = TextAnchor.MiddleCenter;
 
-            // Slot 0: Bronze, Slot 1: Silver, Slot 2: Gold
-            string[] slotNames = { "Slot_Bronze", "Slot_Silver", "Slot_Gold" };
-            for (int i = 0; i < 3; i++)
+            // Hero Medal Slot
+            GameObject medalObj = new GameObject("HeroMedal", typeof(RectTransform), typeof(Image));
+            medalObj.transform.SetParent(medalShowcase.transform, false);
+            medalRect = medalObj.GetComponent<RectTransform>();
+            float medalSize = 116f; // Large, prominent and rewarding
+            medalRect.sizeDelta = new Vector2(medalSize, medalSize);
+            medalRect.localScale = Vector3.zero;
+
+            medalImage = medalObj.GetComponent<Image>();
+            medalImage.sprite = MedalVisualUtility.GetMedalSprite(earnedMedal);
+            medalImage.preserveAspect = true;
+
+            // Medal Title Badge Text
+            GameObject badgeObj = new GameObject("MedalBadgeText", typeof(RectTransform), typeof(TextMeshProUGUI));
+            badgeObj.transform.SetParent(medalShowcase.transform, false);
+            RectTransform badgeRt = badgeObj.GetComponent<RectTransform>();
+            badgeRt.sizeDelta = new Vector2(300, 24);
+
+            medalBadgeText = badgeObj.GetComponent<TextMeshProUGUI>();
+            medalBadgeText.alignment = TextAlignmentOptions.Center;
+            medalBadgeText.fontSize = 17;
+            medalBadgeText.fontStyle = FontStyles.Bold;
+
+            switch (earnedMedal)
             {
-                GameObject slotObj = new GameObject(slotNames[i], typeof(RectTransform), typeof(Image));
-                slotObj.transform.SetParent(medalsRow.transform, false);
-                RectTransform sRt = slotObj.GetComponent<RectTransform>();
-                // Middle medal (Gold) is slightly larger
-                float size = (i == 2) ? 88f : (i == 1 ? 78f : 72f);
-                sRt.sizeDelta = new Vector2(size, size);
-
-                Image img = slotObj.GetComponent<Image>();
-                img.sprite = MedalVisualUtility.GetEmptyMedalSlotSprite();
-                img.preserveAspect = true;
-
-                medalImages[i] = img;
-                medalRects[i] = sRt;
+                case LevelMedal.Gold:
+                    medalBadgeText.text = "★ GOLD MEDAL ★";
+                    medalBadgeText.color = new Color(0.92f, 0.70f, 0.00f);
+                    break;
+                case LevelMedal.Silver:
+                    medalBadgeText.text = "★ SILVER MEDAL ★";
+                    medalBadgeText.color = new Color(0.55f, 0.62f, 0.72f);
+                    break;
+                case LevelMedal.Bronze:
+                    medalBadgeText.text = "★ BRONZE MEDAL ★";
+                    medalBadgeText.color = new Color(0.78f, 0.46f, 0.18f);
+                    break;
+                default:
+                    medalBadgeText.text = "★ COMPLETED ★";
+                    medalBadgeText.color = new Color(0.40f, 0.45f, 0.55f);
+                    break;
             }
 
             // Stats row (Accuracy, Time, Mistakes)
@@ -165,13 +209,19 @@ namespace ComputerLearning
             btnObj.transform.SetParent(card.transform, false);
             LayoutElement btnLe = btnObj.GetComponent<LayoutElement>();
             btnLe.preferredHeight = 44;
-            btnLe.preferredWidth = 180;
+            btnLe.preferredWidth = 200;
 
             Image btnImg = btnObj.GetComponent<Image>();
             btnImg.color = new Color(0.18f, 0.55f, 0.88f);
 
-            Button btn = btnObj.GetComponent<Button>();
-            btn.onClick.AddListener(CloseModal);
+            continueBtn = btnObj.GetComponent<Button>();
+            continueBtn.onClick.AddListener(CloseModal);
+
+            // Add hover trigger (especially rewarding in Level 2: Hover)
+            EventTrigger trigger = btnObj.AddComponent<EventTrigger>();
+            EventTrigger.Entry entry = new EventTrigger.Entry { eventID = EventTriggerType.PointerEnter };
+            entry.callback.AddListener((data) => OnButtonPointerEnter());
+            trigger.triggers.Add(entry);
 
             GameObject btnTxtObj = new GameObject("Text", typeof(RectTransform), typeof(TextMeshProUGUI));
             btnTxtObj.transform.SetParent(btnObj.transform, false);
@@ -181,8 +231,8 @@ namespace ComputerLearning
             btRt.offsetMin = Vector2.zero;
             btRt.offsetMax = Vector2.zero;
 
-            TextMeshProUGUI btnTxt = btnTxtObj.GetComponent<TextMeshProUGUI>();
-            btnTxt.text = "<b>CONTINUE</b>";
+            btnTxt = btnTxtObj.GetComponent<TextMeshProUGUI>();
+            btnTxt.text = isAutoAdvancing ? "<b>CONTINUING...</b>" : "<b>CONTINUE</b>";
             btnTxt.fontSize = 18;
             btnTxt.alignment = TextAlignmentOptions.Center;
             btnTxt.color = Color.white;
@@ -190,55 +240,46 @@ namespace ComputerLearning
 
         private IEnumerator AnimateSequence()
         {
-            yield return new WaitForSeconds(0.35f);
+            yield return new WaitForSeconds(0.25f);
 
-            int targetMedalCount = 0;
-            if (earnedMedal == LevelMedal.Bronze) targetMedalCount = 1;
-            else if (earnedMedal == LevelMedal.Silver) targetMedalCount = 2;
-            else if (earnedMedal == LevelMedal.Gold) targetMedalCount = 3;
-
-            LevelMedal[] medalOrder = { LevelMedal.Bronze, LevelMedal.Silver, LevelMedal.Gold };
-
-            for (int i = 0; i < targetMedalCount; i++)
+            // Animate hero medal pop
+            if (medalRect != null && medalImage != null)
             {
-                yield return StartCoroutine(PopMedalRoutine(i, medalOrder[i]));
-                yield return new WaitForSeconds(0.3f);
+                int chimeRank = earnedMedal == LevelMedal.Gold ? 3 : (earnedMedal == LevelMedal.Silver ? 2 : 1);
+                FeedbackManager.PlayMedalChime(chimeRank);
+
+                yield return StartCoroutine(PopMedalRoutine(medalRect));
+            }
+
+            // If auto-advance (e.g. railroaded tutorial levels)
+            if (isAutoAdvancing)
+            {
+                autoAdvanceCoroutine = StartCoroutine(AutoAdvanceRoutine());
+                yield return autoAdvanceCoroutine;
             }
         }
 
-        private IEnumerator PopMedalRoutine(int slotIndex, LevelMedal medalType)
+        private IEnumerator PopMedalRoutine(RectTransform rt)
         {
-            if (slotIndex < 0 || slotIndex >= medalImages.Length) yield break;
+            if (rt == null) yield break;
 
-            Image img = medalImages[slotIndex];
-            RectTransform rt = medalRects[slotIndex];
-            if (img == null || rt == null) yield break;
-
-            // Set the real medal sprite
-            img.sprite = MedalVisualUtility.GetMedalSprite(medalType);
-
-            // Audio chime for this medal
-            FeedbackManager.PlayMedalChime(slotIndex + 1);
-
-            // Punch/pop scale animation: 0 -> 1.35 -> 1.0 with overshoot
             Vector3 targetScale = Vector3.one;
             rt.localScale = Vector3.zero;
 
             float elapsed = 0f;
-            float popDuration = 0.22f;
+            float popDuration = 0.24f;
 
             while (elapsed < popDuration)
             {
                 elapsed += Time.unscaledDeltaTime;
                 float t = Mathf.Clamp01(elapsed / popDuration);
-                // Overshoot curve
                 float scaleFactor = Mathf.Sin(t * Mathf.PI * 0.75f) * 1.35f;
                 rt.localScale = targetScale * scaleFactor;
                 yield return null;
             }
 
             elapsed = 0f;
-            float settleDuration = 0.14f;
+            float settleDuration = 0.16f;
             Vector3 startOvershoot = rt.localScale;
             while (elapsed < settleDuration)
             {
@@ -251,9 +292,70 @@ namespace ComputerLearning
             rt.localScale = targetScale;
         }
 
+        private IEnumerator AutoAdvanceRoutine()
+        {
+            float totalWait = 3.5f;
+            float elapsed = 0f;
+
+            while (elapsed < totalWait)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                float remaining = Mathf.Max(0f, totalWait - elapsed);
+                int secondsLeft = Mathf.CeilToInt(remaining);
+
+                if (btnTxt != null)
+                {
+                    btnTxt.text = $"<b>CONTINUING ({secondsLeft}s)...</b>";
+                }
+
+                yield return null;
+            }
+
+            CloseModalInternal(false);
+        }
+
+        private void OnButtonPointerEnter()
+        {
+            if (isClosed) return;
+
+            // In level 2 (Hover) or when auto-advancing, hovering the continue button advances
+            if (levelDef != null && string.Equals(levelDef.levelId, "level2", StringComparison.OrdinalIgnoreCase))
+            {
+                CloseModalInternal(true);
+            }
+        }
+
+        private void Update()
+        {
+            if (isClosed) return;
+
+            if (Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter) || Input.GetKeyDown(KeyCode.Escape))
+            {
+                CloseModalInternal(true);
+            }
+        }
+
         public void CloseModal()
         {
-            FeedbackManager.PlayClick();
+            CloseModalInternal(true);
+        }
+
+        private void CloseModalInternal(bool isUserAction)
+        {
+            if (isClosed) return;
+            isClosed = true;
+
+            if (autoAdvanceCoroutine != null)
+            {
+                StopCoroutine(autoAdvanceCoroutine);
+                autoAdvanceCoroutine = null;
+            }
+
+            if (isUserAction)
+            {
+                FeedbackManager.PlayClick();
+            }
+
             onClosedCallback?.Invoke();
             Destroy(gameObject);
         }
