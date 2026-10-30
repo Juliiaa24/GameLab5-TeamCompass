@@ -12,6 +12,14 @@
         "If a window is too small, click the square button to maximize it!",
         "I'll always be here in the corner whenever you need advice!"
     ],
+    "medalImprovementMessages": [
+        "Awesome improvement! You beat your previous record!",
+        "New personal best! Your practice is really paying off!",
+        "Fantastic upgrade! You earned a higher medal on this level!",
+        "Incredible progress! You're mastering the mouse!"
+    ],
+    "medalImprovementUpgradeFormat": "{0}\n({1} -> {2} Medal!)",
+    "medalImprovementEarnedFormat": "{0}\n(Earned {1} Medal!)",
     "wrongLeftClick": "That was a left click! Try using the right mouse button!",
     "wrongRightClick": "Wrong click! Try using the left mouse button.",
     "almostOut": "Almost out! Aim closer to the center!",
@@ -24,14 +32,61 @@
     ],
     "holdKeepPressing": "Keep pressing! Hold the button down a bit longer!",
     "holdStayInside": "Stay inside the circle while holding down!",
+    "holdHoverStagnant": "Now press and HOLD down the left mouse button!",
+    "holdInactivityReminder": "Move your cursor onto the circle, then press and hold the left mouse button!",
+    "holdMissedBackground": "Missed the target! Move the cursor inside the circle and hold the left button down!",
+    "holdQuickTapMessages": [
+        "That was just a quick tap! Press and keep your finger down on the left button!",
+        "Don't let go right away! Press and hold the left mouse button down!",
+        "Hold it down! Keep pressing the button until the circle fills up!"
+    ],
+    "holdMidReleaseMessages": [
+        "Good start! Keep holding the button down a bit longer!",
+        "You're getting the hang of it! Just keep your finger pressed down!",
+        "Don't let go yet! Hold the left mouse button until the bar finishes!"
+    ],
+    "holdAlmostDoneMessages": [
+        "So close! Just hold it down for a tiny bit longer!",
+        "Almost there! Keep holding until the bar is completely full!",
+        "Nearly done! Hold steady for just another second!"
+    ],
+    "holdSlippedOutsideMessages": [
+        "Oops, your cursor slipped outside! Keep the mouse steady inside the circle while holding!",
+        "Stay inside the target! Hold the button down and keep your hand steady!",
+        "Careful not to move outside the circle while holding the button down!"
+    ],
     "clickMissed": "Missed! Aim carefully inside the target circle!",
+    "clickDelayReminder": "Aim carefully and click inside the circle!",
+    "clickHoverStagnant": "Click the left mouse button!",
     "doubleClickFast": "Click twice quickly! Double-click!",
+    "doubleClickHoverStagnant": "Click the left mouse button twice quickly! Click-click!",
+    "doubleClickInactivityReminder": "Move your mouse to the target and double-click (two quick left clicks)!",
+    "doubleClickLeftBeforeSecond": "Keep the mouse steady inside the target while clicking twice!",
+    "doubleClickMissedBackground": "Missed the target! Move the cursor inside the circle and double-click!",
+    "doubleClickSingleClickMessages": [
+        "That was only one click! Click twice quickly: click-click!",
+        "Too slow between clicks! Press the left button twice fast without moving the mouse!",
+        "Almost! Remember to do two quick clicks in a row!"
+    ],
     "dragAlmost": "Almost! Drag the item all the way into the target zone!",
-    "hoverKeepSteady": "Oops! Keep the cursor steady inside the target until the bar fills!",
+    "dragTapWithoutDrag": "Don't let go right away! Press and HOLD the left button while moving the mouse to the drop zone!",
+    "dragDwellReminder": "Press and hold the left mouse button on the piece to grab it!",
+    "dragInactivityReminder": "Grab the piece by holding down the left mouse button, then drag it to the target zone!",
+    "dragMissedBackground": "Click and hold directly on the draggable piece to pick it up!",
+    "dragMissedDropMessages": [
+        "Almost there! Keep holding the left mouse button until the piece is inside the target zone!",
+        "You let go a bit too early! Drag the piece all the way into the highlighted box before releasing!",
+        "So close! Move the piece right onto the target zone and then release the mouse button!"
+    ],
+    "hoverKeepSteady": "Almost! Keep the cursor steady inside the target until the bar fills!",
     "hoverNoClick": "No need to click! Just hold the mouse cursor over the circle!",
     "hoverDontClickOutside": "Don't click outside! Move your mouse inside the circle and hold it steady!",
+    "hoverStartReminder": "Move your mouse over the target circle and hold it steady!",
     "moveKeepMoving": "Keep moving the mouse to clean all the spots!",
     "moveNoClick": "Just move the mouse over the spots without clicking!",
     "rightClickReminder": "Click the right mouse button on the target circle!",
-    "rightClickAimInside": "Aim inside the circle and click the right mouse button!"
+    "rightClickAimInside": "Aim inside the circle and click the right mouse button!",
+    "rightClickHoverStagnant": "Now press the RIGHT mouse button on the target!",
+    "rightClickBackgroundLeftClick": "That was a left click outside! Move inside the circle and press the RIGHT mouse button!",
+    "rightClickBackgroundRightClick": "Good right-click! Now do that right inside the target circle!"
 }

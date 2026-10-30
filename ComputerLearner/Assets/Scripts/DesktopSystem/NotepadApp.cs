@@ -49,10 +49,13 @@ namespace ComputerLearning
         private Window parentWindow;
         private bool hasLoadedFile;
 
-        // Undo history
+        // Undo history and native TMP_InputField shortcut deduplication
         private readonly Stack<string> undoHistory = new Stack<string>();
         private string previousTextForUndo = string.Empty;
         private bool isUndoing = false;
+        private float blockNativePasteUntilTime = -1f;
+        private string lastNonEmptySelection = string.Empty;
+        private int lastNativeEditFrame = -1;
         #endregion
 
         #region Unity Methods
@@ -60,6 +63,11 @@ namespace ComputerLearning
         {
             if (inputField == null) inputField = GetComponentInChildren<TMP_InputField>();
             parentWindow = GetComponentInParent<Window>();
+
+            if (inputField != null)
+            {
+                inputField.onValidateInput = OnValidateInputChar;
+            }
         }
 
         private void Start()
@@ -68,6 +76,8 @@ namespace ComputerLearning
 
             if (inputField != null)
             {
+                inputField.onValidateInput = OnValidateInputChar;
+
                 if (!hasLoadedFile && string.IsNullOrEmpty(inputField.text))
                 {
                     inputField.text = initialContent;
@@ -114,6 +124,30 @@ namespace ComputerLearning
             UpdateStats(inputField != null ? inputField.text : string.Empty);
         }
 
+        private char OnValidateInputChar(string text, int charIndex, char addedChar)
+        {
+            // Prevent TMP_InputField's internal KeyPressed(Ctrl+V) -> Append(systemCopyBuffer)
+            // from inserting characters a second time when NotepadApp handles shortcuts.
+            if (Time.unscaledTime < blockNativePasteUntilTime || IsCtrlHeld())
+            {
+                return '\0';
+            }
+            return addedChar;
+        }
+
+        private static bool IsCtrlHeld()
+        {
+            if (UnityEngine.InputSystem.Keyboard.current != null)
+            {
+                return UnityEngine.InputSystem.Keyboard.current.ctrlKey.isPressed;
+            }
+#if ENABLE_LEGACY_INPUT_MANAGER
+            return Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl);
+#else
+            return false;
+#endif
+        }
+
         private void Update()
         {
             if (parentWindow == null) parentWindow = GetComponentInParent<Window>();
@@ -122,6 +156,12 @@ namespace ComputerLearning
                                 (inputField != null && inputField.isFocused);
 
             if (!isAppFocused) return;
+
+            string currentSelection = GetSelectedText();
+            if (!string.IsNullOrEmpty(currentSelection))
+            {
+                lastNonEmptySelection = currentSelection;
+            }
 
             bool isCtrl = false;
             bool isC = false;
@@ -188,11 +228,26 @@ namespace ComputerLearning
             }
         }
 
+        public void ClearUndoHistory()
+        {
+            undoHistory.Clear();
+            if (inputField != null)
+            {
+                previousTextForUndo = inputField.text ?? string.Empty;
+            }
+        }
+
         public void HandleCopyShortcut()
         {
             if (inputField == null) return;
 
             string selected = GetSelectedText();
+            if (string.IsNullOrEmpty(selected) && !string.IsNullOrEmpty(lastNonEmptySelection) &&
+                !string.IsNullOrEmpty(inputField.text) && inputField.text.Contains(lastNonEmptySelection))
+            {
+                selected = lastNonEmptySelection;
+            }
+
             if (!string.IsNullOrEmpty(selected))
             {
                 VirtualClipboard = selected;
@@ -218,7 +273,7 @@ namespace ComputerLearning
             int start = Mathf.Min(inputField.selectionAnchorPosition, inputField.selectionFocusPosition);
             int end = Mathf.Max(inputField.selectionAnchorPosition, inputField.selectionFocusPosition);
 
-            if (end > start)
+            if (end > start && start >= 0 && end <= inputField.text.Length)
             {
                 PushUndoState();
                 string selected = inputField.text.Substring(start, end - start);
@@ -233,9 +288,27 @@ namespace ComputerLearning
                 previousTextForUndo = inputField.text;
                 isUndoing = false;
 
+                lastNonEmptySelection = string.Empty;
                 OnTextCut?.Invoke(selected);
                 ShowFeedbackMessage($"Cut: \"{TruncateString(selected, 20)}\"");
                 FeedbackManager.PlayClick();
+            }
+            else if (lastNativeEditFrame == Time.frameCount)
+            {
+                // TMP_InputField already processed the cut earlier in the same frame via EventSystem
+                string cutText = !string.IsNullOrEmpty(GUIUtility.systemCopyBuffer)
+                    ? GUIUtility.systemCopyBuffer
+                    : lastNonEmptySelection;
+
+                if (!string.IsNullOrEmpty(cutText))
+                {
+                    VirtualClipboard = cutText;
+                    GUIUtility.systemCopyBuffer = cutText;
+                    lastNonEmptySelection = string.Empty;
+                    OnTextCut?.Invoke(cutText);
+                    ShowFeedbackMessage($"Cut: \"{TruncateString(cutText, 20)}\"");
+                    FeedbackManager.PlayClick();
+                }
             }
         }
 
@@ -246,13 +319,16 @@ namespace ComputerLearning
             string toPaste = !string.IsNullOrEmpty(VirtualClipboard) ? VirtualClipboard : GUIUtility.systemCopyBuffer;
             if (string.IsNullOrEmpty(toPaste)) return;
 
+            // Block any delayed native TMP_InputField paste event in this or the next frame
+            blockNativePasteUntilTime = Time.unscaledTime + 0.12f;
+
             PushUndoState();
 
             int start = Mathf.Min(inputField.selectionAnchorPosition, inputField.selectionFocusPosition);
             int end = Mathf.Max(inputField.selectionAnchorPosition, inputField.selectionFocusPosition);
 
             isUndoing = true;
-            if (end > start)
+            if (end > start && start >= 0 && end <= inputField.text.Length)
             {
                 inputField.text = inputField.text.Remove(start, end - start).Insert(start, toPaste);
                 inputField.caretPosition = start + toPaste.Length;
@@ -268,6 +344,7 @@ namespace ComputerLearning
             previousTextForUndo = inputField.text;
             isUndoing = false;
 
+            lastNonEmptySelection = string.Empty;
             OnTextPasted?.Invoke(toPaste);
             ShowFeedbackMessage($"Pasted: \"{TruncateString(toPaste, 20)}\"");
             FeedbackManager.PlaySuccess();
@@ -283,9 +360,12 @@ namespace ComputerLearning
                 string prev = undoHistory.Pop();
                 inputField.text = prev;
                 inputField.caretPosition = Mathf.Clamp(inputField.caretPosition, 0, prev.Length);
+                inputField.selectionAnchorPosition = inputField.caretPosition;
+                inputField.selectionFocusPosition = inputField.caretPosition;
                 previousTextForUndo = prev;
                 isUndoing = false;
 
+                lastNonEmptySelection = string.Empty;
                 OnTextUndo?.Invoke();
                 ShowFeedbackMessage("Undo!");
                 FeedbackManager.PlaySuccess();
@@ -342,8 +422,12 @@ namespace ComputerLearning
             if (inputField == null) inputField = GetComponentInChildren<TMP_InputField>();
             if (inputField != null)
             {
+                inputField.onValidateInput = OnValidateInputChar;
+                isUndoing = true;
                 inputField.text = fileItem.textContent ?? string.Empty;
                 previousTextForUndo = inputField.text;
+                isUndoing = false;
+                lastNonEmptySelection = string.Empty;
                 UpdateStats(inputField.text);
             }
         }
@@ -353,9 +437,13 @@ namespace ComputerLearning
             hasLoadedFile = true;
             if (inputField != null)
             {
+                inputField.onValidateInput = OnValidateInputChar;
                 PushUndoState();
+                isUndoing = true;
                 inputField.text = newText;
                 previousTextForUndo = newText;
+                isUndoing = false;
+                lastNonEmptySelection = string.Empty;
                 UpdateStats(newText);
             }
         }
@@ -365,8 +453,11 @@ namespace ComputerLearning
             if (inputField != null)
             {
                 PushUndoState();
+                isUndoing = true;
                 inputField.text = string.Empty;
                 previousTextForUndo = string.Empty;
+                isUndoing = false;
+                lastNonEmptySelection = string.Empty;
                 UpdateStats(string.Empty);
             }
         }
@@ -477,6 +568,7 @@ namespace ComputerLearning
         {
             if (!isUndoing && previousTextForUndo != text)
             {
+                lastNativeEditFrame = Time.frameCount;
                 if (undoHistory.Count == 0 || undoHistory.Peek() != previousTextForUndo)
                 {
                     undoHistory.Push(previousTextForUndo);

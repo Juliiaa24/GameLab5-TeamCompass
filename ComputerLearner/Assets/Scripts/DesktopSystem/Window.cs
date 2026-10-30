@@ -146,6 +146,7 @@ namespace ComputerLearning
         }
 
         // Preserve the original method name for existing Inspector references.
+        public void ToggleMaximize() => toggleMaximize();
         public void toggleMaximize()
         {
             if (IsClosed) return;

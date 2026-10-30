@@ -8,6 +8,7 @@ namespace ComputerLearning
     {
         public RectTransform dropTarget;
         private int piecesRemaining = 1;
+        private int totalPiecesInitial = 1;
 
         protected override void SetupTask(TaskDefinition definition)
         {
@@ -15,7 +16,7 @@ namespace ComputerLearning
 
             // Use config for required distance, drop target size, drag size, and count
             float requiredDistance = Mathf.Max(20f, definition.config.targetSize * 0.5f);
-            
+
             if (dropTarget != null)
             {
                 // We'll use targetSize for the drop zone, and a bit smaller for the drag pieces
@@ -24,19 +25,20 @@ namespace ComputerLearning
             }
 
             float dragSize = definition.config.targetSize > 0 ? definition.config.targetSize : 150f;
-            
+
             int pieceCount = Mathf.Max(1, definition.config.targetCount);
             piecesRemaining = pieceCount;
+            totalPiecesInitial = pieceCount;
 
             RectTransform parentRect = transform.parent as RectTransform;
             if (parentRect == null) return;
             Rect bounds = parentRect.rect;
 
             // Position Drop Target randomly
-            if (dropTarget != null) 
+            if (dropTarget != null)
             {
                 dropTarget.anchoredPosition = new Vector2(
-                    Random.Range(bounds.xMin + 200, bounds.xMax - 200), 
+                    Random.Range(bounds.xMin + 200, bounds.xMax - 200),
                     Random.Range(bounds.yMin + 200, bounds.yMax - 200)
                 );
             }
@@ -52,6 +54,8 @@ namespace ComputerLearning
                 Destroy(clone.GetComponent<DragDropTask>());
                 SetupPiece(clone, dragSize, requiredDistance, bounds);
             }
+
+            SetupBackgroundClickInterceptor(OnBackgroundClicked);
         }
 
         private void SetupPiece(GameObject go, float size, float snapDist, Rect bounds)
@@ -72,19 +76,65 @@ namespace ComputerLearning
             DraggablePiece piece = go.GetComponent<DraggablePiece>();
             if (piece == null) piece = go.AddComponent<DraggablePiece>();
             if (go.GetComponent<UnityEngine.UI.Image>() != null && go.GetComponent<CircleHitbox>() == null) go.AddComponent<CircleHitbox>();
-            
+
             piece.dropTarget = dropTarget;
             piece.requiredDistanceToSnap = snapDist;
             piece.SetStartPosition(rt.anchoredPosition);
 
             piece.OnPieceDropped += HandlePieceDropped;
             piece.OnPieceMissed += HandlePieceMissed;
+            piece.OnPieceRightClicked += (p) =>
+            {
+                if (IsFinished) return;
+                RegisterAttempt(true);
+                VirtualMascot.ShowWrongClickFeedback(p.transform as RectTransform, false);
+            };
+            piece.OnPieceTapWithoutDrag += (p) =>
+            {
+                if (IsFinished) return;
+                RegisterAttempt(false);
+                VirtualMascot.ShowContextualFeedback(VirtualMascot.FeedbackDialogs.dragTapWithoutDrag, p.transform as RectTransform, 3.0f);
+            };
+            piece.OnPieceDragDwell += (p) =>
+            {
+                if (IsFinished) return;
+                VirtualMascot.ShowContextualFeedback(VirtualMascot.FeedbackDialogs.dragDwellReminder, dropTarget, 3.0f);
+            };
+        }
+
+        protected override void Update()
+        {
+            base.Update();
+            if (IsFinished) return;
+
+            if (!hasShownInactivityReminder && (Time.time - lastInteractionTime) >= 6.0f)
+            {
+                hasShownInactivityReminder = true;
+                VirtualMascot.ShowContextualFeedback(VirtualMascot.FeedbackDialogs.dragInactivityReminder, dropTarget, 3.0f);
+            }
+        }
+
+        public void OnBackgroundClicked(PointerEventData eventData)
+        {
+            if (IsFinished) return;
+            RegisterAttempt(true);
+
+            if (eventData != null && eventData.button == PointerEventData.InputButton.Right)
+            {
+                VirtualMascot.ShowWrongClickFeedback(dropTarget, false);
+            }
+            else
+            {
+                VirtualMascot.ShowContextualFeedback(VirtualMascot.FeedbackDialogs.dragMissedBackground, dropTarget, 3.0f);
+            }
         }
 
         private void HandlePieceMissed()
         {
             RegisterAttempt();
-            VirtualMascot.ShowContextualFeedback(VirtualMascot.FeedbackDialogs.dragAlmost, dropTarget, 3.0f);
+            var fb = VirtualMascot.FeedbackDialogs;
+            string msg = MascotFeedbackDialogs.PickRandom(fb.dragMissedDropMessages, fb.dragAlmost);
+            VirtualMascot.ShowContextualFeedback(msg, dropTarget, 3.0f);
         }
 
         private void HandlePieceDropped(DraggablePiece piece)
@@ -93,6 +143,7 @@ namespace ComputerLearning
 
             RecordIntermediateResult(true);
             piecesRemaining--;
+            NotifySubTaskProgress((float)(totalPiecesInitial - piecesRemaining) / Mathf.Max(1, totalPiecesInitial));
 
             if (piecesRemaining <= 0)
             {

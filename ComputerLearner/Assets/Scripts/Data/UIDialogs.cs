@@ -75,18 +75,35 @@ namespace ComputerLearning
         public string medal_none = "None";
 
         // LevelCelebrationModal
-        public string celebration_title = "<b>★ LEVEL COMPLETED! ★</b>";
+        public string celebration_title = "<b>LEVEL COMPLETED!</b>";
         public string celebration_subtitle_default = "Great Job!";
         public string celebration_stats_format = "Accuracy: <b>{0:F0}%</b>   |   Time: <b>{1:F1}s</b>   |   Mistakes: <color={2}><b>{3}</b></color>";
         public string celebration_continue_button = "<b>CONTINUE</b>";
+        public string celebration_continuing_format = "<b>CONTINUING ({0}s)...</b>";
+        public string celebration_medal_badge_format = "<b>{0} MEDAL</b>";
+        public string celebration_completed_badge = "<b>COMPLETED</b>";
 
         // ScoresApp
         public string scores_window_title = "Scores & Achievements";
         public string scores_header_title = "<b>Hall of Fame & Level Records</b>";
+        public string scores_subtitle = "Track your progress, medals, accuracy, and best times across all 16 levels";
         public string scores_loading = "Loading statistics...";
         public string scores_refresh_button = "Refresh Records";
         public string scores_reset_button = "Reset Records";
-        public string scores_summary_format = "<color=#FFB800>● <b>Gold: {0}</b></color>    <color=#8E9CA8>● <b>Silver: {1}</b></color>    <color=#C87D3B>● <b>Bronze: {2}</b></color>   |   Completed: <b>{3}/{4}</b>   |   Avg Accuracy: <b>{5:F0}%</b>";
+        public string scores_summary_format = "<color=#FFB800><b>Gold: {0}</b></color>    <color=#8E9CA8><b>Silver: {1}</b></color>    <color=#C87D3B><b>Bronze: {2}</b></color>   |   Completed: <b>{3}/{4}</b>   |   Avg Accuracy: <b>{5:F0}%</b>";
+        public string scores_stat_completed = "COMPLETED";
+        public string scores_stat_gold = "GOLD";
+        public string scores_stat_silver = "SILVER";
+        public string scores_stat_bronze = "BRONZE";
+        public string scores_tab_all = "All Levels (16)";
+        public string scores_tab_mouse = "Mouse Skills (1-9)";
+        public string scores_tab_desktop = "Desktop & Apps (10-16)";
+        public string scores_tab_completed = "Completed Only";
+        public string scores_btn_page_up = "^ Page Up";
+        public string scores_btn_page_down = "v Page Down";
+        public string scores_empty_filter = "No levels match this filter yet. Play some levels to earn medals!";
+        public string scores_cat_mouse = "Mouse & Cursor Practice";
+        public string scores_cat_desktop = "Virtual Desktop & Apps";
         public string scores_col_level = "LEVEL NAME";
         public string scores_col_status = "STATUS";
         public string scores_col_medal = "MEDAL EARNED";

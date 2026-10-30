@@ -2,7 +2,7 @@
  * Author: Julia Vera & TeamCompass
  * Date: 05/10/26
  * Description: Advanced desktop tutorial teaching icon movement, window movement,
- *              resizing, minimize/maximize/close, and recycling items directly on VirtualDesktop.
+ *              resizing, closing, and recycling items directly on VirtualDesktop.
  */
 using UnityEngine;
 using System.Collections;
@@ -194,12 +194,17 @@ namespace ComputerLearning
             Window targetWindow = appIcon != null ? appIcon.AppWindow : null;
             if (targetWindow != null)
             {
+                if (targetWindow.IsMaximized)
+                {
+                    targetWindow.toggleMaximize();
+                }
+
                 RectTransform windowRect = targetWindow.GetComponent<RectTransform>();
                 RectTransform dragBarRect = targetWindow.TitleBar != null
                     ? targetWindow.TitleBar
                     : (targetWindow.transform.Find("WindowTop") as RectTransform ?? targetWindow.transform.Find("TopBar") as RectTransform ?? windowRect);
 
-                // Prepare button references
+                // Prepare button references for exclusion during drag/resize and for closing
                 Transform btnClose = targetWindow.CloseButton != null
                     ? targetWindow.CloseButton.transform
                     : (windowRect.Find("WindowTop/Buttons/Close") ?? windowRect.Find("TopBar/Buttons/CloseButton") ?? windowRect.Find("Close"));
@@ -246,62 +251,7 @@ namespace ComputerLearning
                 VirtualMascot.Show(dialogs.step5_awesome, windowRect, new Vector2(250, 0));
                 yield return new WaitForSeconds(2.5f);
 
-                // 6. Maximize and Restore
-                if (btnMax != null && targetWindow != null && !targetWindow.IsClosed)
-                {
-                    RectTransform maxRect = btnMax as RectTransform;
-                    VirtualMascot.Show(dialogs.step6_maximize, maxRect, new Vector2(-250, 50));
-                    tutorialBlocker?.SetAllowedTarget(maxRect);
-
-                    yield return StartCoroutine(WaitWithReminder(() => {
-                        return targetWindow == null || targetWindow.IsClosed || targetWindow.IsMaximized;
-                    }, dialogs.step6_maximizeReminder, maxRect, new Vector2(-250, 50)));
-
-                    tutorialBlocker?.SetAllowedTarget(null);
-                    VirtualMascot.Show(dialogs.step6_restore, maxRect, new Vector2(-250, 50));
-                    tutorialBlocker?.SetAllowedTarget(maxRect);
-
-                    yield return StartCoroutine(WaitWithReminder(() => {
-                        return targetWindow == null || targetWindow.IsClosed || !targetWindow.IsMaximized;
-                    }, dialogs.step6_restoreReminder, maxRect, new Vector2(-250, 50)));
-
-                    tutorialBlocker?.SetAllowedTarget(null);
-                    VirtualMascot.Show(dialogs.step6_greatJob, windowRect, new Vector2(250, 0));
-                    yield return new WaitForSeconds(2.0f);
-                }
-
-                // 7. Minimize and Restore from Taskbar
-                if (btnMin != null && targetWindow != null && !targetWindow.IsClosed)
-                {
-                    RectTransform minRect = btnMin as RectTransform;
-                    VirtualMascot.Show(dialogs.step7_minimize, minRect, new Vector2(-250, 50));
-                    tutorialBlocker?.SetAllowedTarget(minRect);
-
-                    yield return StartCoroutine(WaitWithReminder(() => {
-                        return targetWindow == null || targetWindow.IsClosed || targetWindow.IsMinimized;
-                    }, dialogs.step7_minimizeReminder, minRect, new Vector2(-250, 50)));
-
-                    tutorialBlocker?.SetAllowedTarget(null);
-                    yield return new WaitForSeconds(0.5f);
-
-                    TaskbarWindowButton taskBtn = FindTaskbarButton(targetWindow);
-                    if (taskBtn != null)
-                    {
-                        RectTransform taskRect = taskBtn.GetComponent<RectTransform>();
-                        VirtualMascot.Show(dialogs.step7_taskbar, taskRect, new Vector2(100, 200));
-                        tutorialBlocker?.SetAllowedTarget(taskRect);
-
-                        yield return StartCoroutine(WaitWithReminder(() => {
-                            return targetWindow == null || targetWindow.IsClosed || (!targetWindow.IsMinimized && targetWindow.IsFocused);
-                        }, dialogs.step7_taskbarReminder, taskRect, new Vector2(100, 200)));
-
-                        tutorialBlocker?.SetAllowedTarget(null);
-                        VirtualMascot.Show(dialogs.step7_thereItIs, windowRect, new Vector2(250, 0));
-                        yield return new WaitForSeconds(2.0f);
-                    }
-                }
-
-                // 8. Close Window
+                // 6. Close Window (Minimize and Maximize steps omitted as they are already taught in DesktopTour)
                 RectTransform closeBtnRect = btnClose as RectTransform ?? windowRect;
                 VirtualMascot.Show(dialogs.step8_close, closeBtnRect, new Vector2(0, 200));
                 tutorialBlocker?.SetAllowedTarget(closeBtnRect);
@@ -313,7 +263,7 @@ namespace ComputerLearning
                 tutorialBlocker?.SetAllowedTarget(null);
             }
 
-            // 9. Recycle Bin
+            // 7. Recycle Bin
             VirtualMascot.Show(dialogs.step9_recycle, binRect, new Vector2(250, 0));
 
             recycleBin.enabled = true; // Enable the recycle bin only now!
@@ -365,16 +315,6 @@ namespace ComputerLearning
 
             Debug.Log("[AdvancedDesktopTour] Advanced Desktop Tour completed in place on VirtualDesktop!");
             Destroy(this);
-        }
-
-        private TaskbarWindowButton FindTaskbarButton(Window targetWindow)
-        {
-            TaskbarWindowButton[] taskbarButtons = UnityEngine.Object.FindObjectsByType<TaskbarWindowButton>();
-            foreach (var btn in taskbarButtons)
-            {
-                if (btn != null && btn.TargetWindow == targetWindow) return btn;
-            }
-            return null;
         }
 
         private IEnumerator WaitWithReminder(Func<bool> condition, string reminderText, RectTransform targetObj, Vector2 offset)

@@ -24,6 +24,7 @@ namespace ComputerLearning
         public string second_drag_drop = "Awesome! Let's try Drag & Drop. Open it up!";
         public string second_mixed = "You're a pro! Time for the final challenge: Mix everything together!";
         public string second_closed_early = "Oops! You closed it without finishing! Double click to try again.";
+        public string tutorial_double_click_reminder = "Double-click quickly with the left mouse button on the icon to open it!";
 
         // Level Runner
         public string level_completed = "Level Completed! Great job!";

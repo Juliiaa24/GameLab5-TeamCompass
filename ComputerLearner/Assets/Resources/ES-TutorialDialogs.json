@@ -15,6 +15,7 @@
   "second_drag_drop": "¡Genial! Vamos a probar Arrastrar y Soltar. ¡Ábrelo con doble clic!",
   "second_mixed": "¡Ya eres todo un experto! Toca el reto final: ¡combinarlo todo!",
   "second_closed_early": "¡Uy! Has cerrado la ventana antes de terminar. Haz doble clic para intentarlo otra vez.",
+  "tutorial_double_click_reminder": "¡Haz doble clic rápido con el botón izquierdo sobre el icono para abrirlo!",
 
   "level_completed": "¡Nivel completado! ¡Buen trabajo!",
   "level_ready_prompt": "Lee bien las instrucciones y haz clic aquí\n¡cuando estés listo!",

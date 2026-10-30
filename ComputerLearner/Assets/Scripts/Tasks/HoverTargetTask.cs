@@ -34,12 +34,14 @@ namespace ComputerLearning
         private float timeLimit;
         private float elapsed;
         private bool  timeLimitActive;
+        private bool hasShownStartReminder;
         #endregion
 
         #region Unity Methods
         protected override void Start()
         {
             base.Start();
+            hasShownStartReminder = false;
             // Ensure background receives clicks so clicking outside the hover target triggers mascot feedback
             Image img = GetComponent<Image>();
             if (img == null) img = gameObject.AddComponent<Image>();
@@ -50,7 +52,19 @@ namespace ComputerLearning
         protected override void Update()
         {
             base.Update();
-            if (IsFinished || !timeLimitActive) return;
+            if (IsFinished) return;
+
+            // Delayed start reminder: took > 5 seconds to place mouse inside target
+            if (!hasShownStartReminder && spawnedTarget != null && !spawnedTarget.HasEverHovered && (Time.time - startTime) >= 5.0f)
+            {
+                hasShownStartReminder = true;
+                RectTransform feedbackAnchor = (!isTargetMoving && spawnedTarget != null)
+                    ? spawnedTarget.GetComponent<RectTransform>()
+                    : (spawnArea != null ? spawnArea : GetComponent<RectTransform>());
+                VirtualMascot.ShowContextualFeedback(VirtualMascot.FeedbackDialogs.hoverStartReminder, feedbackAnchor, 3.0f);
+            }
+
+            if (!timeLimitActive) return;
             elapsed += Time.deltaTime;
             if (elapsed >= timeLimit) Complete(false); // Time ran out → failure
         }
@@ -65,6 +79,7 @@ namespace ComputerLearning
             timeLimitActive = timeLimit > 0f;
             elapsed         = 0f;
             isTargetMoving  = cfg.isMoving;
+            hasShownStartReminder = false;
 
             if (targetPrefab == null)
             {
@@ -104,15 +119,13 @@ namespace ComputerLearning
             target.OnFailedAttempt += () =>
             {
                 if (IsFinished) return;
-                NotifyUserInteraction();
-                FeedbackManager.PlayError(false);
+                RegisterAttempt(false);
                 VirtualMascot.ShowContextualFeedback(VirtualMascot.FeedbackDialogs.hoverKeepSteady, feedbackAnchor, 3.0f);
             };
             target.OnTargetClicked += () =>
             {
                 if (IsFinished) return;
-                NotifyUserInteraction();
-                FeedbackManager.PlayError(false);
+                RegisterAttempt(false);
                 VirtualMascot.ShowContextualFeedback(VirtualMascot.FeedbackDialogs.hoverNoClick, feedbackAnchor, 3.0f);
             };
         }
@@ -122,8 +135,7 @@ namespace ComputerLearning
         public void OnPointerClick(PointerEventData eventData)
         {
             if (IsFinished) return;
-            NotifyUserInteraction();
-            FeedbackManager.PlayError(true);
+            RegisterAttempt(true);
 
             RectTransform feedbackAnchor = (!isTargetMoving && spawnedTarget != null)
                 ? spawnedTarget.GetComponent<RectTransform>()

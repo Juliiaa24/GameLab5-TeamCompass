@@ -67,10 +67,10 @@ namespace ComputerLearning
         {
             switch (medal)
             {
-                case LevelMedal.Gold: return "🥇";
-                case LevelMedal.Silver: return "🥈";
-                case LevelMedal.Bronze: return "🥉";
-                default: return "—";
+                case LevelMedal.Gold: return "[GOLD]";
+                case LevelMedal.Silver: return "[SILVER]";
+                case LevelMedal.Bronze: return "[BRONZE]";
+                default: return "-";
             }
         }
 

@@ -38,18 +38,108 @@ namespace ComputerLearning
             "You're doing great! Keep going!",
             "Don't worry, take all the time you need!"
         };
+
+        // Medal Improvement Feedback
+        public string[] medalImprovementMessages = new string[]
+        {
+            "Hey, you really improved this one!",
+            "Whoa, a shiny new medal! Look how much you've improved!",
+            "New personal best medal! Your practice is really paying off!",
+            "Amazing upgrade! You did even better than last time!",
+            "Level up! You beat your old medal on this challenge!",
+            "Look at that upgrade! You're becoming a true computer master!",
+            "Fantastic improvement! That new medal looks great on you!"
+        };
+        public string medalImprovementUpgradeFormat = "{0}\nUpgraded from {1} to {2} Medal! ({3:F0}%)";
+        public string medalImprovementEarnedFormat = "{0}\nYou earned the {1} Medal! ({2:F0}%)";
+
+        // ClickHoldTask Feedback
         public string holdKeepPressing = "Keep pressing! Hold the button down a bit longer!";
         public string holdStayInside = "Stay inside the circle while holding down!";
+        public string holdHoverStagnant = "You're on the target! Now press and hold down the left mouse button!";
+        public string holdInactivityReminder = "Move inside the circle, then press and hold the left mouse button!";
+        public string holdMissedBackground = "Missed! Move inside the target circle, then press and hold the left button!";
+        public string[] holdQuickTapMessages = new string[]
+        {
+            "That was a quick tap! Press the left button and keep your finger held down!",
+            "Don't let go right away! Press and hold the left mouse button down until the circle fills!",
+            "Hold it down! Keep pressing the left button without lifting your finger!"
+        };
+        public string[] holdMidReleaseMessages = new string[]
+        {
+            "Good start! Keep holding the left button down a little bit longer!",
+            "You're doing it! Just keep your finger pressed down until the ring is completely full!",
+            "Don't lift your finger yet! Hold the left button down a bit longer!"
+        };
+        public string[] holdAlmostDoneMessages = new string[]
+        {
+            "So close! You almost filled it! Hold the button down just a tiny bit longer!",
+            "Almost there! Just half a second more—keep that left button pressed!",
+            "Ooh, right at the end! Hold it down until the circle finishes filling up!"
+        };
+        public string[] holdSlippedOutsideMessages = new string[]
+        {
+            "Oops, your mouse slipped outside! Keep the cursor steady inside the circle while holding!",
+            "Stay inside the circle while holding the button down! You've got this!"
+        };
+
+        // ClickTargetTask Feedback
         public string clickMissed = "Missed! Aim carefully inside the target circle!";
+        public string clickDelayReminder = "Aim carefully and click inside the circle!";
+        public string clickHoverStagnant = "Click the left mouse button!";
+
+        // DoubleClickTask Feedback
         public string doubleClickFast = "Click twice quickly! Double-click!";
+        public string doubleClickHoverStagnant = "You're on the circle! Now click the left button twice super fast: click-click!";
+        public string doubleClickInactivityReminder = "Move inside the circle and double-click quickly with the left button!";
+        public string doubleClickLeftBeforeSecond = "Oops, keep the mouse steady inside the circle while clicking twice!";
+        public string doubleClickMissedBackground = "Missed the circle! Move your cursor inside the target and double-click quickly!";
+        public string[] doubleClickSingleClickMessages = new string[]
+        {
+            "That was just one click! Tap the left mouse button twice fast: click-click!",
+            "Too slow between clicks! Try tapping the left button two times quickly without moving the mouse!",
+            "Almost! Give the left mouse button two quick taps in a row: tap-tap!"
+        };
+
+        // DragDropTask Feedback
         public string dragAlmost = "Almost! Drag the item all the way into the target zone!";
+        public string dragTapWithoutDrag = "That was a quick click! Hold down the left mouse button and move the mouse to drag it!";
+        public string dragDwellReminder = "Great! Now move the piece into the target zone and release the button!";
+        public string dragInactivityReminder = "Press and hold the left button on a piece, then drag it into the target zone!";
+        public string dragMissedBackground = "Aim at the draggable piece, hold the left button down, and drag it to the target area!";
+        public string[] dragMissedDropMessages = new string[]
+        {
+            "Almost! Keep holding the left button down and drag the piece all the way into the target zone!",
+            "So close! Drag the item right inside the target zone before letting go of the button!",
+            "Don't let go too early! Move the piece inside the target circle and then release!"
+        };
+
+        // HoverTargetTask Feedback
         public string hoverKeepSteady = "Oops! Keep the cursor steady inside the target until the bar fills!";
         public string hoverNoClick = "No need to click! Just hold the mouse cursor over the circle!";
         public string hoverDontClickOutside = "Don't click outside! Move your mouse inside the circle and hold it steady!";
+        public string hoverStartReminder = "Move your mouse over the target circle and hold it steady!";
+
+        // MoveMouseTask Feedback
         public string moveKeepMoving = "Keep moving the mouse to clean all the spots!";
         public string moveNoClick = "Just move the mouse over the spots without clicking!";
+
+        // RightClickTask Feedback
         public string rightClickReminder = "Click the right mouse button on the target circle!";
         public string rightClickAimInside = "Aim inside the circle and click the right mouse button!";
+        public string rightClickHoverStagnant = "You're right on target! Now press the RIGHT mouse button (with your middle finger)!";
+        public string rightClickBackgroundLeftClick = "Careful! Aim inside the target circle and use the RIGHT mouse button!";
+        public string rightClickBackgroundRightClick = "Good button! Now aim inside the target circle and right-click!";
+
+        public static string PickRandom(string[] pool, string fallback)
+        {
+            if (pool != null && pool.Length > 0)
+            {
+                string picked = pool[UnityEngine.Random.Range(0, pool.Length)];
+                if (!string.IsNullOrEmpty(picked)) return picked;
+            }
+            return fallback;
+        }
     }
 
     public class VirtualMascot : MonoBehaviour, IPointerClickHandler
@@ -101,6 +191,29 @@ namespace ComputerLearning
         private Coroutine bounceCoroutine;
         private Coroutine hideBubbleCoroutine;
         private int lastMessageIndex = -1;
+        private static int lastMedalImprovementIndex = -1;
+        private RectTransform mascotVisualRect;
+
+        private RectTransform GetMascotVisualRect()
+        {
+            if (mascotVisualRect != null) return mascotVisualRect;
+            Transform child = transform.Find("MascotImage");
+            if (child != null)
+            {
+                mascotVisualRect = child as RectTransform;
+                return mascotVisualRect;
+            }
+            Image[] images = GetComponentsInChildren<Image>(true);
+            foreach (var img in images)
+            {
+                if (img != null && img.gameObject != gameObject && (speechBubble == null || !img.transform.IsChildOf(speechBubble.transform)))
+                {
+                    mascotVisualRect = img.GetComponent<RectTransform>();
+                    return mascotVisualRect;
+                }
+            }
+            return null;
+        }
 
         private void Awake()
         {
@@ -225,15 +338,17 @@ namespace ComputerLearning
                 Vector3[] corners = new Vector3[4];
                 targetRect.GetWorldCorners(corners);
                 Vector3 basePos = (corners[0] + corners[2]) / 2f;
-                
-                // Float animation (reduced so the tip stays on target)
+
+                // Float animation isolated to mascotVisualRect so speechBubble does not bob
                 floatTimer += Time.deltaTime;
-                float floatOffset = Mathf.Sin(floatTimer * 4f) * 5f; 
-                
-                Vector3 finalTargetPos = basePos + new Vector3(0, floatOffset * scale, 0);
+                float floatOffset = Mathf.Sin(floatTimer * 4f) * 5f;
+
+                RectTransform vis = GetMascotVisualRect();
+                if (vis != null) vis.anchoredPosition = new Vector2(0f, floatOffset);
+                Vector3 finalTargetPos = basePos;
 
                 // Clamp to screen bounds to prevent going completely off-screen
-                float margin = 5f * scale; 
+                float margin = 5f * scale;
                 finalTargetPos.x = Mathf.Clamp(finalTargetPos.x, margin, Screen.width - margin);
                 finalTargetPos.y = Mathf.Clamp(finalTargetPos.y, margin, Screen.height - margin);
 
@@ -262,7 +377,7 @@ namespace ComputerLearning
             {
                 // Counter-flip the speech bubble so the text remains readable
                 speechBubble.transform.localScale = new Vector3(flipScale, 1f, 1f);
-                
+
                 RectTransform bubbleRect = speechBubble.GetComponent<RectTransform>();
                 Vector2 finalBubblePos = new Vector2(speechBubbleOffset.x, speechBubbleOffset.y);
 
@@ -274,20 +389,20 @@ namespace ComputerLearning
                 {
                     bubbleRect.pivot = new Vector2(0f, 1f);
                 }
-                
+
                 bubbleRect.anchoredPosition = finalBubblePos;
                 UnityEngine.UI.LayoutRebuilder.ForceRebuildLayoutImmediate(bubbleRect);
 
                 // Clamp vertically and horizontally to screen bounds
                 Vector3[] bubbleCorners = new Vector3[4];
                 bubbleRect.GetWorldCorners(bubbleCorners);
-                
+
                 Vector3 bottomEdge = RectTransformUtility.WorldToScreenPoint(cam, bubbleCorners[0]);
                 Vector3 topEdge = RectTransformUtility.WorldToScreenPoint(cam, bubbleCorners[1]);
-                
+
                 float marginY = 14f;
                 float currentScale = canvas != null ? canvas.scaleFactor : 1f;
-                
+
                 if (bottomEdge.y < marginY)
                 {
                     float difference = (marginY - bottomEdge.y) / currentScale;
@@ -298,7 +413,7 @@ namespace ComputerLearning
                     float difference = (topEdge.y - (Screen.height - marginY)) / currentScale;
                     finalBubblePos.y -= difference;
                 }
-                
+
                 bubbleRect.anchoredPosition = finalBubblePos;
             }
         }
@@ -308,7 +423,7 @@ namespace ComputerLearning
             if (Instance == null)
             {
                 Instance = Object.FindFirstObjectByType<VirtualMascot>(FindObjectsInactive.Include);
-                
+
                 if (Instance == null)
                 {
                     Debug.LogWarning("[VirtualMascot] Mascot not found in the scene! Ensure DesktopManager has spawned it.");
@@ -372,6 +487,50 @@ namespace ComputerLearning
             ShowContextualFeedback(msg, target, 4.0f);
         }
 
+        public static string GetRandomMedalImprovementMessage()
+        {
+            string[] pool = FeedbackDialogs.medalImprovementMessages;
+            if (pool == null || pool.Length == 0)
+                return "Hey, you really improved this one!";
+
+            int idx;
+            if (pool.Length == 1) idx = 0;
+            else
+            {
+                do
+                {
+                    idx = UnityEngine.Random.Range(0, pool.Length);
+                } while (idx == lastMedalImprovementIndex);
+            }
+            lastMedalImprovementIndex = idx;
+            return pool[idx];
+        }
+
+        public static void ShowMedalImprovementFeedback(LevelMedal previousMedal, LevelMedal newMedal, float accuracy, float durationSeconds, RectTransform target = null, float displayDuration = 5.5f)
+        {
+            MascotFeedbackDialogs fb = FeedbackDialogs;
+            string praise = GetRandomMedalImprovementMessage();
+            string newMedalName = LevelScoreRecord.GetMedalName(newMedal).ToUpper();
+            string prevMedalName = LevelScoreRecord.GetMedalName(previousMedal);
+
+            string msg;
+            if (previousMedal != LevelMedal.None)
+            {
+                string fmt = !string.IsNullOrEmpty(fb.medalImprovementUpgradeFormat)
+                    ? fb.medalImprovementUpgradeFormat
+                    : "{0}\nUpgraded from {1} to {2} Medal! ({3:F0}%)";
+                msg = string.Format(fmt, praise, prevMedalName, newMedalName, accuracy);
+            }
+            else
+            {
+                string fmt = !string.IsNullOrEmpty(fb.medalImprovementEarnedFormat)
+                    ? fb.medalImprovementEarnedFormat
+                    : "{0}\nYou earned the {1} Medal! ({2:F0}%)";
+                msg = string.Format(fmt, praise, newMedalName, accuracy);
+            }
+            ShowContextualFeedback(msg, target, displayDuration);
+        }
+
         public void ShowTemporaryFeedback(string message, RectTransform target, float duration)
         {
             ShowMessage(message, target);
@@ -399,6 +558,7 @@ namespace ComputerLearning
             }
 
             // Temporarily exit companion mode while showing targeted tutorial/intro messages
+            bool wasActive = gameObject.activeSelf && !isDesktopCompanion;
             isDesktopCompanion = false;
 
             gameObject.SetActive(true);
@@ -414,6 +574,12 @@ namespace ComputerLearning
                 {
                     mascotRect.anchoredPosition = offset ?? new Vector2(-120f, 60f);
                 }
+                else if (!wasActive && targetRect.gameObject.activeInHierarchy)
+                {
+                    Vector3[] corners = new Vector3[4];
+                    targetRect.GetWorldCorners(corners);
+                    mascotRect.position = (corners[0] + corners[2]) / 2f;
+                }
             }
 
             CanvasGroup cg = GetComponent<CanvasGroup>();
@@ -426,19 +592,28 @@ namespace ComputerLearning
             Canvas canvas = GetComponentInParent<Canvas>();
             UpdateSpeechBubblePlacement(canvas);
 
-            transform.SetAsLastSibling(); 
+            RectTransform vis = GetMascotVisualRect();
+            if (vis != null) vis.localScale = Vector3.one;
+            transform.SetAsLastSibling();
         }
 
         public void Hide()
         {
-            if (DesktopManager.Instance != null && DesktopManager.Instance.EnableMascotCompanion)
+            if (hideBubbleCoroutine != null)
             {
-                InitAsDesktopCompanion();
-                return;
+                StopCoroutine(hideBubbleCoroutine);
+                hideBubbleCoroutine = null;
             }
-            if (isDesktopCompanion) return; // Companion is always visible!
-            gameObject.SetActive(false);
+            if (bounceCoroutine != null)
+            {
+                StopCoroutine(bounceCoroutine);
+                bounceCoroutine = null;
+            }
+            RectTransform vis = GetMascotVisualRect();
+            if (vis != null) vis.localScale = Vector3.one;
+            isDesktopCompanion = false;
             targetRect = null;
+            gameObject.SetActive(false);
         }
 
         #region Desktop Companion Implementation
@@ -493,7 +668,9 @@ namespace ComputerLearning
             // Idle floating / breathing bobbing animation in top-right corner
             floatTimer += Time.unscaledDeltaTime;
             float floatOffset = Mathf.Sin(floatTimer * 3f) * 6f;
-            mascotRect.anchoredPosition = companionCornerOffset + new Vector2(0f, floatOffset);
+            mascotRect.anchoredPosition = companionCornerOffset;
+            RectTransform vis = GetMascotVisualRect();
+            if (vis != null) vis.anchoredPosition = new Vector2(0f, floatOffset);
         }
 
         /// <summary>
@@ -548,6 +725,7 @@ namespace ComputerLearning
 
         private IEnumerator BounceAnimation()
         {
+            RectTransform bounceTarget = GetMascotVisualRect() ?? mascotRect;
             Vector3 originalScale = Vector3.one;
             Vector3 squashed = new Vector3(1.22f, 0.82f, 1f);
             Vector3 stretched = new Vector3(0.88f, 1.18f, 1f);
@@ -557,7 +735,7 @@ namespace ComputerLearning
             while (elapsed < dur1)
             {
                 elapsed += Time.unscaledDeltaTime;
-                mascotRect.localScale = Vector3.Lerp(originalScale, squashed, elapsed / dur1);
+                if (bounceTarget != null) bounceTarget.localScale = Vector3.Lerp(originalScale, squashed, elapsed / dur1);
                 yield return null;
             }
 
@@ -566,7 +744,7 @@ namespace ComputerLearning
             while (elapsed < dur2)
             {
                 elapsed += Time.unscaledDeltaTime;
-                mascotRect.localScale = Vector3.Lerp(squashed, stretched, elapsed / dur2);
+                if (bounceTarget != null) bounceTarget.localScale = Vector3.Lerp(squashed, stretched, elapsed / dur2);
                 yield return null;
             }
 
@@ -575,11 +753,11 @@ namespace ComputerLearning
             while (elapsed < dur3)
             {
                 elapsed += Time.unscaledDeltaTime;
-                mascotRect.localScale = Vector3.Lerp(stretched, originalScale, elapsed / dur3);
+                if (bounceTarget != null) bounceTarget.localScale = Vector3.Lerp(stretched, originalScale, elapsed / dur3);
                 yield return null;
             }
 
-            mascotRect.localScale = originalScale;
+            if (bounceTarget != null) bounceTarget.localScale = originalScale;
             bounceCoroutine = null;
         }
 

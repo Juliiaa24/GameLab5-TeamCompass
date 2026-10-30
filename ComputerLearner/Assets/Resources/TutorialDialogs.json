@@ -15,6 +15,7 @@
   "second_drag_drop": "Awesome! Let's try Drag & Drop. Open it up!",
   "second_mixed": "You're a pro! Time for the final challenge: Mix everything together!",
   "second_closed_early": "Oops! You closed it without finishing! Double click to try again.",
+  "tutorial_double_click_reminder": "Double-click quickly with the left mouse button on the icon to open it!",
 
   "level_completed": "Level Completed! Great job!",
   "level_ready_prompt": "Read carefully and click here\nwhen you are ready!",

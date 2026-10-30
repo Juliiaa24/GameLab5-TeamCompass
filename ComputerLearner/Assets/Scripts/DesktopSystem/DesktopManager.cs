@@ -48,6 +48,7 @@ namespace ComputerLearning
     {
         #region Public Variables
         private static DesktopManager _instance;
+        public static bool HasInstance => _instance != null;
         public static DesktopManager Instance
         {
             get
@@ -149,7 +150,8 @@ namespace ComputerLearning
 
         private void OnDestroy()
         {
-            if (Instance == this) Instance = null;
+            if (_instance == this) _instance = null;
+            if (!ProgressData.HasInstance) return;
             if (ProgressData.Instance != null)
             {
                 ProgressData.Instance.OnLevelCompleted -= HandleLevelCompletedForAdvancedTour;
@@ -177,6 +179,15 @@ namespace ComputerLearning
             RegisterSceneIconsIntoDesktopFolder();
             if (IsVirtualDesktopScene())
             {
+                PlayerPrefs.SetInt("InitialAssessmentCompleted", 1);
+                PlayerPrefs.SetInt("AutoSequenceCompleted", 1);
+                if (ProgressData.Instance != null)
+                {
+                    ProgressData.Instance.SyncProgressionFlagsToPlayerPrefs();
+                    ProgressData.Instance.Save();
+                }
+                PlayerPrefs.Save();
+
                 SyncDesktopWithExplorerFolder();
 
                 // Tutorial 1: DesktopTour on first entry to VirtualDesktop

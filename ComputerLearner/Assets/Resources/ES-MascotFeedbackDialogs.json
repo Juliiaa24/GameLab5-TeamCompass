@@ -12,6 +12,14 @@
         "Si una ventana se ve muy pequeña, ¡haz clic en el botón del cuadrado para maximizarla!",
         "¡Siempre estaré aquí en la esquina por si necesitas ayuda!"
     ],
+    "medalImprovementMessages": [
+        "¡Qué gran mejora! ¡Has superado tu récord anterior!",
+        "¡Nuevo récord personal! ¡Tu práctica está dando sus frutos!",
+        "¡Subida de nivel fantástica! ¡Has conseguido una medalla mejor!",
+        "¡Progreso increíble! ¡Ya dominas el ratón!"
+    ],
+    "medalImprovementUpgradeFormat": "{0}\n(¡Medalla de {1} -> {2}!)",
+    "medalImprovementEarnedFormat": "{0}\n(¡Medalla de {1} conseguida!)",
     "wrongLeftClick": "¡Eso ha sido clic izquierdo! Prueba con el botón derecho del ratón.",
     "wrongRightClick": "¡Botón equivocado! Prueba con el botón izquierdo del ratón.",
     "almostOut": "¡Casi fuera! Apunta más cerca del centro.",
@@ -24,14 +32,61 @@
     ],
     "holdKeepPressing": "¡Sigue apretando! ¡Mantén pulsado el botón un poquito más!",
     "holdStayInside": "¡Mantente dentro del círculo mientras mantienes pulsado!",
+    "holdHoverStagnant": "¡Ahora pulsa y MANTÉN presionado el botón izquierdo del ratón!",
+    "holdInactivityReminder": "¡Mueve el cursor al círculo y luego pulsa y mantén presionado el botón izquierdo!",
+    "holdMissedBackground": "¡Fallaste el objetivo! Lleva el cursor dentro del círculo y mantén pulsado el botón izquierdo.",
+    "holdQuickTapMessages": [
+        "¡Eso fue solo un toque rápido! ¡Pulsa y deja el dedo presionado en el botón izquierdo!",
+        "¡No sueltes tan rápido! ¡Pulsa y mantén presionado el botón izquierdo del ratón!",
+        "¡Mantenlo pulsado! ¡Sigue apretando el botón hasta que se llene el círculo!"
+    ],
+    "holdMidReleaseMessages": [
+        "¡Buen comienzo! ¡Mantén pulsado el botón un poquito más de tiempo!",
+        "¡Ya le vas pillando el truco! ¡Solo deja el dedo presionado un poco más!",
+        "¡No sueltes todavía! ¡Mantén pulsado el botón izquierdo hasta que termine la barra!"
+    ],
+    "holdAlmostDoneMessages": [
+        "¡Por qué poquito! ¡Mantenlo pulsado solo un instante más!",
+        "¡Casi lo tienes! ¡Sigue manteniendo pulsado hasta que la barra se llene del todo!",
+        "¡Casi listo! ¡Aguanta sin soltar un segundito más!"
+    ],
+    "holdSlippedOutsideMessages": [
+        "¡Uy, el cursor se salió fuera! ¡Mantén el ratón quieto dentro del círculo mientras aprietas!",
+        "¡No salgas del objetivo! ¡Mantén el botón pulsado y la mano firme!",
+        "¡Cuidado con salirte del círculo mientras mantienes pulsado el botón!"
+    ],
     "clickMissed": "¡Casi! ¡Apunta bien dentro del círculo!",
+    "clickDelayReminder": "¡Apunta con cuidado y haz clic dentro del círculo!",
+    "clickHoverStagnant": "¡Haz clic con el botón izquierdo del ratón!",
     "doubleClickFast": "¡Haz dos clics seguidos bien rápido! ¡Doble clic!",
+    "doubleClickHoverStagnant": "¡Haz dos clics rápidos con el botón izquierdo! ¡Clic-clic!",
+    "doubleClickInactivityReminder": "¡Lleva el ratón al objetivo y haz doble clic (dos clics izquierdos rápidos)!",
+    "doubleClickLeftBeforeSecond": "¡Mantén el ratón quieto dentro del objetivo mientras haces los dos clics!",
+    "doubleClickMissedBackground": "¡Fuera del objetivo! Lleva el cursor dentro del círculo y haz doble clic.",
+    "doubleClickSingleClickMessages": [
+        "¡Eso fue solo un clic! Haz dos clics rápidos seguidos: ¡clic-clic!",
+        "¡Demasiado lento entre clics! ¡Pulsa dos veces rápido el botón izquierdo sin mover el ratón!",
+        "¡Casi! ¡Recuerda hacer dos clics rápidos seguidos!"
+    ],
     "dragAlmost": "¡Casi lo tienes! ¡Arrastra el objeto hasta meterlo del todo en la zona marcada!",
-    "hoverKeepSteady": "¡Uy! Mantén el cursor quieto dentro del objetivo hasta que se llene la barra.",
+    "dragTapWithoutDrag": "¡No sueltes al instante! ¡Pulsa y MANTÉN el botón izquierdo mientras llevas el ratón a la zona destino!",
+    "dragDwellReminder": "¡Pulsa y mantén presionado el botón izquierdo sobre la pieza para agarrarla!",
+    "dragInactivityReminder": "¡Agarra la pieza manteniendo pulsado el botón izquierdo y arrástrala hasta la zona marcada!",
+    "dragMissedBackground": "¡Haz clic y mantén pulsado directamente sobre la pieza para agarrarla!",
+    "dragMissedDropMessages": [
+        "¡Casi llegas! ¡Sigue manteniendo pulsado el botón izquierdo hasta que la pieza esté dentro de la zona destino!",
+        "¡Has soltado demasiado pronto! ¡Arrastra la pieza hasta meterla del todo en el recuadro antes de soltar!",
+        "¡Por poquito! ¡Lleva la pieza justo encima de la zona destino y entonces suelta el botón del ratón!"
+    ],
+    "hoverKeepSteady": "¡Casi! Mantén el cursor quieto dentro del objetivo hasta que se llene la barra.",
     "hoverNoClick": "¡No hace falta hacer clic! Solo mantén el cursor encima del círculo.",
     "hoverDontClickOutside": "¡No hagas clic fuera! Lleva el ratón dentro del círculo y mantenlo ahí.",
+    "hoverStartReminder": "¡Lleva el ratón encima del círculo objetivo y mantenlo quieto!",
     "moveKeepMoving": "¡Sigue moviendo el ratón para limpiar todas las manchas!",
     "moveNoClick": "¡Solo pasa el ratón por encima de las manchas sin hacer clic!",
     "rightClickReminder": "¡Haz clic con el botón derecho del ratón sobre el círculo!",
-    "rightClickAimInside": "¡Apunta dentro del círculo y haz clic con el botón derecho del ratón!"
+    "rightClickAimInside": "¡Apunta dentro del círculo y haz clic con el botón derecho del ratón!",
+    "rightClickHoverStagnant": "¡Ahora pulsa el botón DERECHO del ratón sobre el objetivo!",
+    "rightClickBackgroundLeftClick": "¡Eso fue clic izquierdo fuera! ¡Entra en el círculo y pulsa el botón DERECHO del ratón!",
+    "rightClickBackgroundRightClick": "¡Buen clic derecho! ¡Ahora hazlo justo dentro del círculo objetivo!"
 }
