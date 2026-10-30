@@ -20,11 +20,15 @@ namespace ComputerLearning
     /// The parent ClickTargetTask listens to OnClicked and calls Complete().
     /// </summary>
     [RequireComponent(typeof(RectTransform))]
-    public class ClickTarget : MonoBehaviour, IPointerClickHandler
+    public class ClickTarget : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler, IPointerExitHandler
     {
         #region Public Variables
         /// <summary>Fired when the player left-clicks this target.</summary>
         public event Action OnClicked;
+        /// <summary>Fired when the player clicks with the wrong button (right click).</summary>
+        public event Action OnWrongButtonClicked;
+        /// <summary>Fired when the player hovers over the target for > 2.5s without clicking.</summary>
+        public event Action OnHoverStagnant;
         #endregion
 
         #region Private Variables
@@ -36,6 +40,9 @@ namespace ComputerLearning
         private RectTransform parentRect;
         private Vector2 moveDirection;
         private bool hasBeenClicked;
+        private bool isHovering;
+        private float hoverDwellTime;
+        private bool hasWarnedStagnant;
         #endregion
 
         #region Unity Methods
@@ -54,6 +61,16 @@ namespace ComputerLearning
 
         private void Update()
         {
+            if (isHovering && !hasBeenClicked)
+            {
+                hoverDwellTime += Time.deltaTime;
+                if (hoverDwellTime >= 2.5f && !hasWarnedStagnant)
+                {
+                    hasWarnedStagnant = true;
+                    OnHoverStagnant?.Invoke();
+                }
+            }
+
             if (!isMoving || parentRect == null) return;
 
             Vector2 pos = rectTransform.anchoredPosition;
@@ -90,12 +107,29 @@ namespace ComputerLearning
             isMoving  = moving;
             moveSpeed = speed;
             hasBeenClicked = false;
+            isHovering = false;
+            hoverDwellTime = 0f;
+            hasWarnedStagnant = false;
         }
 
         /// <summary>Sets the parent rect used as movement boundary.</summary>
         public void SetParentRect(RectTransform parent)
         {
             parentRect = parent;
+        }
+
+        public void OnPointerEnter(PointerEventData eventData)
+        {
+            isHovering = true;
+            hoverDwellTime = 0f;
+            hasWarnedStagnant = false;
+        }
+
+        public void OnPointerExit(PointerEventData eventData)
+        {
+            isHovering = false;
+            hoverDwellTime = 0f;
+            hasWarnedStagnant = false;
         }
 
         public void OnPointerClick(PointerEventData eventData)
@@ -105,8 +139,7 @@ namespace ComputerLearning
             // Contextual Feedback 1: Wrong click button (Right click instead of Left click)
             if (eventData.button == PointerEventData.InputButton.Right)
             {
-                FeedbackManager.PlayError(true);
-                VirtualMascot.ShowWrongClickFeedback(rectTransform, false);
+                OnWrongButtonClicked?.Invoke();
                 return;
             }
 

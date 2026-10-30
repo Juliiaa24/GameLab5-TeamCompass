@@ -6,6 +6,8 @@
  */
 using System;
 using UnityEngine;
+using UnityEngine.UI;
+using UnityEngine.EventSystems;
 
 namespace ComputerLearning
 {
@@ -14,6 +16,7 @@ namespace ComputerLearning
         #region Public Variables
         public TaskDefinition Definition { get; private set; }
         public bool IsFinished { get; private set; }
+        public int Attempts => attempts;
         public event Action<TaskResult> OnTaskCompleted;
         #endregion
 
@@ -176,12 +179,54 @@ namespace ComputerLearning
             OnTaskCompleted?.Invoke(null);
         }
 
-        protected void RegisterAttempt()
+        public void RegisterAttempt(bool withShake = true)
         {
             attempts++;
             NotifyUserInteraction();
-            FeedbackManager.PlayError(true);
+            FeedbackManager.PlayError(withShake);
+        }
+
+        /// <summary>
+        /// Ensures an invisible raycast Graphic is present on the root task window container
+        /// to intercept clicks/misses occurring outside active target hitboxes.
+        /// </summary>
+        public void SetupBackgroundClickInterceptor(Action<PointerEventData> onBackgroundClick)
+        {
+            if (onBackgroundClick == null) return;
+
+            // Target the root container of this task (parent of target if on child, or self)
+            Transform container = (transform.parent != null && transform.parent.GetComponent<LevelRunner>() == null)
+                ? transform.parent
+                : transform;
+
+            Image img = container.GetComponent<Image>();
+            if (img == null)
+            {
+                img = container.gameObject.AddComponent<Image>();
+            }
+            img.color = new Color(0f, 0f, 0f, 0f);
+            img.raycastTarget = true;
+
+            TaskBackgroundClickCatcher catcher = container.GetComponent<TaskBackgroundClickCatcher>();
+            if (catcher == null)
+            {
+                catcher = container.gameObject.AddComponent<TaskBackgroundClickCatcher>();
+            }
+            catcher.OnClickAction = onBackgroundClick;
         }
         #endregion
+    }
+
+    /// <summary>
+    /// Forwards clicks on the background canvas to the active task.
+    /// </summary>
+    public class TaskBackgroundClickCatcher : MonoBehaviour, IPointerClickHandler
+    {
+        public Action<PointerEventData> OnClickAction;
+
+        public void OnPointerClick(PointerEventData eventData)
+        {
+            OnClickAction?.Invoke(eventData);
+        }
     }
 }

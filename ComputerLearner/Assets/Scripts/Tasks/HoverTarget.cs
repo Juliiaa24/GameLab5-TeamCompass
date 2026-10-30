@@ -133,20 +133,23 @@ namespace ComputerLearning
             parentRect = parent;
         }
 
+        public bool HasEverHovered { get; private set; }
+
         public void OnPointerEnter(PointerEventData eventData)
         {
             isHovering = true;
+            HasEverHovered = true;
             OnHoverActive?.Invoke();
         }
         
         public void OnPointerExit(PointerEventData eventData)  
         { 
-            isHovering = false; 
-            // If they started hovering and exited before completion, notify the task for mascot feedback
-            if (!completed)
+            // If they started hovering and exited before completion, notify the task for error feedback
+            if (!completed && hoverTime > 0.15f)
             {
                 OnFailedAttempt?.Invoke();
             }
+            isHovering = false; 
         }
 
         public void OnPointerClick(PointerEventData eventData)

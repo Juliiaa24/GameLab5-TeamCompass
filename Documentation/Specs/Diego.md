@@ -2580,3 +2580,37 @@ To enrich the educational operating system simulation, the Virtual Desktop neede
 * Added `Btn-VirtualDesktop` (`"Virtual Desktop"`) inside `MenuBtnLayout` in `Menu.unity` right below `Btn-Play`, wired to `SceneSystem.ChangeToVirtualDesktop()`.
 * Updated `ProgressData.IsLevelUnlocked()` to return `true` when the active scene is `"VirtualDesktop"`, so all levels and minigames inside `VirtualDesktop` are immediately playable even if the user enters `VirtualDesktop` directly from the Main Menu without completing `Desktop1` and `Desktop2` first, while keeping the normal `"Play"` tutorial progression untouched.
 * Updated `StartMenuController` and `ContextMenuController` `Awake()`/`OnDestroy()` singleton lifecycles to cleanly bind per scene without destroying scene instances.
+
+---
+
+### 96. MID-LEVEL ERROR CONDITIONS & CONTEXTUAL FEEDBACK STANDARDIZATION (LEVELS 1 TO 16) - 23/10/2026
+
+**Context & Motivation:**
+* Real-time mistake detection during tasks required precise definitions across all 16 levels to provide didactic, non-punitive feedback without resetting levels abruptly.
+* User requested unifying failure conditions covering missed clicks, wrong mouse buttons, hovering stagnation, premature exits, inactivity timeouts, and application shortcut mistakes.
+
+**Architectural Solutions & Implementation:**
+
+**1. Base Task Error Architecture (BaseTask.cs):**
+* Added SetupBackgroundClickInterceptor() and TaskBackgroundClickCatcher to cleanly intercept clicks occurring on empty content areas without modifying prefab assets.
+* Overloaded RegisterAttempt(bool withShake = true) to increment ttempts, invoke NotifyUserInteraction(), and trigger FeedbackManager.PlayError().
+* Exposed public int Attempts => attempts;.
+
+**2. Basic Mouse Skills Tasks (Levels 1 to 9):**
+* **Level 1 (Move - MoveMouseTask.cs):** Clicks on window background or dirt spots register mistakes and remind user to only glide cursor without clicking. Inactivity between spots (>4.5s) prompts mascot guidance.
+* **Level 2 (Hover - HoverTargetTask.cs, HoverTarget.cs):** Premature hover exit (hoverTime > 0.15s), clicking the target, or clicking the background trigger contextual feedback and register attempts. Start delay (>5s) prompts mascot reminder.
+* **Level 3 (Click - ClickTargetTask.cs, ClickTarget.cs):** Right-clicking target or background triggers button correction (ShowWrongClickFeedback). Stagnant hover on target without clicking (>2.5s) and inter-target delay (>5s) trigger reminders.
+* **Level 4 (Adaptive):** Dynamically generated tasks automatically benefit from updated task controllers.
+* **Level 5 (Double Click - DoubleClickTask.cs):** Missing target via background click, moving outside target between clicks, and single click timeout trigger feedback and register attempts.
+* **Level 6 (Right Click - RightClickTask.cs):** Background clicks and left clicks on target register attempts and remind user to use the right mouse button.
+* **Level 7 (Click & Hold - ClickHoldTask.cs):** Early release, moving outside target during hold, right click, and background clicks register attempts and guide the player.
+* **Level 8 (Drag & Drop - DragDropTask.cs, DraggablePiece.cs):** Drop misses, tapping without dragging, right-clicking piece, dragging stagnation (>5s), and background clicks register attempts with contextual guidance.
+* **Level 9 (Mixed Skills):** Multi-target sequence inherits all unified error feedback behaviors.
+
+**3. Desktop Guided Levels (Levels 10 to 16 - VirtualDesktopGuidedLevels.cs):**
+* Added currentLevelMistakes tracking and RecordMistake(message, target, isRightClickExpected).
+* Updated CompleteLevel() to calculate real accuracy and medals based on mistakes and save them to ProgressData and LevelCelebrationModal.
+* **Level 10 (Context Menu):** Left-clicking desktop when right-click is expected or closing menu without selecting an option records mistakes.
+* **Level 11 (Notepad & Typing):** Right-clicking icon or typing without focusing the text area records mistakes.
+* **Level 12 (Copy, Paste & Cut):** Pasting before copying, copying without selecting text, and wrong shortcuts record mistakes.
+* **Levels 13, 14, 15, 16:** Pressing shortcut keys without Ctrl ('Z', 'S') or drawing outside canvas records mistakes with mascot guidance.

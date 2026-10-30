@@ -142,12 +142,14 @@ namespace ComputerLearning
             }
             else
             {
+#if ENABLE_LEGACY_INPUT_MANAGER
                 isCtrl = Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl);
                 isC = Input.GetKeyDown(KeyCode.C);
                 isX = Input.GetKeyDown(KeyCode.X);
                 isV = Input.GetKeyDown(KeyCode.V);
                 isZ = Input.GetKeyDown(KeyCode.Z);
                 isS = Input.GetKeyDown(KeyCode.S);
+#endif
             }
 
             if (!isCtrl) return;

@@ -5,10 +5,13 @@ using System;
 namespace ComputerLearning
 {
     [RequireComponent(typeof(RectTransform), typeof(CanvasGroup))]
-    public class DraggablePiece : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler
+    public class DraggablePiece : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler, IPointerClickHandler, IPointerDownHandler
     {
         public Action<DraggablePiece> OnPieceDropped;
         public Action OnPieceMissed;
+        public Action<DraggablePiece> OnPieceRightClicked;
+        public Action<DraggablePiece> OnPieceTapWithoutDrag;
+        public Action<DraggablePiece> OnPieceDragDwell;
 
         public RectTransform dropTarget;
         public float requiredDistanceToSnap = 50f;
@@ -17,11 +20,27 @@ namespace ComputerLearning
         private RectTransform dragRect;
         private CanvasGroup canvasGroup;
         private Vector2 startPosition;
+        private bool isDragging;
+        private float dragStartTime;
+        private bool hasWarnedDwell;
+        private bool hasDragged;
 
         private void Awake()
         {
             dragRect = GetComponent<RectTransform>();
             canvasGroup = GetComponent<CanvasGroup>();
+        }
+
+        private void Update()
+        {
+            if (isDragging && !isDone)
+            {
+                if ((Time.time - dragStartTime) >= 5.0f && !hasWarnedDwell)
+                {
+                    hasWarnedDwell = true;
+                    OnPieceDragDwell?.Invoke(this);
+                }
+            }
         }
 
         public void SetStartPosition(Vector2 pos)
@@ -30,9 +49,35 @@ namespace ComputerLearning
             if (dragRect != null) dragRect.anchoredPosition = pos;
         }
 
+        public void OnPointerDown(PointerEventData eventData)
+        {
+            hasDragged = false;
+        }
+
+        public void OnPointerClick(PointerEventData eventData)
+        {
+            if (isDone) return;
+
+            if (eventData.button == PointerEventData.InputButton.Right)
+            {
+                OnPieceRightClicked?.Invoke(this);
+                return;
+            }
+
+            if (!hasDragged && eventData.button == PointerEventData.InputButton.Left)
+            {
+                OnPieceTapWithoutDrag?.Invoke(this);
+            }
+        }
+
         public void OnBeginDrag(PointerEventData eventData)
         {
             if (isDone || eventData.button != PointerEventData.InputButton.Left) return;
+
+            hasDragged = true;
+            isDragging = true;
+            dragStartTime = Time.time;
+            hasWarnedDwell = false;
 
             startPosition = dragRect.anchoredPosition;
             canvasGroup.blocksRaycasts = false;
@@ -55,6 +100,7 @@ namespace ComputerLearning
         {
             if (isDone || eventData.button != PointerEventData.InputButton.Left) return;
 
+            isDragging = false;
             canvasGroup.blocksRaycasts = true;
             canvasGroup.alpha = 1f;
 

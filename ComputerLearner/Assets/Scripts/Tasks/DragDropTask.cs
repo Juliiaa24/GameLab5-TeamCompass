@@ -41,6 +41,8 @@ namespace ComputerLearning
                 );
             }
 
+            SetupBackgroundClickInterceptor(OnBackgroundClicked);
+
             // Setup original piece
             SetupPiece(gameObject, dragSize, requiredDistance, bounds);
 
@@ -79,6 +81,42 @@ namespace ComputerLearning
 
             piece.OnPieceDropped += HandlePieceDropped;
             piece.OnPieceMissed += HandlePieceMissed;
+            piece.OnPieceRightClicked += (p) =>
+            {
+                if (IsFinished) return;
+                RegisterAttempt(true);
+                VirtualMascot.ShowWrongClickFeedback(p.transform as RectTransform, false);
+            };
+            piece.OnPieceTapWithoutDrag += (p) =>
+            {
+                if (IsFinished) return;
+                RegisterAttempt(false);
+                VirtualMascot.ShowContextualFeedback("Hold down the left mouse button and move the mouse to drag!", p.transform as RectTransform, 2.8f);
+            };
+            piece.OnPieceDragDwell += (p) =>
+            {
+                if (IsFinished) return;
+                VirtualMascot.ShowContextualFeedback("Drag the item into the target zone and release it!", dropTarget, 3.0f);
+            };
+        }
+
+        protected override void Update()
+        {
+            base.Update();
+            if (IsFinished) return;
+
+            if (!hasShownInactivityReminder && (Time.time - lastInteractionTime) >= 6.0f)
+            {
+                hasShownInactivityReminder = true;
+                VirtualMascot.ShowContextualFeedback("Drag the piece into the target zone!", dropTarget, 3.0f);
+            }
+        }
+
+        public void OnBackgroundClicked(UnityEngine.EventSystems.PointerEventData eventData)
+        {
+            if (IsFinished) return;
+            RegisterAttempt(true);
+            VirtualMascot.ShowContextualFeedback("Click and drag the piece into the target area!", dropTarget, 2.8f);
         }
 
         private void HandlePieceMissed()

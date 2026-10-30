@@ -23,6 +23,61 @@ namespace ComputerLearning
         private float levelStartTime;
         private readonly List<Action> activeEventCleanupActions = new List<Action>();
 
+        #region Input Helpers (Supports New Input System & Legacy Fallback)
+        private static bool IsLeftMouseButtonDown()
+        {
+#if ENABLE_INPUT_SYSTEM
+            if (UnityEngine.InputSystem.Mouse.current != null)
+                return UnityEngine.InputSystem.Mouse.current.leftButton.wasPressedThisFrame;
+#elif ENABLE_LEGACY_INPUT_MANAGER
+            return Input.GetMouseButtonDown(0);
+#endif
+            return false;
+        }
+
+        private static bool IsAnyKeyOrTypingWithoutMouse()
+        {
+#if ENABLE_INPUT_SYSTEM
+            var kb = UnityEngine.InputSystem.Keyboard.current;
+            var mouse = UnityEngine.InputSystem.Mouse.current;
+            bool anyKey = kb != null && kb.anyKey.wasPressedThisFrame;
+            bool mouseHeld = mouse != null && (mouse.leftButton.isPressed || mouse.rightButton.isPressed);
+            return anyKey && !mouseHeld;
+#elif ENABLE_LEGACY_INPUT_MANAGER
+            return Input.anyKeyDown && !Input.GetMouseButton(0) && !Input.GetMouseButton(1);
+#else
+            return false;
+#endif
+        }
+
+        private static bool IsCtrlPressed()
+        {
+#if ENABLE_INPUT_SYSTEM
+            var kb = UnityEngine.InputSystem.Keyboard.current;
+            if (kb != null) return kb.ctrlKey.isPressed;
+#elif ENABLE_LEGACY_INPUT_MANAGER
+            return Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl);
+#endif
+            return false;
+        }
+
+        private static bool IsKeyJustPressed(UnityEngine.InputSystem.Key newKey, KeyCode oldKey)
+        {
+#if ENABLE_INPUT_SYSTEM
+            var kb = UnityEngine.InputSystem.Keyboard.current;
+            if (kb != null) return kb[newKey].wasPressedThisFrame;
+#elif ENABLE_LEGACY_INPUT_MANAGER
+            return Input.GetKeyDown(oldKey);
+#endif
+            return false;
+        }
+
+        private static bool IsKeyWithoutCtrl(UnityEngine.InputSystem.Key newKey, KeyCode oldKey)
+        {
+            return IsKeyJustPressed(newKey, oldKey) && !IsCtrlPressed();
+        }
+        #endregion
+
         public static bool IsGuidedDesktopLevel(string levelId)
         {
             if (string.IsNullOrEmpty(levelId)) return false;
@@ -113,6 +168,22 @@ namespace ComputerLearning
             tutorialBlocker = blockerObj.AddComponent<TutorialBlocker>();
         }
 
+        private int currentLevelMistakes = 0;
+
+        public void RecordMistake(string message, RectTransform target = null, bool isRightClickExpected = false)
+        {
+            currentLevelMistakes++;
+            FeedbackManager.PlayError(true);
+            if (isRightClickExpected)
+            {
+                VirtualMascot.ShowWrongClickFeedback(target, true);
+            }
+            else
+            {
+                VirtualMascot.ShowContextualFeedback(message, target, 3.2f);
+            }
+        }
+
         public void BeginLevel(LevelDefinition levelDef)
         {
             if (levelDef == null) return;
@@ -127,6 +198,7 @@ namespace ComputerLearning
             IsLevelRunning = true;
             CurrentRunningLevelId = levelDef.levelId;
             levelStartTime = Time.time;
+            currentLevelMistakes = 0;
 
             // 1. Close all currently open windows to start with a clean desktop
             if (WindowManager.Instance != null)
@@ -182,8 +254,21 @@ namespace ComputerLearning
             // Allow clicking anywhere on the wallpaper
             tutorialBlocker?.ClearTarget();
 
+            float wallpaperInactivityTimer = 0f;
             while (ContextMenuController.Instance == null || !ContextMenuController.Instance.IsMenuOpen)
             {
+                if (IsLeftMouseButtonDown())
+                {
+                    RecordMistake("Right-click anywhere on the desktop to open the options menu!", bgRect, true);
+                    wallpaperInactivityTimer = 0f;
+                }
+
+                wallpaperInactivityTimer += Time.deltaTime;
+                if (wallpaperInactivityTimer >= 7.0f)
+                {
+                    VirtualMascot.ShowContextualFeedback("Click the right mouse button on the desktop wallpaper to open the menu!", bgRect, 3.2f);
+                    wallpaperInactivityTimer = 0f;
+                }
                 yield return null;
             }
 
@@ -204,15 +289,30 @@ namespace ComputerLearning
                 FileExplorerApp.OnFileSystemChanged -= onFsChange;
             });
 
+            bool wasMenuOpen = true;
+            float menuInactivityTimer = 0f;
             while (!actionConfirmed)
             {
                 if (ContextMenuController.Instance != null && !ContextMenuController.Instance.IsMenuOpen && !actionConfirmed)
                 {
+                    if (wasMenuOpen)
+                    {
+                        wasMenuOpen = false;
+                        RecordMistake("The menu closed! Right-click again on the desktop and select an option!", bgRect);
+                    }
                     tutorialBlocker?.ClearTarget();
                 }
                 else if (ContextMenuController.Instance != null && ContextMenuController.Instance.IsMenuOpen)
                 {
+                    wasMenuOpen = true;
                     tutorialBlocker?.SetAllowedTarget(menuRect);
+                }
+
+                menuInactivityTimer += Time.deltaTime;
+                if (menuInactivityTimer >= 7.0f)
+                {
+                    VirtualMascot.ShowContextualFeedback("Click on '+ New Text Document (.txt)' or '+ New Folder' to continue!", menuRect, 3.2f);
+                    menuInactivityTimer = 0f;
                 }
                 yield return null;
             }
@@ -238,10 +338,21 @@ namespace ComputerLearning
             VirtualMascot.Show("Level 11: Word Processing!\nDouble-click the Notepad icon to open the text editor.", iconRect, new Vector2(160, -80));
             tutorialBlocker?.SetAllowedTarget(iconRect);
 
+            float openTimer = 0f;
             NotepadApp notepad = null;
             while (notepad == null || !notepad.gameObject.activeInHierarchy)
             {
                 notepad = FindAnyObjectByType<NotepadApp>();
+
+                if (notepad == null || !notepad.gameObject.activeInHierarchy)
+                {
+                    openTimer += Time.deltaTime;
+                    if (openTimer >= 7.0f)
+                    {
+                        VirtualMascot.ShowContextualFeedback("Double-click quickly on the Notepad icon to open it!", iconRect, 3.2f);
+                        openTimer = 0f;
+                    }
+                }
                 yield return null;
             }
 
@@ -260,6 +371,12 @@ namespace ComputerLearning
                 if (notepad == null || !notepad.gameObject.activeInHierarchy)
                 {
                     notepad = RecoverNotepadWindow(ref winRect);
+                }
+
+                // Check typing without focus
+                if (notepad != null && notepad.InputField != null && !notepad.InputField.isFocused && IsAnyKeyOrTypingWithoutMouse())
+                {
+                    RecordMistake("Click inside the blank notepad area first to start typing!", winRect);
                 }
 
                 timer += Time.deltaTime;
@@ -309,11 +426,25 @@ namespace ComputerLearning
             NotepadApp.OnTextCopied += onCopy;
             RegisterCleanup(() => NotepadApp.OnTextCopied -= onCopy);
 
+            float copyTimer = 0f;
             while (!copied && (NotepadApp.VirtualClipboard == null || NotepadApp.VirtualClipboard.IndexOf("Cat", StringComparison.OrdinalIgnoreCase) < 0))
             {
                 if (notepad == null || !notepad.gameObject.activeInHierarchy)
                 {
                     notepad = RecoverNotepadWindow(ref winRect, "Cat Dog");
+                }
+
+                // Error: user pressed Ctrl+V before copying anything
+                if (IsCtrlPressed() && IsKeyJustPressed(UnityEngine.InputSystem.Key.V, KeyCode.V))
+                {
+                    RecordMistake("You need to copy the text first with Ctrl + C before pasting!", winRect);
+                }
+
+                copyTimer += Time.deltaTime;
+                if (copyTimer >= 8.0f)
+                {
+                    VirtualMascot.ShowContextualFeedback("Highlight 'Cat' and press Ctrl + C to copy it!", winRect, 3.2f);
+                    copyTimer = 0f;
                 }
                 yield return null;
             }
@@ -331,11 +462,25 @@ namespace ComputerLearning
             NotepadApp.OnTextPasted += onPaste;
             RegisterCleanup(() => NotepadApp.OnTextPasted -= onPaste);
 
+            float pasteTimer = 0f;
             while (!pasted && (notepad == null || notepad.CurrentText.Split(new[] { "Cat", "cat" }, StringSplitOptions.None).Length <= 2))
             {
                 if (notepad == null || !notepad.gameObject.activeInHierarchy)
                 {
                     notepad = RecoverNotepadWindow(ref winRect, "Cat Dog");
+                }
+
+                // Error: user pressed Ctrl+C again instead of Ctrl+V
+                if (IsCtrlPressed() && IsKeyJustPressed(UnityEngine.InputSystem.Key.C, KeyCode.C))
+                {
+                    RecordMistake("Press Ctrl + V to Paste your copied word!", winRect);
+                }
+
+                pasteTimer += Time.deltaTime;
+                if (pasteTimer >= 8.0f)
+                {
+                    VirtualMascot.ShowContextualFeedback("Press Ctrl + V on your keyboard to paste the word!", winRect, 3.2f);
+                    pasteTimer = 0f;
                 }
                 yield return null;
             }
@@ -357,11 +502,19 @@ namespace ComputerLearning
             NotepadApp.OnTextCut += onCut;
             RegisterCleanup(() => NotepadApp.OnTextCut -= onCut);
 
+            float cutTimer = 0f;
             while (!cut && (notepad == null || notepad.CurrentText.Contains("Dog")))
             {
                 if (notepad == null || !notepad.gameObject.activeInHierarchy)
                 {
                     notepad = RecoverNotepadWindow(ref winRect, "Cat Dog Cat");
+                }
+
+                cutTimer += Time.deltaTime;
+                if (cutTimer >= 8.0f)
+                {
+                    VirtualMascot.ShowContextualFeedback("Highlight 'Dog' and press Ctrl + X to cut it!", winRect, 3.2f);
+                    cutTimer = 0f;
                 }
                 yield return null;
             }
@@ -414,6 +567,7 @@ namespace ComputerLearning
             NotepadApp.OnTextUndo += onUndo;
             RegisterCleanup(() => NotepadApp.OnTextUndo -= onUndo);
 
+            float undoTimer = 0f;
             while (!undone && (notepad == null || !notepad.CurrentText.Contains("fun")))
             {
                 if (notepad == null || !notepad.gameObject.activeInHierarchy)
@@ -424,6 +578,19 @@ namespace ComputerLearning
                         notepad.PushUndoState();
                         notepad.SetText("Computer Science is OOPS!");
                     }
+                }
+
+                // Error: pressing Z without Ctrl
+                if (IsKeyWithoutCtrl(UnityEngine.InputSystem.Key.Z, KeyCode.Z))
+                {
+                    RecordMistake("Hold down the Control (Ctrl) key and press Z!", winRect);
+                }
+
+                undoTimer += Time.deltaTime;
+                if (undoTimer >= 8.0f)
+                {
+                    VirtualMascot.ShowContextualFeedback("Press Ctrl + Z to Undo the mistake!", winRect, 3.2f);
+                    undoTimer = 0f;
                 }
                 yield return null;
             }
@@ -462,11 +629,25 @@ namespace ComputerLearning
             NotepadApp.OnSaveShortcut += onSaveKey;
             RegisterCleanup(() => NotepadApp.OnSaveShortcut -= onSaveKey);
 
+            float saveShortcutTimer = 0f;
             while (!saveOpened && !FileExplorerApp.IsSaveDialogOpen)
             {
                 if (notepad == null || !notepad.gameObject.activeInHierarchy)
                 {
                     notepad = RecoverNotepadWindow(ref winRect, "Important Note: Always save your files before closing the app!");
+                }
+
+                // Error: pressing S without Ctrl
+                if (IsKeyWithoutCtrl(UnityEngine.InputSystem.Key.S, KeyCode.S))
+                {
+                    RecordMistake("Press Ctrl and S together to save your document!", winRect);
+                }
+
+                saveShortcutTimer += Time.deltaTime;
+                if (saveShortcutTimer >= 8.0f)
+                {
+                    VirtualMascot.ShowContextualFeedback("Press Ctrl + S on your keyboard to open the save window!", winRect, 3.2f);
+                    saveShortcutTimer = 0f;
                 }
                 yield return null;
             }
@@ -589,6 +770,13 @@ namespace ComputerLearning
                         notepad.SetText("Blue Green Blue");
                     }
                 }
+
+                // Error: pressing Z without Ctrl
+                if (IsKeyWithoutCtrl(UnityEngine.InputSystem.Key.Z, KeyCode.Z))
+                {
+                    RecordMistake("Hold down Ctrl and press Z to undo!", winRect);
+                }
+
                 yield return null;
             }
             CleanupActiveSubscriptions();
@@ -606,6 +794,10 @@ namespace ComputerLearning
 
             while (!saved)
             {
+                if (IsKeyWithoutCtrl(UnityEngine.InputSystem.Key.S, KeyCode.S))
+                {
+                    RecordMistake("Press Ctrl and S together to save your document!", winRect);
+                }
                 yield return null;
             }
             CleanupActiveSubscriptions();
@@ -676,6 +868,12 @@ namespace ComputerLearning
                 {
                     paint = RecoverPaintWindow(ref winRect);
                 }
+
+                if (IsKeyWithoutCtrl(UnityEngine.InputSystem.Key.Z, KeyCode.Z))
+                {
+                    RecordMistake("Hold down Ctrl and press Z to undo your brush stroke!", winRect);
+                }
+
                 yield return null;
             }
             CleanupActiveSubscriptions();
@@ -695,6 +893,10 @@ namespace ComputerLearning
 
             while (!saved)
             {
+                if (IsKeyWithoutCtrl(UnityEngine.InputSystem.Key.S, KeyCode.S))
+                {
+                    RecordMistake("Press Ctrl and S together to save your artwork!", winRect);
+                }
                 yield return null;
             }
             CleanupActiveSubscriptions();
@@ -803,9 +1005,10 @@ namespace ComputerLearning
             }
 
             float duration = Mathf.Max(2.5f, Time.time - levelStartTime);
-            float accuracy = 100f;
-            int mistakes = 0;
-            LevelMedal medal = LevelMedal.Gold;
+            int mistakes = currentLevelMistakes;
+            int totalActions = Mathf.Max(1, 5 + mistakes);
+            float accuracy = Mathf.Clamp(((float)5 / totalActions) * 100f, 0f, 100f);
+            LevelMedal medal = ProgressData.CalculateMedal(accuracy, mistakes);
 
             if (ProgressData.Instance != null && levelDef != null && !string.IsNullOrEmpty(levelDef.levelId))
             {

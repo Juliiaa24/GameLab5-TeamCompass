@@ -22,12 +22,19 @@ namespace ComputerLearning
                 requiredHoldTime = 0.5f + (definition.difficulty * 0.2f); // Max 1.5s on difficulty 5
             }
             if (fillImage != null) fillImage.fillAmount = 0f;
+            SetupBackgroundClickInterceptor(OnBackgroundClicked);
         }
 
         protected override void Update()
         {
             base.Update();
             if (IsFinished) return;
+
+            if (!isHolding && !hasShownInactivityReminder && (Time.time - lastInteractionTime) >= 5.0f)
+            {
+                hasShownInactivityReminder = true;
+                VirtualMascot.ShowContextualFeedback("Press and hold the left mouse button on the circle!", transform as RectTransform, 2.8f);
+            }
 
             if (isHolding)
             {
@@ -56,13 +63,20 @@ namespace ComputerLearning
             }
         }
 
+        public void OnBackgroundClicked(PointerEventData eventData)
+        {
+            if (IsFinished) return;
+            RegisterAttempt(true);
+            VirtualMascot.ShowContextualFeedback("Click and hold the left mouse button inside the circle!", transform as RectTransform, 2.8f);
+        }
+
         public void OnPointerDown(PointerEventData eventData)
         {
             if (IsFinished) return;
             
             if (eventData.button == PointerEventData.InputButton.Right)
             {
-                FeedbackManager.PlayError(true);
+                RegisterAttempt(true);
                 VirtualMascot.ShowWrongClickFeedback(transform as RectTransform, false);
                 return;
             }

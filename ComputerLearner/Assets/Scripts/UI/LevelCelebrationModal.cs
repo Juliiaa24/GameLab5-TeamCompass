@@ -329,7 +329,31 @@ namespace ComputerLearning
         {
             if (isClosed) return;
 
-            if (Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter) || Input.GetKeyDown(KeyCode.Escape))
+            bool proceed = false;
+#if ENABLE_INPUT_SYSTEM
+            var kb = UnityEngine.InputSystem.Keyboard.current;
+            if (kb != null)
+            {
+                if (kb.spaceKey.wasPressedThisFrame || 
+                    kb.enterKey.wasPressedThisFrame || 
+                    kb.numpadEnterKey.wasPressedThisFrame || 
+                    kb.escapeKey.wasPressedThisFrame)
+                {
+                    proceed = true;
+                }
+            }
+#endif
+#if ENABLE_LEGACY_INPUT_MANAGER
+            if (!proceed)
+            {
+                if (Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter) || Input.GetKeyDown(KeyCode.Escape))
+                {
+                    proceed = true;
+                }
+            }
+#endif
+
+            if (proceed)
             {
                 CloseModalInternal(true);
             }

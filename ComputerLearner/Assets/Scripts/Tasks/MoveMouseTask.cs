@@ -14,12 +14,44 @@ namespace ComputerLearning
         private int spotsCleaned = 0;
         private RectTransform contentArea;
         private Image progressBarFill;
+        private float lastCleanedTime;
+        private bool hasShownBetweenReminder = false;
         
         protected override void SetupTask(TaskDefinition definition)
         {
             contentArea = GetComponent<RectTransform>();
+            lastCleanedTime = Time.time;
+            hasShownBetweenReminder = false;
             CreateProgressBar();
             SpawnDirtSpots();
+            SetupBackgroundClickInterceptor(OnBackgroundClicked);
+        }
+
+        protected override void Update()
+        {
+            base.Update();
+            if (IsFinished) return;
+
+            // Check if player spends > 4.5s without cleaning a dirt spot
+            if (!hasShownBetweenReminder && (Time.time - lastCleanedTime) >= 4.5f && spotsCleaned < spotsToSpawn)
+            {
+                hasShownBetweenReminder = true;
+                VirtualMascot.ShowContextualFeedback("Keep moving the mouse to clean all the spots!", contentArea, 2.8f);
+            }
+        }
+
+        public void OnBackgroundClicked(PointerEventData eventData)
+        {
+            if (IsFinished) return;
+            RegisterAttempt(true);
+            VirtualMascot.ShowContextualFeedback("Just move the mouse over the spots without clicking!", contentArea, 2.8f);
+        }
+
+        public void OnSpotClicked()
+        {
+            if (IsFinished) return;
+            RegisterAttempt(true);
+            VirtualMascot.ShowContextualFeedback("Just move the mouse over the spots without clicking!", contentArea, 2.8f);
         }
 
         private void CreateProgressBar()
@@ -109,6 +141,10 @@ namespace ComputerLearning
         {
             if (IsFinished) return;
             
+            NotifyUserInteraction();
+            lastCleanedTime = Time.time;
+            hasShownBetweenReminder = false;
+            
             spotsCleaned++;
             float progress = (float)spotsCleaned / spotsToSpawn;
             
@@ -125,7 +161,7 @@ namespace ComputerLearning
         }
     }
     
-    public class DirtSpot : MonoBehaviour, IPointerEnterHandler
+    public class DirtSpot : MonoBehaviour, IPointerEnterHandler, IPointerClickHandler
     {
         public MoveMouseTask task;
         private bool isCleaned = false;
@@ -138,6 +174,12 @@ namespace ComputerLearning
             
             // Simple visual feedback: destroy the dirt spot
             Destroy(gameObject);
+        }
+
+        public void OnPointerClick(PointerEventData eventData)
+        {
+            if (isCleaned) return;
+            task?.OnSpotClicked();
         }
     }
 }

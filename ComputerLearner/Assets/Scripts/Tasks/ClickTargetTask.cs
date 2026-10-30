@@ -18,12 +18,16 @@ namespace ComputerLearning
         private float elapsed;
         private bool  timeLimitActive;
         private float lastTargetHitTime = -10f;
+        private float lastActionTime;
+        private bool hasShownDelayReminder;
         #endregion
 
         #region Unity Methods
         protected override void Start()
         {
             base.Start();
+            lastActionTime = Time.time;
+            hasShownDelayReminder = false;
             Image img = GetComponent<Image>();
             if (img == null) img = gameObject.AddComponent<Image>();
             img.color = new Color(0, 0, 0, 0);
@@ -33,7 +37,19 @@ namespace ComputerLearning
         protected override void Update()
         {
             base.Update();
-            if (IsFinished || !timeLimitActive) return;
+            if (IsFinished) return;
+
+            // Delayed click reminder (> 5s before first click or between targets)
+            if (!hasShownDelayReminder && (Time.time - lastActionTime) >= 5.0f && targetsRemaining > 0)
+            {
+                hasShownDelayReminder = true;
+                RectTransform anchor = activeTargets.Count > 0 && activeTargets[0] != null
+                    ? activeTargets[0].GetComponent<RectTransform>()
+                    : (spawnArea != null ? spawnArea : GetComponent<RectTransform>());
+                VirtualMascot.ShowContextualFeedback("Aim carefully and click inside the circle!", anchor, 2.8f);
+            }
+
+            if (!timeLimitActive) return;
             elapsed += Time.deltaTime;
             if (elapsed >= timeLimit) Complete(false);
         }
@@ -48,6 +64,8 @@ namespace ComputerLearning
             timeLimitActive  = timeLimit > 0f;
             elapsed          = 0f;
             lastTargetHitTime = -10f;
+            lastActionTime   = Time.time;
+            hasShownDelayReminder = false;
             targetsRemaining = Mathf.Max(1, cfg.targetCount);
 
             activeTargets.Clear();
@@ -103,8 +121,22 @@ namespace ComputerLearning
             float x = (maxX > minX) ? Random.Range(minX, maxX) : 0f;
             float y = (maxY > minY) ? Random.Range(minY, maxY) : 0f;
 
-            target.GetComponent<RectTransform>().anchoredPosition = new Vector2(x, y);
+            RectTransform targetRect = target.GetComponent<RectTransform>();
+            targetRect.anchoredPosition = new Vector2(x, y);
+
             target.OnClicked += () => OnTargetClicked(target);
+            target.OnWrongButtonClicked += () =>
+            {
+                if (IsFinished) return;
+                RecordIntermediateResult(false);
+                VirtualMascot.ShowWrongClickFeedback(targetRect, false);
+            };
+            target.OnHoverStagnant += () =>
+            {
+                if (IsFinished) return;
+                RegisterAttempt(false);
+                VirtualMascot.ShowContextualFeedback("Click the left mouse button!", targetRect, 2.5f);
+            };
             activeTargets.Add(target);
         }
 
@@ -113,6 +145,8 @@ namespace ComputerLearning
             if (IsFinished) return;
 
             lastTargetHitTime = Time.unscaledTime;
+            lastActionTime = Time.time;
+            hasShownDelayReminder = false;
 
             activeTargets.Remove(target);
             if (target != null) Destroy(target.gameObject);
