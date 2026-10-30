@@ -1,0 +1,69 @@
+{
+  "ui": {
+    "stepFormat": "Trinn {0} av {1}",
+    "skipButton": "Hopp over",
+    "exitButton": "Slutte",
+    "timeExpired": "Tiden er ute",
+    "completedTitle": "Vurdering fullført",
+    "completedSubtitle": "Dine grunnleggende datakunnskaper er blitt vurdert.",
+    "closeButton": "Fullfør"
+  },
+  "tasks": [
+    {
+      "skillId": "mouse_move",
+      "title": "Flytt musepekeren",
+      "instruction": "Flytt musepekeren inn i den blå sirkelen.",
+      "timeoutSeconds": 15,
+      "shape": "circle",
+      "requiredDuration": 0.0
+    },
+    {
+      "skillId": "hover",
+      "title": "Hold over",
+      "instruction": "Hold musepekeren inne i den lilla firkanten i 2 sekunder uten å klikke.",
+      "timeoutSeconds": 15,
+      "shape": "square",
+      "requiredDuration": 2.0
+    },
+    {
+      "skillId": "click",
+      "title": "Enkeltklikk",
+      "instruction": "Klikk én gang på den oransje firkanten.",
+      "timeoutSeconds": 15,
+      "shape": "square",
+      "requiredDuration": 0.0
+    },
+    {
+      "skillId": "double_click",
+      "title": "Dobbeltklikk",
+      "instruction": "Dobbeltklikk raskt på den blågrønne sirkelen.",
+      "timeoutSeconds": 15,
+      "shape": "circle",
+      "requiredDuration": 0.0
+    },
+    {
+      "skillId": "right_click",
+      "title": "Høyreklikk",
+      "instruction": "Klikk på det ravgule rektangelet med høyre museknapp.",
+      "timeoutSeconds": 15,
+      "shape": "rectangle",
+      "requiredDuration": 0.0
+    },
+    {
+      "skillId": "click_hold",
+      "title": "Klikk og hold",
+      "instruction": "Klikk og hold museknappen inne på den røde sirkelen i 2 sekunder.",
+      "timeoutSeconds": 20,
+      "shape": "circle",
+      "requiredDuration": 2.0
+    },
+    {
+      "skillId": "drag_drop",
+      "title": "Dra og slipp",
+      "instruction": "Dra den blå firkanten inn i målrammen.",
+      "timeoutSeconds": 20,
+      "shape": "drag_drop",
+      "requiredDuration": 0.0
+    }
+  ]
+}
