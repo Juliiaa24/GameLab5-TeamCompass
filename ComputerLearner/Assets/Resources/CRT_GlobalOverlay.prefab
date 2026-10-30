@@ -105,9 +105,9 @@ MonoBehaviour:
   overlayAlpha: 0.9725794
   curvatureX: 0.087
   curvatureY: 0
-  scanBeamSpeed: 0.035
-  scanBeamWidth: 0.018
-  scanBeamIntensity: 0.12
+  scanBeamSpeed: 0.005
+  scanBeamWidth: 0.005
+  scanBeamIntensity: 0
   scanlineCount: 540
   scanlineIntensity: 0.18
   vignetteStrength: 0.05

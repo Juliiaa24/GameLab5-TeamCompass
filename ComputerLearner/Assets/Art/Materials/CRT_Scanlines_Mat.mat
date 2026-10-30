@@ -33,9 +33,9 @@ Material:
     - _CurvatureX: 0.087
     - _CurvatureY: 0
     - _FlickerIntensity: 0.003
-    - _ScanBeamIntensity: 0.12
-    - _ScanBeamSpeed: 0.035
-    - _ScanBeamWidth: 0.018
+    - _ScanBeamIntensity: 0
+    - _ScanBeamSpeed: 0.005
+    - _ScanBeamWidth: 0.005
     - _ScanlineCount: 540
     - _ScanlineIntensity: 0.18
     - _Stencil: 0
