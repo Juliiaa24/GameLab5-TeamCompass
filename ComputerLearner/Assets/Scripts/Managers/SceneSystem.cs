@@ -1,11 +1,13 @@
 /**
  * Author: Julia Vera & TeamCompass
  * Date: 11/09
- * Description: Controls changes between scenes with DontDestroyOnLoad persistence.
+ * Description: Controls changes between scenes with DontDestroyOnLoad persistence
+ *              and preserves Inspector button bindings when reloading scenes.
 */
 
 using System;
 using UnityEngine;
+using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 
 namespace ComputerLearning
@@ -48,10 +50,12 @@ namespace ComputerLearning
 
         private void Awake()
         {
+            // When reloading a scene (like Menu) that has its own SceneSystem serialized
+            // in the buttons' Inspector OnClick events, destroy the OLD persistent instance
+            // and keep THIS new scene instance so the scene buttons never lose their target reference!
             if (Instance != null && Instance != this)
             {
-                Destroy(gameObject);
-                return;
+                Destroy(Instance.gameObject);
             }
 
             Instance = this;
@@ -61,9 +65,32 @@ namespace ComputerLearning
             }
         }
 
+        private void OnEnable()
+        {
+            SceneManager.sceneLoaded += OnSceneLoaded;
+        }
+
+        private void OnDisable()
+        {
+            SceneManager.sceneLoaded -= OnSceneLoaded;
+        }
+
+        private void Start()
+        {
+            EnsureMenuButtonsBound();
+        }
+
         private void OnDestroy()
         {
             if (Instance == this) Instance = null;
+        }
+
+        private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+        {
+            if (scene.name == "Menu")
+            {
+                EnsureMenuButtonsBound();
+            }
         }
 
         private void Update()
@@ -155,6 +182,51 @@ namespace ComputerLearning
         #endregion
 
         #region Private Methods
+        private void EnsureMenuButtonsBound()
+        {
+            if (SceneManager.GetActiveScene().name != "Menu") return;
+
+            Button[] buttons = FindObjectsByType<Button>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            foreach (Button btn in buttons)
+            {
+                if (btn == null) continue;
+
+                // Only add runtime listener if the Inspector persistent listener is missing/broken
+                bool hasValidPersistentListener = false;
+                int count = btn.onClick.GetPersistentEventCount();
+                for (int i = 0; i < count; i++)
+                {
+                    if (btn.onClick.GetPersistentTarget(i) != null && !string.IsNullOrEmpty(btn.onClick.GetPersistentMethodName(i)))
+                    {
+                        hasValidPersistentListener = true;
+                        break;
+                    }
+                }
+
+                if (hasValidPersistentListener) continue;
+
+                btn.onClick.RemoveAllListeners();
+                switch (btn.gameObject.name)
+                {
+                    case "Btn-Play":
+                        btn.onClick.AddListener(ChangeToMain);
+                        break;
+                    case "Btn-VirtualDesktop":
+                        btn.onClick.AddListener(ChangeToVirtualDesktop);
+                        break;
+                    case "Btn-Stats":
+                        btn.onClick.AddListener(ChangeToStats);
+                        break;
+                    case "Btn-1":
+                        btn.onClick.AddListener(ResetProgress);
+                        break;
+                    case "Btn-2":
+                        btn.onClick.AddListener(Exit);
+                        break;
+                }
+            }
+        }
+
         private void ChangeScene(SceneNames scene)
         {
             switch (scene)

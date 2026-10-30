@@ -34,16 +34,28 @@ namespace ComputerLearning
 
         private void Awake()
         {
-            // Ensure HeaderBar is rendered on top of cards so raycasts are never blocked
-            Transform headerBar = transform.Find("HeaderBar");
-            if (headerBar == null)
-            {
-                Canvas canvas = GetComponentInParent<Canvas>();
-                if (canvas != null) headerBar = canvas.transform.Find("HeaderBar");
-            }
+            Canvas canvas = GetComponentInParent<Canvas>();
+            Transform root = canvas != null ? canvas.transform : transform;
+
+            // Ensure Header is rendered on top of cards so raycasts are never blocked
+            Transform headerBar = root.Find("Header") ?? root.Find("HeaderBar");
             if (headerBar != null)
             {
                 headerBar.SetAsLastSibling();
+
+                // Ensure the full-width Title text inside Header never blocks clicks on Btn-Back
+                Transform titleT = headerBar.Find("Title");
+                if (titleT != null)
+                {
+                    TMP_Text titleTmp = titleT.GetComponent<TMP_Text>();
+                    if (titleTmp != null) titleTmp.raycastTarget = false;
+                }
+
+                Transform backBtnT = headerBar.Find("Btn-Back");
+                if (backBtnT != null) backBtnT.SetAsLastSibling();
+
+                Transform retakeBtnT = headerBar.Find("Btn-Retake");
+                if (retakeBtnT != null) retakeBtnT.SetAsLastSibling();
             }
         }
 
@@ -88,10 +100,19 @@ namespace ComputerLearning
                 if (t != null) t.text = ui.stats_btn_retake;
             }
 
+            SetTextAtRelativePath(root, "Header/Title", ui.stats_page_title);
             SetTextAtRelativePath(root, "HeaderBar/Title", ui.stats_page_title);
+
+            SetTextAtRelativePath(root, "AssessmentCard/CardTitle", ui.stats_card_assessment_title);
             SetTextAtRelativePath(root, "ContentArea/AssessmentCard/Header/CardTitle", ui.stats_card_assessment_title);
+
+            SetTextAtRelativePath(root, "AssessmentCard/CardSubtitle", ui.stats_card_assessment_subtitle);
             SetTextAtRelativePath(root, "ContentArea/AssessmentCard/Header/CardSubtitle", ui.stats_card_assessment_subtitle);
+
+            SetTextAtRelativePath(root, "SkillsCard/CardTitle", ui.stats_card_skills_title);
             SetTextAtRelativePath(root, "ContentArea/SkillsCard/Header/CardTitle", ui.stats_card_skills_title);
+
+            SetTextAtRelativePath(root, "SkillsCard/CardSubtitle", ui.stats_card_skills_subtitle);
             SetTextAtRelativePath(root, "ContentArea/SkillsCard/Header/CardSubtitle", ui.stats_card_skills_subtitle);
         }
 
@@ -108,38 +129,32 @@ namespace ComputerLearning
 
         private void SetupNavigation()
         {
+            Canvas canvas = GetComponentInParent<Canvas>();
+            Transform root = canvas != null ? canvas.transform : transform;
+
             // Self-healing fallback if buttons are unassigned in Inspector
             if (backToMenuButton == null)
             {
-                Transform btnT = transform.Find("HeaderBar/Btn-Back");
-                if (btnT == null)
-                {
-                    Canvas canvas = GetComponentInParent<Canvas>();
-                    if (canvas != null) btnT = canvas.transform.Find("HeaderBar/Btn-Back");
-                }
+                Transform btnT = root.Find("Header/Btn-Back") ?? root.Find("HeaderBar/Btn-Back");
                 if (btnT != null) backToMenuButton = btnT.GetComponent<Button>();
             }
 
             if (retakeAssessmentButton == null)
             {
-                Transform btnT = transform.Find("HeaderBar/Btn-Retake");
-                if (btnT == null)
-                {
-                    Canvas canvas = GetComponentInParent<Canvas>();
-                    if (canvas != null) btnT = canvas.transform.Find("HeaderBar/Btn-Retake");
-                }
+                Transform btnT = root.Find("Header/Btn-Retake") ?? root.Find("HeaderBar/Btn-Retake");
                 if (btnT != null) retakeAssessmentButton = btnT.GetComponent<Button>();
             }
 
             if (backToMenuButton != null)
             {
-                backToMenuButton.onClick.RemoveAllListeners();
+                // Remove any persistent Inspector calls so it doesn't fire twice or conflict
+                backToMenuButton.onClick = new Button.ButtonClickedEvent();
                 backToMenuButton.onClick.AddListener(OnBackToMenuClicked);
             }
 
             if (retakeAssessmentButton != null)
             {
-                retakeAssessmentButton.onClick.RemoveAllListeners();
+                retakeAssessmentButton.onClick = new Button.ButtonClickedEvent();
                 retakeAssessmentButton.onClick.AddListener(OnRetakeAssessmentClicked);
             }
         }
