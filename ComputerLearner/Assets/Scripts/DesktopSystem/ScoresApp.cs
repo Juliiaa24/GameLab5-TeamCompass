@@ -31,7 +31,7 @@ namespace ComputerLearning
             if (parentWindow == null) parentWindow = GetComponentInParent<Window>();
             if (parentWindow != null)
             {
-                parentWindow.setTitle("Scores & Achievements");
+                parentWindow.setTitle(UIDialogs.Current.scores_window_title);
             }
 
             BuildUI();
@@ -54,6 +54,7 @@ namespace ComputerLearning
         private void BuildUI()
         {
             if (contentContainer != null) return;
+            UIDialogs ui = UIDialogs.Current;
 
             RectTransform rootRect = GetComponent<RectTransform>();
             if (rootRect == null) rootRect = gameObject.AddComponent<RectTransform>();
@@ -113,7 +114,7 @@ namespace ComputerLearning
             GameObject titleObj = new GameObject("TitleText", typeof(RectTransform), typeof(TextMeshProUGUI));
             titleObj.transform.SetParent(titleRow.transform, false);
             TextMeshProUGUI titleText = titleObj.GetComponent<TextMeshProUGUI>();
-            titleText.text = "<b>Hall of Fame & Level Records</b>";
+            titleText.text = ui.scores_header_title;
             titleText.fontSize = 18;
             titleText.color = new Color(0.12f, 0.20f, 0.32f);
 
@@ -121,7 +122,7 @@ namespace ComputerLearning
             GameObject summaryObj = new GameObject("SummaryText", typeof(RectTransform), typeof(TextMeshProUGUI));
             summaryObj.transform.SetParent(headerPanel.transform, false);
             headerSummaryText = summaryObj.GetComponent<TextMeshProUGUI>();
-            headerSummaryText.text = "Loading statistics...";
+            headerSummaryText.text = ui.scores_loading;
             headerSummaryText.fontSize = 14;
             headerSummaryText.color = new Color(0.25f, 0.30f, 0.35f);
 
@@ -136,8 +137,8 @@ namespace ComputerLearning
             tbLayout.childControlWidth = false;
             tbLayout.childForceExpandWidth = false;
 
-            CreateStyledButton(toolbar.transform, "Refresh Records", new Color(0.20f, 0.50f, 0.80f), RefreshData);
-            CreateStyledButton(toolbar.transform, "Reset Records", new Color(0.80f, 0.25f, 0.25f), PromptResetHistory);
+            CreateStyledButton(toolbar.transform, ui.scores_refresh_button, new Color(0.20f, 0.50f, 0.80f), RefreshData);
+            CreateStyledButton(toolbar.transform, ui.scores_reset_button, new Color(0.80f, 0.25f, 0.25f), PromptResetHistory);
 
             // 4. Scrollable Table Container
             GameObject scrollObj = new GameObject("ScrollView", typeof(RectTransform), typeof(ScrollRect), typeof(Image), typeof(LayoutElement));
@@ -190,6 +191,7 @@ namespace ComputerLearning
         public void RefreshData()
         {
             if (listContent == null) return;
+            UIDialogs ui = UIDialogs.Current;
 
             // Clear previous items
             for (int i = listContent.childCount - 1; i >= 0; i--)
@@ -236,17 +238,20 @@ namespace ComputerLearning
             float avgAcc = recordedScoresCount > 0 ? (totalAccuracySum / recordedScoresCount) : 0f;
             if (headerSummaryText != null)
             {
-                headerSummaryText.text =
-                    $"<color=#FFB800>● <b>Gold: {goldCount}</b></color>    " +
-                    $"<color=#8E9CA8>● <b>Silver: {silverCount}</b></color>    " +
-                    $"<color=#C87D3B>● <b>Bronze: {bronzeCount}</b></color>   |   " +
-                    $"Completed: <b>{completedCount}/{allLevels.Count}</b>   |   " +
-                    $"Avg Accuracy: <b>{avgAcc:F0}%</b>";
+                headerSummaryText.text = string.Format(
+                    ui.scores_summary_format,
+                    goldCount,
+                    silverCount,
+                    bronzeCount,
+                    completedCount,
+                    allLevels.Count,
+                    avgAcc);
             }
         }
 
         private void CreateTableRow(Transform parent, LevelInfoData lvl, LevelScoreRecord record = null, bool isCompleted = false, bool isUnlocked = false, bool isHeader = false)
         {
+            UIDialogs ui = UIDialogs.Current;
             GameObject row = new GameObject(isHeader ? "HeaderRow" : $"Row_{lvl?.levelId}", typeof(RectTransform), typeof(Image), typeof(HorizontalLayoutGroup), typeof(LayoutElement));
             row.transform.SetParent(parent, false);
 
@@ -275,12 +280,12 @@ namespace ComputerLearning
 
             if (isHeader)
             {
-                CreateTextColumn(row.transform, "LEVEL NAME", 220, FontStyles.Bold, TextAlignmentOptions.Left, 13);
-                CreateTextColumn(row.transform, "STATUS", 100, FontStyles.Bold, TextAlignmentOptions.Center, 13);
-                CreateTextColumn(row.transform, "MEDAL EARNED", 140, FontStyles.Bold, TextAlignmentOptions.Center, 13);
-                CreateTextColumn(row.transform, "ACCURACY", 90, FontStyles.Bold, TextAlignmentOptions.Center, 13);
-                CreateTextColumn(row.transform, "BEST TIME", 90, FontStyles.Bold, TextAlignmentOptions.Center, 13);
-                CreateTextColumn(row.transform, "TRIES", 70, FontStyles.Bold, TextAlignmentOptions.Center, 13);
+                CreateTextColumn(row.transform, ui.scores_col_level, 220, FontStyles.Bold, TextAlignmentOptions.Left, 13);
+                CreateTextColumn(row.transform, ui.scores_col_status, 100, FontStyles.Bold, TextAlignmentOptions.Center, 13);
+                CreateTextColumn(row.transform, ui.scores_col_medal, 140, FontStyles.Bold, TextAlignmentOptions.Center, 13);
+                CreateTextColumn(row.transform, ui.scores_col_accuracy, 90, FontStyles.Bold, TextAlignmentOptions.Center, 13);
+                CreateTextColumn(row.transform, ui.scores_col_time, 90, FontStyles.Bold, TextAlignmentOptions.Center, 13);
+                CreateTextColumn(row.transform, ui.scores_col_tries, 70, FontStyles.Bold, TextAlignmentOptions.Center, 13);
             }
             else
             {
@@ -289,7 +294,9 @@ namespace ComputerLearning
                 CreateTextColumn(row.transform, displayName, 220, FontStyles.Normal, TextAlignmentOptions.Left, 13, isUnlocked ? Color.black : new Color(0.55f, 0.55f, 0.55f));
 
                 // Status Badge
-                string statusText = isCompleted ? "<color=#28A745>Completed</color>" : (isUnlocked ? "<color=#0078D7>Unlocked</color>" : "<color=#888888>Locked</color>");
+                string statusText = isCompleted
+                    ? $"<color=#28A745>{ui.scores_status_completed}</color>"
+                    : (isUnlocked ? $"<color=#0078D7>{ui.scores_status_unlocked}</color>" : $"<color=#888888>{ui.scores_status_locked}</color>");
                 CreateTextColumn(row.transform, statusText, 100, FontStyles.Normal, TextAlignmentOptions.Center, 13);
 
                 // Medal Column with Sprite Icon + Text
@@ -423,12 +430,13 @@ namespace ComputerLearning
 
         private void PromptResetHistory()
         {
+            UIDialogs ui = UIDialogs.Current;
             if (ContextMenuController.Instance != null)
             {
                 ContextMenuController.Instance.ShowInputModal(
-                    "Reset Scores & Records",
-                    "Type RESET to confirm clearing all records:",
-                    "Confirm Reset",
+                    ui.scores_reset_modal_title,
+                    ui.scores_reset_modal_prompt,
+                    ui.scores_reset_modal_confirm,
                     (confirmation) =>
                     {
                         if (string.Equals(confirmation?.Trim(), "RESET", StringComparison.OrdinalIgnoreCase))
@@ -457,29 +465,12 @@ namespace ComputerLearning
             List<LevelInfoData> levels = new List<LevelInfoData>();
             HashSet<string> seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-            string[] canonicalNames = {
-                "Level 1: Mouse Movement",
-                "Level 2: Precision Clicks",
-                "Level 3: Hover & Hold",
-                "Level 4: Drag & Drop",
-                "Level 5: Double Click",
-                "Level 6: Right Click",
-                "Level 7: Hitbox Challenge",
-                "Level 8: Moving Targets",
-                "Level 9: Mixed Skills",
-                "Level 10: Context Menu",
-                "Level 11: Open Notepad & Typing",
-                "Level 12: Copy, Paste & Cut",
-                "Level 13: Undo Shortcut",
-                "Level 14: Save Shortcut",
-                "Level 15: Notepad Evaluation",
-                "Level 16: Paint Usage"
-            };
+            string[] canonicalNames = UIDialogs.Current.canonical_level_names;
 
             for (int i = 0; i < ProgressData.LevelOrder.Length; i++)
             {
                 string id = ProgressData.LevelOrder[i];
-                string name = (i < canonicalNames.Length) ? canonicalNames[i] : $"Level {i + 1}";
+                string name = (canonicalNames != null && i < canonicalNames.Length) ? canonicalNames[i] : $"Level {i + 1}";
                 levels.Add(new LevelInfoData { levelId = id, displayName = name });
                 seen.Add(id);
             }

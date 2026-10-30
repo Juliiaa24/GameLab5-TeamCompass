@@ -4,7 +4,7 @@ using UnityEngine.EventSystems;
 
 namespace ComputerLearning
 {
-    public class DoubleClickTask : BaseTask, IPointerClickHandler, IPointerExitHandler
+    public class DoubleClickTask : BaseTask, IPointerClickHandler
     {
         private float lastClickTime = -10f;
         private const float DOUBLE_CLICK_THRESHOLD = 0.65f;
@@ -16,20 +16,6 @@ namespace ComputerLearning
             TaskTargetMovement mover = GetComponent<TaskTargetMovement>();
             if (mover == null) mover = gameObject.AddComponent<TaskTargetMovement>();
             mover.Setup(definition);
-            SetupBackgroundClickInterceptor(OnBackgroundClicked);
-        }
-
-        protected override void Update()
-        {
-            base.Update();
-            if (IsFinished) return;
-
-            // Inactivity reminder if player takes > 6s
-            if (!hasShownInactivityReminder && (Time.time - lastInteractionTime) >= 6.0f)
-            {
-                hasShownInactivityReminder = true;
-                VirtualMascot.ShowContextualFeedback("Double-click the circle quickly with the left button!", transform as RectTransform, 3.0f);
-            }
         }
 
         private void OnDisable()
@@ -39,38 +25,6 @@ namespace ComputerLearning
                 StopCoroutine(pendingSingleClickErrorCoroutine);
                 pendingSingleClickErrorCoroutine = null;
             }
-        }
-
-        public void OnPointerExit(PointerEventData eventData)
-        {
-            if (IsFinished) return;
-
-            // User clicked once inside, but left the target before second click
-            if (lastClickTime > 0f)
-            {
-                if (pendingSingleClickErrorCoroutine != null)
-                {
-                    StopCoroutine(pendingSingleClickErrorCoroutine);
-                    pendingSingleClickErrorCoroutine = null;
-                }
-                lastClickTime = -10f;
-                RegisterAttempt(false);
-                VirtualMascot.ShowContextualFeedback("Stay inside the circle while double-clicking!", transform as RectTransform, 2.5f);
-            }
-        }
-
-        public void OnBackgroundClicked(PointerEventData eventData)
-        {
-            if (IsFinished) return;
-
-            if (pendingSingleClickErrorCoroutine != null)
-            {
-                StopCoroutine(pendingSingleClickErrorCoroutine);
-                pendingSingleClickErrorCoroutine = null;
-            }
-            lastClickTime = -10f;
-            RegisterAttempt(true);
-            VirtualMascot.ShowContextualFeedback("Don't click outside! Double-click inside the circle!", transform as RectTransform, 2.8f);
         }
 
         public void OnPointerClick(PointerEventData eventData)
@@ -131,7 +85,7 @@ namespace ComputerLearning
 
             lastClickTime = -10f;
             RegisterAttempt();
-            VirtualMascot.ShowContextualFeedback("Click twice quickly! Double-click!", transform as RectTransform, 2.5f);
+            VirtualMascot.ShowContextualFeedback(VirtualMascot.FeedbackDialogs.doubleClickFast, transform as RectTransform, 2.5f);
         }
     }
 }

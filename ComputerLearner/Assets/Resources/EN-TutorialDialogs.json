@@ -1,6 +1,7 @@
 {
   "first_welcome": "Welcome to the computer! Let's learn how to use it.",
   "first_default": "Watch how I open this folder!",
+  "first_assessment": "Let's start with a quick assessment! Double click the Assessment icon!",
   "first_move": "Let's start by moving the mouse! Watch how I open the Move app.",
   "first_hover": "Now let's practice Hovering! Keep an eye on how I open it.",
   "first_click": "Time to Click! I'll open this app so you can try.",
@@ -8,13 +9,17 @@
   "first_double_click": "Almost done with the basics! One last trick: Double Click!",
 
   "second_welcome": "You've completed all the computer basics! You're ready to use the desktop freely.",
+  "second_default": "Double click here to start the next practice!",
   "second_right_click": "Now let's learn some advanced interactions! Double-click the Right Click app to start.",
   "second_click_hold": "Great! Now double-click the Click & Hold app.",
   "second_drag_drop": "Awesome! Let's try Drag & Drop. Open it up!",
   "second_mixed": "You're a pro! Time for the final challenge: Mix everything together!",
+  "second_closed_early": "Oops! You closed it without finishing! Double click to try again.",
 
   "level_completed": "Level Completed! Great job!",
   "level_ready_prompt": "Read carefully and click here\nwhen you are ready!",
+  "level_start_button": "START!",
+  "level_celebration_format": "Awesome job! You earned the {0} Medal!\nAccuracy: {1:F0}%  Time: {2:F1}s",
   "intro_move": "Welcome to your very first app!\nLet's practice moving the mouse. Just hover over the dirt spots to clean them!",
   "intro_hover": "Awesome job so far!\nNow things will move a bit faster. Keep those moves sharp!",
   "intro_click": "Ready for some clicking?\nClick on the targets as soon as they appear!",

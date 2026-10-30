@@ -12,71 +12,89 @@ using TMPro;
 
 namespace ComputerLearning
 {
+    [Serializable]
+    public class GuidedLevelsDialogs
+    {
+        public string l10_welcome = "Welcome to Level 10: Context Menu!\nRight-click anywhere on the desktop wallpaper to open the options menu.";
+        public string l10_clickMenu = "Awesome! This is the Context Menu.\nClick on '+ New Text Document (.txt)' or '+ New Folder' to create an item!";
+        public string l10_done = "Fantastic! You've learned how to use the desktop context menu to create and customize files!";
+
+        public string l11_openNotepad = "Level 11: Word Processing!\nDouble-click the Notepad icon to open the text editor.";
+        public string l11_typePrompt = "Now let's practice typing on your keyboard!\nType: 'Hello Computer!' in the notepad.";
+        public string l11_typeReminder = "Remember: Type 'Hello Computer!' into the notepad.";
+        public string l11_done = "Terrific! You typed the phrase perfectly!";
+
+        public string l12_copyPrompt = "Let's master keyboard shortcuts!\nHighlight the word 'Cat' and press Ctrl + C on your keyboard to copy it.";
+        public string l12_copyDone = "Nice! 'Cat' is copied into your clipboard.";
+        public string l12_pastePrompt = "Now click at the end of the text and press Ctrl + V to Paste it!";
+        public string l12_pasteDone = "You pasted it! Now you have two Cats!";
+        public string l12_cutPrompt = "Now highlight the word 'Dog' and press Ctrl + X to Cut it away!";
+        public string l12_done = "Brilliant! Ctrl + X cut the text and saved it to your clipboard!";
+
+        public string l13_welcome = "Welcome to Level 13!\nLook at this sentence: 'Computer Science is fun!'";
+        public string l13_undoPrompt = "Oh no! Someone accidentally made a mistake!\nPress Ctrl + Z to Undo the mistake and restore your original words!";
+        public string l13_done = "Magic! Ctrl + Z lets you undo mistakes in almost every program!";
+
+        public string l14_saveShortcutPrompt = "Level 14: Save Shortcut!\nAlways save your files. Press Ctrl + S on your keyboard to save this note.";
+        public string l14_saveModalPrompt = "The Save window is open! Type a name for your file (like 'MyNotes') and click SAVE.";
+        public string l14_done = "Document saved! Ctrl + S is the most useful shortcut to keep your work safe.";
+
+        public string l15_welcome = "Level 15: The Grand Word Challenge!\nLet's test all your typing and keyboard skills together.";
+        public string l15_step1 = "Step 1 of 5: Type the words: 'Red Blue Green'";
+        public string l15_step2 = "Step 2 of 5: Highlight 'Blue', press Ctrl + C, and press Ctrl + V to duplicate it!";
+        public string l15_step3 = "Step 3 of 5: Highlight 'Red' and press Ctrl + X to cut it away!";
+        public string l15_step4 = "Step 4 of 5: Press Ctrl + Z to Undo the cut and bring 'Red' back!";
+        public string l15_step5 = "Step 5 of 5: Finally, press Ctrl + S and click SAVE to store your finished note!";
+        public string l15_done = "Outstanding mastery! You aced all Notepad shortcuts and operations!";
+
+        public string l16_openPaint = "Level 16: Digital Artist in Paint!\nDouble-click the Paint icon to open the drawing studio.";
+        public string l16_drawPrompt = "Pick any color from the palette and draw a shape or smile on the canvas using your mouse!";
+        public string l16_drawDone = "Nice drawing! Now let's test undoing a brush stroke.";
+        public string l16_undoPrompt = "Press Ctrl + Z to Undo your last stroke!";
+        public string l16_undoDone = "Stroke undone! You can undo any drawing mistake with Ctrl + Z.";
+        public string l16_savePrompt = "Now press Ctrl + S and confirm in the Save dialog to store your artwork in Pictures!";
+        public string l16_done = "Magnificent! You have mastered all mouse, keyboard, and creative tools on the Virtual Desktop!";
+
+        public string def_l10_name = "Level 10: Context Menu";
+        public string def_l10_desc = "Learn how to use the desktop Context Menu!\nRight-click on the desktop to explore options.";
+        public string def_l11_name = "Level 11: Open Notepad & Typing";
+        public string def_l11_desc = "Learn how to open Notepad and type phrases on your keyboard!";
+        public string def_l12_name = "Level 12: Copy, Paste & Cut";
+        public string def_l12_desc = "Learn keyboard shortcuts!\nCtrl + C to copy, Ctrl + V to paste, and Ctrl + X to cut.";
+        public string def_l13_name = "Level 13: Undo Shortcut";
+        public string def_l13_desc = "Learn how to undo mistakes with Ctrl + Z!";
+        public string def_l14_name = "Level 14: Save Shortcut";
+        public string def_l14_desc = "Learn how to safely save files with Ctrl + S!";
+        public string def_l15_name = "Level 15: Notepad Evaluation";
+        public string def_l15_desc = "Complete test: type, copy, cut, undo, and save your document in Notepad!";
+        public string def_l16_name = "Level 16: Paint Usage";
+        public string def_l16_desc = "Open Paint, draw artwork, undo with Ctrl + Z, and save with Ctrl + S!";
+        public string def_default_desc = "Follow the virtual mascot instructions.";
+    }
+
     public class VirtualDesktopGuidedLevels : MonoBehaviour
     {
         public static VirtualDesktopGuidedLevels Instance { get; private set; }
         public static bool IsLevelRunning { get; private set; }
         public static string CurrentRunningLevelId { get; private set; }
 
+        private GuidedLevelsDialogs dialogs;
         private TutorialBlocker tutorialBlocker;
         private Coroutine activeLevelCoroutine;
         private float levelStartTime;
         private readonly List<Action> activeEventCleanupActions = new List<Action>();
 
-        #region Input Helpers (Supports New Input System & Legacy Fallback)
-        private static bool IsLeftMouseButtonDown()
+        public static GuidedLevelsDialogs LoadDialogsStatic()
         {
-#if ENABLE_INPUT_SYSTEM
-            if (UnityEngine.InputSystem.Mouse.current != null)
-                return UnityEngine.InputSystem.Mouse.current.leftButton.wasPressedThisFrame;
-#elif ENABLE_LEGACY_INPUT_MANAGER
-            return Input.GetMouseButtonDown(0);
-#endif
-            return false;
+            TextAsset json = LocalizationManager.LoadLocalizedResource("GuidedLevelsDialogs");
+            GuidedLevelsDialogs loaded = json != null ? JsonUtility.FromJson<GuidedLevelsDialogs>(json.text) : null;
+            return loaded ?? new GuidedLevelsDialogs();
         }
 
-        private static bool IsAnyKeyOrTypingWithoutMouse()
+        private void LoadDialogs()
         {
-#if ENABLE_INPUT_SYSTEM
-            var kb = UnityEngine.InputSystem.Keyboard.current;
-            var mouse = UnityEngine.InputSystem.Mouse.current;
-            bool anyKey = kb != null && kb.anyKey.wasPressedThisFrame;
-            bool mouseHeld = mouse != null && (mouse.leftButton.isPressed || mouse.rightButton.isPressed);
-            return anyKey && !mouseHeld;
-#elif ENABLE_LEGACY_INPUT_MANAGER
-            return Input.anyKeyDown && !Input.GetMouseButton(0) && !Input.GetMouseButton(1);
-#else
-            return false;
-#endif
+            dialogs = LoadDialogsStatic();
         }
-
-        private static bool IsCtrlPressed()
-        {
-#if ENABLE_INPUT_SYSTEM
-            var kb = UnityEngine.InputSystem.Keyboard.current;
-            if (kb != null) return kb.ctrlKey.isPressed;
-#elif ENABLE_LEGACY_INPUT_MANAGER
-            return Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl);
-#endif
-            return false;
-        }
-
-        private static bool IsKeyJustPressed(UnityEngine.InputSystem.Key newKey, KeyCode oldKey)
-        {
-#if ENABLE_INPUT_SYSTEM
-            var kb = UnityEngine.InputSystem.Keyboard.current;
-            if (kb != null) return kb[newKey].wasPressedThisFrame;
-#elif ENABLE_LEGACY_INPUT_MANAGER
-            return Input.GetKeyDown(oldKey);
-#endif
-            return false;
-        }
-
-        private static bool IsKeyWithoutCtrl(UnityEngine.InputSystem.Key newKey, KeyCode oldKey)
-        {
-            return IsKeyJustPressed(newKey, oldKey) && !IsCtrlPressed();
-        }
-        #endregion
 
         public static bool IsGuidedDesktopLevel(string levelId)
         {
@@ -111,6 +129,7 @@ namespace ComputerLearning
         private void Awake()
         {
             Instance = this;
+            LoadDialogs();
         }
 
         private void OnDisable()
@@ -168,26 +187,11 @@ namespace ComputerLearning
             tutorialBlocker = blockerObj.AddComponent<TutorialBlocker>();
         }
 
-        private int currentLevelMistakes = 0;
-
-        public void RecordMistake(string message, RectTransform target = null, bool isRightClickExpected = false)
-        {
-            currentLevelMistakes++;
-            FeedbackManager.PlayError(true);
-            if (isRightClickExpected)
-            {
-                VirtualMascot.ShowWrongClickFeedback(target, true);
-            }
-            else
-            {
-                VirtualMascot.ShowContextualFeedback(message, target, 3.2f);
-            }
-        }
-
         public void BeginLevel(LevelDefinition levelDef)
         {
             if (levelDef == null) return;
 
+            LoadDialogs();
             CleanupActiveSubscriptions();
             if (activeLevelCoroutine != null)
             {
@@ -198,7 +202,6 @@ namespace ComputerLearning
             IsLevelRunning = true;
             CurrentRunningLevelId = levelDef.levelId;
             levelStartTime = Time.time;
-            currentLevelMistakes = 0;
 
             // 1. Close all currently open windows to start with a clean desktop
             if (WindowManager.Instance != null)
@@ -249,33 +252,20 @@ namespace ComputerLearning
                 ? DesktopManager.Instance.DesktopIconContainer
                 : null;
 
-            VirtualMascot.Show("Welcome to Level 10: Context Menu!\nRight-click anywhere on the desktop wallpaper to open the options menu.", bgRect, new Vector2(0, 50));
+            VirtualMascot.Show(dialogs.l10_welcome, bgRect, new Vector2(0, 50));
 
             // Allow clicking anywhere on the wallpaper
             tutorialBlocker?.ClearTarget();
 
-            float wallpaperInactivityTimer = 0f;
             while (ContextMenuController.Instance == null || !ContextMenuController.Instance.IsMenuOpen)
             {
-                if (IsLeftMouseButtonDown())
-                {
-                    RecordMistake("Right-click anywhere on the desktop to open the options menu!", bgRect, true);
-                    wallpaperInactivityTimer = 0f;
-                }
-
-                wallpaperInactivityTimer += Time.deltaTime;
-                if (wallpaperInactivityTimer >= 7.0f)
-                {
-                    VirtualMascot.ShowContextualFeedback("Click the right mouse button on the desktop wallpaper to open the menu!", bgRect, 3.2f);
-                    wallpaperInactivityTimer = 0f;
-                }
                 yield return null;
             }
 
             RectTransform menuRect = ContextMenuController.Instance.GetComponent<RectTransform>();
             tutorialBlocker?.SetAllowedTarget(menuRect);
 
-            VirtualMascot.Show("Awesome! This is the Context Menu.\nClick on '+ New Text Document (.txt)' or '+ New Folder' to create an item!", menuRect, new Vector2(250, 0));
+            VirtualMascot.Show(dialogs.l10_clickMenu, menuRect, new Vector2(250, 0));
 
             bool actionConfirmed = false;
             Action<string> onMenuClick = (item) => { actionConfirmed = true; };
@@ -289,30 +279,15 @@ namespace ComputerLearning
                 FileExplorerApp.OnFileSystemChanged -= onFsChange;
             });
 
-            bool wasMenuOpen = true;
-            float menuInactivityTimer = 0f;
             while (!actionConfirmed)
             {
                 if (ContextMenuController.Instance != null && !ContextMenuController.Instance.IsMenuOpen && !actionConfirmed)
                 {
-                    if (wasMenuOpen)
-                    {
-                        wasMenuOpen = false;
-                        RecordMistake("The menu closed! Right-click again on the desktop and select an option!", bgRect);
-                    }
                     tutorialBlocker?.ClearTarget();
                 }
                 else if (ContextMenuController.Instance != null && ContextMenuController.Instance.IsMenuOpen)
                 {
-                    wasMenuOpen = true;
                     tutorialBlocker?.SetAllowedTarget(menuRect);
-                }
-
-                menuInactivityTimer += Time.deltaTime;
-                if (menuInactivityTimer >= 7.0f)
-                {
-                    VirtualMascot.ShowContextualFeedback("Click on '+ New Text Document (.txt)' or '+ New Folder' to continue!", menuRect, 3.2f);
-                    menuInactivityTimer = 0f;
                 }
                 yield return null;
             }
@@ -320,7 +295,7 @@ namespace ComputerLearning
             CleanupActiveSubscriptions();
 
             SoundManager.PlaySuccess();
-            VirtualMascot.Show("Fantastic! You've learned how to use the desktop context menu to create and customize files!", bgRect, new Vector2(0, 50));
+            VirtualMascot.Show(dialogs.l10_done, bgRect, new Vector2(0, 50));
             yield return new WaitForSeconds(2.8f);
 
             CompleteLevel(levelDef);
@@ -335,24 +310,13 @@ namespace ComputerLearning
             DraggableIcon notepadIcon = DesktopManager.Instance?.GetIconByName("Notepad");
             RectTransform iconRect = notepadIcon != null ? notepadIcon.GetComponent<RectTransform>() : null;
 
-            VirtualMascot.Show("Level 11: Word Processing!\nDouble-click the Notepad icon to open the text editor.", iconRect, new Vector2(160, -80));
+            VirtualMascot.Show(dialogs.l11_openNotepad, iconRect, new Vector2(160, -80));
             tutorialBlocker?.SetAllowedTarget(iconRect);
 
-            float openTimer = 0f;
             NotepadApp notepad = null;
             while (notepad == null || !notepad.gameObject.activeInHierarchy)
             {
                 notepad = FindAnyObjectByType<NotepadApp>();
-
-                if (notepad == null || !notepad.gameObject.activeInHierarchy)
-                {
-                    openTimer += Time.deltaTime;
-                    if (openTimer >= 7.0f)
-                    {
-                        VirtualMascot.ShowContextualFeedback("Double-click quickly on the Notepad icon to open it!", iconRect, 3.2f);
-                        openTimer = 0f;
-                    }
-                }
                 yield return null;
             }
 
@@ -362,7 +326,7 @@ namespace ComputerLearning
             notepad.SetText("");
             tutorialBlocker?.SetAllowedTarget(winRect);
 
-            VirtualMascot.Show("Now let's practice typing on your keyboard!\nType: 'Hello Computer!' in the notepad.", winRect, new Vector2(0, 180));
+            VirtualMascot.Show(dialogs.l11_typePrompt, winRect, new Vector2(0, 180));
 
             float timer = 0f;
             while (notepad == null || !notepad.gameObject.activeInHierarchy ||
@@ -373,23 +337,17 @@ namespace ComputerLearning
                     notepad = RecoverNotepadWindow(ref winRect);
                 }
 
-                // Check typing without focus
-                if (notepad != null && notepad.InputField != null && !notepad.InputField.isFocused && IsAnyKeyOrTypingWithoutMouse())
-                {
-                    RecordMistake("Click inside the blank notepad area first to start typing!", winRect);
-                }
-
                 timer += Time.deltaTime;
                 if (timer > 8.0f)
                 {
-                    VirtualMascot.Show("Remember: Type 'Hello Computer!' into the notepad.", winRect, new Vector2(0, 180));
+                    VirtualMascot.Show(dialogs.l11_typeReminder, winRect, new Vector2(0, 180));
                     timer = 0f;
                 }
                 yield return null;
             }
 
             SoundManager.PlaySuccess();
-            VirtualMascot.Show("Terrific! You typed the phrase perfectly!", winRect, new Vector2(0, 180));
+            VirtualMascot.Show(dialogs.l11_done, winRect, new Vector2(0, 180));
             yield return new WaitForSeconds(2.5f);
 
             CompleteLevel(levelDef);
@@ -415,7 +373,7 @@ namespace ComputerLearning
             tutorialBlocker?.SetAllowedTarget(winRect);
 
             // Step 1: Copy
-            VirtualMascot.Show("Let's master keyboard shortcuts!\nHighlight the word 'Cat' and press Ctrl + C on your keyboard to copy it.", winRect, new Vector2(0, 180));
+            VirtualMascot.Show(dialogs.l12_copyPrompt, winRect, new Vector2(0, 180));
 
             bool copied = false;
             Action<string> onCopy = (text) =>
@@ -426,72 +384,44 @@ namespace ComputerLearning
             NotepadApp.OnTextCopied += onCopy;
             RegisterCleanup(() => NotepadApp.OnTextCopied -= onCopy);
 
-            float copyTimer = 0f;
             while (!copied && (NotepadApp.VirtualClipboard == null || NotepadApp.VirtualClipboard.IndexOf("Cat", StringComparison.OrdinalIgnoreCase) < 0))
             {
                 if (notepad == null || !notepad.gameObject.activeInHierarchy)
                 {
                     notepad = RecoverNotepadWindow(ref winRect, "Cat Dog");
                 }
-
-                // Error: user pressed Ctrl+V before copying anything
-                if (IsCtrlPressed() && IsKeyJustPressed(UnityEngine.InputSystem.Key.V, KeyCode.V))
-                {
-                    RecordMistake("You need to copy the text first with Ctrl + C before pasting!", winRect);
-                }
-
-                copyTimer += Time.deltaTime;
-                if (copyTimer >= 8.0f)
-                {
-                    VirtualMascot.ShowContextualFeedback("Highlight 'Cat' and press Ctrl + C to copy it!", winRect, 3.2f);
-                    copyTimer = 0f;
-                }
                 yield return null;
             }
             CleanupActiveSubscriptions();
 
             SoundManager.PlaySuccess();
-            VirtualMascot.Show("Nice! 'Cat' is copied into your clipboard.", winRect, new Vector2(0, 180));
+            VirtualMascot.Show(dialogs.l12_copyDone, winRect, new Vector2(0, 180));
             yield return new WaitForSeconds(2.0f);
 
             // Step 2: Paste
-            VirtualMascot.Show("Now click at the end of the text and press Ctrl + V to Paste it!", winRect, new Vector2(0, 180));
+            VirtualMascot.Show(dialogs.l12_pastePrompt, winRect, new Vector2(0, 180));
 
             bool pasted = false;
             Action<string> onPaste = (text) => { pasted = true; };
             NotepadApp.OnTextPasted += onPaste;
             RegisterCleanup(() => NotepadApp.OnTextPasted -= onPaste);
 
-            float pasteTimer = 0f;
             while (!pasted && (notepad == null || notepad.CurrentText.Split(new[] { "Cat", "cat" }, StringSplitOptions.None).Length <= 2))
             {
                 if (notepad == null || !notepad.gameObject.activeInHierarchy)
                 {
                     notepad = RecoverNotepadWindow(ref winRect, "Cat Dog");
                 }
-
-                // Error: user pressed Ctrl+C again instead of Ctrl+V
-                if (IsCtrlPressed() && IsKeyJustPressed(UnityEngine.InputSystem.Key.C, KeyCode.C))
-                {
-                    RecordMistake("Press Ctrl + V to Paste your copied word!", winRect);
-                }
-
-                pasteTimer += Time.deltaTime;
-                if (pasteTimer >= 8.0f)
-                {
-                    VirtualMascot.ShowContextualFeedback("Press Ctrl + V on your keyboard to paste the word!", winRect, 3.2f);
-                    pasteTimer = 0f;
-                }
                 yield return null;
             }
             CleanupActiveSubscriptions();
 
             SoundManager.PlaySuccess();
-            VirtualMascot.Show("You pasted it! Now you have two Cats!", winRect, new Vector2(0, 180));
+            VirtualMascot.Show(dialogs.l12_pasteDone, winRect, new Vector2(0, 180));
             yield return new WaitForSeconds(2.0f);
 
             // Step 3: Cut
-            VirtualMascot.Show("Now highlight the word 'Dog' and press Ctrl + X to Cut it away!", winRect, new Vector2(0, 180));
+            VirtualMascot.Show(dialogs.l12_cutPrompt, winRect, new Vector2(0, 180));
 
             bool cut = false;
             Action<string> onCut = (text) =>
@@ -502,26 +432,18 @@ namespace ComputerLearning
             NotepadApp.OnTextCut += onCut;
             RegisterCleanup(() => NotepadApp.OnTextCut -= onCut);
 
-            float cutTimer = 0f;
             while (!cut && (notepad == null || notepad.CurrentText.Contains("Dog")))
             {
                 if (notepad == null || !notepad.gameObject.activeInHierarchy)
                 {
                     notepad = RecoverNotepadWindow(ref winRect, "Cat Dog Cat");
                 }
-
-                cutTimer += Time.deltaTime;
-                if (cutTimer >= 8.0f)
-                {
-                    VirtualMascot.ShowContextualFeedback("Highlight 'Dog' and press Ctrl + X to cut it!", winRect, 3.2f);
-                    cutTimer = 0f;
-                }
                 yield return null;
             }
             CleanupActiveSubscriptions();
 
             SoundManager.PlaySuccess();
-            VirtualMascot.Show("Brilliant! Ctrl + X cut the text and saved it to your clipboard!", winRect, new Vector2(0, 180));
+            VirtualMascot.Show(dialogs.l12_done, winRect, new Vector2(0, 180));
             yield return new WaitForSeconds(2.5f);
 
             CompleteLevel(levelDef);
@@ -547,7 +469,7 @@ namespace ComputerLearning
             notepad.PushUndoState();
             tutorialBlocker?.SetAllowedTarget(winRect);
 
-            VirtualMascot.Show("Welcome to Level 13!\nLook at this sentence: 'Computer Science is fun!'", winRect, new Vector2(0, 180));
+            VirtualMascot.Show(dialogs.l13_welcome, winRect, new Vector2(0, 180));
             yield return new WaitForSeconds(3.0f);
 
             if (notepad == null || !notepad.gameObject.activeInHierarchy)
@@ -560,14 +482,13 @@ namespace ComputerLearning
             if (notepad != null) notepad.SetText("Computer Science is OOPS!");
             SoundManager.PlayError();
 
-            VirtualMascot.Show("Oh no! Someone accidentally made a mistake!\nPress Ctrl + Z to Undo the mistake and restore your original words!", winRect, new Vector2(0, 180));
+            VirtualMascot.Show(dialogs.l13_undoPrompt, winRect, new Vector2(0, 180));
 
             bool undone = false;
             Action onUndo = () => { undone = true; };
             NotepadApp.OnTextUndo += onUndo;
             RegisterCleanup(() => NotepadApp.OnTextUndo -= onUndo);
 
-            float undoTimer = 0f;
             while (!undone && (notepad == null || !notepad.CurrentText.Contains("fun")))
             {
                 if (notepad == null || !notepad.gameObject.activeInHierarchy)
@@ -579,25 +500,12 @@ namespace ComputerLearning
                         notepad.SetText("Computer Science is OOPS!");
                     }
                 }
-
-                // Error: pressing Z without Ctrl
-                if (IsKeyWithoutCtrl(UnityEngine.InputSystem.Key.Z, KeyCode.Z))
-                {
-                    RecordMistake("Hold down the Control (Ctrl) key and press Z!", winRect);
-                }
-
-                undoTimer += Time.deltaTime;
-                if (undoTimer >= 8.0f)
-                {
-                    VirtualMascot.ShowContextualFeedback("Press Ctrl + Z to Undo the mistake!", winRect, 3.2f);
-                    undoTimer = 0f;
-                }
                 yield return null;
             }
             CleanupActiveSubscriptions();
 
             SoundManager.PlaySuccess();
-            VirtualMascot.Show("Magic! Ctrl + Z lets you undo mistakes in almost every program!", winRect, new Vector2(0, 180));
+            VirtualMascot.Show(dialogs.l13_done, winRect, new Vector2(0, 180));
             yield return new WaitForSeconds(2.8f);
 
             CompleteLevel(levelDef);
@@ -622,32 +530,18 @@ namespace ComputerLearning
             notepad.SetText("Important Note: Always save your files before closing the app!");
             tutorialBlocker?.SetAllowedTarget(winRect);
 
-            VirtualMascot.Show("Level 14: Save Shortcut!\nAlways save your files. Press Ctrl + S on your keyboard to save this note.", winRect, new Vector2(0, 180));
+            VirtualMascot.Show(dialogs.l14_saveShortcutPrompt, winRect, new Vector2(0, 180));
 
             bool saveOpened = false;
             Action onSaveKey = () => { saveOpened = true; };
             NotepadApp.OnSaveShortcut += onSaveKey;
             RegisterCleanup(() => NotepadApp.OnSaveShortcut -= onSaveKey);
 
-            float saveShortcutTimer = 0f;
             while (!saveOpened && !FileExplorerApp.IsSaveDialogOpen)
             {
                 if (notepad == null || !notepad.gameObject.activeInHierarchy)
                 {
                     notepad = RecoverNotepadWindow(ref winRect, "Important Note: Always save your files before closing the app!");
-                }
-
-                // Error: pressing S without Ctrl
-                if (IsKeyWithoutCtrl(UnityEngine.InputSystem.Key.S, KeyCode.S))
-                {
-                    RecordMistake("Press Ctrl and S together to save your document!", winRect);
-                }
-
-                saveShortcutTimer += Time.deltaTime;
-                if (saveShortcutTimer >= 8.0f)
-                {
-                    VirtualMascot.ShowContextualFeedback("Press Ctrl + S on your keyboard to open the save window!", winRect, 3.2f);
-                    saveShortcutTimer = 0f;
                 }
                 yield return null;
             }
@@ -657,7 +551,7 @@ namespace ComputerLearning
 
             // Allow clicking on Save dialog
             tutorialBlocker?.ClearTarget();
-            VirtualMascot.Show("The Save window is open! Type a name for your file (like 'MyNotes') and click SAVE.", winRect, new Vector2(0, 180));
+            VirtualMascot.Show(dialogs.l14_saveModalPrompt, winRect, new Vector2(0, 180));
 
             bool fileSaved = false;
             Action onFsChange = () => { fileSaved = true; };
@@ -671,7 +565,7 @@ namespace ComputerLearning
             CleanupActiveSubscriptions();
 
             SoundManager.PlaySuccess();
-            VirtualMascot.Show("Document saved! Ctrl + S is the most useful shortcut to keep your work safe.", winRect, new Vector2(0, 180));
+            VirtualMascot.Show(dialogs.l14_done, winRect, new Vector2(0, 180));
             yield return new WaitForSeconds(2.8f);
 
             CompleteLevel(levelDef);
@@ -683,7 +577,7 @@ namespace ComputerLearning
         {
             yield return new WaitForSeconds(0.6f);
 
-            VirtualMascot.Show("Level 15: The Grand Word Challenge!\nLet's test all your typing and keyboard skills together.", null, new Vector2(0, 80));
+            VirtualMascot.Show(dialogs.l15_welcome, null, new Vector2(0, 80));
             yield return new WaitForSeconds(3.0f);
 
             NotepadApp notepad = EnsureNotepadOpen();
@@ -700,7 +594,7 @@ namespace ComputerLearning
             tutorialBlocker?.SetAllowedTarget(winRect);
 
             // Step 1: Type
-            VirtualMascot.Show("Step 1 of 5: Type the words: 'Red Blue Green'", winRect, new Vector2(0, 180));
+            VirtualMascot.Show(dialogs.l15_step1, winRect, new Vector2(0, 180));
             while (notepad == null || !notepad.gameObject.activeInHierarchy ||
                    notepad.CurrentText.IndexOf("Red", StringComparison.OrdinalIgnoreCase) < 0 ||
                    notepad.CurrentText.IndexOf("Blue", StringComparison.OrdinalIgnoreCase) < 0)
@@ -715,7 +609,7 @@ namespace ComputerLearning
             yield return new WaitForSeconds(1.2f);
 
             // Step 2: Copy & Paste
-            VirtualMascot.Show("Step 2 of 5: Highlight 'Blue', press Ctrl + C, and press Ctrl + V to duplicate it!", winRect, new Vector2(0, 180));
+            VirtualMascot.Show(dialogs.l15_step2, winRect, new Vector2(0, 180));
             bool pasteDone = false;
             Action<string> onPaste = (t) => { pasteDone = true; };
             NotepadApp.OnTextPasted += onPaste;
@@ -734,7 +628,7 @@ namespace ComputerLearning
             yield return new WaitForSeconds(1.2f);
 
             // Step 3: Cut
-            VirtualMascot.Show("Step 3 of 5: Highlight 'Red' and press Ctrl + X to cut it away!", winRect, new Vector2(0, 180));
+            VirtualMascot.Show(dialogs.l15_step3, winRect, new Vector2(0, 180));
             bool cutDone = false;
             Action<string> onCut = (t) => { cutDone = true; };
             NotepadApp.OnTextCut += onCut;
@@ -753,7 +647,7 @@ namespace ComputerLearning
             yield return new WaitForSeconds(1.2f);
 
             // Step 4: Undo
-            VirtualMascot.Show("Step 4 of 5: Press Ctrl + Z to Undo the cut and bring 'Red' back!", winRect, new Vector2(0, 180));
+            VirtualMascot.Show(dialogs.l15_step4, winRect, new Vector2(0, 180));
             bool undoDone = false;
             Action onUndo = () => { undoDone = true; };
             NotepadApp.OnTextUndo += onUndo;
@@ -770,13 +664,6 @@ namespace ComputerLearning
                         notepad.SetText("Blue Green Blue");
                     }
                 }
-
-                // Error: pressing Z without Ctrl
-                if (IsKeyWithoutCtrl(UnityEngine.InputSystem.Key.Z, KeyCode.Z))
-                {
-                    RecordMistake("Hold down Ctrl and press Z to undo!", winRect);
-                }
-
                 yield return null;
             }
             CleanupActiveSubscriptions();
@@ -784,7 +671,7 @@ namespace ComputerLearning
             yield return new WaitForSeconds(1.2f);
 
             // Step 5: Save
-            VirtualMascot.Show("Step 5 of 5: Finally, press Ctrl + S and click SAVE to store your finished note!", winRect, new Vector2(0, 180));
+            VirtualMascot.Show(dialogs.l15_step5, winRect, new Vector2(0, 180));
             tutorialBlocker?.ClearTarget();
 
             bool saved = false;
@@ -794,16 +681,12 @@ namespace ComputerLearning
 
             while (!saved)
             {
-                if (IsKeyWithoutCtrl(UnityEngine.InputSystem.Key.S, KeyCode.S))
-                {
-                    RecordMistake("Press Ctrl and S together to save your document!", winRect);
-                }
                 yield return null;
             }
             CleanupActiveSubscriptions();
 
             SoundManager.PlaySuccess();
-            VirtualMascot.Show("Outstanding mastery! You aced all Notepad shortcuts and operations!", winRect, new Vector2(0, 180));
+            VirtualMascot.Show(dialogs.l15_done, winRect, new Vector2(0, 180));
             yield return new WaitForSeconds(2.8f);
 
             CompleteLevel(levelDef);
@@ -818,7 +701,7 @@ namespace ComputerLearning
             DraggableIcon paintIcon = DesktopManager.Instance?.GetIconByName("Paint");
             RectTransform iconRect = paintIcon != null ? paintIcon.GetComponent<RectTransform>() : null;
 
-            VirtualMascot.Show("Level 16: Digital Artist in Paint!\nDouble-click the Paint icon to open the drawing studio.", iconRect, new Vector2(160, -80));
+            VirtualMascot.Show(dialogs.l16_openPaint, iconRect, new Vector2(160, -80));
             tutorialBlocker?.SetAllowedTarget(iconRect);
 
             PaintApp paint = null;
@@ -833,7 +716,7 @@ namespace ComputerLearning
             tutorialBlocker?.SetAllowedTarget(winRect);
 
             // Step 1: Draw
-            VirtualMascot.Show("Pick any color from the palette and draw a shape or smile on the canvas using your mouse!", winRect, new Vector2(0, 180));
+            VirtualMascot.Show(dialogs.l16_drawPrompt, winRect, new Vector2(0, 180));
 
             bool strokeDrawn = false;
             Action onStroke = () => { strokeDrawn = true; };
@@ -851,11 +734,11 @@ namespace ComputerLearning
             CleanupActiveSubscriptions();
 
             SoundManager.PlaySuccess();
-            VirtualMascot.Show("Nice drawing! Now let's test undoing a brush stroke.", winRect, new Vector2(0, 180));
+            VirtualMascot.Show(dialogs.l16_drawDone, winRect, new Vector2(0, 180));
             yield return new WaitForSeconds(2.0f);
 
             // Step 2: Undo
-            VirtualMascot.Show("Press Ctrl + Z to Undo your last stroke!", winRect, new Vector2(0, 180));
+            VirtualMascot.Show(dialogs.l16_undoPrompt, winRect, new Vector2(0, 180));
 
             bool undone = false;
             Action onUndo = () => { undone = true; };
@@ -868,22 +751,16 @@ namespace ComputerLearning
                 {
                     paint = RecoverPaintWindow(ref winRect);
                 }
-
-                if (IsKeyWithoutCtrl(UnityEngine.InputSystem.Key.Z, KeyCode.Z))
-                {
-                    RecordMistake("Hold down Ctrl and press Z to undo your brush stroke!", winRect);
-                }
-
                 yield return null;
             }
             CleanupActiveSubscriptions();
 
             SoundManager.PlaySuccess();
-            VirtualMascot.Show("Stroke undone! You can undo any drawing mistake with Ctrl + Z.", winRect, new Vector2(0, 180));
+            VirtualMascot.Show(dialogs.l16_undoDone, winRect, new Vector2(0, 180));
             yield return new WaitForSeconds(2.0f);
 
             // Step 3: Save
-            VirtualMascot.Show("Now press Ctrl + S and confirm in the Save dialog to store your artwork in Pictures!", winRect, new Vector2(0, 180));
+            VirtualMascot.Show(dialogs.l16_savePrompt, winRect, new Vector2(0, 180));
             tutorialBlocker?.ClearTarget();
 
             bool saved = false;
@@ -893,16 +770,12 @@ namespace ComputerLearning
 
             while (!saved)
             {
-                if (IsKeyWithoutCtrl(UnityEngine.InputSystem.Key.S, KeyCode.S))
-                {
-                    RecordMistake("Press Ctrl and S together to save your artwork!", winRect);
-                }
                 yield return null;
             }
             CleanupActiveSubscriptions();
 
             SoundManager.PlaySuccess();
-            VirtualMascot.Show("Magnificent! You have mastered all mouse, keyboard, and creative tools on the Virtual Desktop!", winRect, new Vector2(0, 180));
+            VirtualMascot.Show(dialogs.l16_done, winRect, new Vector2(0, 180));
             yield return new WaitForSeconds(3.0f);
 
             CompleteLevel(levelDef);
@@ -1005,10 +878,9 @@ namespace ComputerLearning
             }
 
             float duration = Mathf.Max(2.5f, Time.time - levelStartTime);
-            int mistakes = currentLevelMistakes;
-            int totalActions = Mathf.Max(1, 5 + mistakes);
-            float accuracy = Mathf.Clamp(((float)5 / totalActions) * 100f, 0f, 100f);
-            LevelMedal medal = ProgressData.CalculateMedal(accuracy, mistakes);
+            float accuracy = 100f;
+            int mistakes = 0;
+            LevelMedal medal = LevelMedal.Gold;
 
             if (ProgressData.Instance != null && levelDef != null && !string.IsNullOrEmpty(levelDef.levelId))
             {
@@ -1050,6 +922,8 @@ namespace ComputerLearning
             }
             if (loaded != null) return loaded;
 
+            GuidedLevelsDialogs d = LoadDialogsStatic();
+
             // Create in-memory fallback
             LevelDefinition def = ScriptableObject.CreateInstance<LevelDefinition>();
             def.levelId = levelId.ToLower().Trim();
@@ -1058,36 +932,36 @@ namespace ComputerLearning
             switch (def.levelId)
             {
                 case "level10":
-                    def.displayName = "Level 10: Context Menu";
-                    def.instructionText = "Learn how to use the desktop Context Menu!\nRight-click on the desktop to explore options.";
+                    def.displayName = d.def_l10_name;
+                    def.instructionText = d.def_l10_desc;
                     break;
                 case "level11":
-                    def.displayName = "Level 11: Open Notepad & Typing";
-                    def.instructionText = "Learn how to open Notepad and type phrases on your keyboard!";
+                    def.displayName = d.def_l11_name;
+                    def.instructionText = d.def_l11_desc;
                     break;
                 case "level12":
-                    def.displayName = "Level 12: Copy, Paste & Cut";
-                    def.instructionText = "Learn keyboard shortcuts!\nCtrl + C to copy, Ctrl + V to paste, and Ctrl + X to cut.";
+                    def.displayName = d.def_l12_name;
+                    def.instructionText = d.def_l12_desc;
                     break;
                 case "level13":
-                    def.displayName = "Level 13: Undo Shortcut";
-                    def.instructionText = "Learn how to undo mistakes with Ctrl + Z!";
+                    def.displayName = d.def_l13_name;
+                    def.instructionText = d.def_l13_desc;
                     break;
                 case "level14":
-                    def.displayName = "Level 14: Save Shortcut";
-                    def.instructionText = "Learn how to safely save files with Ctrl + S!";
+                    def.displayName = d.def_l14_name;
+                    def.instructionText = d.def_l14_desc;
                     break;
                 case "level15":
-                    def.displayName = "Level 15: Notepad Evaluation";
-                    def.instructionText = "Complete test: type, copy, cut, undo, and save your document in Notepad!";
+                    def.displayName = d.def_l15_name;
+                    def.instructionText = d.def_l15_desc;
                     break;
                 case "level16":
-                    def.displayName = "Level 16: Paint Usage";
-                    def.instructionText = "Open Paint, draw artwork, undo with Ctrl + Z, and save with Ctrl + S!";
+                    def.displayName = d.def_l16_name;
+                    def.instructionText = d.def_l16_desc;
                     break;
                 default:
                     def.displayName = $"Level {def.levelId}";
-                    def.instructionText = "Follow the virtual mascot instructions.";
+                    def.instructionText = d.def_default_desc;
                     break;
             }
 

@@ -63,15 +63,15 @@ namespace ComputerLearning
                     if (ProgressData.Instance != null) ProgressData.Instance.UnlockLevel(targetLevelId);
                     targetIcon.GetType().GetField("isLocked", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)?.SetValue(targetIcon, false);
                     
-                    string introMessage = "Double click here to start the next practice!";
+                    string introMessage = dialogs.second_default;
                     if (targetLevelId == "level6")
-                        introMessage = !string.IsNullOrEmpty(dialogs?.second_right_click) ? dialogs.second_right_click : "Let's learn something new: Right Click! Double click here to start.";
+                        introMessage = dialogs.second_right_click;
                     else if (targetLevelId == "level7")
-                        introMessage = !string.IsNullOrEmpty(dialogs?.second_click_hold) ? dialogs.second_click_hold : "Great! Now let's try Click and Hold. Open this app.";
+                        introMessage = dialogs.second_click_hold;
                     else if (targetLevelId == "level8")
-                        introMessage = !string.IsNullOrEmpty(dialogs?.second_drag_drop) ? dialogs.second_drag_drop : "Awesome! Time for Drag and Drop. Double click!";
+                        introMessage = dialogs.second_drag_drop;
                     else if (targetLevelId == "level9")
-                        introMessage = !string.IsNullOrEmpty(dialogs?.second_mixed) ? dialogs.second_mixed : "You're a master! Let's mix everything together in a final challenge!";
+                        introMessage = dialogs.second_mixed;
 
                     while (true)
                     {
@@ -102,7 +102,7 @@ namespace ComputerLearning
                         }
                         
                         // Otherwise, they closed it early. Remind them.
-                        introMessage = "Oops! You closed it without finishing! Double click to try again.";
+                        introMessage = dialogs.second_closed_early;
                         yield return new WaitForSeconds(1f); // small breather before asking again
                     }
 

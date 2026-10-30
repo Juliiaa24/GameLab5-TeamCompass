@@ -47,11 +47,63 @@ namespace ComputerLearning
             }
         }
 
+        private void OnEnable()
+        {
+            LocalizationManager.OnLanguageChanged += RefreshLocalizedUI;
+        }
+
+        private void OnDisable()
+        {
+            LocalizationManager.OnLanguageChanged -= RefreshLocalizedUI;
+        }
+
         private void Start()
         {
             SetupNavigation();
+            RefreshLocalizedUI();
+        }
+
+        public void RefreshLocalizedUI()
+        {
+            LocalizeStaticSceneTexts();
             PopulateAssessmentData();
             PopulateSkillsData();
+        }
+
+        private void LocalizeStaticSceneTexts()
+        {
+            UIDialogs ui = UIDialogs.Current;
+            Canvas canvas = GetComponentInParent<Canvas>();
+            Transform root = canvas != null ? canvas.transform : transform;
+
+            if (backToMenuButton != null)
+            {
+                TMP_Text t = backToMenuButton.GetComponentInChildren<TMP_Text>(true);
+                if (t != null) t.text = ui.stats_btn_back;
+            }
+
+            if (retakeAssessmentButton != null)
+            {
+                TMP_Text t = retakeAssessmentButton.GetComponentInChildren<TMP_Text>(true);
+                if (t != null) t.text = ui.stats_btn_retake;
+            }
+
+            SetTextAtRelativePath(root, "HeaderBar/Title", ui.stats_page_title);
+            SetTextAtRelativePath(root, "ContentArea/AssessmentCard/Header/CardTitle", ui.stats_card_assessment_title);
+            SetTextAtRelativePath(root, "ContentArea/AssessmentCard/Header/CardSubtitle", ui.stats_card_assessment_subtitle);
+            SetTextAtRelativePath(root, "ContentArea/SkillsCard/Header/CardTitle", ui.stats_card_skills_title);
+            SetTextAtRelativePath(root, "ContentArea/SkillsCard/Header/CardSubtitle", ui.stats_card_skills_subtitle);
+        }
+
+        private void SetTextAtRelativePath(Transform root, string path, string textValue)
+        {
+            if (root == null || string.IsNullOrEmpty(textValue)) return;
+            Transform target = root.Find(path);
+            if (target != null)
+            {
+                TMP_Text tmp = target.GetComponent<TMP_Text>();
+                if (tmp != null) tmp.text = textValue;
+            }
         }
 
         private void SetupNavigation()
@@ -120,6 +172,7 @@ namespace ComputerLearning
 
         public void PopulateAssessmentData()
         {
+            UIDialogs ui = UIDialogs.Current;
             AssessmentExportReport latestReport = LoadLatestAssessmentReport();
 
             if (latestReport == null || latestReport.skills == null || latestReport.skills.Count == 0)
@@ -128,7 +181,7 @@ namespace ComputerLearning
                 if (emptyStateText != null)
                 {
                     emptyStateText.gameObject.SetActive(true);
-                    emptyStateText.text = "No assessment records found yet.\n\nPlay from the Main Menu or click 'Retake Assessment' to record your first diagnostic evaluation!";
+                    emptyStateText.text = ui.stats_empty_state;
                 }
                 return;
             }
@@ -138,13 +191,13 @@ namespace ComputerLearning
 
             if (summaryText != null)
             {
-                string timeInfo = !string.IsNullOrEmpty(latestReport.formattedTime) ? latestReport.formattedTime : "Recent";
-                summaryText.text = $"Completed at: {timeInfo} | Tasks: {latestReport.completedTasks}/{latestReport.totalTasksTested}";
+                string timeInfo = !string.IsNullOrEmpty(latestReport.formattedTime) ? latestReport.formattedTime : ui.stats_recent_label;
+                summaryText.text = string.Format(ui.stats_summary_format, timeInfo, latestReport.completedTasks, latestReport.totalTasksTested);
             }
 
             if (avgScoreText != null)
             {
-                avgScoreText.text = $"Average: {latestReport.averageScore:0}%";
+                avgScoreText.text = string.Format(ui.stats_average_format, latestReport.averageScore);
             }
 
             if (assessmentTableContainer != null)
@@ -197,6 +250,7 @@ namespace ComputerLearning
         public void PopulateSkillsData()
         {
             if (skillsTableContainer == null) return;
+            UIDialogs ui = UIDialogs.Current;
 
             // Clear existing rows
             foreach (Transform child in skillsTableContainer)
@@ -206,13 +260,13 @@ namespace ComputerLearning
 
             var skills = new (string id, string name)[]
             {
-                ("mouse_move", "Move Cursor"),
-                ("hover", "Hover"),
-                ("click", "Single Click"),
-                ("double_click", "Double Click"),
-                ("right_click", "Right Click"),
-                ("click_hold", "Click and Hold"),
-                ("drag_drop", "Drag and Drop")
+                ("mouse_move", ui.skill_mouse_move),
+                ("hover", ui.skill_hover),
+                ("click", ui.skill_click),
+                ("double_click", ui.skill_double_click),
+                ("right_click", ui.skill_right_click),
+                ("click_hold", ui.skill_click_hold),
+                ("drag_drop", ui.skill_drag_drop)
             };
 
             foreach (var sk in skills)
@@ -224,6 +278,7 @@ namespace ComputerLearning
 
         private void CreateSkillRow(Transform parent, string skillName, float score)
         {
+            UIDialogs ui = UIDialogs.Current;
             GameObject row = new GameObject("Row_" + skillName, typeof(RectTransform), typeof(Image));
             row.transform.SetParent(parent, false);
             row.GetComponent<RectTransform>().sizeDelta = new Vector2(0f, 44f);
@@ -238,7 +293,7 @@ namespace ComputerLearning
 
             // Score Percentage (Top Right)
             Color scoreCol = (score >= 80f) ? new Color(0.09f, 0.64f, 0.29f) : (score >= 50f) ? new Color(0.85f, 0.47f, 0.02f) : new Color(0.45f, 0.50f, 0.58f);
-            string levelLabel = (score >= 80f) ? "Mastered" : (score >= 50f) ? "Proficient" : "Practicing";
+            string levelLabel = (score >= 80f) ? ui.stats_level_mastered : (score >= 50f) ? ui.stats_level_proficient : ui.stats_level_practicing;
 
             TextMeshProUGUI scoreTxt = CreateText(row.transform, $"{score:0}% ({levelLabel})", 12, scoreCol, TextAlignmentOptions.Right);
             scoreTxt.fontStyle = FontStyles.Bold;

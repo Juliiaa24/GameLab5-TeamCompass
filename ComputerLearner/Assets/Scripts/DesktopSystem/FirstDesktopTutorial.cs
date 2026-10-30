@@ -71,7 +71,7 @@ namespace ComputerLearning
                     
                     // 1. Highlight the icon and explain
                     string mascotMsg = dialogs.first_default;
-                    if (targetLevelId == "assessment") mascotMsg = "Let's start with a quick assessment! Double click the Assessment icon!";
+                    if (targetLevelId == "assessment") mascotMsg = dialogs.first_assessment;
                     else if (targetLevelId == "level1") mascotMsg = dialogs.first_move;
                     else if (targetLevelId == "level2") mascotMsg = dialogs.first_hover;
                     else if (targetLevelId == "level3") mascotMsg = dialogs.first_click;

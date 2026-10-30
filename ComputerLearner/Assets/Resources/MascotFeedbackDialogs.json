@@ -1,0 +1,37 @@
+{
+    "companionWelcome": "Hello! I'm your desktop pet! Click on me whenever you want tips.",
+    "companionMessages": [
+        "Hello! I'm your desktop pet! Feel free to explore at your own pace.",
+        "Open the Minigames folder to practice your clicking accuracy and speed!",
+        "Did you know? Right-click anywhere on the desktop to create a New Folder.",
+        "Try opening Notepad to practice typing words on the keyboard!",
+        "Remember: double-click quickly to open folders and apps!",
+        "Click the Start button on the bottom-left to see all apps and options.",
+        "You're doing great with the mouse! Keep it up!",
+        "You can drag windows from their top bar to move them around the desktop.",
+        "If a window is too small, click the square button to maximize it!",
+        "I'll always be here in the corner whenever you need advice!"
+    ],
+    "wrongLeftClick": "That was a left click! Try using the right mouse button!",
+    "wrongRightClick": "Wrong click! Try using the left mouse button.",
+    "almostOut": "Almost out! Aim closer to the center!",
+    "singleClick": "Just a single click here!",
+    "inactivityMessages": [
+        "Take your time! Whenever you're ready, give it a click!",
+        "Need a hand? Aim carefully at the target area!",
+        "You're doing great! Keep going!",
+        "Don't worry, take all the time you need!"
+    ],
+    "holdKeepPressing": "Keep pressing! Hold the button down a bit longer!",
+    "holdStayInside": "Stay inside the circle while holding down!",
+    "clickMissed": "Missed! Aim carefully inside the target circle!",
+    "doubleClickFast": "Click twice quickly! Double-click!",
+    "dragAlmost": "Almost! Drag the item all the way into the target zone!",
+    "hoverKeepSteady": "Oops! Keep the cursor steady inside the target until the bar fills!",
+    "hoverNoClick": "No need to click! Just hold the mouse cursor over the circle!",
+    "hoverDontClickOutside": "Don't click outside! Move your mouse inside the circle and hold it steady!",
+    "moveKeepMoving": "Keep moving the mouse to clean all the spots!",
+    "moveNoClick": "Just move the mouse over the spots without clicking!",
+    "rightClickReminder": "Click the right mouse button on the target circle!",
+    "rightClickAimInside": "Aim inside the circle and click the right mouse button!"
+}

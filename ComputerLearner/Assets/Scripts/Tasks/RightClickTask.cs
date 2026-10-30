@@ -21,7 +21,7 @@ namespace ComputerLearning
             if (!hasShownInactivityReminder && (Time.time - lastInteractionTime) >= 5.0f)
             {
                 hasShownInactivityReminder = true;
-                VirtualMascot.ShowContextualFeedback("Click the right mouse button on the target circle!", transform as RectTransform, 2.8f);
+                VirtualMascot.ShowContextualFeedback(VirtualMascot.FeedbackDialogs.rightClickReminder, transform as RectTransform, 2.8f);
             }
         }
 
@@ -29,7 +29,7 @@ namespace ComputerLearning
         {
             if (IsFinished) return;
             RegisterAttempt(true);
-            VirtualMascot.ShowContextualFeedback("Aim inside the circle and click the right mouse button!", transform as RectTransform, 2.8f);
+            VirtualMascot.ShowContextualFeedback(VirtualMascot.FeedbackDialogs.rightClickAimInside, transform as RectTransform, 2.8f);
         }
 
         public void OnPointerClick(PointerEventData eventData)

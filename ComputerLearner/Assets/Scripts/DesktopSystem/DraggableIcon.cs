@@ -251,9 +251,12 @@ namespace ComputerLearning
             if (iconImg != null) originalColor = iconImg.color;
 
             bool actuallyLocked = isLocked;
-            if (levelDefinition != null && ProgressData.Instance != null)
+            if (levelDefinition != null)
             {
-                actuallyLocked = !ProgressData.Instance.IsLevelUnlocked(levelDefinition.levelId);
+                TMPro.TextMeshProUGUI lvlLabel = GetComponentInChildren<TMPro.TextMeshProUGUI>();
+                if (lvlLabel != null) lvlLabel.text = levelDefinition.GetLocalizedDisplayName();
+                if (ProgressData.Instance != null)
+                    actuallyLocked = !ProgressData.Instance.IsLevelUnlocked(levelDefinition.levelId);
             }
 
             if (actuallyLocked)
@@ -343,6 +346,11 @@ namespace ComputerLearning
             this.contentPrefab = contentPref;
             this.levelDefinition = levelDef;
             this.isLocked = lockedState;
+            if (this.levelDefinition != null)
+            {
+                TMPro.TextMeshProUGUI lvlLabel = GetComponentInChildren<TMPro.TextMeshProUGUI>();
+                if (lvlLabel != null) lvlLabel.text = this.levelDefinition.GetLocalizedDisplayName();
+            }
 
             UnityEngine.UI.Image img = GetComponent<UnityEngine.UI.Image>();
             if (img != null)
@@ -921,7 +929,7 @@ namespace ComputerLearning
             string resolvedTitle = null;
             if (levelDefinition != null)
             {
-                resolvedTitle = levelDefinition.displayName;
+                resolvedTitle = levelDefinition.GetLocalizedDisplayName();
             }
             else
             {
@@ -1012,7 +1020,7 @@ namespace ComputerLearning
 
             if (isNewWindow && appWindow != null && levelDefinition != null)
             {
-                appWindow.setTitle(levelDefinition.displayName);
+                appWindow.setTitle(levelDefinition.GetLocalizedDisplayName());
 
                 if (!DesktopTour.IsTourRunning)
                 {

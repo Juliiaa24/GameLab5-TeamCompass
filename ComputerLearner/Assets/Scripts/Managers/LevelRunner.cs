@@ -35,10 +35,15 @@ namespace ComputerLearning
 
         private void Awake()
         {
+            ReloadDialogs();
+            appWindow = GetComponentInParent<Window>();
+        }
+
+        private void ReloadDialogs()
+        {
             TextAsset json = LocalizationManager.LoadLocalizedResource("TutorialDialogs");
             if (json != null) dialogs = JsonUtility.FromJson<TutorialDialogs>(json.text);
-            else dialogs = new TutorialDialogs();
-            appWindow = GetComponentInParent<Window>();
+            if (dialogs == null) dialogs = new TutorialDialogs();
         }
 
         public void StartLevel(LevelDefinition level)
@@ -48,6 +53,9 @@ namespace ComputerLearning
                 Debug.LogError("[LevelRunner] Invalid LevelDefinition provided.");
                 return;
             }
+
+            ReloadDialogs();
+            if (appWindow == null) appWindow = GetComponentInParent<Window>();
 
             _currentLevel = level;
             currentTaskIndex = 0;
@@ -60,9 +68,11 @@ namespace ComputerLearning
             extraTaskMistakes = 0;
             hasRecordedLevelStartTime = false;
             
-            if (appWindow != null && !string.IsNullOrEmpty(level.displayName))
+            string localizedTitle = level.GetLocalizedDisplayName();
+            if (appWindow != null && !string.IsNullOrEmpty(localizedTitle))
             {
-                appWindow.gameObject.name = "Window_" + level.displayName;
+                appWindow.gameObject.name = "Window_" + localizedTitle;
+                appWindow.setTitle(localizedTitle);
             }
 
             ShowInstructionScreen();
@@ -72,8 +82,10 @@ namespace ComputerLearning
         {
             if (currentLevel == null) return;
             
+            string localizedInstruction = currentLevel.GetLocalizedInstructionText();
+
             // If there's no instruction text, skip directly
-            if (string.IsNullOrEmpty(currentLevel.instructionText))
+            if (string.IsNullOrEmpty(localizedInstruction))
             {
                 SpawnNextTask();
                 return;
@@ -96,7 +108,7 @@ namespace ComputerLearning
             UnityEngine.UI.Text text = textObj.GetComponent<UnityEngine.UI.Text>();
             text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
             if (text.font == null) text.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
-            text.text = currentLevel.instructionText;
+            text.text = localizedInstruction;
             text.fontSize = 36;
             text.alignment = TextAnchor.MiddleCenter;
             text.color = Color.white;
@@ -106,19 +118,28 @@ namespace ComputerLearning
 
             if (isAutoSequence)
             {
-                // Generate a lively, less robotic description based on the level ID
-                string livelyMessage = "Get ready! " + currentLevel.instructionText;
-                
-                if (currentLevel.levelId.Contains("1")) 
-                    livelyMessage = "Welcome to your very first app!\nLet's practice moving the mouse. Just hover over the dirt spots to clean them!";
-                else if (currentLevel.levelId.Contains("2"))
-                    livelyMessage = "Awesome job so far!\nNow things will move a bit faster. Keep those clicks sharp!";
-                else if (currentLevel.levelId.Contains("3"))
-                    livelyMessage = "Time for something new!\nLet's keep practicing your computer skills. Make sure to read the instructions!";
-                else if (currentLevel.levelId.Contains("4"))
-                    livelyMessage = "You're a pro now!\nLet's test what you've learned in the Adaptive Challenge!";
-                else if (currentLevel.levelId.Contains("5"))
-                    livelyMessage = "One more trick!\nDouble click quickly to clear the targets!";
+                // Generate a lively, localized description based on the level ID
+                string livelyMessage = dialogs.intro_default + localizedInstruction;
+                string lvlId = currentLevel.levelId != null ? currentLevel.levelId.Trim().ToLowerInvariant() : string.Empty;
+
+                if (lvlId == "level1")
+                    livelyMessage = dialogs.intro_move;
+                else if (lvlId == "level2")
+                    livelyMessage = dialogs.intro_hover;
+                else if (lvlId == "level3")
+                    livelyMessage = dialogs.intro_click;
+                else if (lvlId == "level4")
+                    livelyMessage = dialogs.intro_adaptive;
+                else if (lvlId == "level5")
+                    livelyMessage = dialogs.intro_double_click;
+                else if (lvlId == "level6")
+                    livelyMessage = dialogs.intro_right_click;
+                else if (lvlId == "level7")
+                    livelyMessage = dialogs.intro_click_hold;
+                else if (lvlId == "level8")
+                    livelyMessage = dialogs.intro_drag_drop;
+                else if (lvlId == "level9")
+                    livelyMessage = dialogs.intro_mixed;
 
                 VirtualMascot.Show(livelyMessage, appWindow.ContentArea, new Vector2(0, -80));
                 
@@ -142,7 +163,7 @@ namespace ComputerLearning
                 btnTextRect.offsetMin = Vector2.zero; btnTextRect.offsetMax = Vector2.zero;
                 UnityEngine.UI.Text btnText = btnTextObj.GetComponent<UnityEngine.UI.Text>();
                 btnText.font = text.font;
-                btnText.text = "START!";
+                btnText.text = !string.IsNullOrEmpty(dialogs.level_start_button) ? dialogs.level_start_button : "START!";
                 btnText.fontSize = 28;
                 btnText.alignment = TextAnchor.MiddleCenter;
                 btnText.color = Color.white;
@@ -199,7 +220,9 @@ namespace ComputerLearning
                 }
 
                 string medalName = LevelScoreRecord.GetMedalName(medal);
-                string celebrationMsg = $"Awesome job! You earned the {medalName.ToUpper()} Medal!\nAccuracy: {accuracy:F0}%  Time: {totalDuration:F1}s";
+                string celebrationMsg = !string.IsNullOrEmpty(dialogs.level_celebration_format)
+                    ? string.Format(dialogs.level_celebration_format, medalName.ToUpper(), accuracy, totalDuration)
+                    : $"Awesome job! You earned the {medalName.ToUpper()} Medal!\nAccuracy: {accuracy:F0}%  Time: {totalDuration:F1}s";
 
                 VirtualMascot.ShowContextualFeedback(celebrationMsg, appWindow != null ? appWindow.ContentArea : null, 5f);
                 IsCompleted = true;
@@ -324,7 +347,7 @@ namespace ComputerLearning
                 if (currentLevel != null)
                 {
                     result.levelId = currentLevel.levelId;
-                    result.levelName = currentLevel.displayName;
+                    result.levelName = currentLevel.GetLocalizedDisplayName();
                 }
 
                 // Apply scores

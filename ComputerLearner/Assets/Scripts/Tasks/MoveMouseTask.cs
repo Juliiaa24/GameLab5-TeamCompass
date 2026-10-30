@@ -36,7 +36,7 @@ namespace ComputerLearning
             if (!hasShownBetweenReminder && (Time.time - lastCleanedTime) >= 4.5f && spotsCleaned < spotsToSpawn)
             {
                 hasShownBetweenReminder = true;
-                VirtualMascot.ShowContextualFeedback("Keep moving the mouse to clean all the spots!", contentArea, 2.8f);
+                VirtualMascot.ShowContextualFeedback(VirtualMascot.FeedbackDialogs.moveKeepMoving, contentArea, 2.8f);
             }
         }
 
@@ -44,14 +44,14 @@ namespace ComputerLearning
         {
             if (IsFinished) return;
             RegisterAttempt(true);
-            VirtualMascot.ShowContextualFeedback("Just move the mouse over the spots without clicking!", contentArea, 2.8f);
+            VirtualMascot.ShowContextualFeedback(VirtualMascot.FeedbackDialogs.moveNoClick, contentArea, 2.8f);
         }
 
         public void OnSpotClicked()
         {
             if (IsFinished) return;
             RegisterAttempt(true);
-            VirtualMascot.ShowContextualFeedback("Just move the mouse over the spots without clicking!", contentArea, 2.8f);
+            VirtualMascot.ShowContextualFeedback(VirtualMascot.FeedbackDialogs.moveNoClick, contentArea, 2.8f);
         }
 
         private void CreateProgressBar()
@@ -126,7 +126,6 @@ namespace ComputerLearning
                     // Visuals
                     Image img = spotObj.GetComponent<Image>();
                     img.color = new Color(0.6f, 0.4f, 0.2f, 0.8f); // Dirt brown
-                    // Removed Knob.psd reference // Built-in circle sprite
                     
                     // Logic
                     DirtSpot spotLogic = spotObj.GetComponent<DirtSpot>();
@@ -183,5 +182,3 @@ namespace ComputerLearning
         }
     }
 }
-
-

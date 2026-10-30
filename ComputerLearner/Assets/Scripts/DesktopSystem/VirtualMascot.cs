@@ -10,9 +10,73 @@ using System.Collections;
 
 namespace ComputerLearning
 {
+    [System.Serializable]
+    public class MascotFeedbackDialogs
+    {
+        public string companionWelcome = "Hello! I'm your desktop pet! Click on me whenever you want tips.";
+        public string[] companionMessages = new string[]
+        {
+            "Hello! I'm your desktop pet! Feel free to explore at your own pace.",
+            "Open the Minigames folder to practice your clicking accuracy and speed!",
+            "Did you know? Right-click anywhere on the desktop to create a New Folder.",
+            "Try opening Notepad to practice typing words on the keyboard!",
+            "Remember: double-click quickly to open folders and apps!",
+            "Click the Start button on the bottom-left to see all apps and options.",
+            "You're doing great with the mouse! Keep it up!",
+            "You can drag windows from their top bar to move them around the desktop.",
+            "If a window is too small, click the square button to maximize it!",
+            "I'll always be here in the corner whenever you need advice!"
+        };
+        public string wrongLeftClick = "That was a left click! Try using the right mouse button!";
+        public string wrongRightClick = "Wrong click! Try using the left mouse button.";
+        public string almostOut = "Almost out! Aim closer to the center!";
+        public string singleClick = "Just a single click here!";
+        public string[] inactivityMessages = new string[]
+        {
+            "Take your time! Whenever you're ready, give it a click!",
+            "Need a hand? Aim carefully at the target area!",
+            "You're doing great! Keep going!",
+            "Don't worry, take all the time you need!"
+        };
+        public string holdKeepPressing = "Keep pressing! Hold the button down a bit longer!";
+        public string holdStayInside = "Stay inside the circle while holding down!";
+        public string clickMissed = "Missed! Aim carefully inside the target circle!";
+        public string doubleClickFast = "Click twice quickly! Double-click!";
+        public string dragAlmost = "Almost! Drag the item all the way into the target zone!";
+        public string hoverKeepSteady = "Oops! Keep the cursor steady inside the target until the bar fills!";
+        public string hoverNoClick = "No need to click! Just hold the mouse cursor over the circle!";
+        public string hoverDontClickOutside = "Don't click outside! Move your mouse inside the circle and hold it steady!";
+        public string moveKeepMoving = "Keep moving the mouse to clean all the spots!";
+        public string moveNoClick = "Just move the mouse over the spots without clicking!";
+        public string rightClickReminder = "Click the right mouse button on the target circle!";
+        public string rightClickAimInside = "Aim inside the circle and click the right mouse button!";
+    }
+
     public class VirtualMascot : MonoBehaviour, IPointerClickHandler
     {
         public static VirtualMascot Instance { get; private set; }
+
+        private static MascotFeedbackDialogs cachedFeedbackDialogs;
+        private static string cachedFeedbackLang;
+
+        public static MascotFeedbackDialogs FeedbackDialogs
+        {
+            get
+            {
+                string currentLang = LocalizationManager.CurrentLanguage;
+                if (cachedFeedbackDialogs == null || cachedFeedbackLang != currentLang)
+                {
+                    cachedFeedbackLang = currentLang;
+                    TextAsset json = LocalizationManager.LoadLocalizedResource("MascotFeedbackDialogs");
+                    cachedFeedbackDialogs = json != null ? JsonUtility.FromJson<MascotFeedbackDialogs>(json.text) : null;
+                    if (cachedFeedbackDialogs == null)
+                    {
+                        cachedFeedbackDialogs = new MascotFeedbackDialogs();
+                    }
+                }
+                return cachedFeedbackDialogs;
+            }
+        }
 
         [Header("References")]
         public RectTransform mascotRect;
@@ -285,31 +349,25 @@ namespace ComputerLearning
 
         public static void ShowWrongClickFeedback(RectTransform target, bool isRightClickExpected)
         {
-            string msg = isRightClickExpected
-                ? "That was a left click! Try using the right mouse button!"
-                : "Wrong click! Try using the left mouse button.";
+            MascotFeedbackDialogs fb = FeedbackDialogs;
+            string msg = isRightClickExpected ? fb.wrongLeftClick : fb.wrongRightClick;
             ShowContextualFeedback(msg, target, 3.5f);
         }
 
         public static void ShowAlmostOutFeedback(RectTransform target)
         {
-            ShowContextualFeedback("Almost out! Aim closer to the center!", target, 3.0f);
+            ShowContextualFeedback(FeedbackDialogs.almostOut, target, 3.0f);
         }
 
         public static void ShowSingleClickFeedback(RectTransform target)
         {
-            ShowContextualFeedback("Just a single click here!", target, 3.0f);
+            ShowContextualFeedback(FeedbackDialogs.singleClick, target, 3.0f);
         }
 
         public static void ShowInactivityReminder(RectTransform target = null)
         {
-            string[] inactivityPool = new string[]
-            {
-                "Take your time! Whenever you're ready, give it a click!",
-                "Need a hand? Aim carefully at the target area!",
-                "You're doing great! Keep going!",
-                "Don't worry, take all the time you need!"
-            };
+            string[] inactivityPool = FeedbackDialogs.inactivityMessages;
+            if (inactivityPool == null || inactivityPool.Length == 0) return;
             string msg = inactivityPool[UnityEngine.Random.Range(0, inactivityPool.Length)];
             ShowContextualFeedback(msg, target, 4.0f);
         }
@@ -425,8 +483,7 @@ namespace ComputerLearning
             }
 
             // Welcome greeting on desktop startup
-            string welcome = "Hello! I'm your desktop pet! Click on me whenever you want tips.";
-            ShowCompanionMessage(welcome);
+            ShowCompanionMessage(FeedbackDialogs.companionWelcome);
         }
 
         private void UpdateCompanionPosition()
@@ -528,7 +585,7 @@ namespace ComputerLearning
 
         private string GetNextCompanionMessage()
         {
-            string[] pool = englishCompanionMessages;
+            string[] pool = FeedbackDialogs.companionMessages;
             if (pool == null || pool.Length == 0) return "Hello!";
 
             int newIndex;
@@ -544,34 +601,6 @@ namespace ComputerLearning
             lastMessageIndex = newIndex;
             return pool[newIndex];
         }
-
-        private static readonly string[] spanishCompanionMessages = new string[]
-        {
-            "¡Hola! ¡Soy tu compañero virtual! Explora el escritorio a tu ritmo.",
-            "¡Abre la carpeta de Minijuegos para poner a prueba tu puntería y rapidez!",
-            "¿Sabías que con el click derecho en el fondo puedes crear una Nueva Carpeta?",
-            "¡Prueba a abrir el Bloc de Notas para practicar escribiendo con el teclado!",
-            "¡Recuerda que con doble click rápido puedes abrir cualquier icono o carpeta!",
-            "En el botón Inicio abajo a la izquierda encontrarás todos tus programas y opciones.",
-            "¡Lo estás haciendo genial usando el ratón! ¡Sigue practicando!",
-            "Puedes arrastrar las ventanas desde su barra superior para moverlas por la pantalla.",
-            "Si una ventana es pequeña, ¡haz click en el botón del cuadrado para maximizarla!",
-            "¡Aquí estaré siempre en la esquina para acompañarte y darte consejos!"
-        };
-
-        private static readonly string[] englishCompanionMessages = new string[]
-        {
-            "Hello! I'm your desktop pet! Feel free to explore at your own pace.",
-            "Open the Minigames folder to practice your clicking accuracy and speed!",
-            "Did you know? Right-click anywhere on the desktop to create a New Folder.",
-            "Try opening Notepad to practice typing words on the keyboard!",
-            "Remember: double-click quickly to open folders and apps!",
-            "Click the Start button on the bottom-left to see all apps and options.",
-            "You're doing great with the mouse! Keep it up!",
-            "You can drag windows from their top bar to move them around the desktop.",
-            "If a window is too small, click the square button to maximize it!",
-            "I'll always be here in the corner whenever you need advice!"
-        };
         #endregion
     }
 }

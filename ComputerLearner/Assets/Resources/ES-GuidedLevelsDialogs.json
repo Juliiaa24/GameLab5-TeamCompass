@@ -1,0 +1,57 @@
+{
+  "l10_welcome": "¡Bienvenido al Nivel 10: Menú contextual!\nHaz clic derecho en cualquier hueco libre del escritorio para abrir el menú de opciones.",
+  "l10_clickMenu": "¡Muy bien! Este es el menú contextual.\n¡Elige '+ New Text Document (.txt)' o '+ New Folder' para crear un archivo o una carpeta nueva!",
+  "l10_done": "¡Fantástico! ¡Ya sabes cómo usar el clic derecho en el escritorio para crear cosas nuevas!",
+
+  "l11_openNotepad": "¡Nivel 11: Escribir en el ordenador!\nHaz doble clic en el icono de Notepad para abrir el bloc de notas.",
+  "l11_typePrompt": "¡Vamos a practicar con el teclado!\nEscribe exactamente: 'Hello Computer!' en el bloc de notas.",
+  "l11_typeReminder": "Recuerda: escribe 'Hello Computer!' dentro del bloc de notas.",
+  "l11_done": "¡Estupendo! ¡Lo has escrito a la perfección!",
+
+  "l12_copyPrompt": "¡Vamos a aprender los atajos de teclado más útiles!\nSelecciona con el ratón la palabra 'Cat' y pulsa Ctrl + C para copiarla.",
+  "l12_copyDone": "¡Genial! Ya tienes la palabra 'Cat' copiada en el portapapeles.",
+  "l12_pastePrompt": "¡Ahora haz clic al final del texto y pulsa Ctrl + V para pegarla!",
+  "l12_pasteDone": "¡La has pegado! ¡Ahora aparece 'Cat' dos veces!",
+  "l12_cutPrompt": "¡Por último, selecciona la palabra 'Dog' y pulsa Ctrl + X para cortarla!",
+  "l12_done": "¡Brillante! Con Ctrl + X cortas el texto seleccionado y lo guardas en el portapapeles.",
+
+  "l13_welcome": "¡Bienvenido al Nivel 13!\nFíjate en esta frase: 'Computer Science is fun!'",
+  "l13_undoPrompt": "¡Uy, alguien ha borrado parte de la frase sin querer!\n¡Pulsa Ctrl + Z para deshacer el fallo y recuperar el texto original!",
+  "l13_done": "¡Como por arte de magia! Ctrl + Z te permite corregir equivocaciones en casi cualquier programa.",
+
+  "l14_saveShortcutPrompt": "¡Nivel 14: Guardar tu trabajo!\nEs importante guardar tus archivos para no perderlos. Pulsa Ctrl + S en el teclado.",
+  "l14_saveModalPrompt": "¡Se ha abierto la ventana para guardar! Ponle un nombre a tu archivo (por ejemplo, 'MisNotas') y pulsa en SAVE.",
+  "l14_done": "¡Archivo guardado! Ctrl + S es el mejor atajo para poner tu trabajo a salvo.",
+
+  "l15_welcome": "¡Nivel 15: El gran reto del Bloc de notas!\nVamos a poner a prueba todo lo que has aprendido con el teclado.",
+  "l15_step1": "Paso 1 de 5: Escribe las palabras: 'Red Blue Green'",
+  "l15_step2": "Paso 2 de 5: ¡Selecciona 'Blue', cópiala con Ctrl + C y pégala con Ctrl + V para duplicarla!",
+  "l15_step3": "Paso 3 de 5: ¡Selecciona 'Red' y pulsa Ctrl + X para cortarla!",
+  "l15_step4": "Paso 4 de 5: ¡Pulsa Ctrl + Z para deshacer el corte y que vuelva a aparecer 'Red'!",
+  "l15_step5": "Paso 5 de 5: Para terminar, ¡pulsa Ctrl + S y confirma en SAVE para guardar tu nota!",
+  "l15_done": "¡Impresionante! ¡Dominas todos los atajos y herramientas del Bloc de notas!",
+
+  "l16_openPaint": "¡Nivel 16: Creatividad en Paint!\nHaz doble clic en el icono de Paint para abrir el programa de dibujo.",
+  "l16_drawPrompt": "¡Elige el color que más te guste de la paleta y haz un dibujo sobre el lienzo arrastrando el ratón!",
+  "l16_drawDone": "¡Qué buen trazo! Ahora vamos a probar cómo borrar el último paso si nos equivocamos.",
+  "l16_undoPrompt": "¡Pulsa Ctrl + Z para deshacer el último trazo que has dibujado!",
+  "l16_undoDone": "¡Trazo deshecho! Recuerda que en Paint también puedes usar Ctrl + Z siempre que te equivoques.",
+  "l16_savePrompt": "¡Ahora pulsa Ctrl + S y confirma en la ventana para guardar tu dibujo en la carpeta Pictures!",
+  "l16_done": "¡Magnífico! ¡Ya dominas el ratón, el teclado y los programas creativos de tu Escritorio Virtual!",
+
+  "def_l10_name": "Nivel 10: Menú contextual",
+  "def_l10_desc": "¡Aprende a usar el menú contextual del escritorio!\nHaz clic derecho sobre el fondo para ver las opciones.",
+  "def_l11_name": "Nivel 11: Bloc de notas y escritura",
+  "def_l11_desc": "¡Aprende a abrir el Bloc de notas y a escribir frases con el teclado!",
+  "def_l12_name": "Nivel 12: Copiar, pegar y cortar",
+  "def_l12_desc": "¡Domina los atajos de teclado!\nCtrl + C para copiar, Ctrl + V para pegar y Ctrl + X para cortar.",
+  "def_l13_name": "Nivel 13: Atajo para deshacer",
+  "def_l13_desc": "¡Aprende a deshacer cualquier error al instante con Ctrl + Z!",
+  "def_l14_name": "Nivel 14: Atajo para guardar",
+  "def_l14_desc": "¡Aprende a guardar tus archivos de forma segura con Ctrl + S!",
+  "def_l15_name": "Nivel 15: Reto del Bloc de notas",
+  "def_l15_desc": "Reto completo: ¡escribe, copia, corta, deshaz y guarda tu documento en el Bloc de notas!",
+  "def_l16_name": "Nivel 16: Dibujo en Paint",
+  "def_l16_desc": "¡Abre Paint, haz un dibujo, usa Ctrl + Z para deshacer y guárdalo con Ctrl + S!",
+  "def_default_desc": "Sigue los pasos que te indica la mascota virtual."
+}

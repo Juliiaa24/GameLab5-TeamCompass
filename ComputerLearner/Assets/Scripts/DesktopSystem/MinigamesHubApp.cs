@@ -2,9 +2,10 @@
  * Author: Diego
  * Date: 13/10/2026
  * Description: Minigames Hub launcher to play educational mouse exercises inside simulated OS.
-*/
+ */
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
 namespace ComputerLearning
 {
@@ -39,45 +40,75 @@ namespace ComputerLearning
             if (btnPlayAdaptive != null) btnPlayAdaptive.onClick.AddListener(PlayAdaptive);
 
             UpdateButtonStates();
+            UpdateLocalizedLabels();
         }
 
         private void OnEnable()
         {
             UpdateButtonStates();
+            UpdateLocalizedLabels();
             if (ProgressData.Instance != null)
                 ProgressData.Instance.OnProgressChanged += UpdateButtonStates;
+            LocalizationManager.OnLanguageChanged += UpdateLocalizedLabels;
         }
 
         private void OnDisable()
         {
             if (ProgressData.Instance != null)
                 ProgressData.Instance.OnProgressChanged -= UpdateButtonStates;
+            LocalizationManager.OnLanguageChanged -= UpdateLocalizedLabels;
         }
         #endregion
 
         #region Public Methods
         public void PlayTargets()
         {
-            LaunchLevel(targetsLevel, "Targets & Clicks");
+            LaunchLevel(targetsLevel, UIDialogs.Current.minigames_targets);
         }
 
         public void PlayHover()
         {
-            LaunchLevel(hoverLevel, "Tracking & Hover");
+            LaunchLevel(hoverLevel, UIDialogs.Current.minigames_hover);
         }
 
         public void PlayDoubleClick()
         {
-            LaunchLevel(doubleClickLevel, "Fast Double Click");
+            LaunchLevel(doubleClickLevel, UIDialogs.Current.minigames_double_click);
         }
 
         public void PlayAdaptive()
         {
-            LaunchLevel(adaptiveLevel, "Adaptive Practice");
+            LaunchLevel(adaptiveLevel, UIDialogs.Current.minigames_adaptive);
         }
         #endregion
 
         #region Private Methods
+        private void UpdateLocalizedLabels()
+        {
+            UIDialogs ui = UIDialogs.Current;
+            UpdateCardLabels(btnPlayTargets, ui.minigames_targets, ui.minigames_btn_play);
+            UpdateCardLabels(btnPlayHover, ui.minigames_hover, ui.minigames_btn_play);
+            UpdateCardLabels(btnPlayDoubleClick, ui.minigames_double_click, ui.minigames_btn_play);
+            UpdateCardLabels(btnPlayAdaptive, ui.minigames_adaptive, ui.minigames_btn_play);
+        }
+
+        private void UpdateCardLabels(Button playBtn, string cardTitle, string btnLabel)
+        {
+            if (playBtn == null) return;
+            TMP_Text btnText = playBtn.GetComponentInChildren<TMP_Text>(true);
+            if (btnText != null) btnText.text = btnLabel;
+
+            if (playBtn.transform.parent != null)
+            {
+                Transform titleT = playBtn.transform.parent.Find("Title");
+                if (titleT != null)
+                {
+                    TMP_Text titleText = titleT.GetComponent<TMP_Text>();
+                    if (titleText != null) titleText.text = cardTitle;
+                }
+            }
+        }
+
         private void UpdateButtonStates()
         {
             UpdateButton(btnPlayTargets, targetsLevel);
@@ -118,7 +149,7 @@ namespace ComputerLearning
             }
 
             GameObject winPrefab = baseWindowPrefab != null ? baseWindowPrefab : Resources.Load<GameObject>("BaseWindow");
-            string title = def != null ? def.displayName : fallbackTitle;
+            string title = def != null ? def.GetLocalizedDisplayName() : fallbackTitle;
 
             Window win = WindowManager.Instance.OpenWindow(winPrefab, null, title);
             if (win != null && def != null)

@@ -6,6 +6,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
+using TMPro;
 
 namespace ComputerLearning
 {
@@ -66,6 +67,17 @@ namespace ComputerLearning
             }
         }
 
+        private void OnEnable()
+        {
+            UpdateLocalizedMenuLabels();
+            LocalizationManager.OnLanguageChanged += UpdateLocalizedMenuLabels;
+        }
+
+        private void OnDisable()
+        {
+            LocalizationManager.OnLanguageChanged -= UpdateLocalizedMenuLabels;
+        }
+
         private void OnDestroy()
         {
             if (instance == this) instance = null;
@@ -108,6 +120,8 @@ namespace ComputerLearning
             {
                 btnExitMenu.onClick.AddListener(ExitToMainMenu);
             }
+
+            UpdateLocalizedMenuLabels();
         }
 
         private void Update()
@@ -133,6 +147,35 @@ namespace ComputerLearning
         #endregion
 
         #region Public Methods
+        public void UpdateLocalizedMenuLabels()
+        {
+            UIDialogs ui = UIDialogs.Current;
+            SetButtonText(startButton, ui.start_menu_btn_start);
+            SetButtonText(btnFileExplorer, ui.start_menu_file_explorer);
+            SetButtonText(btnNotepad, ui.start_menu_notepad);
+            SetButtonText(btnPaint, ui.start_menu_paint);
+            SetButtonText(btnMinigamesHub, ui.start_menu_minigames);
+            SetButtonText(btnStats, ui.start_menu_stats);
+            SetButtonText(btnExitMenu, ui.start_menu_exit);
+
+            if (startMenuPanel != null)
+            {
+                Transform header = startMenuPanel.transform.Find("HeaderTitle");
+                if (header != null)
+                {
+                    TMP_Text headerTmp = header.GetComponent<TMP_Text>();
+                    if (headerTmp != null) headerTmp.text = ui.start_menu_header;
+                }
+            }
+        }
+
+        private void SetButtonText(Button btn, string textValue)
+        {
+            if (btn == null || string.IsNullOrEmpty(textValue)) return;
+            TMP_Text tmp = btn.GetComponentInChildren<TMP_Text>(true);
+            if (tmp != null) tmp.text = textValue;
+        }
+
         public void ToggleMenu()
         {
             if (startMenuPanel == null) return;
@@ -140,6 +183,7 @@ namespace ComputerLearning
             startMenuPanel.SetActive(newState);
             if (newState)
             {
+                UpdateLocalizedMenuLabels();
                 DraggableIcon.ClearSelection();
                 startMenuPanel.transform.SetAsLastSibling();
             }
@@ -294,7 +338,7 @@ namespace ComputerLearning
         public void OpenMinigamesHub()
         {
             CloseMenu();
-            OpenAppWindow("Minigames Hub", minigamesHubPrefab, ref minigamesHubWindow);
+            OpenAppWindow(UIDialogs.Current.start_menu_minigames, minigamesHubPrefab, ref minigamesHubWindow);
         }
 
         public void OpenStats()

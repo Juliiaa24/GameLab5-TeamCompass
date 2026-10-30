@@ -27,5 +27,15 @@ namespace ComputerLearning
         [Header("Fixed Mode Tasks")]
         [Tooltip("The tasks that make up this level, executed in order (if isAdaptive is false).")]
         public List<TaskDefinition> tasks;
+
+        public string GetLocalizedDisplayName()
+        {
+            return UIDialogs.Current.GetLevelDisplayName(levelId, displayName);
+        }
+
+        public string GetLocalizedInstructionText()
+        {
+            return UIDialogs.Current.GetLevelInstructionText(levelId, instructionText);
+        }
     }
 }

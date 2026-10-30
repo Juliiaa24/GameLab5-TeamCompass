@@ -1,0 +1,57 @@
+{
+  "l10_welcome": "Welcome to Level 10: Context Menu!\nRight-click anywhere on the desktop wallpaper to open the options menu.",
+  "l10_clickMenu": "Awesome! This is the Context Menu.\nClick on '+ New Text Document (.txt)' or '+ New Folder' to create an item!",
+  "l10_done": "Fantastic! You've learned how to use the desktop context menu to create and customize files!",
+
+  "l11_openNotepad": "Level 11: Word Processing!\nDouble-click the Notepad icon to open the text editor.",
+  "l11_typePrompt": "Now let's practice typing on your keyboard!\nType: 'Hello Computer!' in the notepad.",
+  "l11_typeReminder": "Remember: Type 'Hello Computer!' into the notepad.",
+  "l11_done": "Terrific! You typed the phrase perfectly!",
+
+  "l12_copyPrompt": "Let's master keyboard shortcuts!\nHighlight the word 'Cat' and press Ctrl + C on your keyboard to copy it.",
+  "l12_copyDone": "Nice! 'Cat' is copied into your clipboard.",
+  "l12_pastePrompt": "Now click at the end of the text and press Ctrl + V to Paste it!",
+  "l12_pasteDone": "You pasted it! Now you have two Cats!",
+  "l12_cutPrompt": "Now highlight the word 'Dog' and press Ctrl + X to Cut it away!",
+  "l12_done": "Brilliant! Ctrl + X cut the text and saved it to your clipboard!",
+
+  "l13_welcome": "Welcome to Level 13!\nLook at this sentence: 'Computer Science is fun!'",
+  "l13_undoPrompt": "Oh no! Someone accidentally made a mistake!\nPress Ctrl + Z to Undo the mistake and restore your original words!",
+  "l13_done": "Magic! Ctrl + Z lets you undo mistakes in almost every program!",
+
+  "l14_saveShortcutPrompt": "Level 14: Save Shortcut!\nAlways save your files. Press Ctrl + S on your keyboard to save this note.",
+  "l14_saveModalPrompt": "The Save window is open! Type a name for your file (like 'MyNotes') and click SAVE.",
+  "l14_done": "Document saved! Ctrl + S is the most useful shortcut to keep your work safe.",
+
+  "l15_welcome": "Level 15: The Grand Word Challenge!\nLet's test all your typing and keyboard skills together.",
+  "l15_step1": "Step 1 of 5: Type the words: 'Red Blue Green'",
+  "l15_step2": "Step 2 of 5: Highlight 'Blue', press Ctrl + C, and press Ctrl + V to duplicate it!",
+  "l15_step3": "Step 3 of 5: Highlight 'Red' and press Ctrl + X to cut it away!",
+  "l15_step4": "Step 4 of 5: Press Ctrl + Z to Undo the cut and bring 'Red' back!",
+  "l15_step5": "Step 5 of 5: Finally, press Ctrl + S and click SAVE to store your finished note!",
+  "l15_done": "Outstanding mastery! You aced all Notepad shortcuts and operations!",
+
+  "l16_openPaint": "Level 16: Digital Artist in Paint!\nDouble-click the Paint icon to open the drawing studio.",
+  "l16_drawPrompt": "Pick any color from the palette and draw a shape or smile on the canvas using your mouse!",
+  "l16_drawDone": "Nice drawing! Now let's test undoing a brush stroke.",
+  "l16_undoPrompt": "Press Ctrl + Z to Undo your last stroke!",
+  "l16_undoDone": "Stroke undone! You can undo any drawing mistake with Ctrl + Z.",
+  "l16_savePrompt": "Now press Ctrl + S and confirm in the Save dialog to store your artwork in Pictures!",
+  "l16_done": "Magnificent! You have mastered all mouse, keyboard, and creative tools on the Virtual Desktop!",
+
+  "def_l10_name": "Level 10: Context Menu",
+  "def_l10_desc": "Learn how to use the desktop Context Menu!\nRight-click on the desktop to explore options.",
+  "def_l11_name": "Level 11: Open Notepad & Typing",
+  "def_l11_desc": "Learn how to open Notepad and type phrases on your keyboard!",
+  "def_l12_name": "Level 12: Copy, Paste & Cut",
+  "def_l12_desc": "Learn keyboard shortcuts!\nCtrl + C to copy, Ctrl + V to paste, and Ctrl + X to cut.",
+  "def_l13_name": "Level 13: Undo Shortcut",
+  "def_l13_desc": "Learn how to undo mistakes with Ctrl + Z!",
+  "def_l14_name": "Level 14: Save Shortcut",
+  "def_l14_desc": "Learn how to safely save files with Ctrl + S!",
+  "def_l15_name": "Level 15: Notepad Evaluation",
+  "def_l15_desc": "Complete test: type, copy, cut, undo, and save your document in Notepad!",
+  "def_l16_name": "Level 16: Paint Usage",
+  "def_l16_desc": "Open Paint, draw artwork, undo with Ctrl + Z, and save with Ctrl + S!",
+  "def_default_desc": "Follow the virtual mascot instructions."
+}

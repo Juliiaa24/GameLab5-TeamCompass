@@ -16,6 +16,7 @@ namespace ComputerLearning
 
         public const string LANG_EN = "EN";
         public const string LANG_ES = "ES";
+        public const string LANG_NO = "NO";
 
         public static event Action OnLanguageChanged;
 

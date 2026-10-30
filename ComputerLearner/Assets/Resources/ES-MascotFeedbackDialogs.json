@@ -1,0 +1,37 @@
+{
+    "companionWelcome": "¡Hola! ¡Soy tu mascota del escritorio! Haz clic en mí siempre que quieras algún consejo.",
+    "companionMessages": [
+        "¡Hola! ¡Soy tu mascota del escritorio! Explora todo a tu ritmo.",
+        "¡Abre la carpeta de minijuegos para practicar tu puntería y velocidad con el ratón!",
+        "¿Sabías que...? Si haces clic derecho en cualquier parte del escritorio, puedes crear una carpeta nueva.",
+        "¡Prueba a abrir el Bloc de notas para practicar escribiendo palabras con el teclado!",
+        "Recuerda: ¡haz doble clic rápido para abrir carpetas y aplicaciones!",
+        "Haz clic en el botón de Inicio abajo a la izquierda para ver todas las aplicaciones y opciones.",
+        "¡Se te está dando genial el ratón! ¡Sigue así!",
+        "Puedes arrastrar las ventanas desde su barra superior para moverlas por el escritorio.",
+        "Si una ventana se ve muy pequeña, ¡haz clic en el botón del cuadrado para maximizarla!",
+        "¡Siempre estaré aquí en la esquina por si necesitas ayuda!"
+    ],
+    "wrongLeftClick": "¡Eso ha sido clic izquierdo! Prueba con el botón derecho del ratón.",
+    "wrongRightClick": "¡Botón equivocado! Prueba con el botón izquierdo del ratón.",
+    "almostOut": "¡Casi fuera! Apunta más cerca del centro.",
+    "singleClick": "¡Aquí basta con un solo clic!",
+    "inactivityMessages": [
+        "¡Tómate tu tiempo! Cuando quieras, haz clic.",
+        "¿Necesitas ayuda? ¡Apunta bien al objetivo!",
+        "¡Lo estás haciendo genial! ¡Sigue así!",
+        "¡No te preocupes, tómate todo el tiempo que necesites!"
+    ],
+    "holdKeepPressing": "¡Sigue apretando! ¡Mantén pulsado el botón un poquito más!",
+    "holdStayInside": "¡Mantente dentro del círculo mientras mantienes pulsado!",
+    "clickMissed": "¡Casi! ¡Apunta bien dentro del círculo!",
+    "doubleClickFast": "¡Haz dos clics seguidos bien rápido! ¡Doble clic!",
+    "dragAlmost": "¡Casi lo tienes! ¡Arrastra el objeto hasta meterlo del todo en la zona marcada!",
+    "hoverKeepSteady": "¡Uy! Mantén el cursor quieto dentro del objetivo hasta que se llene la barra.",
+    "hoverNoClick": "¡No hace falta hacer clic! Solo mantén el cursor encima del círculo.",
+    "hoverDontClickOutside": "¡No hagas clic fuera! Lleva el ratón dentro del círculo y mantenlo ahí.",
+    "moveKeepMoving": "¡Sigue moviendo el ratón para limpiar todas las manchas!",
+    "moveNoClick": "¡Solo pasa el ratón por encima de las manchas sin hacer clic!",
+    "rightClickReminder": "¡Haz clic con el botón derecho del ratón sobre el círculo!",
+    "rightClickAimInside": "¡Apunta dentro del círculo y haz clic con el botón derecho del ratón!"
+}

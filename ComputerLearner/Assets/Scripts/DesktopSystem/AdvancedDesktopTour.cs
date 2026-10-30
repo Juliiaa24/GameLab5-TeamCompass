@@ -10,13 +10,53 @@ using System;
 
 namespace ComputerLearning
 {
+    [Serializable]
+    public class AdvancedDesktopTourDialogs
+    {
+        public string step1_welcome = "Welcome back! Now that you've mastered tasks, let's learn how to organize and manipulate windows like a pro!";
+        public string step2_moveIcon = "You can drag desktop icons anywhere to organize your space. Try moving this Practice Note to another spot!";
+        public string step2_reminder = "Click and hold the left mouse button on the icon to drag it.";
+        public string step2_perfect = "Perfect!";
+        public string step3_openWindow = "Now, open the Practice Note by double-clicking on it.";
+        public string step3_reminder = "Remember: double-click quickly to open it.";
+        public string step4_moveWindow = "Windows can be moved anywhere on your screen! Drag the top title bar to move the window.";
+        public string step4_reminder = "Click on the top title bar and drag the window.";
+        public string step4_veryGood = "Very good!";
+        public string step5_resizeWindow = "If you move your mouse to the window edges or corners, you can drag to make it bigger or smaller. Try resizing it!";
+        public string step5_reminder = "Drag from the corners or edges to resize the window.";
+        public string step5_awesome = "Awesome! You can resize any window to fit your needs.";
+        public string step6_maximize = "You can also make the window fill the whole screen! Click the Maximize button.";
+        public string step6_maximizeReminder = "Click the square Maximize button in the top-right.";
+        public string step6_restore = "Now click the button again to restore it to normal size.";
+        public string step6_restoreReminder = "Click the restore button in the top-right.";
+        public string step6_greatJob = "Great job!";
+        public string step7_minimize = "To temporarily hide a window, click the Minimize button.";
+        public string step7_minimizeReminder = "Click the minus Minimize button.";
+        public string step7_taskbar = "It hides right here on your taskbar! Click the icon to bring it back.";
+        public string step7_taskbarReminder = "Click the taskbar button to restore your window.";
+        public string step7_thereItIs = "There it is!";
+        public string step8_close = "When you are finished with a window, click the red X to close it.";
+        public string step8_closeReminder = "Click the red X to close the window.";
+        public string step9_recycle = "Finally, if you don't need a file anymore, you can throw it in the Recycle Bin. Drag the Practice Note there!";
+        public string step9_recycleReminder = "Drag the Practice Note icon over the Recycle Bin and drop it.";
+        public string step9_congrats = "Congratulations! You've mastered all desktop and window controls. Have fun exploring!";
+    }
+
     public class AdvancedDesktopTour : MonoBehaviour
     {
         public static bool IsTourRunning { get; private set; }
 
+        private AdvancedDesktopTourDialogs dialogs;
         private TutorialBlocker tutorialBlocker;
         private RecycleBinIcon cachedRecycleBin;
         private Action<DraggableIcon> activeRecycledListener;
+
+        private void LoadDialogs()
+        {
+            TextAsset json = LocalizationManager.LoadLocalizedResource("AdvancedDesktopTourDialogs");
+            if (json != null) dialogs = JsonUtility.FromJson<AdvancedDesktopTourDialogs>(json.text);
+            if (dialogs == null) dialogs = new AdvancedDesktopTourDialogs();
+        }
 
         private void SetupTutorialBlocker()
         {
@@ -52,6 +92,7 @@ namespace ComputerLearning
         private IEnumerator Start()
         {
             IsTourRunning = true;
+            LoadDialogs();
             Debug.Log("[AdvancedDesktopTour] Starting AdvancedDesktopTour sequence...");
             SetupTutorialBlocker();
             tutorialBlocker?.SetAllowedTarget(null);
@@ -127,28 +168,28 @@ namespace ComputerLearning
 
             // 1. Welcome
             tutorialBlocker?.SetAllowedTarget(null);
-            VirtualMascot.Show("Welcome back! Now that you've mastered tasks, let's learn how to organize and manipulate windows like a pro!", iconRect, new Vector2(250, 0));
+            VirtualMascot.Show(dialogs.step1_welcome, iconRect, new Vector2(250, 0));
             yield return new WaitForSeconds(4.0f);
 
             // 2. Move Icon
             appIcon.AllowDoubleClick = false; // Block opening it by accident
-            VirtualMascot.Show("You can drag desktop icons anywhere to organize your space. Try moving this Practice Note to another spot!", iconRect, new Vector2(250, 0));
+            VirtualMascot.Show(dialogs.step2_moveIcon, iconRect, new Vector2(250, 0));
             tutorialBlocker?.SetAllowedTarget(iconRect);
 
             Vector3 startIconPos = iconRect.position;
             yield return StartCoroutine(WaitWithReminder(() => iconRect == null || Vector3.Distance(startIconPos, iconRect.position) > 50f,
-                "Click and hold the left mouse button on the icon to drag it.", iconRect, new Vector2(250, 0)));
+                dialogs.step2_reminder, iconRect, new Vector2(250, 0)));
 
             tutorialBlocker?.SetAllowedTarget(null);
-            VirtualMascot.Show("Perfect!", iconRect, new Vector2(250, 0));
+            VirtualMascot.Show(dialogs.step2_perfect, iconRect, new Vector2(250, 0));
             yield return new WaitForSeconds(2.0f);
 
             // 3. Open Window
             appIcon.AllowDoubleClick = true;
-            VirtualMascot.Show("Now, open the Practice Note by double-clicking on it.", iconRect, new Vector2(250, 0));
+            VirtualMascot.Show(dialogs.step3_openWindow, iconRect, new Vector2(250, 0));
             tutorialBlocker?.SetAllowedTarget(iconRect);
             yield return StartCoroutine(WaitWithReminder(() => appIcon == null || (appIcon.AppWindow != null && !appIcon.AppWindow.IsClosed),
-                "Remember: double-click quickly to open it.", iconRect, new Vector2(250, 0)));
+                dialogs.step3_reminder, iconRect, new Vector2(250, 0)));
 
             Window targetWindow = appIcon != null ? appIcon.AppWindow : null;
             if (targetWindow != null)
@@ -170,7 +211,7 @@ namespace ComputerLearning
                     : (windowRect.Find("WindowTop/Buttons/Maximize") ?? windowRect.Find("TopBar/Buttons/MaximizeButton"));
 
                 // 4. Move Window
-                VirtualMascot.Show("Windows can be moved anywhere on your screen! Drag the top title bar to move the window.", windowRect, new Vector2(0, 200));
+                VirtualMascot.Show(dialogs.step4_moveWindow, windowRect, new Vector2(0, 200));
                 tutorialBlocker?.SetAllowedTarget(dragBarRect);
 
                 tutorialBlocker?.SetExcludedTarget(null);
@@ -181,14 +222,14 @@ namespace ComputerLearning
                 Vector3 startWinPos = windowRect.position;
                 yield return StartCoroutine(WaitWithReminder(() => {
                     return windowRect == null || targetWindow.IsClosed || Vector3.Distance(startWinPos, windowRect.position) > 50f;
-                }, "Click on the top title bar and drag the window.", dragBarRect, new Vector2(0, 200)));
+                }, dialogs.step4_reminder, dragBarRect, new Vector2(0, 200)));
 
                 tutorialBlocker?.SetAllowedTarget(null);
-                VirtualMascot.Show("Very good!", windowRect, new Vector2(0, 200));
+                VirtualMascot.Show(dialogs.step4_veryGood, windowRect, new Vector2(0, 200));
                 yield return new WaitForSeconds(2.0f);
 
                 // 5. Resize Window
-                VirtualMascot.Show("If you move your mouse to the window edges or corners, you can drag to make it bigger or smaller. Try resizing it!", windowRect, new Vector2(250, 0));
+                VirtualMascot.Show(dialogs.step5_resizeWindow, windowRect, new Vector2(250, 0));
 
                 tutorialBlocker?.SetAllowedTarget(windowRect);
                 // Exclusions for Close, Min, Max are still active
@@ -196,36 +237,36 @@ namespace ComputerLearning
                 Vector2 startSize = windowRect.sizeDelta;
                 yield return StartCoroutine(WaitWithReminder(() => {
                     return windowRect == null || targetWindow.IsClosed || Vector2.Distance(startSize, windowRect.sizeDelta) > 20f;
-                }, "Drag from the corners or edges to resize the window.", windowRect, new Vector2(250, 0)));
+                }, dialogs.step5_reminder, windowRect, new Vector2(250, 0)));
 
                 // Clear exclusions
                 tutorialBlocker?.SetExcludedTarget(null);
                 tutorialBlocker?.SetAllowedTarget(null);
 
-                VirtualMascot.Show("Awesome! You can resize any window to fit your needs.", windowRect, new Vector2(250, 0));
+                VirtualMascot.Show(dialogs.step5_awesome, windowRect, new Vector2(250, 0));
                 yield return new WaitForSeconds(2.5f);
 
                 // 6. Maximize and Restore
                 if (btnMax != null && targetWindow != null && !targetWindow.IsClosed)
                 {
                     RectTransform maxRect = btnMax as RectTransform;
-                    VirtualMascot.Show("You can also make the window fill the whole screen! Click the Maximize button.", maxRect, new Vector2(-250, 50));
+                    VirtualMascot.Show(dialogs.step6_maximize, maxRect, new Vector2(-250, 50));
                     tutorialBlocker?.SetAllowedTarget(maxRect);
 
                     yield return StartCoroutine(WaitWithReminder(() => {
                         return targetWindow == null || targetWindow.IsClosed || targetWindow.IsMaximized;
-                    }, "Click the square Maximize button in the top-right.", maxRect, new Vector2(-250, 50)));
+                    }, dialogs.step6_maximizeReminder, maxRect, new Vector2(-250, 50)));
 
                     tutorialBlocker?.SetAllowedTarget(null);
-                    VirtualMascot.Show("Now click the button again to restore it to normal size.", maxRect, new Vector2(-250, 50));
+                    VirtualMascot.Show(dialogs.step6_restore, maxRect, new Vector2(-250, 50));
                     tutorialBlocker?.SetAllowedTarget(maxRect);
 
                     yield return StartCoroutine(WaitWithReminder(() => {
                         return targetWindow == null || targetWindow.IsClosed || !targetWindow.IsMaximized;
-                    }, "Click the restore button in the top-right.", maxRect, new Vector2(-250, 50)));
+                    }, dialogs.step6_restoreReminder, maxRect, new Vector2(-250, 50)));
 
                     tutorialBlocker?.SetAllowedTarget(null);
-                    VirtualMascot.Show("Great job!", windowRect, new Vector2(250, 0));
+                    VirtualMascot.Show(dialogs.step6_greatJob, windowRect, new Vector2(250, 0));
                     yield return new WaitForSeconds(2.0f);
                 }
 
@@ -233,12 +274,12 @@ namespace ComputerLearning
                 if (btnMin != null && targetWindow != null && !targetWindow.IsClosed)
                 {
                     RectTransform minRect = btnMin as RectTransform;
-                    VirtualMascot.Show("To temporarily hide a window, click the Minimize button.", minRect, new Vector2(-250, 50));
+                    VirtualMascot.Show(dialogs.step7_minimize, minRect, new Vector2(-250, 50));
                     tutorialBlocker?.SetAllowedTarget(minRect);
 
                     yield return StartCoroutine(WaitWithReminder(() => {
                         return targetWindow == null || targetWindow.IsClosed || targetWindow.IsMinimized;
-                    }, "Click the minus Minimize button.", minRect, new Vector2(-250, 50)));
+                    }, dialogs.step7_minimizeReminder, minRect, new Vector2(-250, 50)));
 
                     tutorialBlocker?.SetAllowedTarget(null);
                     yield return new WaitForSeconds(0.5f);
@@ -247,33 +288,33 @@ namespace ComputerLearning
                     if (taskBtn != null)
                     {
                         RectTransform taskRect = taskBtn.GetComponent<RectTransform>();
-                        VirtualMascot.Show("It hides right here on your taskbar! Click the icon to bring it back.", taskRect, new Vector2(100, 200));
+                        VirtualMascot.Show(dialogs.step7_taskbar, taskRect, new Vector2(100, 200));
                         tutorialBlocker?.SetAllowedTarget(taskRect);
 
                         yield return StartCoroutine(WaitWithReminder(() => {
                             return targetWindow == null || targetWindow.IsClosed || (!targetWindow.IsMinimized && targetWindow.IsFocused);
-                        }, "Click the taskbar button to restore your window.", taskRect, new Vector2(100, 200)));
+                        }, dialogs.step7_taskbarReminder, taskRect, new Vector2(100, 200)));
 
                         tutorialBlocker?.SetAllowedTarget(null);
-                        VirtualMascot.Show("There it is!", windowRect, new Vector2(250, 0));
+                        VirtualMascot.Show(dialogs.step7_thereItIs, windowRect, new Vector2(250, 0));
                         yield return new WaitForSeconds(2.0f);
                     }
                 }
 
                 // 8. Close Window
                 RectTransform closeBtnRect = btnClose as RectTransform ?? windowRect;
-                VirtualMascot.Show("When you are finished with a window, click the red X to close it.", closeBtnRect, new Vector2(0, 200));
+                VirtualMascot.Show(dialogs.step8_close, closeBtnRect, new Vector2(0, 200));
                 tutorialBlocker?.SetAllowedTarget(closeBtnRect);
 
                 yield return StartCoroutine(WaitWithReminder(() => {
                     return targetWindow == null || targetWindow.IsClosed;
-                }, "Click the red X to close the window.", closeBtnRect, new Vector2(0, 200)));
+                }, dialogs.step8_closeReminder, closeBtnRect, new Vector2(0, 200)));
 
                 tutorialBlocker?.SetAllowedTarget(null);
             }
 
             // 9. Recycle Bin
-            VirtualMascot.Show("Finally, if you don't need a file anymore, you can throw it in the Recycle Bin. Drag the Practice Note there!", binRect, new Vector2(250, 0));
+            VirtualMascot.Show(dialogs.step9_recycle, binRect, new Vector2(250, 0));
 
             recycleBin.enabled = true; // Enable the recycle bin only now!
 
@@ -285,7 +326,7 @@ namespace ComputerLearning
             tutorialBlocker?.ClearTarget();
 
             yield return StartCoroutine(WaitWithReminder(() => recycled || appIcon == null,
-                "Drag the Practice Note icon over the Recycle Bin and drop it.", binRect, new Vector2(250, 0)));
+                dialogs.step9_recycleReminder, binRect, new Vector2(250, 0)));
 
             if (activeRecycledListener != null)
             {
@@ -300,7 +341,7 @@ namespace ComputerLearning
                 tutorialBlocker.SetAllowedTarget(null);
             }
 
-            VirtualMascot.Show("Congratulations! You've mastered all desktop and window controls. Have fun exploring!", binRect, new Vector2(250, 0));
+            VirtualMascot.Show(dialogs.step9_congrats, binRect, new Vector2(250, 0));
             yield return new WaitForSeconds(4.0f);
 
             CompleteTutorial();

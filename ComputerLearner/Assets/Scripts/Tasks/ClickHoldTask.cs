@@ -22,19 +22,12 @@ namespace ComputerLearning
                 requiredHoldTime = 0.5f + (definition.difficulty * 0.2f); // Max 1.5s on difficulty 5
             }
             if (fillImage != null) fillImage.fillAmount = 0f;
-            SetupBackgroundClickInterceptor(OnBackgroundClicked);
         }
 
         protected override void Update()
         {
             base.Update();
             if (IsFinished) return;
-
-            if (!isHolding && !hasShownInactivityReminder && (Time.time - lastInteractionTime) >= 5.0f)
-            {
-                hasShownInactivityReminder = true;
-                VirtualMascot.ShowContextualFeedback("Press and hold the left mouse button on the circle!", transform as RectTransform, 2.8f);
-            }
 
             if (isHolding)
             {
@@ -63,20 +56,13 @@ namespace ComputerLearning
             }
         }
 
-        public void OnBackgroundClicked(PointerEventData eventData)
-        {
-            if (IsFinished) return;
-            RegisterAttempt(true);
-            VirtualMascot.ShowContextualFeedback("Click and hold the left mouse button inside the circle!", transform as RectTransform, 2.8f);
-        }
-
         public void OnPointerDown(PointerEventData eventData)
         {
             if (IsFinished) return;
             
             if (eventData.button == PointerEventData.InputButton.Right)
             {
-                RegisterAttempt(true);
+                FeedbackManager.PlayError(true);
                 VirtualMascot.ShowWrongClickFeedback(transform as RectTransform, false);
                 return;
             }
@@ -98,7 +84,7 @@ namespace ComputerLearning
                 if (currentHoldTime < requiredHoldTime)
                 {
                     RegisterAttempt();
-                    VirtualMascot.ShowContextualFeedback("Keep pressing! Hold the button down a bit longer!", transform as RectTransform, 2.5f);
+                    VirtualMascot.ShowContextualFeedback(VirtualMascot.FeedbackDialogs.holdKeepPressing, transform as RectTransform, 2.5f);
                 }
                 currentHoldTime = 0f;
             }
@@ -112,7 +98,7 @@ namespace ComputerLearning
                 isHolding = false;
                 currentHoldTime = 0f;
                 RegisterAttempt();
-                VirtualMascot.ShowContextualFeedback("Stay inside the circle while holding down!", transform as RectTransform, 2.5f);
+                VirtualMascot.ShowContextualFeedback(VirtualMascot.FeedbackDialogs.holdStayInside, transform as RectTransform, 2.5f);
             }
         }
     }

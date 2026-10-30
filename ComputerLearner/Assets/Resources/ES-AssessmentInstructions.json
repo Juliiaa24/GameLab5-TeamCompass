@@ -4,23 +4,23 @@
     "skipButton": "Saltar",
     "exitButton": "Salir",
     "timeExpired": "Tiempo agotado",
-    "completedTitle": "Evaluación completada",
-    "completedSubtitle": "Tus habilidades iniciales con el ordenador han sido evaluadas.",
+    "completedTitle": "¡Evaluación completada!",
+    "completedSubtitle": "Ya hemos evaluado tu manejo inicial con el ordenador.",
     "closeButton": "Finalizar"
   },
   "tasks": [
     {
       "skillId": "mouse_move",
       "title": "Mover el cursor",
-      "instruction": "Mueve el cursor dentro del círculo azul.",
+      "instruction": "Lleva el cursor hasta el círculo azul.",
       "timeoutSeconds": 15,
       "shape": "circle",
       "requiredDuration": 0.0
     },
     {
       "skillId": "hover",
-      "title": "Mantener encima",
-      "instruction": "Mantén el cursor dentro del cuadrado morado durante 2 segundos sin hacer clic.",
+      "title": "Mantener el cursor",
+      "instruction": "Deja el cursor dentro del cuadrado morado durante 2 segundos sin hacer clic.",
       "timeoutSeconds": 15,
       "shape": "square",
       "requiredDuration": 2.0
@@ -28,7 +28,7 @@
     {
       "skillId": "click",
       "title": "Clic simple",
-      "instruction": "Haz clic una vez en el cuadrado naranja.",
+      "instruction": "Haz un solo clic en el cuadrado naranja.",
       "timeoutSeconds": 15,
       "shape": "square",
       "requiredDuration": 0.0
@@ -36,7 +36,7 @@
     {
       "skillId": "double_click",
       "title": "Doble clic",
-      "instruction": "Haz doble clic rápidamente en el círculo turquesa.",
+      "instruction": "Haz doble clic seguido en el círculo turquesa.",
       "timeoutSeconds": 15,
       "shape": "circle",
       "requiredDuration": 0.0
@@ -44,7 +44,7 @@
     {
       "skillId": "right_click",
       "title": "Clic derecho",
-      "instruction": "Haz clic en el rectángulo ámbar usando el botón derecho del ratón.",
+      "instruction": "Haz clic derecho sobre el rectángulo amarillo.",
       "timeoutSeconds": 15,
       "shape": "rectangle",
       "requiredDuration": 0.0
@@ -52,7 +52,7 @@
     {
       "skillId": "click_hold",
       "title": "Mantener pulsado",
-      "instruction": "Mantén pulsado el botón del ratón sobre el círculo rojo durante 2 segundos.",
+      "instruction": "Mantén pulsado el botón izquierdo sobre el círculo rojo durante 2 segundos.",
       "timeoutSeconds": 20,
       "shape": "circle",
       "requiredDuration": 2.0
@@ -60,7 +60,7 @@
     {
       "skillId": "drag_drop",
       "title": "Arrastrar y soltar",
-      "instruction": "Arrastra el cuadrado azul dentro del marco de destino.",
+      "instruction": "Arrastra el cuadrado azul hasta el recuadro de destino.",
       "timeoutSeconds": 20,
       "shape": "drag_drop",
       "requiredDuration": 0.0

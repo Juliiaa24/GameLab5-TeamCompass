@@ -53,12 +53,13 @@ namespace ComputerLearning
 
         public static string GetMedalName(LevelMedal medal)
         {
+            UIDialogs ui = UIDialogs.Current;
             switch (medal)
             {
-                case LevelMedal.Gold: return "Gold";
-                case LevelMedal.Silver: return "Silver";
-                case LevelMedal.Bronze: return "Bronze";
-                default: return "None";
+                case LevelMedal.Gold: return !string.IsNullOrEmpty(ui.medal_gold) ? ui.medal_gold : "Gold";
+                case LevelMedal.Silver: return !string.IsNullOrEmpty(ui.medal_silver) ? ui.medal_silver : "Silver";
+                case LevelMedal.Bronze: return !string.IsNullOrEmpty(ui.medal_bronze) ? ui.medal_bronze : "Bronze";
+                default: return !string.IsNullOrEmpty(ui.medal_none) ? ui.medal_none : "None";
             }
         }
 

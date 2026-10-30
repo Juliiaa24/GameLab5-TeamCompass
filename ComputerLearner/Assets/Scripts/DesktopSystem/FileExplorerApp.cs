@@ -1110,7 +1110,7 @@ namespace ComputerLearning
                     {
                         folder.children.Add(new ExplorerItemData
                         {
-                            name = lvl.displayName,
+                            name = lvl.GetLocalizedDisplayName(),
                             fileType = ExplorerFileType.Minigame,
                             icon = icon,
                             levelToLaunch = lvl,
@@ -1136,7 +1136,7 @@ namespace ComputerLearning
                     if (child.levelToLaunch != null && string.Equals(child.levelToLaunch.levelId, lvlId, StringComparison.OrdinalIgnoreCase))
                     {
                         child.levelToLaunch = VirtualDesktopGuidedLevels.GetOrCreateLevelDefinition(lvlId);
-                        child.name = child.levelToLaunch.displayName;
+                        child.name = child.levelToLaunch.GetLocalizedDisplayName();
                         alreadyExists = true;
                         break;
                     }
@@ -1149,7 +1149,7 @@ namespace ComputerLearning
                     {
                         folder.children.Add(new ExplorerItemData
                         {
-                            name = def.displayName,
+                            name = def.GetLocalizedDisplayName(),
                             fileType = ExplorerFileType.Minigame,
                             icon = icon,
                             levelToLaunch = def,
@@ -1748,7 +1748,8 @@ namespace ComputerLearning
                 if (WindowManager.Instance != null)
                 {
                     GameObject winPrefab = baseWindowPrefab != null ? baseWindowPrefab : Resources.Load<GameObject>("BaseWindow");
-                    Window win = WindowManager.Instance.OpenWindow(winPrefab, null, item.name);
+                    string levelWinTitle = item.levelToLaunch != null ? item.levelToLaunch.GetLocalizedDisplayName() : item.name;
+                    Window win = WindowManager.Instance.OpenWindow(winPrefab, null, levelWinTitle);
                     if (win != null)
                     {
                         openedWindows[key] = win;
@@ -2029,7 +2030,7 @@ namespace ComputerLearning
                     {
                         levelsFolder.children.Add(new ExplorerItemData
                         {
-                            name = lvl.displayName,
+                            name = lvl.GetLocalizedDisplayName(),
                             fileType = ExplorerFileType.Minigame,
                             icon = SharedGameIcon,
                             levelToLaunch = lvl,
@@ -2040,7 +2041,7 @@ namespace ComputerLearning
                     {
                         gamesFolder.children.Add(new ExplorerItemData
                         {
-                            name = lvl.displayName,
+                            name = lvl.GetLocalizedDisplayName(),
                             fileType = ExplorerFileType.Minigame,
                             icon = SharedGameIcon,
                             levelToLaunch = lvl,
