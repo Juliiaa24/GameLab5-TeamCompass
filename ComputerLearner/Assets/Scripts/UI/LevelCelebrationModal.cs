@@ -65,6 +65,9 @@ namespace ComputerLearning
         private TextMeshProUGUI btnTxt;
         private Button continueBtn;
         private Coroutine autoAdvanceCoroutine;
+        private RectTransform cardRectTransform;
+
+        public RectTransform CardRect => cardRectTransform;
 
         public void Initialize(
             LevelDefinition level, 
@@ -99,62 +102,77 @@ namespace ComputerLearning
             bdRect.offsetMax = Vector2.zero;
             backdrop.GetComponent<Image>().color = new Color(0.08f, 0.12f, 0.18f, 0.88f);
 
+            // Subtle outer border frame for the card
+            GameObject cardBorder = new GameObject("CardBorder", typeof(RectTransform), typeof(Image));
+            cardBorder.transform.SetParent(transform, false);
+            RectTransform borderRt = cardBorder.GetComponent<RectTransform>();
+            borderRt.anchorMin = new Vector2(0.5f, 0.5f);
+            borderRt.anchorMax = new Vector2(0.5f, 0.5f);
+            borderRt.sizeDelta = new Vector2(488f, 418f);
+            borderRt.anchoredPosition = Vector2.zero;
+            cardBorder.GetComponent<Image>().color = new Color(0.72f, 0.78f, 0.86f, 0.95f);
+
             // Card Panel
             GameObject card = new GameObject("Card", typeof(RectTransform), typeof(Image), typeof(VerticalLayoutGroup));
             card.transform.SetParent(transform, false);
             RectTransform cardRt = card.GetComponent<RectTransform>();
+            cardRectTransform = cardRt;
             cardRt.anchorMin = new Vector2(0.5f, 0.5f);
             cardRt.anchorMax = new Vector2(0.5f, 0.5f);
-            cardRt.sizeDelta = new Vector2(460f, 380f);
+            cardRt.sizeDelta = new Vector2(480f, 410f);
             cardRt.anchoredPosition = Vector2.zero;
 
             Image cardImg = card.GetComponent<Image>();
-            cardImg.color = new Color(0.93f, 0.95f, 0.98f, 1f);
+            cardImg.color = new Color(0.95f, 0.97f, 0.99f, 1f);
 
             VerticalLayoutGroup vlg = card.GetComponent<VerticalLayoutGroup>();
-            vlg.padding = new RectOffset(22, 22, 20, 20);
+            vlg.padding = new RectOffset(24, 24, 24, 24);
             vlg.spacing = 10;
-            vlg.childControlWidth = true;
+            vlg.childControlWidth = false;
             vlg.childControlHeight = false;
+            vlg.childForceExpandWidth = false;
+            vlg.childForceExpandHeight = false;
             vlg.childAlignment = TextAnchor.UpperCenter;
 
-            // Title
+            // Title (Pure ASCII / standard glyphs so LiberationSans SDF never renders missing-glyph squares)
             GameObject titleObj = new GameObject("TitleText", typeof(RectTransform), typeof(TextMeshProUGUI));
             titleObj.transform.SetParent(card.transform, false);
             TextMeshProUGUI title = titleObj.GetComponent<TextMeshProUGUI>();
-            title.text = "<b>★ LEVEL COMPLETED! ★</b>";
-            title.fontSize = 24;
+            title.text = "<b>LEVEL COMPLETED!</b>";
+            title.fontSize = 25;
             title.alignment = TextAlignmentOptions.Center;
             title.color = new Color(0.12f, 0.22f, 0.38f);
-            title.GetComponent<RectTransform>().sizeDelta = new Vector2(0, 30);
+            title.GetComponent<RectTransform>().sizeDelta = new Vector2(430f, 34f);
 
             // Subtitle (Level Name)
             GameObject subObj = new GameObject("SubTitle", typeof(RectTransform), typeof(TextMeshProUGUI));
             subObj.transform.SetParent(card.transform, false);
             TextMeshProUGUI subtitle = subObj.GetComponent<TextMeshProUGUI>();
-            subtitle.text = levelDef != null ? levelDef.displayName : "Great Job!";
+            subtitle.text = levelDef != null && !string.IsNullOrEmpty(levelDef.displayName) ? levelDef.displayName : "Great Job!";
             subtitle.fontSize = 17;
             subtitle.alignment = TextAlignmentOptions.Center;
             subtitle.color = new Color(0.35f, 0.40f, 0.48f);
-            subtitle.GetComponent<RectTransform>().sizeDelta = new Vector2(0, 22);
+            subtitle.GetComponent<RectTransform>().sizeDelta = new Vector2(430f, 24f);
 
             // ── Single Hero Medal Showcase (Only the earned medal, scaled up to feel rewarding) ──
             GameObject medalShowcase = new GameObject("MedalShowcase", typeof(RectTransform), typeof(VerticalLayoutGroup));
             medalShowcase.transform.SetParent(card.transform, false);
             RectTransform msRt = medalShowcase.GetComponent<RectTransform>();
-            msRt.sizeDelta = new Vector2(0, 150f);
+            msRt.sizeDelta = new Vector2(430f, 154f);
 
             VerticalLayoutGroup msVlg = medalShowcase.GetComponent<VerticalLayoutGroup>();
-            msVlg.spacing = 6;
+            msVlg.spacing = 8;
             msVlg.childControlWidth = false;
             msVlg.childControlHeight = false;
+            msVlg.childForceExpandWidth = false;
+            msVlg.childForceExpandHeight = false;
             msVlg.childAlignment = TextAnchor.MiddleCenter;
 
             // Hero Medal Slot
             GameObject medalObj = new GameObject("HeroMedal", typeof(RectTransform), typeof(Image));
             medalObj.transform.SetParent(medalShowcase.transform, false);
             medalRect = medalObj.GetComponent<RectTransform>();
-            float medalSize = 116f; // Large, prominent and rewarding
+            float medalSize = 114f;
             medalRect.sizeDelta = new Vector2(medalSize, medalSize);
             medalRect.localScale = Vector3.zero;
 
@@ -162,33 +180,33 @@ namespace ComputerLearning
             medalImage.sprite = MedalVisualUtility.GetMedalSprite(earnedMedal);
             medalImage.preserveAspect = true;
 
-            // Medal Title Badge Text
+            // Medal Title Badge Text (Clean ASCII text without unsupported Unicode stars)
             GameObject badgeObj = new GameObject("MedalBadgeText", typeof(RectTransform), typeof(TextMeshProUGUI));
             badgeObj.transform.SetParent(medalShowcase.transform, false);
             RectTransform badgeRt = badgeObj.GetComponent<RectTransform>();
-            badgeRt.sizeDelta = new Vector2(300, 24);
+            badgeRt.sizeDelta = new Vector2(360f, 26f);
 
             medalBadgeText = badgeObj.GetComponent<TextMeshProUGUI>();
             medalBadgeText.alignment = TextAlignmentOptions.Center;
-            medalBadgeText.fontSize = 17;
+            medalBadgeText.fontSize = 18;
             medalBadgeText.fontStyle = FontStyles.Bold;
 
             switch (earnedMedal)
             {
                 case LevelMedal.Gold:
-                    medalBadgeText.text = "★ GOLD MEDAL ★";
-                    medalBadgeText.color = new Color(0.92f, 0.70f, 0.00f);
+                    medalBadgeText.text = "GOLD MEDAL";
+                    medalBadgeText.color = new Color(0.88f, 0.65f, 0.00f);
                     break;
                 case LevelMedal.Silver:
-                    medalBadgeText.text = "★ SILVER MEDAL ★";
-                    medalBadgeText.color = new Color(0.55f, 0.62f, 0.72f);
+                    medalBadgeText.text = "SILVER MEDAL";
+                    medalBadgeText.color = new Color(0.48f, 0.55f, 0.65f);
                     break;
                 case LevelMedal.Bronze:
-                    medalBadgeText.text = "★ BRONZE MEDAL ★";
-                    medalBadgeText.color = new Color(0.78f, 0.46f, 0.18f);
+                    medalBadgeText.text = "BRONZE MEDAL";
+                    medalBadgeText.color = new Color(0.76f, 0.44f, 0.16f);
                     break;
                 default:
-                    medalBadgeText.text = "★ COMPLETED ★";
+                    medalBadgeText.text = "COMPLETED";
                     medalBadgeText.color = new Color(0.40f, 0.45f, 0.55f);
                     break;
             }
@@ -202,14 +220,17 @@ namespace ComputerLearning
             stats.fontSize = 15;
             stats.alignment = TextAlignmentOptions.Center;
             stats.color = new Color(0.18f, 0.22f, 0.28f);
-            stats.GetComponent<RectTransform>().sizeDelta = new Vector2(0, 26);
+            stats.GetComponent<RectTransform>().sizeDelta = new Vector2(430f, 30f);
 
-            // Continue Button
+            // Continue Button (Explicit RectTransform.sizeDelta so it fits cleanly inside the card)
             GameObject btnObj = new GameObject("BtnContinue", typeof(RectTransform), typeof(Image), typeof(Button), typeof(LayoutElement));
             btnObj.transform.SetParent(card.transform, false);
+            RectTransform btnRt = btnObj.GetComponent<RectTransform>();
+            btnRt.sizeDelta = new Vector2(280f, 48f);
+
             LayoutElement btnLe = btnObj.GetComponent<LayoutElement>();
-            btnLe.preferredHeight = 44;
-            btnLe.preferredWidth = 200;
+            btnLe.preferredHeight = 48f;
+            btnLe.preferredWidth = 280f;
 
             Image btnImg = btnObj.GetComponent<Image>();
             btnImg.color = new Color(0.18f, 0.55f, 0.88f);

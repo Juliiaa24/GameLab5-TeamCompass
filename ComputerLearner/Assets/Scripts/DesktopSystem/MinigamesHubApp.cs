@@ -125,6 +125,8 @@ namespace ComputerLearning
             {
                 LevelRunner runner = win.GetComponent<LevelRunner>();
                 if (runner == null) runner = win.gameObject.AddComponent<LevelRunner>();
+                if (!win.IsMaximized && !DesktopTour.IsTourRunning) win.toggleMaximize();
+                if (runner.taskContentArea == null) runner.taskContentArea = win.ContentArea != null ? win.ContentArea : win.GetComponent<RectTransform>();
                 runner.StartLevel(def);
             }
         }

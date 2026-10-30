@@ -1443,7 +1443,7 @@ namespace ComputerLearning
                     string emoji = LevelScoreRecord.GetMedalEmoji(levelMedal);
                     string hex = LevelScoreRecord.GetMedalColorHex(levelMedal);
                     string medalName = LevelScoreRecord.GetMedalName(levelMedal);
-                    label.text = $"{item.name}\n<size=11><color={hex}><b>{emoji} {medalName}</b></color></size>";
+                    label.text = $"{item.name}\n<size=11><color={hex}><b>[{medalName}]</b></color></size>";
                 }
                 else
                 {
@@ -1741,6 +1741,8 @@ namespace ComputerLearning
                 if (openedWindows.TryGetValue(key, out Window existingWin) && existingWin != null && !existingWin.IsClosed)
                 {
                     existingWin.Restore();
+                    existingWin.Restore();
+                    if (!existingWin.IsMaximized && !DesktopTour.IsTourRunning) existingWin.toggleMaximize();
                     existingWin.BringToFront();
                     return;
                 }
@@ -1752,6 +1754,7 @@ namespace ComputerLearning
                     if (win != null)
                     {
                         openedWindows[key] = win;
+                        if (!win.IsMaximized && !DesktopTour.IsTourRunning) win.toggleMaximize();
                         LevelRunner runner = win.GetComponent<LevelRunner>();
                         if (runner == null)
                         {

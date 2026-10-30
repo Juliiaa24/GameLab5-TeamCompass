@@ -2614,3 +2614,88 @@ To enrich the educational operating system simulation, the Virtual Desktop neede
 * **Level 11 (Notepad & Typing):** Right-clicking icon or typing without focusing the text area records mistakes.
 * **Level 12 (Copy, Paste & Cut):** Pasting before copying, copying without selecting text, and wrong shortcuts record mistakes.
 * **Levels 13, 14, 15, 16:** Pressing shortcut keys without Ctrl ('Z', 'S') or drawing outside canvas records mistakes with mascot guidance.
+
+
+---
+
+### 97. MAXIMIZED LEVEL WINDOWS, SAVE SYSTEM PERSISTENCE, FRAME-0 INPUT BLOCKER, MASCOT BOUNCE ISOLATION, MEDAL IMPROVEMENT PRAISE & DISCREET TARGET PROGRESS BAR - 30/10/2026
+
+**Context & Motivation:**
+* Levels launched from `VirtualDesktop` (`FileExplorerApp`, `MinigamesHubApp`, or restored desktop icons) opened in small windows instead of maximized like in `Desktop1`.
+* `SceneSystem.InitializeSessionFlags()` wiped intermediate `PlayerPrefs` tutorial flags (`AutoSequenceCompleted`, `DesktopTourCompleted`, `SemiGuidedSequenceCompleted`, `VirtualDesktopIntroCompleted`) whenever `AdvancedDesktopTourCompleted == 0`, causing players who finished the first 5 levels and exited to return to `Desktop1` and repeat the entire sequence from 0.
+* Fast clicking during the initial `WaitForSeconds(1f)` delay in `FirstDesktopTutorial` allowed opening the `Move` (`level1`) icon before `TutorialBlocker` was created.
+* `VirtualMascot` applied `BounceAnimation` (`localScale`) and vertical floating (`floatOffset`) to the root `mascotRect`, which also deformed and bobbed `speechBubble`, reducing text legibility.
+* Replaying a level and earning a better medal than the previous best needed celebratory mascot recognition with randomized dialogue.
+* Target-based levels needed a discreet, non-blocking progress bar so players always know how close they are to completing the level.
+
+**Architectural Solutions & Implementation:**
+
+**1. Always-Maximized Level Windows (`FileExplorerApp.cs`, `MinigamesHubApp.cs`, `DraggableIcon.cs`, `LevelRunner.cs`):**
+* Added `!win.IsMaximized && !DesktopTour.IsTourRunning` checks calling `win.toggleMaximize()` in `FileExplorerApp.OpenItem()`, `MinigamesHubApp.LaunchGame()`, `DraggableIcon.OpenApplication()` (both new and restored level windows), and as a central fallback inside `LevelRunner.StartLevel()`.
+
+**2. Save & Progression Persistence (`SceneSystem.cs`, `ProgressData.cs`, `FirstDesktopTutorial.cs`, `SecondDesktopTutorial.cs`, `DesktopManager.cs`, `DesktopTour.cs`):**
+* Removed the destructive `PlayerPrefs` reset from `SceneSystem.InitializeSessionFlags()` so progression is only cleared when the user explicitly triggers `ResetProgress()`.
+* Added `AreAllLevelsCompletedUpTo(int maxLevelIndex)` and `SyncProgressionFlagsToPlayerPrefs()` in `ProgressData.cs` to keep `PlayerPrefs` flags (`InitialAssessmentCompleted`, `AutoSequenceCompleted`, `DesktopTourCompleted`, `SemiGuidedSequenceCompleted`, `AdvancedDesktopTourCompleted`) bidirectionally synchronized with `ProgressSaveFile` (`progress.json`).
+* Updated `FirstDesktopTutorial` and `SecondDesktopTutorial` to skip already-completed levels via `ProgressData.Instance.IsLevelCompleted(levelId)` and immediately transition to `VirtualDesktop` if levels 1–5 are already completed.
+
+**3. Frame-0 Input Blocking (`FirstDesktopTutorial.cs`, `SecondDesktopTutorial.cs`, `DesktopTour.cs`):**
+* Added `[DefaultExecutionOrder(-100)]` and `EnsureBlockerActive()` in `Awake()` and at the top of `Start()` (before any `yield return new WaitForSeconds(...)`) so `TutorialBlocker` blocks 100% of screen raycasts from frame 0.
+
+**4. Mascot Bounce & Float Isolation (`VirtualMascot.cs`):**
+* Added `GetMascotVisualRect()` to resolve the `MascotImage` child `RectTransform` separately from the root `mascotRect` and `speechBubble`.
+* Applied `BounceAnimation()` squash-and-stretch scaling and sine-wave `floatOffset` exclusively to `mascotVisualRect` while keeping `speechBubble` stationary and undeformed.
+
+**5. Randomized Mascot Praise on Medal Improvement (`VirtualMascot.cs`, `LevelRunner.cs`, `VirtualDesktopGuidedLevels.cs`):**
+* Added `medalImprovementMessages` pool, non-repeating `GetRandomMedalImprovementMessage()`, and `ShowMedalImprovementFeedback(...)` in `VirtualMascot.cs`.
+* Updated `LevelRunner.SpawnNextTask()` and `VirtualDesktopGuidedLevels.CompleteLevel()` to compare the newly earned `LevelMedal` against `prevRecord.bestMedal` (`hadPreviousAttempt && (int)medal > (int)previousBestMedal`) prior to recording the attempt, triggering the mascot's improvement dialogue when upgraded.
+
+**6. Discreet Target Level Progress Bar (`BaseTask.cs`, `ClickTargetTask.cs`, `DragDropTask.cs`, `LevelRunner.cs`):**
+* Added `SubTaskProgress`, `OnSubTaskProgressChanged`, and `NotifySubTaskProgress(float)` to `BaseTask.cs`, reporting per-target progress from `ClickTargetTask` and `DragDropTask`.
+* Added a compact top-center progress pill (`LevelProgressBarContainer`) in `LevelRunner.cs` with `CanvasGroup` (`blocksRaycasts = false`, `interactable = false`) and `raycastTarget = false` on all visuals, smooth `Mathf.Lerp` fill updates, and automatic exclusion when a single-task level runs `MoveMouseTask` (which has its own cleaning progress bar).
+
+
+---
+
+### 98. CELEBRATION MODAL LAYOUT & GLYPH CLEANUP, NUMBERLESS PROGRESS BAR, SCORES APP REDESIGN, ONDESTROY LEAK FIX, MASCOT AUTO-HIDE, ADVANCED TOUR STREAMLINING, NOTEPAD SINGLE-PASTE FIX, TEXT LEVEL ANTI-SOFTLOCK SAFEGUARDS & RICH MID-LEVEL TASK FEEDBACK - 30/10/2026
+
+**Context & Motivation:**
+* `LevelCelebrationModal` had `childControlHeight = false` on its `VerticalLayoutGroup`, causing `BtnContinue` to use the default `RectTransform.sizeDelta = (100, 100)` and overflow the bottom of the card; additionally, Unicode characters (`★`, `🥇`, `🥈`, `🥉`, `●`, `—`) rendered as missing-glyph squares (`□`) in `LiberationSans SDF`.
+* The target progress bar in `LevelRunner` displayed numbers (`6 / 6`) below the bar and needed to be slightly taller without text numbers.
+* `ScoresApp` ("Scores & Achievements") suffered from stretched layout elements, giant "Reset Records"/"Refresh Records" buttons, and lacked category filter tabs and easy navigation.
+* Closing scenes logged `Some objects were not cleaned up when closing the scene. (Did you spawn new GameObjects from OnDestroy?) The following scene GameObjects were found: ProgressData` because `DesktopManager.OnDestroy()` accessed `ProgressData.Instance` after `ProgressData` was destroyed.
+* On `VirtualDesktop`, `VirtualMascot.Hide()` called `InitAsDesktopCompanion()` and kept the mascot active in the corner where it jittered after mid-level feedback instead of disappearing.
+* `AdvancedDesktopTour` repeated the Maximize and Minimize steps already taught in `DesktopTour`.
+* Pressing `Ctrl + C` and `Ctrl + V` in `NotepadApp` pasted text twice because both `TMP_InputField`'s internal event loop and `NotepadApp.Update()` inserted the clipboard text.
+* Guided text levels (Levels 11–15 in `VirtualDesktopGuidedLevels`) needed anti-softlock restoration if the player deleted required words or used Backspace instead of `Ctrl + X` / `Ctrl + Z`.
+* Mid-level feedback in `ClickHoldTask`, `RightClickTask`, `DoubleClickTask`, and `DragDropTask` needed warmer, context-aware responses (distinguishing quick taps, mid-hold releases, >70% near-completions, hover hesitation, and wrong mouse buttons).
+
+**Architectural Solutions & Implementation:**
+
+**1. Celebration Modal Layout & Missing Glyph Cleanup (`LevelCelebrationModal.cs`, `LevelScoreRecord.cs`, `FileExplorerApp.cs`):**
+* Set explicit `RectTransform.sizeDelta` on all child elements inside `LevelCelebrationModal.BuildUI` (`btnRt.sizeDelta = new Vector2(280f, 48f)` inside a `480x410` card) so the continue button fits with generous bottom margin.
+* Removed all unsupported Unicode symbols (`★`, `🥇`, `🥈`, `🥉`, `●`, `—`) across `LevelCelebrationModal`, `LevelScoreRecord`, `FileExplorerApp`, and `ScoresApp`.
+
+**2. Larger Numberless Progress Bar (`LevelRunner.cs`):**
+* Removed `ProgressLabel` (`6 / 6`) from `EnsureProgressBarUI()` and increased the progress bar height to `14px` (`anchorMin = (0.28f, 1f)`, `anchorMax = (0.72f, 1f)`) with a crisp `TrackBorder` and `TrackBg`.
+
+**3. Scores & Achievements Complete Redesign (`ScoresApp.cs`):**
+* Replaced the broken root `VerticalLayoutGroup` with anchored regions: a top `HeaderCard` with 4 summary stat badges, a `FilterBar` with 4 category filter tabs (`All Levels`, `Mouse Skills`, `Desktop & Apps`, `Completed Only`) plus `Page Up`/`Page Down` navigation buttons, a `ColumnHeaderBar`, and a full-height `ScrollView` with a permanent `VerticalScrollbar` and responsive full-width level cards. Removed the "Reset Records" and "Refresh Records" buttons.
+
+**4. Scene Teardown Leak Fix (`ProgressData.cs`, `DesktopManager.cs`, `LevelRunner.cs`):**
+* Added `ProgressData.HasInstance` and `DesktopManager.HasInstance` static checks plus `_isShuttingDown` and `SceneManager.GetActiveScene().isLoaded` guards in `ProgressData.Instance` so `OnDestroy()` never spawns a new `ProgressData` `GameObject` during scene unload.
+
+**5. Mascot Disappears After Feedback (`VirtualMascot.cs`):**
+* Updated `VirtualMascot.Hide()` to stop active coroutines, clear `isDesktopCompanion` and `targetRect`, and call `gameObject.SetActive(false)` instead of `InitAsDesktopCompanion()`.
+
+**6. Streamlined Second Desktop Tutorial (`AdvancedDesktopTour.cs`):**
+* Removed Step 6 (`Maximize and Restore`) and Step 7 (`Minimize and Restore from Taskbar`) from `AdvancedDesktopTour.cs`, transitioning directly from `Resize Window` to `Close Window` and `Recycle Bin`.
+
+**7. Notepad Single-Paste & Shortcut Deduplication (`NotepadApp.cs`):**
+* Registered `inputField.onValidateInput = OnValidateInputChar` in `NotepadApp.cs` to suppress `TMP_InputField`'s native `Append(systemCopyBuffer)` during `Ctrl` shortcuts, ensuring `Ctrl + V` pastes **exactly once**, while tracking `lastNonEmptySelection` and `lastNativeEditFrame` so `Ctrl + C` and `Ctrl + X` always fire their events reliably.
+
+**8. Guided Text Levels Polish & Anti-Softlock Safeguards (`VirtualDesktopGuidedLevels.cs`):**
+* Added `ClearUndoHistory()` and automatic text/undo-stack restoration across Levels 11–15 whenever a player erases required words (e.g., deleting `"Cat Dog"` in Level 12, erasing `"Dog"` or `"Red"` with Backspace instead of `Ctrl + X`, or manually editing text in Level 13/15 instead of pressing `Ctrl + Z`), accompanied by clear mascot guidance.
+
+**9. Enriched Mid-Level Task Feedback (`ClickHoldTask.cs`, `RightClickTask.cs`, `DoubleClickTask.cs`, `DragDropTask.cs`):**
+* Upgraded `ClickHoldTask` to report smooth `NotifySubTaskProgress`, detect hover hesitation (`> 2.5s`), right-click mistakes on target/background, and distinguish quick taps (`< 0.25s`), mid-releases, and near-completions (`>= 70%`) with varied, encouraging messages.
+* Added hover-stagnant reminders, edge-hit detection, and button-specific background-click feedback to `RightClickTask`, `DoubleClickTask`, and `DragDropTask`.

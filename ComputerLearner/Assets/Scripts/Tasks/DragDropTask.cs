@@ -8,6 +8,14 @@ namespace ComputerLearning
     {
         public RectTransform dropTarget;
         private int piecesRemaining = 1;
+        private int totalPiecesInitial = 1;
+
+        private static readonly string[] MissedDropFeedback = new string[]
+        {
+            "Almost! Keep holding the left button down and drag the piece all the way into the target zone!",
+            "So close! Drag the item right inside the target zone before letting go of the button!",
+            "Don't let go too early! Move the piece inside the target circle and then release!"
+        };
 
         protected override void SetupTask(TaskDefinition definition)
         {
@@ -15,7 +23,7 @@ namespace ComputerLearning
 
             // Use config for required distance, drop target size, drag size, and count
             float requiredDistance = Mathf.Max(20f, definition.config.targetSize * 0.5f);
-            
+
             if (dropTarget != null)
             {
                 // We'll use targetSize for the drop zone, and a bit smaller for the drag pieces
@@ -24,19 +32,20 @@ namespace ComputerLearning
             }
 
             float dragSize = definition.config.targetSize > 0 ? definition.config.targetSize : 150f;
-            
+
             int pieceCount = Mathf.Max(1, definition.config.targetCount);
             piecesRemaining = pieceCount;
+            totalPiecesInitial = pieceCount;
 
             RectTransform parentRect = transform.parent as RectTransform;
             if (parentRect == null) return;
             Rect bounds = parentRect.rect;
 
             // Position Drop Target randomly
-            if (dropTarget != null) 
+            if (dropTarget != null)
             {
                 dropTarget.anchoredPosition = new Vector2(
-                    Random.Range(bounds.xMin + 200, bounds.xMax - 200), 
+                    Random.Range(bounds.xMin + 200, bounds.xMax - 200),
                     Random.Range(bounds.yMin + 200, bounds.yMax - 200)
                 );
             }
@@ -74,7 +83,7 @@ namespace ComputerLearning
             DraggablePiece piece = go.GetComponent<DraggablePiece>();
             if (piece == null) piece = go.AddComponent<DraggablePiece>();
             if (go.GetComponent<UnityEngine.UI.Image>() != null && go.GetComponent<CircleHitbox>() == null) go.AddComponent<CircleHitbox>();
-            
+
             piece.dropTarget = dropTarget;
             piece.requiredDistanceToSnap = snapDist;
             piece.SetStartPosition(rt.anchoredPosition);
@@ -91,12 +100,12 @@ namespace ComputerLearning
             {
                 if (IsFinished) return;
                 RegisterAttempt(false);
-                VirtualMascot.ShowContextualFeedback("Hold down the left mouse button and move the mouse to drag!", p.transform as RectTransform, 2.8f);
+                VirtualMascot.ShowContextualFeedback("That was a quick click! Hold down the left mouse button and move the mouse to drag it!", p.transform as RectTransform, 3.0f);
             };
             piece.OnPieceDragDwell += (p) =>
             {
                 if (IsFinished) return;
-                VirtualMascot.ShowContextualFeedback("Drag the item into the target zone and release it!", dropTarget, 3.0f);
+                VirtualMascot.ShowContextualFeedback("Great! Now move the piece into the target zone and release the button!", dropTarget, 3.0f);
             };
         }
 
@@ -108,7 +117,7 @@ namespace ComputerLearning
             if (!hasShownInactivityReminder && (Time.time - lastInteractionTime) >= 6.0f)
             {
                 hasShownInactivityReminder = true;
-                VirtualMascot.ShowContextualFeedback("Drag the piece into the target zone!", dropTarget, 3.0f);
+                VirtualMascot.ShowContextualFeedback("Press and hold the left button on a piece, then drag it into the target zone!", dropTarget, 3.0f);
             }
         }
 
@@ -116,13 +125,22 @@ namespace ComputerLearning
         {
             if (IsFinished) return;
             RegisterAttempt(true);
-            VirtualMascot.ShowContextualFeedback("Click and drag the piece into the target area!", dropTarget, 2.8f);
+
+            if (eventData != null && eventData.button == PointerEventData.InputButton.Right)
+            {
+                VirtualMascot.ShowWrongClickFeedback(dropTarget, false);
+            }
+            else
+            {
+                VirtualMascot.ShowContextualFeedback("Aim at the draggable piece, hold the left button down, and drag it to the target area!", dropTarget, 3.0f);
+            }
         }
 
         private void HandlePieceMissed()
         {
             RegisterAttempt();
-            VirtualMascot.ShowContextualFeedback("Almost! Drag the item all the way into the target zone!", dropTarget, 3.0f);
+            string msg = MissedDropFeedback[Random.Range(0, MissedDropFeedback.Length)];
+            VirtualMascot.ShowContextualFeedback(msg, dropTarget, 3.0f);
         }
 
         private void HandlePieceDropped(DraggablePiece piece)
@@ -131,6 +149,7 @@ namespace ComputerLearning
 
             RecordIntermediateResult(true);
             piecesRemaining--;
+            NotifySubTaskProgress((float)(totalPiecesInitial - piecesRemaining) / Mathf.Max(1, totalPiecesInitial));
 
             if (piecesRemaining <= 0)
             {

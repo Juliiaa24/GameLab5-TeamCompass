@@ -291,6 +291,10 @@ namespace ComputerLearning
             bool shouldPulse = false;
             string currentNextLevel = ProgressData.Instance != null ? ProgressData.Instance.GetCurrentNextLevelId() : null;
 
+            if (levelDefinition == null && LinkedExplorerItem != null && LinkedExplorerItem.levelToLaunch != null)
+            {
+                levelDefinition = LinkedExplorerItem.levelToLaunch;
+            }
             if (levelDefinition != null)
             {
                 shouldPulse = !actuallyLocked && levelDefinition.levelId == currentNextLevel && (appWindow == null || appWindow.IsClosed);
@@ -919,6 +923,10 @@ namespace ComputerLearning
             if (manager == null) manager = GetComponentInParent<WindowManager>();
 
             string resolvedTitle = null;
+            if (levelDefinition == null && LinkedExplorerItem != null && LinkedExplorerItem.levelToLaunch != null)
+            {
+                levelDefinition = LinkedExplorerItem.levelToLaunch;
+            }
             if (levelDefinition != null)
             {
                 resolvedTitle = levelDefinition.displayName;
@@ -1010,13 +1018,18 @@ namespace ComputerLearning
                 }
             }
 
+            if (appWindow != null && levelDefinition != null && !DesktopTour.IsTourRunning && !appWindow.IsMaximized)
+            {
+                appWindow.toggleMaximize();
+            }
+
             if (isNewWindow && appWindow != null && levelDefinition != null)
             {
                 appWindow.setTitle(levelDefinition.displayName);
 
                 if (!DesktopTour.IsTourRunning)
                 {
-                    appWindow.toggleMaximize();
+                    if (!appWindow.IsMaximized) appWindow.toggleMaximize();
                 }
 
                 if (levelDefinition.levelId == "assessment")

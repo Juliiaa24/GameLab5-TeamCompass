@@ -37,6 +37,29 @@ namespace ComputerLearning
         private Coroutine bounceCoroutine;
         private Coroutine hideBubbleCoroutine;
         private int lastMessageIndex = -1;
+        private static int lastMedalImprovementIndex = -1;
+        private RectTransform mascotVisualRect;
+
+        private RectTransform GetMascotVisualRect()
+        {
+            if (mascotVisualRect != null) return mascotVisualRect;
+            Transform child = transform.Find("MascotImage");
+            if (child != null)
+            {
+                mascotVisualRect = child as RectTransform;
+                return mascotVisualRect;
+            }
+            Image[] images = GetComponentsInChildren<Image>(true);
+            foreach (var img in images)
+            {
+                if (img != null && img.gameObject != gameObject && (speechBubble == null || !img.transform.IsChildOf(speechBubble.transform)))
+                {
+                    mascotVisualRect = img.GetComponent<RectTransform>();
+                    return mascotVisualRect;
+                }
+            }
+            return null;
+        }
 
         private void Awake()
         {
@@ -166,7 +189,9 @@ namespace ComputerLearning
                 floatTimer += Time.deltaTime;
                 float floatOffset = Mathf.Sin(floatTimer * 4f) * 5f; 
                 
-                Vector3 finalTargetPos = basePos + new Vector3(0, floatOffset * scale, 0);
+                RectTransform vis = GetMascotVisualRect();
+                if (vis != null) vis.anchoredPosition = new Vector2(0f, floatOffset);
+                Vector3 finalTargetPos = basePos;
 
                 // Clamp to screen bounds to prevent going completely off-screen
                 float margin = 5f * scale; 
@@ -314,6 +339,46 @@ namespace ComputerLearning
             ShowContextualFeedback(msg, target, 4.0f);
         }
 
+        private static readonly string[] medalImprovementMessages = new string[]
+        {
+            "Hey, you really improved this one!",
+            "Whoa, a shiny new medal! Look how much you've improved!",
+            "New personal best medal! Your practice is really paying off!",
+            "Amazing upgrade! You did even better than last time!",
+            "Level up! You beat your old medal on this challenge!",
+            "Look at that upgrade! You're becoming a true computer master!",
+            "Fantastic improvement! That new medal looks great on you!"
+        };
+
+        public static string GetRandomMedalImprovementMessage()
+        {
+            if (medalImprovementMessages == null || medalImprovementMessages.Length == 0)
+                return "Hey, you really improved this one!";
+
+            int idx;
+            if (medalImprovementMessages.Length == 1) idx = 0;
+            else
+            {
+                do
+                {
+                    idx = UnityEngine.Random.Range(0, medalImprovementMessages.Length);
+                } while (idx == lastMedalImprovementIndex);
+            }
+            lastMedalImprovementIndex = idx;
+            return medalImprovementMessages[idx];
+        }
+
+        public static void ShowMedalImprovementFeedback(LevelMedal previousMedal, LevelMedal newMedal, float accuracy, float durationSeconds, RectTransform target = null, float displayDuration = 5.5f)
+        {
+            string praise = GetRandomMedalImprovementMessage();
+            string newMedalName = LevelScoreRecord.GetMedalName(newMedal).ToUpper();
+            string prevMedalName = LevelScoreRecord.GetMedalName(previousMedal);
+            string msg = previousMedal != LevelMedal.None
+                ? $"{praise}\nUpgraded from {prevMedalName} to {newMedalName} Medal! ({accuracy:F0}%)"
+                : $"{praise}\nYou earned the {newMedalName} Medal! ({accuracy:F0}%)";
+            ShowContextualFeedback(msg, target, displayDuration);
+        }
+
         public void ShowTemporaryFeedback(string message, RectTransform target, float duration)
         {
             ShowMessage(message, target);
@@ -341,6 +406,7 @@ namespace ComputerLearning
             }
 
             // Temporarily exit companion mode while showing targeted tutorial/intro messages
+            bool wasActive = gameObject.activeSelf && !isDesktopCompanion;
             isDesktopCompanion = false;
 
             gameObject.SetActive(true);
@@ -356,6 +422,12 @@ namespace ComputerLearning
                 {
                     mascotRect.anchoredPosition = offset ?? new Vector2(-120f, 60f);
                 }
+                else if (!wasActive && targetRect.gameObject.activeInHierarchy)
+                {
+                    Vector3[] corners = new Vector3[4];
+                    targetRect.GetWorldCorners(corners);
+                    mascotRect.position = (corners[0] + corners[2]) / 2f;
+                }
             }
 
             CanvasGroup cg = GetComponent<CanvasGroup>();
@@ -368,12 +440,29 @@ namespace ComputerLearning
             Canvas canvas = GetComponentInParent<Canvas>();
             UpdateSpeechBubblePlacement(canvas);
 
+            RectTransform vis = GetMascotVisualRect();
+            if (vis != null) vis.localScale = Vector3.one;
             transform.SetAsLastSibling(); 
         }
 
         public void Hide()
         {
-            if (DesktopManager.Instance != null && DesktopManager.Instance.EnableMascotCompanion)
+            if (hideBubbleCoroutine != null)
+            {
+                StopCoroutine(hideBubbleCoroutine);
+                hideBubbleCoroutine = null;
+            }
+            if (bounceCoroutine != null)
+            {
+                StopCoroutine(bounceCoroutine);
+                bounceCoroutine = null;
+            }
+            RectTransform vis = GetMascotVisualRect();
+            if (vis != null) vis.localScale = Vector3.one;
+            isDesktopCompanion = false;
+            targetRect = null;
+            gameObject.SetActive(false);
+            if (false)
             {
                 InitAsDesktopCompanion();
                 return;
@@ -436,7 +525,9 @@ namespace ComputerLearning
             // Idle floating / breathing bobbing animation in top-right corner
             floatTimer += Time.unscaledDeltaTime;
             float floatOffset = Mathf.Sin(floatTimer * 3f) * 6f;
-            mascotRect.anchoredPosition = companionCornerOffset + new Vector2(0f, floatOffset);
+            mascotRect.anchoredPosition = companionCornerOffset;
+            RectTransform vis = GetMascotVisualRect();
+            if (vis != null) vis.anchoredPosition = new Vector2(0f, floatOffset);
         }
 
         /// <summary>
@@ -491,6 +582,7 @@ namespace ComputerLearning
 
         private IEnumerator BounceAnimation()
         {
+            RectTransform bounceTarget = GetMascotVisualRect() ?? mascotRect;
             Vector3 originalScale = Vector3.one;
             Vector3 squashed = new Vector3(1.22f, 0.82f, 1f);
             Vector3 stretched = new Vector3(0.88f, 1.18f, 1f);
@@ -500,7 +592,7 @@ namespace ComputerLearning
             while (elapsed < dur1)
             {
                 elapsed += Time.unscaledDeltaTime;
-                mascotRect.localScale = Vector3.Lerp(originalScale, squashed, elapsed / dur1);
+                if (bounceTarget != null) bounceTarget.localScale = Vector3.Lerp(originalScale, squashed, elapsed / dur1);
                 yield return null;
             }
 
@@ -509,7 +601,7 @@ namespace ComputerLearning
             while (elapsed < dur2)
             {
                 elapsed += Time.unscaledDeltaTime;
-                mascotRect.localScale = Vector3.Lerp(squashed, stretched, elapsed / dur2);
+                if (bounceTarget != null) bounceTarget.localScale = Vector3.Lerp(squashed, stretched, elapsed / dur2);
                 yield return null;
             }
 
@@ -518,11 +610,11 @@ namespace ComputerLearning
             while (elapsed < dur3)
             {
                 elapsed += Time.unscaledDeltaTime;
-                mascotRect.localScale = Vector3.Lerp(stretched, originalScale, elapsed / dur3);
+                if (bounceTarget != null) bounceTarget.localScale = Vector3.Lerp(stretched, originalScale, elapsed / dur3);
                 yield return null;
             }
 
-            mascotRect.localScale = originalScale;
+            if (bounceTarget != null) bounceTarget.localScale = originalScale;
             bounceCoroutine = null;
         }
 

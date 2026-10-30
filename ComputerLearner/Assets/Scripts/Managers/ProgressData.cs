@@ -23,6 +23,14 @@ namespace ComputerLearning
     {
         #region Public Variables
         private static ProgressData _instance;
+        private static bool _isShuttingDown = false;
+        public static bool HasInstance => _instance != null;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetStaticState()
+        {
+            _isShuttingDown = false;
+        }
         public static ProgressData Instance
         {
             get
@@ -30,7 +38,13 @@ namespace ComputerLearning
                 if (_instance == null)
                 {
                     _instance = FindAnyObjectByType<ProgressData>();
-                    if (_instance == null)
+                    if (_instance == null && !_isShuttingDown && Application.isPlaying && UnityEngine.SceneManagement.SceneManager.GetActiveScene().isLoaded)
+                    {
+                        GameObject go = new GameObject("ProgressData");
+                        DontDestroyOnLoad(go);
+                        _instance = go.AddComponent<ProgressData>();
+                    }
+                    else if (false)
                     {
                         GameObject go = new GameObject("ProgressData");
                         _instance = go.AddComponent<ProgressData>();
@@ -78,7 +92,7 @@ namespace ComputerLearning
         }
 
         // Always save when the application closes
-        private void OnApplicationQuit() { Save(); }
+        private void OnApplicationQuit() { _isShuttingDown = true; Save(); }
         #endregion
 
         public static readonly string[] LevelOrder = { "level1", "level2", "level3", "level4", "level5", "level6", "level7", "level8", "level9", "level10", "level11", "level12", "level13", "level14", "level15", "level16" };
@@ -116,7 +130,46 @@ namespace ComputerLearning
 
         public bool IsLevelCompleted(string levelId)
         {
-            return completedLevels.Contains(levelId);
+            return completedLevels != null && completedLevels.Contains(levelId);
+        }
+
+        public bool AreAllLevelsCompletedUpTo(int maxLevelNumber)
+        {
+            if (maxLevelNumber <= 0) return true;
+            if (completedLevels == null) return false;
+            for (int i = 1; i <= maxLevelNumber; i++)
+            {
+                if (!completedLevels.Contains("level" + i))
+                    return false;
+            }
+            return true;
+        }
+
+        public void SyncProgressionFlagsToPlayerPrefs()
+        {
+            if (completedLevels != null && completedLevels.Count > 0)
+            {
+                PlayerPrefs.SetInt("InitialAssessmentCompleted", 1);
+            }
+            if (AreAllLevelsCompletedUpTo(5))
+            {
+                PlayerPrefs.SetInt("AutoSequenceCompleted", 1);
+                PlayerPrefs.SetInt("InitialAssessmentCompleted", 1);
+                if (!unlockedLevels.Contains("level6")) unlockedLevels.Add("level6");
+            }
+            if (AreAllLevelsCompletedUpTo(9))
+            {
+                PlayerPrefs.SetInt("SemiGuidedSequenceCompleted", 1);
+                if (!unlockedLevels.Contains("level10")) unlockedLevels.Add("level10");
+            }
+            if (HasSeenDesktopTour)
+            {
+                PlayerPrefs.SetInt("DesktopTourCompleted", 1);
+            }
+            else if (PlayerPrefs.GetInt("DesktopTourCompleted", 0) == 1)
+            {
+                HasSeenDesktopTour = true;
+            }
         }
 
         /// <summary>
@@ -160,6 +213,7 @@ namespace ComputerLearning
                 UnlockLevel(LevelOrder[idx + 1]);
             }
 
+            SyncProgressionFlagsToPlayerPrefs();
             OnLevelCompleted?.Invoke(levelId);
             OnProgressChanged?.Invoke();
             if (autoSaveAfterEachResult) Save();
@@ -333,6 +387,7 @@ namespace ComputerLearning
         {
             try
             {
+                SyncProgressionFlagsToPlayerPrefs();
                 var wrapper = new ProgressDataWrapper 
                 { 
                     results = taskHistory,
@@ -392,6 +447,28 @@ namespace ComputerLearning
                 }
                 if (wrapper != null) HasSeenDesktopTour = wrapper.hasSeenDesktopTour;
                 if (wrapper?.levelRecords != null) levelRecords = wrapper.levelRecords;
+                if (PlayerPrefs.GetInt("AutoSequenceCompleted", 0) == 1)
+                {
+                    for (int i = 1; i <= 5; i++)
+                    {
+                        string id = "level" + i;
+                        if (!completedLevels.Contains(id)) completedLevels.Add(id);
+                        if (!unlockedLevels.Contains(id)) unlockedLevels.Add(id);
+                    }
+                    if (!unlockedLevels.Contains("level6")) unlockedLevels.Add("level6");
+                }
+                if (PlayerPrefs.GetInt("SemiGuidedSequenceCompleted", 0) == 1)
+                {
+                    for (int i = 1; i <= 9; i++)
+                    {
+                        string id = "level" + i;
+                        if (!completedLevels.Contains(id)) completedLevels.Add(id);
+                        if (!unlockedLevels.Contains(id)) unlockedLevels.Add(id);
+                    }
+                    if (!unlockedLevels.Contains("level10")) unlockedLevels.Add("level10");
+                }
+                SyncProgressionFlagsToPlayerPrefs();
+                PlayerPrefs.Save();
                 
                 Debug.Log($"[ProgressData] Loaded {taskHistory.Count} task results and {levelRecords.Count} level records.");
             }

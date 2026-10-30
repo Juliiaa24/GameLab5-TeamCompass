@@ -36,12 +36,15 @@ namespace ComputerLearning
         {
             // If a previous session was aborted mid-onboarding before reaching VirtualDesktop,
             // clear intermediate tutorial flags so pressing Play in Menu starts cleanly at Desktop1.
-            if (PlayerPrefs.GetInt("AdvancedDesktopTourCompleted", 0) == 0)
+            // Preserve saved progression flags across sessions; do not wipe intermediate progress.
+            // Progression flags are preserved across sessions and only cleared via ResetProgress().
+            /*if (PlayerPrefs.GetInt("AdvancedDesktopTourCompleted", 0) == 0)
             {
                 PlayerPrefs.SetInt("AutoSequenceCompleted", 0);
                 PlayerPrefs.SetInt("DesktopTourCompleted", 0);
                 PlayerPrefs.SetInt("SemiGuidedSequenceCompleted", 0);
-                PlayerPrefs.SetInt("VirtualDesktopIntroCompleted", 0);
+                PlayerPrefs.SetInt("VirtualDesktopIntroCompleted", 0);*/
+            {
                 PlayerPrefs.Save();
             }
         }
@@ -80,13 +83,19 @@ namespace ComputerLearning
         public void ChangeToMain() 
         { 
             // If the initial assessment has not been completed, it serves as the first screen!
+            if (ProgressData.Instance != null)
+            {
+                ProgressData.Instance.SyncProgressionFlagsToPlayerPrefs();
+            }
+
             if (PlayerPrefs.GetInt("InitialAssessmentCompleted", 0) == 0)
             {
                 SceneManager.LoadScene("AssessmentScene");
                 return;
             }
 
-            if (PlayerPrefs.GetInt("AutoSequenceCompleted", 0) == 1)
+            if (PlayerPrefs.GetInt("AutoSequenceCompleted", 0) == 1 ||
+                (ProgressData.Instance != null && ProgressData.Instance.AreAllLevelsCompletedUpTo(5)))
             {
                 SceneManager.LoadScene("VirtualDesktop");
             }
@@ -98,6 +107,8 @@ namespace ComputerLearning
 
         public void ChangeToMenu() 
         { 
+            ProgressData.Instance?.Save();
+            PlayerPrefs.Save();
             ChangeScene(SceneNames.Menu); 
         }
 

@@ -13,6 +13,7 @@ namespace ComputerLearning
 
         private readonly List<ClickTarget> activeTargets = new List<ClickTarget>();
         private int targetsRemaining;
+        private int totalTargetsInitial = 1;
 
         private float timeLimit;
         private float elapsed;
@@ -67,6 +68,7 @@ namespace ComputerLearning
             lastActionTime   = Time.time;
             hasShownDelayReminder = false;
             targetsRemaining = Mathf.Max(1, cfg.targetCount);
+            totalTargetsInitial = targetsRemaining;
 
             activeTargets.Clear();
             for (int i = 0; i < targetsRemaining; i++)
@@ -151,6 +153,7 @@ namespace ComputerLearning
             activeTargets.Remove(target);
             if (target != null) Destroy(target.gameObject);
             targetsRemaining--;
+            NotifySubTaskProgress((float)(totalTargetsInitial - targetsRemaining) / Mathf.Max(1, totalTargetsInitial));
 
             if (targetsRemaining <= 0)
             {

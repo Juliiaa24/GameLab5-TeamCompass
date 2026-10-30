@@ -18,6 +18,15 @@ namespace ComputerLearning
         public bool IsFinished { get; private set; }
         public int Attempts => attempts;
         public event Action<TaskResult> OnTaskCompleted;
+        public virtual float SubTaskProgress => subTaskProgress;
+        public event Action<float> OnSubTaskProgressChanged;
+        private float subTaskProgress;
+
+        protected void NotifySubTaskProgress(float progress)
+        {
+            subTaskProgress = Mathf.Clamp01(progress);
+            OnSubTaskProgressChanged?.Invoke(subTaskProgress);
+        }
         #endregion
 
         #region Protected Variables
@@ -58,6 +67,7 @@ namespace ComputerLearning
             lastInteractionTime = Time.time;
             hasShownInactivityReminder = false;
             attempts = 0;
+            subTaskProgress = 0f;
             SetupTask(definition);
         }
 

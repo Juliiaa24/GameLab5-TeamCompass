@@ -66,6 +66,8 @@ namespace ComputerLearning
 
             GameObject blockerObj = new GameObject("TutorialBlocker");
             tutorialBlocker = blockerObj.AddComponent<TutorialBlocker>();
+            tutorialBlocker.gameObject.SetActive(true);
+            tutorialBlocker.SetAllowedTarget(null);
         }
 
         private void OnDestroy()
@@ -282,6 +284,7 @@ namespace ComputerLearning
 
             PlayerPrefs.SetInt("DesktopTourCompleted", 1);
             PlayerPrefs.SetInt("VirtualDesktopIntroCompleted", 1);
+            ProgressData.Instance?.SetHasSeenDesktopTour(true);
             PlayerPrefs.Save();
 
             IsTourRunning = false;
