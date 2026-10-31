@@ -5,7 +5,7 @@
     "exitButton": "Exit",
     "timeExpired": "Time expired",
     "completedTitle": "Assessment Completed",
-    "completedSubtitle": "Your initial computer skills have been evaluated.",
+    "completedSubtitle": "Your computer skills have been evaluated.",
     "closeButton": "Finish"
   },
   "tasks": [
@@ -28,7 +28,7 @@
     {
       "skillId": "click",
       "title": "Single Click",
-      "instruction": "Click the orange square once.",
+      "instruction": "Left click the orange square once.",
       "timeoutSeconds": 15,
       "shape": "square",
       "requiredDuration": 0.0
@@ -36,7 +36,7 @@
     {
       "skillId": "double_click",
       "title": "Double Click",
-      "instruction": "Double-click quickly on the teal circle.",
+      "instruction": "Double-click quickly with the left mouse button on the teal circle.",
       "timeoutSeconds": 15,
       "shape": "circle",
       "requiredDuration": 0.0
@@ -52,7 +52,7 @@
     {
       "skillId": "click_hold",
       "title": "Click and Hold",
-      "instruction": "Press and hold the mouse button on the red circle for 2 seconds.",
+      "instruction": "Press and hold the left mouse button on the red circle for 2 seconds.",
       "timeoutSeconds": 20,
       "shape": "circle",
       "requiredDuration": 2.0
@@ -60,7 +60,7 @@
     {
       "skillId": "drag_drop",
       "title": "Drag and Drop",
-      "instruction": "Drag the blue square into the target frame.",
+      "instruction": "Click and drag the blue square into the target frame.",
       "timeoutSeconds": 20,
       "shape": "drag_drop",
       "requiredDuration": 0.0
