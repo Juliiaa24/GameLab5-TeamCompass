@@ -3,20 +3,21 @@
     "companionMessages": [
         "Hello! I'm your desktop pet! Feel free to explore at your own pace.",
         "Open the Minigames folder to practice your clicking accuracy and speed!",
-        "Did you know? Right-click anywhere on the desktop to create a New Folder.",
+        "Did you know? Right-click anywhere on the desktop to open the context menu.",
         "Try opening Notepad to practice typing words on the keyboard!",
         "Remember: double-click quickly to open folders and apps!",
         "Click the Start button on the bottom-left to see all apps and options.",
         "You're doing great with the mouse! Keep it up!",
         "You can drag windows from their top bar to move them around the desktop.",
         "If a window is too small, click the square button to maximize it!",
-        "I'll always be here in the corner whenever you need advice!"
+        "I'll always be here in the corner whenever you need advice!",
+        "If you press any of the number buttons while holding down shift, you can type special symbols."
     ],
     "medalImprovementMessages": [
-        "Awesome improvement! You beat your previous record!",
+        "Great job! You beat your previous record!",
         "New personal best! Your practice is really paying off!",
-        "Fantastic upgrade! You earned a higher medal on this level!",
-        "Incredible progress! You're mastering the mouse!"
+        "Nice! You earned a higher medal!",
+        "Wow! You're mastering the mouse!"
     ],
     "medalImprovementUpgradeFormat": "{0}\n({1} -> {2} Medal!)",
     "medalImprovementEarnedFormat": "{0}\n(Earned {1} Medal!)",
@@ -30,7 +31,7 @@
         "You're doing great! Keep going!",
         "Don't worry, take all the time you need!"
     ],
-    "holdKeepPressing": "Keep pressing! Hold the button down a bit longer!",
+    "holdKeepPressing": "Hold the button down a bit longer!",
     "holdStayInside": "Stay inside the circle while holding down!",
     "holdHoverStagnant": "Now press and HOLD down the left mouse button!",
     "holdInactivityReminder": "Move your cursor onto the circle, then press and hold the left mouse button!",
