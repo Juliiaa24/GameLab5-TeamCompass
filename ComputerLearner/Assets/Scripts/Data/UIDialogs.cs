@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using UnityEngine;
 
 namespace ComputerLearning
@@ -158,6 +158,12 @@ namespace ComputerLearning
         public string skill_right_click = "Right Click";
         public string skill_click_hold = "Click and Hold";
         public string skill_drag_drop = "Drag and Drop";
+
+        // Playtest Student ID & Data Export
+        public string playtest_student_id_label = "Student ID:";
+        public string playtest_btn_export = "Export Data";
+        public string playtest_export_success = "Exported {0} to Desktop/ComputerLearner_PlaytestData";
+        public string playtest_reset_success = "Progress reset! Next student ID: {0}";
 
         private static UIDialogs cached;
         private static string cachedLang;

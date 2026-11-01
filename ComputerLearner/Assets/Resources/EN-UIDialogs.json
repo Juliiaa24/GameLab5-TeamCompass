@@ -1,4 +1,4 @@
-{
+﻿{
     "menu_btn_play": "Play",
     "menu_btn_virtual_desktop": "Virtual Desktop",
     "menu_btn_stats": "Stats",
@@ -132,5 +132,9 @@
     "skill_double_click": "Double Click",
     "skill_right_click": "Right Click",
     "skill_click_hold": "Click and Hold",
-    "skill_drag_drop": "Drag and Drop"
+    "skill_drag_drop": "Drag and Drop",
+    "playtest_student_id_label": "Student ID:",
+    "playtest_btn_export": "Export Data",
+    "playtest_export_success": "Exported {0} to Desktop/ComputerLearner_PlaytestData",
+    "playtest_reset_success": "Progress reset! Next student ID: {0}"
 }

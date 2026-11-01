@@ -77,7 +77,7 @@ namespace ComputerLearning
 
         /// <summary>
         /// Applies a TaskResult: updates score (clamped 0–100), success/failure counts,
-        /// and the last-practiced timestamp.
+        /// and the last-practiced timestamp, and persists to PlayerPrefs.
         /// </summary>
         public void ApplyResult(TaskResult result)
         {
@@ -97,6 +97,12 @@ namespace ComputerLearning
             else state.failureCount++;
 
             state.LastPracticed = System.DateTime.UtcNow;
+
+            PlayerPrefs.SetFloat($"SkillScore_{result.skillId}", state.score);
+            PlayerPrefs.SetInt($"SkillTasks_{result.skillId}", state.tasksCompleted);
+            PlayerPrefs.SetInt($"SkillSuccess_{result.skillId}", state.successCount);
+            PlayerPrefs.SetInt($"SkillFail_{result.skillId}", state.failureCount);
+            PlayerPrefs.Save();
 
             Debug.Log($"[SkillManager] {result.skillId}: {oldScore:F1} → {state.score:F1} " +
                       $"({(result.scoreChange >= 0 ? "+" : "")}{result.scoreChange:F1}) " +
@@ -127,13 +133,16 @@ namespace ComputerLearning
         /// </summary>
         public void SetScore(string skillId, float score)
         {
-            if (!skillStates.TryGetValue(skillId, out SkillState state))
+            float clamped = Mathf.Clamp(score, 0f, 100f);
+            if (skillStates.TryGetValue(skillId, out SkillState state))
             {
-                Debug.LogWarning($"[SkillManager] SetScore: unknown skill '{skillId}'");
-                return;
+                state.score = clamped;
             }
-            state.score = Mathf.Clamp(score, 0f, 100f);
-            PlayerPrefs.SetFloat($"SkillScore_{skillId}", state.score);
+            else
+            {
+                Debug.LogWarning($"[SkillManager] SetScore: skill '{skillId}' not in active dictionary, saving to PlayerPrefs.");
+            }
+            PlayerPrefs.SetFloat($"SkillScore_{skillId}", clamped);
             PlayerPrefs.Save();
         }
 
@@ -147,6 +156,33 @@ namespace ComputerLearning
                 return state.score;
             }
             return PlayerPrefs.GetFloat($"SkillScore_{skillId}", 0f);
+        }
+
+        public static int GetPersistentTasksCompleted(string skillId)
+        {
+            if (Instance != null && Instance.skillStates.TryGetValue(skillId, out SkillState state))
+            {
+                return state.tasksCompleted;
+            }
+            return PlayerPrefs.GetInt($"SkillTasks_{skillId}", 0);
+        }
+
+        public static int GetPersistentSuccessCount(string skillId)
+        {
+            if (Instance != null && Instance.skillStates.TryGetValue(skillId, out SkillState state))
+            {
+                return state.successCount;
+            }
+            return PlayerPrefs.GetInt($"SkillSuccess_{skillId}", 0);
+        }
+
+        public static int GetPersistentFailureCount(string skillId)
+        {
+            if (Instance != null && Instance.skillStates.TryGetValue(skillId, out SkillState state))
+            {
+                return state.failureCount;
+            }
+            return PlayerPrefs.GetInt($"SkillFail_{skillId}", 0);
         }
 
         /// <summary>
@@ -176,6 +212,16 @@ namespace ComputerLearning
                 pair.Value.failureCount = 0;
                 pair.Value.lastPracticedTicks = 0;
                 PlayerPrefs.DeleteKey($"SkillScore_{pair.Key}");
+                PlayerPrefs.DeleteKey($"SkillTasks_{pair.Key}");
+                PlayerPrefs.DeleteKey($"SkillSuccess_{pair.Key}");
+                PlayerPrefs.DeleteKey($"SkillFail_{pair.Key}");
+            }
+            foreach (string skillId in PlaytestDataManager.AllSkillIds)
+            {
+                PlayerPrefs.DeleteKey($"SkillScore_{skillId}");
+                PlayerPrefs.DeleteKey($"SkillTasks_{skillId}");
+                PlayerPrefs.DeleteKey($"SkillSuccess_{skillId}");
+                PlayerPrefs.DeleteKey($"SkillFail_{skillId}");
             }
             PlayerPrefs.Save();
             Debug.Log("[SkillManager] All skill scores reset to 0.");
@@ -201,7 +247,13 @@ namespace ComputerLearning
                     continue;
                 }
                 float savedScore = PlayerPrefs.GetFloat($"SkillScore_{def.skillId}", 0f);
-                skillStates[def.skillId] = new SkillState(def.skillId, savedScore);
+                SkillState st = new SkillState(def.skillId, savedScore)
+                {
+                    tasksCompleted = PlayerPrefs.GetInt($"SkillTasks_{def.skillId}", 0),
+                    successCount = PlayerPrefs.GetInt($"SkillSuccess_{def.skillId}", 0),
+                    failureCount = PlayerPrefs.GetInt($"SkillFail_{def.skillId}", 0)
+                };
+                skillStates[def.skillId] = st;
             }
 
             Debug.Log($"[SkillManager] Initialised {skillStates.Count} skills.");

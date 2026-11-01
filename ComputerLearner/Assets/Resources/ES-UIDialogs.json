@@ -1,4 +1,4 @@
-{
+﻿{
     "menu_btn_play": "Jugar",
     "menu_btn_virtual_desktop": "Escritorio virtual",
     "menu_btn_stats": "Estadísticas",
@@ -132,5 +132,9 @@
     "skill_double_click": "Doble clic",
     "skill_right_click": "Clic derecho",
     "skill_click_hold": "Mantener pulsado",
-    "skill_drag_drop": "Arrastrar y soltar"
+    "skill_drag_drop": "Arrastrar y soltar",
+    "playtest_student_id_label": "ID Alumno:",
+    "playtest_btn_export": "Exportar datos",
+    "playtest_export_success": "Datos de {0} guardados en Escritorio/ComputerLearner_PlaytestData",
+    "playtest_reset_success": "¡Progreso reiniciado! Siguiente alumno: {0}"
 }

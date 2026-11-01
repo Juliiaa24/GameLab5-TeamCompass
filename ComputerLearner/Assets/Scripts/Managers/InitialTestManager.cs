@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Author: Julia & AI (TeamCompass)
  * Date: 09/10/26
  * Description: Clean, geometric Initial Assessment Test for ComputerLearner in Light Mode.
@@ -805,12 +805,16 @@ namespace ComputerLearning
                 {
                     SkillManager.Instance.SetScore(skillId, entry.finalScore);
                 }
+                else
+                {
+                    PlayerPrefs.SetFloat($"SkillScore_{skillId}", Mathf.Clamp(entry.finalScore, 0f, 100f));
+                }
             }
 
             PlayerPrefs.SetInt("InitialAssessmentCompleted", 1);
             PlayerPrefs.Save();
 
-            // Export results to Assets/Assessment/{HH-mm-ss}.json
+            // Export results to Assets/Assessment/{HH-mm-ss}.json and Desktop PlaytestData folder
             ExportEvaluationJson();
         }
 
@@ -849,6 +853,9 @@ namespace ComputerLearning
                 {
                     report.averageScore = (float)Math.Round(totalScore / report.totalTasksTested, 1);
                 }
+
+                // Save for current student and export to Desktop PlaytestData folder
+                PlaytestDataManager.SaveCurrentAssessmentReport(report);
 
                 string json = JsonUtility.ToJson(report, true);
 

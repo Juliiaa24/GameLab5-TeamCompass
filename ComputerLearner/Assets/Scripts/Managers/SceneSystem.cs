@@ -1,8 +1,9 @@
-/**
+﻿/**
  * Author: Julia Vera & TeamCompass
  * Date: 11/09
- * Description: Controls changes between scenes with DontDestroyOnLoad persistence
- *              and preserves Inspector button bindings when reloading scenes.
+ * Description: Controls changes between scenes with DontDestroyOnLoad persistence,
+ *              preserves Inspector button bindings when reloading scenes, and handles
+ *              Playtest Student ID progression and full reset (Assessment + Skills + Levels).
 */
 
 using System;
@@ -36,6 +37,8 @@ namespace ComputerLearning
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void InitializeSessionFlags()
         {
+            PlaytestDataManager.EnsureInitialized();
+
             // If a previous session was aborted mid-onboarding before reaching VirtualDesktop,
             // clear intermediate tutorial flags so pressing Play in Menu starts cleanly at Desktop1.
             // Preserve saved progression flags across sessions; do not wipe intermediate progress.
@@ -66,6 +69,8 @@ namespace ComputerLearning
             {
                 DontDestroyOnLoad(gameObject);
             }
+
+            PlaytestDataManager.EnsureInitialized();
         }
 
         private void OnEnable()
@@ -156,14 +161,29 @@ namespace ComputerLearning
 
         public void Exit() 
         { 
+            if (PlaytestDataManager.HasAnyRecordedActivityForCurrentStudent())
+            {
+                PlaytestDataManager.ExportCurrentStudentData("exit_button");
+            }
             Application.Quit(); 
         }
 
         public void ResetProgress()
         {
-            if (ProgressData.Instance != null)
+            // 1. Auto-export the finishing student's data to Desktop before wiping if they did anything
+            if (PlaytestDataManager.HasAnyRecordedActivityForCurrentStudent())
             {
-                ProgressData.Instance.ClearHistory();
+                PlaytestDataManager.ExportCurrentStudentData("auto_before_reset");
+            }
+
+            // 2. Preserve current language and student counter across the wipe
+            string activeLanguage = LocalizationManager.CurrentLanguage;
+            int currentStudentCounter = Mathf.Max(1, PlayerPrefs.GetInt("Playtest_StudentCounter", 1));
+
+            // 3. Clear all runtime managers
+            if (ProgressData.ExistingInstance != null)
+            {
+                ProgressData.ExistingInstance.ClearHistory();
             }
 
             if (SkillManager.Instance != null)
@@ -171,13 +191,17 @@ namespace ComputerLearning
                 SkillManager.Instance.ResetAllScores();
             }
 
+            PlaytestDataManager.ClearCurrentStudentSessionData();
+
             if (InitialTestManager.Instance != null)
             {
                 Destroy(InitialTestManager.Instance.gameObject);
             }
 
+            // 4. Wipe all PlayerPrefs and restore only global settings + clean initial flags
             PlayerPrefs.DeleteAll();
-            PlayerPrefs.SetString("SelectedLanguage", LocalizationManager.LANG_EN);
+            PlayerPrefs.SetString("SelectedLanguage", activeLanguage);
+            PlayerPrefs.SetInt("Playtest_StudentCounter", currentStudentCounter);
             PlayerPrefs.SetInt("InitialAssessmentCompleted", 0);
             PlayerPrefs.SetInt("AutoSequenceCompleted", 0);
             PlayerPrefs.SetInt("DesktopTourCompleted", 0);
@@ -186,9 +210,19 @@ namespace ComputerLearning
             PlayerPrefs.SetInt("VirtualDesktopIntroCompleted", 0);
             PlayerPrefs.Save();
 
-            LocalizationManager.SetLanguage(LocalizationManager.LANG_EN);
+            // 5. Advance to the next sequential Student ID (e.g. S01 -> S02)
+            string nextStudentId = PlaytestDataManager.AdvanceToNextStudent();
 
-            Debug.Log("[SceneSystem] Game progress has been successfully reset.");
+            LocalizationManager.SetLanguage(activeLanguage);
+
+            if (PlaytestStudentWidget.Instance != null)
+            {
+                PlaytestStudentWidget.Instance.RefreshUI();
+                string msg = string.Format(UIDialogs.Current.playtest_reset_success, nextStudentId);
+                PlaytestStudentWidget.Instance.ShowToast(msg, 4f);
+            }
+
+            Debug.Log($"[SceneSystem] Full game & assessment progress reset. Ready for next student: {nextStudentId}");
         }
         #endregion
 
@@ -196,6 +230,13 @@ namespace ComputerLearning
         private void EnsureMenuButtonsBound()
         {
             if (SceneManager.GetActiveScene().name != "Menu") return;
+
+            GameObject menuRootObj = GameObject.Find("Menu");
+            Canvas menuCanvas = menuRootObj != null ? menuRootObj.GetComponent<Canvas>() : null;
+            if (menuCanvas != null && menuCanvas.gameObject.scene.name == "Menu")
+            {
+                PlaytestStudentWidget.EnsureOnCanvas(menuCanvas.transform);
+            }
 
             Button[] buttons = FindObjectsByType<Button>(FindObjectsInactive.Include, FindObjectsSortMode.None);
             foreach (Button btn in buttons)

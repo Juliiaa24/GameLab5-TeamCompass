@@ -1,10 +1,9 @@
-/**
+﻿/**
  * Author: Julia & AI (TeamCompass)
  * Date: 12/10/26
  * Description: UI Controller for the Stats & Assessment scene.
- *              Populates existing scene UI elements with historical assessment results
- *              and live skill proficiency metrics.
- *              Enhanced with self-healing navigation and sibling ordering.
+ *              Populates existing scene UI elements with the current student's assessment results
+ *              and live skill proficiency metrics, and embeds the PlaytestStudentWidget for ID & Export.
  */
 using System;
 using System.IO;
@@ -57,6 +56,7 @@ namespace ComputerLearning
                 Transform retakeBtnT = headerBar.Find("Btn-Retake");
                 if (retakeBtnT != null) retakeBtnT.SetAsLastSibling();
             }
+
         }
 
         private void OnEnable()
@@ -147,7 +147,6 @@ namespace ComputerLearning
 
             if (backToMenuButton != null)
             {
-                // Remove any persistent Inspector calls so it doesn't fire twice or conflict
                 backToMenuButton.onClick = new Button.ButtonClickedEvent();
                 backToMenuButton.onClick.AddListener(OnBackToMenuClicked);
             }
@@ -198,6 +197,13 @@ namespace ComputerLearning
                     emptyStateText.gameObject.SetActive(true);
                     emptyStateText.text = ui.stats_empty_state;
                 }
+                if (assessmentTableContainer != null)
+                {
+                    foreach (Transform child in assessmentTableContainer)
+                    {
+                        Destroy(child.gameObject);
+                    }
+                }
                 return;
             }
 
@@ -217,7 +223,6 @@ namespace ComputerLearning
 
             if (assessmentTableContainer != null)
             {
-                // Clear existing row items
                 foreach (Transform child in assessmentTableContainer)
                 {
                     Destroy(child.gameObject);
@@ -267,7 +272,6 @@ namespace ComputerLearning
             if (skillsTableContainer == null) return;
             UIDialogs ui = UIDialogs.Current;
 
-            // Clear existing rows
             foreach (Transform child in skillsTableContainer)
             {
                 Destroy(child.gameObject);
@@ -350,6 +354,19 @@ namespace ComputerLearning
 
         private AssessmentExportReport LoadLatestAssessmentReport()
         {
+            // If the current student has not completed the initial assessment (e.g. after Reset Progress),
+            // do NOT load previous students' assessment files from disk!
+            if (PlayerPrefs.GetInt("InitialAssessmentCompleted", 0) == 0)
+            {
+                return null;
+            }
+
+            AssessmentExportReport currentReport = PlaytestDataManager.GetCurrentAssessmentReport();
+            if (currentReport != null)
+            {
+                return currentReport;
+            }
+
             try
             {
                 string folder = Path.Combine(Application.dataPath, "Assessment");

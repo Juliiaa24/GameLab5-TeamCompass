@@ -1,7 +1,7 @@
 /**
  * Author: Diego
  * Date: 30/09/26
- * Description: Persists and provides access to the full task history for reporting.
+ * Description: Persists and provides access to the full task history and level attempts for reporting.
  */
 using System;
 using System.Collections.Generic;
@@ -10,12 +10,8 @@ using UnityEngine;
 namespace ComputerLearning
 {
     /// <summary>
-    /// Stores the complete historical record of TaskResults and persists it
+    /// Stores the complete historical record of TaskResults and LevelScoreRecords and persists it
     /// between play sessions using PlayerPrefs + JsonUtility.
-    ///
-    /// This is kept separate from SkillManager so that progress reports and
-    /// score-over-time charts can be generated from raw data at any time,
-    /// independently of the current SkillState snapshot.
     ///
     /// Singleton. Add to the persistent manager GameObject.
     /// </summary>
@@ -25,12 +21,14 @@ namespace ComputerLearning
         private static ProgressData _instance;
         private static bool _isShuttingDown = false;
         public static bool HasInstance => _instance != null;
+        public static ProgressData ExistingInstance => _instance != null ? _instance : FindAnyObjectByType<ProgressData>();
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetStaticState()
         {
             _isShuttingDown = false;
         }
+
         public static ProgressData Instance
         {
             get
@@ -42,11 +40,6 @@ namespace ComputerLearning
                     {
                         GameObject go = new GameObject("ProgressData");
                         DontDestroyOnLoad(go);
-                        _instance = go.AddComponent<ProgressData>();
-                    }
-                    else if (false)
-                    {
-                        GameObject go = new GameObject("ProgressData");
                         _instance = go.AddComponent<ProgressData>();
                     }
                 }
@@ -91,8 +84,16 @@ namespace ComputerLearning
             if (_instance == this) _instance = null;
         }
 
-        // Always save when the application closes
-        private void OnApplicationQuit() { _isShuttingDown = true; Save(); }
+        // Always save and auto-export playtest data when the application closes
+        private void OnApplicationQuit()
+        {
+            _isShuttingDown = true;
+            Save();
+            if (PlaytestDataManager.HasAnyRecordedActivityForCurrentStudent())
+            {
+                PlaytestDataManager.ExportCurrentStudentData("application_quit");
+            }
+        }
         #endregion
 
         public static readonly string[] LevelOrder = { "level1", "level2", "level3", "level4", "level5", "level6", "level7", "level8", "level9", "level10", "level11", "level12", "level13", "level14", "level15", "level16" };
@@ -101,8 +102,10 @@ namespace ComputerLearning
         private List<string> unlockedLevels = new List<string> { "level1" }; // Level 1 always unlocked
         private List<string> completedLevels = new List<string>();
         private List<LevelScoreRecord> levelRecords = new List<LevelScoreRecord>();
+        private List<LevelAttemptLogEntry> levelAttemptsHistory = new List<LevelAttemptLogEntry>();
 
         public IReadOnlyList<LevelScoreRecord> LevelRecords => levelRecords;
+        public IReadOnlyList<LevelAttemptLogEntry> LevelAttemptsHistory => levelAttemptsHistory;
 
         #region Public Methods
         public System.Action<string> OnLevelUnlocked;
@@ -217,6 +220,9 @@ namespace ComputerLearning
             OnLevelCompleted?.Invoke(levelId);
             OnProgressChanged?.Invoke();
             if (autoSaveAfterEachResult) Save();
+
+            // Automatically update student's playtest export on Desktop after completing a level
+            PlaytestDataManager.ExportCurrentStudentData($"level_completed_{levelId}");
         }
 
         public void SetHasSeenDesktopTour(bool seen)
@@ -252,9 +258,6 @@ namespace ComputerLearning
 
         /// <summary>
         /// Calculates the medal achieved based on accuracy and mistakes.
-        /// Gold: 100% accuracy, 0 mistakes.
-        /// Silver: >= 80% accuracy, <= 2 mistakes.
-        /// Bronze: >= 50% accuracy.
         /// </summary>
         public static LevelMedal CalculateMedal(float accuracyPercentage, int mistakesCount)
         {
@@ -274,11 +277,24 @@ namespace ComputerLearning
         }
 
         /// <summary>
-        /// Records a level attempt with an explicit medal, preserving the best attempt.
+        /// Records a level attempt with an explicit medal, preserving the best attempt and logging the individual attempt.
         /// </summary>
         public LevelScoreRecord RecordLevelAttempt(string levelId, LevelMedal earnedMedal, float accuracyScore, float timeSeconds, int mistakesCount = 0)
         {
             if (string.IsNullOrEmpty(levelId)) return null;
+
+            // Log individual attempt chronologically
+            levelAttemptsHistory.Add(new LevelAttemptLogEntry
+            {
+                attemptNumber = levelAttemptsHistory.Count + 1,
+                timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
+                levelId = levelId,
+                levelName = UIDialogs.Current.GetLevelDisplayName(levelId, levelId),
+                medal = earnedMedal.ToString(),
+                accuracyPercent = (float)Math.Round(accuracyScore, 1),
+                durationSeconds = (float)Math.Round(timeSeconds, 2),
+                mistakes = mistakesCount
+            });
 
             LevelScoreRecord record = GetLevelRecord(levelId);
             bool isBetter = false;
@@ -388,13 +404,14 @@ namespace ComputerLearning
             try
             {
                 SyncProgressionFlagsToPlayerPrefs();
-                var wrapper = new ProgressDataWrapper 
-                { 
+                var wrapper = new ProgressDataWrapper
+                {
                     results = taskHistory,
                     unlockedLevels = this.unlockedLevels,
                     completedLevels = this.completedLevels,
                     hasSeenDesktopTour = this.HasSeenDesktopTour,
-                    levelRecords = this.levelRecords
+                    levelRecords = this.levelRecords,
+                    levelAttemptsHistory = this.levelAttemptsHistory
                 };
                 string json = JsonUtility.ToJson(wrapper);
                 PlayerPrefs.SetString(SaveKey, json);
@@ -410,6 +427,12 @@ namespace ComputerLearning
         public void Load()
         {
             taskHistory.Clear();
+            unlockedLevels = new List<string> { "level1" };
+            completedLevels.Clear();
+            levelRecords.Clear();
+            levelAttemptsHistory.Clear();
+            HasSeenDesktopTour = false;
+
             if (!PlayerPrefs.HasKey(SaveKey)) return;
 
             try
@@ -417,7 +440,7 @@ namespace ComputerLearning
                 string json = PlayerPrefs.GetString(SaveKey);
                 var wrapper = JsonUtility.FromJson<ProgressDataWrapper>(json);
                 if (wrapper?.results != null) taskHistory = wrapper.results;
-                if (wrapper?.unlockedLevels != null && wrapper.unlockedLevels.Count > 0) 
+                if (wrapper?.unlockedLevels != null && wrapper.unlockedLevels.Count > 0)
                     unlockedLevels = wrapper.unlockedLevels;
                 if (wrapper?.completedLevels != null && wrapper.completedLevels.Count > 0)
                     completedLevels = wrapper.completedLevels;
@@ -447,6 +470,8 @@ namespace ComputerLearning
                 }
                 if (wrapper != null) HasSeenDesktopTour = wrapper.hasSeenDesktopTour;
                 if (wrapper?.levelRecords != null) levelRecords = wrapper.levelRecords;
+                if (wrapper?.levelAttemptsHistory != null) levelAttemptsHistory = wrapper.levelAttemptsHistory;
+
                 if (PlayerPrefs.GetInt("AutoSequenceCompleted", 0) == 1)
                 {
                     for (int i = 1; i <= 5; i++)
@@ -469,13 +494,54 @@ namespace ComputerLearning
                 }
                 SyncProgressionFlagsToPlayerPrefs();
                 PlayerPrefs.Save();
-                
+
                 Debug.Log($"[ProgressData] Loaded {taskHistory.Count} task results and {levelRecords.Count} level records.");
             }
             catch (Exception e)
             {
                 Debug.LogWarning($"[ProgressData] Load failed: {e.Message}");
             }
+        }
+
+        public static void GetSavedDataSnapshot(
+            out IReadOnlyList<TaskResult> outTasks,
+            out List<string> outCompletedLevels,
+            out List<LevelScoreRecord> outLevelRecords,
+            out IReadOnlyList<LevelAttemptLogEntry> outAttemptsHistory)
+        {
+            ProgressData existing = ExistingInstance;
+            if (existing != null)
+            {
+                outTasks = existing.taskHistory;
+                outCompletedLevels = existing.completedLevels;
+                outLevelRecords = existing.levelRecords;
+                outAttemptsHistory = existing.levelAttemptsHistory;
+                return;
+            }
+
+            var tasks = new List<TaskResult>();
+            var completed = new List<string>();
+            var records = new List<LevelScoreRecord>();
+            var attempts = new List<LevelAttemptLogEntry>();
+
+            if (PlayerPrefs.HasKey(SaveKey))
+            {
+                try
+                {
+                    string json = PlayerPrefs.GetString(SaveKey);
+                    var wrapper = JsonUtility.FromJson<ProgressDataWrapper>(json);
+                    if (wrapper?.results != null) tasks = wrapper.results;
+                    if (wrapper?.completedLevels != null) completed = wrapper.completedLevels;
+                    if (wrapper?.levelRecords != null) records = wrapper.levelRecords;
+                    if (wrapper?.levelAttemptsHistory != null) attempts = wrapper.levelAttemptsHistory;
+                }
+                catch (Exception) { }
+            }
+
+            outTasks = tasks;
+            outCompletedLevels = completed;
+            outLevelRecords = records;
+            outAttemptsHistory = attempts;
         }
 
         /// <summary>
@@ -488,8 +554,10 @@ namespace ComputerLearning
             unlockedLevels = new List<string> { "level1" };
             completedLevels.Clear();
             levelRecords.Clear();
+            levelAttemptsHistory.Clear();
             HasSeenDesktopTour = false;
             PlayerPrefs.DeleteKey(SaveKey);
+            PlayerPrefs.Save();
             OnProgressChanged?.Invoke();
             Debug.Log("[ProgressData] History cleared.");
         }
@@ -505,6 +573,7 @@ namespace ComputerLearning
             public List<string> completedLevels;
             public bool hasSeenDesktopTour;
             public List<LevelScoreRecord> levelRecords;
+            public List<LevelAttemptLogEntry> levelAttemptsHistory;
         }
         #endregion
     }
