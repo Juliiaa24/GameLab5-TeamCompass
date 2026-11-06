@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Author: Julia & AI (TeamCompass)
  * Date: 09/10/26
  * Description: Clean, geometric Initial Assessment Test for ComputerLearner in Light Mode.
@@ -90,6 +90,8 @@ namespace ComputerLearning
 
         // UI references
         private GameObject rootContainer;
+        private GameObject introModalObject;
+        private bool isShowingIntro = false;
         private TextMeshProUGUI stepText;
         private TextMeshProUGUI titleText;
         private TextMeshProUGUI instructionText;
@@ -137,6 +139,7 @@ namespace ComputerLearning
         private void OnDestroy()
         {
             IsTestActive = false;
+            isShowingIntro = false;
             if (Instance == this) Instance = null;
         }
 
@@ -151,6 +154,15 @@ namespace ComputerLearning
 
         private void Update()
         {
+            if (isShowingIntro)
+            {
+                if (UnityEngine.InputSystem.Keyboard.current != null && UnityEngine.InputSystem.Keyboard.current.spaceKey.wasPressedThisFrame)
+                {
+                    DismissIntroAndStart();
+                }
+                return;
+            }
+
             if (!IsTestActive || isTaskResolving || currentTaskIndex >= config.tasks.Count) return;
 
             // Handle timeout countdown
@@ -198,6 +210,113 @@ namespace ComputerLearning
             LoadConfiguration();
 
             BuildCleanUI();
+            ShowAssessmentIntroModal();
+        }
+
+        private void ShowAssessmentIntroModal()
+        {
+            if (introModalObject != null) Destroy(introModalObject);
+
+            Canvas canvas = FindAssessmentCanvas();
+            Transform parentTransform = rootContainer != null ? rootContainer.transform : (canvas != null ? canvas.transform : transform);
+
+            introModalObject = new GameObject("AssessmentIntroModal", typeof(RectTransform), typeof(Image));
+            introModalObject.transform.SetParent(parentTransform, false);
+            introModalObject.transform.SetAsLastSibling();
+
+            RectTransform backdropRt = introModalObject.GetComponent<RectTransform>();
+            backdropRt.anchorMin = Vector2.zero;
+            backdropRt.anchorMax = Vector2.one;
+            backdropRt.offsetMin = Vector2.zero;
+            backdropRt.offsetMax = Vector2.zero;
+
+            Image backdropImg = introModalObject.GetComponent<Image>();
+            backdropImg.color = new Color(0.08f, 0.12f, 0.20f, 0.65f); // Soft dark glass backdrop
+            backdropImg.raycastTarget = true;
+
+            // Centered Card
+            GameObject cardObj = new GameObject("IntroCard", typeof(RectTransform), typeof(Image), typeof(VerticalLayoutGroup));
+            cardObj.transform.SetParent(introModalObject.transform, false);
+            RectTransform cardRt = cardObj.GetComponent<RectTransform>();
+            cardRt.anchorMin = new Vector2(0.5f, 0.5f);
+            cardRt.anchorMax = new Vector2(0.5f, 0.5f);
+            cardRt.pivot = new Vector2(0.5f, 0.5f);
+            cardRt.sizeDelta = new Vector2(580f, 340f);
+
+            Image cardImg = cardObj.GetComponent<Image>();
+            cardImg.color = Color.white;
+
+            VerticalLayoutGroup vlg = cardObj.GetComponent<VerticalLayoutGroup>();
+            vlg.padding = new RectOffset(36, 36, 32, 32);
+            vlg.spacing = 18f;
+            vlg.childAlignment = TextAnchor.MiddleCenter;
+            vlg.childControlWidth = false;
+            vlg.childControlHeight = false;
+            vlg.childForceExpandWidth = false;
+            vlg.childForceExpandHeight = false;
+
+            // Title
+            GameObject titleObj = new GameObject("Title", typeof(RectTransform), typeof(TextMeshProUGUI));
+            titleObj.transform.SetParent(cardObj.transform, false);
+            titleObj.GetComponent<RectTransform>().sizeDelta = new Vector2(500f, 40f);
+            TextMeshProUGUI titleTmp = titleObj.GetComponent<TextMeshProUGUI>();
+            titleTmp.text = UIDialogs.Current.assessment_intro_title;
+            titleTmp.fontSize = 24f;
+            titleTmp.fontStyle = FontStyles.Bold;
+            titleTmp.alignment = TextAlignmentOptions.Center;
+            titleTmp.color = new Color(0.12f, 0.16f, 0.24f);
+
+            // Description
+            GameObject descObj = new GameObject("Description", typeof(RectTransform), typeof(TextMeshProUGUI));
+            descObj.transform.SetParent(cardObj.transform, false);
+            descObj.GetComponent<RectTransform>().sizeDelta = new Vector2(500f, 130f);
+            TextMeshProUGUI descTmp = descObj.GetComponent<TextMeshProUGUI>();
+            descTmp.text = UIDialogs.Current.assessment_intro_description;
+            descTmp.fontSize = 17f;
+            descTmp.lineSpacing = 12f;
+            descTmp.alignment = TextAlignmentOptions.Center;
+            descTmp.color = new Color(0.28f, 0.33f, 0.42f);
+
+            // Space Prompt Pill (pure visual indicator, advances exclusively via Spacebar)
+            GameObject btnObj = new GameObject("SpacePromptPill", typeof(RectTransform), typeof(Image), typeof(HorizontalLayoutGroup));
+            btnObj.transform.SetParent(cardObj.transform, false);
+            RectTransform btnRt = btnObj.GetComponent<RectTransform>();
+            btnRt.sizeDelta = new Vector2(380f, 50f);
+
+            Image btnImg = btnObj.GetComponent<Image>();
+            btnImg.color = new Color(0.15f, 0.45f, 0.95f);
+            btnImg.raycastTarget = false;
+
+            HorizontalLayoutGroup btnHlg = btnObj.GetComponent<HorizontalLayoutGroup>();
+            btnHlg.childAlignment = TextAnchor.MiddleCenter;
+            btnHlg.padding = new RectOffset(20, 20, 8, 8);
+            btnHlg.childControlWidth = true;
+            btnHlg.childControlHeight = true;
+            btnHlg.childForceExpandWidth = true;
+            btnHlg.childForceExpandHeight = true;
+
+            GameObject btnLabelObj = new GameObject("BtnLabel", typeof(RectTransform), typeof(TextMeshProUGUI));
+            btnLabelObj.transform.SetParent(btnObj.transform, false);
+            TextMeshProUGUI btnLabelTmp = btnLabelObj.GetComponent<TextMeshProUGUI>();
+            btnLabelTmp.text = UIDialogs.Current.assessment_intro_prompt;
+            btnLabelTmp.fontSize = 17f;
+            btnLabelTmp.fontStyle = FontStyles.Bold;
+            btnLabelTmp.alignment = TextAlignmentOptions.Center;
+            btnLabelTmp.color = Color.white;
+            btnLabelTmp.raycastTarget = false;
+
+            isShowingIntro = true;
+        }
+
+        private void DismissIntroAndStart()
+        {
+            if (!isShowingIntro) return;
+            isShowingIntro = false;
+            if (introModalObject != null)
+            {
+                Destroy(introModalObject);
+                introModalObject = null;
+            }
             SpawnCurrentTask();
         }
 

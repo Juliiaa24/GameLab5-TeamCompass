@@ -34,6 +34,7 @@ namespace ComputerLearning
         protected int attempts;
         protected float lastInteractionTime;
         protected bool hasShownInactivityReminder;
+        protected bool hasSpawnedCompletionScorePopup;
         #endregion
 
         #region Unity Methods
@@ -42,6 +43,7 @@ namespace ComputerLearning
             startTime = Time.time;
             lastInteractionTime = Time.time;
             hasShownInactivityReminder = false;
+            hasSpawnedCompletionScorePopup = false;
             attempts = 0;
         }
 
@@ -53,8 +55,7 @@ namespace ComputerLearning
             if (!hasShownInactivityReminder && (Time.time - lastInteractionTime) >= 7f)
             {
                 hasShownInactivityReminder = true;
-                RectTransform myRect = GetComponent<RectTransform>();
-                VirtualMascot.ShowInactivityReminder(myRect);
+                VirtualMascot.ShowInactivityReminder(GetActiveFeedbackTarget());
             }
         }
         #endregion
@@ -66,6 +67,7 @@ namespace ComputerLearning
             IsFinished = false;
             lastInteractionTime = Time.time;
             hasShownInactivityReminder = false;
+            hasSpawnedCompletionScorePopup = false;
             attempts = 0;
             subTaskProgress = 0f;
             SetupTask(definition);
@@ -85,10 +87,41 @@ namespace ComputerLearning
         protected abstract void SetupTask(TaskDefinition definition);
 
         /// <summary>
+        /// Returns the active target's RectTransform so mascot feedback and floating score popups
+        /// appear next to or on the active target rather than the root container.
+        /// </summary>
+        protected virtual RectTransform GetActiveFeedbackTarget()
+        {
+            return transform as RectTransform;
+        }
+
+        protected void TriggerHitScoreFeedback(Transform targetTransform = null, int basePoints = 100, int maxBonus = 50)
+        {
+            float elapsed = Mathf.Max(0.05f, Time.time - startTime);
+            float timeLimit = (Definition != null && Definition.config != null) ? Definition.config.timeLimit : 0f;
+            LevelRunner runner = GetComponentInParent<LevelRunner>() ?? LevelRunner.ActiveRunner;
+            int pts = runner != null ? runner.AwardHitPoints(elapsed, timeLimit, basePoints, maxBonus) : basePoints;
+
+            Transform anchor = targetTransform != null ? targetTransform : GetActiveFeedbackTarget();
+            Vector3 worldPos = anchor != null ? anchor.position : transform.position;
+            FloatingScoreText.Spawn(transform, worldPos, pts);
+        }
+
+        protected void TriggerMistakeScoreFeedback(Transform targetTransform = null, int penalty = 25)
+        {
+            LevelRunner runner = GetComponentInParent<LevelRunner>() ?? LevelRunner.ActiveRunner;
+            int delta = runner != null ? runner.ApplyMistakePenalty(penalty) : -Mathf.Abs(penalty);
+
+            Transform anchor = targetTransform != null ? targetTransform : GetActiveFeedbackTarget();
+            Vector3 worldPos = anchor != null ? anchor.position : transform.position;
+            FloatingScoreText.Spawn(transform, worldPos, delta);
+        }
+
+        /// <summary>
         /// Generates and records an intermediate result without ending the task.
         /// Useful for tasks with multiple distinct sub-goals (e.g. clicking multiple targets).
         /// </summary>
-        protected void RecordIntermediateResult(bool success)
+        protected void RecordIntermediateResult(bool success, Transform feedbackTarget = null)
         {
             if (IsFinished) return;
 
@@ -97,11 +130,13 @@ namespace ComputerLearning
             if (success)
             {
                 FeedbackManager.PlaySuccess();
+                TriggerHitScoreFeedback(feedbackTarget);
             }
             else
             {
                 attempts++;
                 FeedbackManager.PlayError(true);
+                TriggerMistakeScoreFeedback(feedbackTarget);
             }
 
             float elapsed  = Time.time - startTime;
@@ -137,7 +172,7 @@ namespace ComputerLearning
             startTime = Time.time;
         }
 
-        protected void Complete(bool success)
+        protected void Complete(bool success, Transform feedbackTarget = null)
         {
             if (IsFinished) return;
             IsFinished = true;
@@ -147,10 +182,16 @@ namespace ComputerLearning
             if (success)
             {
                 FeedbackManager.PlaySuccess();
+                if (!hasSpawnedCompletionScorePopup)
+                {
+                    hasSpawnedCompletionScorePopup = true;
+                    TriggerHitScoreFeedback(feedbackTarget);
+                }
             }
             else
             {
                 FeedbackManager.PlayError(true);
+                TriggerMistakeScoreFeedback(feedbackTarget);
             }
 
             float elapsed  = Time.time - startTime;
@@ -189,11 +230,12 @@ namespace ComputerLearning
             OnTaskCompleted?.Invoke(null);
         }
 
-        public void RegisterAttempt(bool withShake = true)
+        public void RegisterAttempt(bool withShake = true, Transform feedbackTarget = null)
         {
             attempts++;
             NotifyUserInteraction();
             FeedbackManager.PlayError(withShake);
+            TriggerMistakeScoreFeedback(feedbackTarget);
         }
 
         /// <summary>

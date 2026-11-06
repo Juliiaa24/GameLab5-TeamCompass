@@ -972,7 +972,7 @@ namespace ComputerLearning
                 Canvas canvas = GetComponentInParent<Canvas>();
                 if (canvas != null)
                 {
-                    appWindow = Instantiate(windowPrefab, canvas.transform).GetComponent<Window>();
+                    appWindow = Instantiate(windowPrefab, canvas.transform, false).GetComponent<Window>();
                     isNewWindow = true;
                 }
             }

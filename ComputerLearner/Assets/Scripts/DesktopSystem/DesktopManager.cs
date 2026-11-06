@@ -294,7 +294,7 @@ namespace ComputerLearning
                 else container = transform;
             }
 
-            GameObject mascotInstance = Instantiate(mascotPrefab, container);
+            GameObject mascotInstance = Instantiate(mascotPrefab, container, false);
             mascotInstance.name = "VirtualMascot";
 
             VirtualMascot mascot = mascotInstance.GetComponent<VirtualMascot>();
@@ -629,7 +629,7 @@ namespace ComputerLearning
                 return null;
             }
 
-            GameObject iconInstance = Instantiate(defaultIconPrefab, desktopIconContainer);
+            GameObject iconInstance = Instantiate(defaultIconPrefab, desktopIconContainer, false);
             iconInstance.name = iconData.iconName;
 
             CanvasGroup canvasGroup = iconInstance.GetComponent<CanvasGroup>() ?? iconInstance.AddComponent<CanvasGroup>();

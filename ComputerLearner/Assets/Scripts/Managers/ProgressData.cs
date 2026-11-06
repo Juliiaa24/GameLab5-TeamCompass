@@ -257,6 +257,20 @@ namespace ComputerLearning
         }
 
         /// <summary>
+        /// Calculates the medal achieved based on additive points relative to the level's maximum possible points.
+        /// Bronze >= 40%, Silver >= 65%, Gold >= 85%.
+        /// </summary>
+        public static LevelMedal CalculateMedalFromPoints(int currentPoints, int maxPossiblePoints)
+        {
+            if (maxPossiblePoints <= 0) return LevelMedal.Gold;
+            float ratio = (float)Mathf.Max(0, currentPoints) / maxPossiblePoints;
+            if (ratio >= 0.85f) return LevelMedal.Gold;
+            if (ratio >= 0.65f) return LevelMedal.Silver;
+            if (ratio >= 0.40f) return LevelMedal.Bronze;
+            return LevelMedal.None;
+        }
+
+        /// <summary>
         /// Calculates the medal achieved based on accuracy and mistakes.
         /// </summary>
         public static LevelMedal CalculateMedal(float accuracyPercentage, int mistakesCount)
@@ -270,16 +284,16 @@ namespace ComputerLearning
         /// <summary>
         /// Records a level attempt, updating the stored record only if this attempt is superior.
         /// </summary>
-        public LevelScoreRecord RecordLevelAttempt(string levelId, float accuracyScore, float timeSeconds, int mistakesCount = 0)
+        public LevelScoreRecord RecordLevelAttempt(string levelId, float accuracyScore, float timeSeconds, int mistakesCount = 0, int pointsEarned = 0)
         {
             LevelMedal earnedMedal = CalculateMedal(accuracyScore, mistakesCount);
-            return RecordLevelAttempt(levelId, earnedMedal, accuracyScore, timeSeconds, mistakesCount);
+            return RecordLevelAttempt(levelId, earnedMedal, accuracyScore, timeSeconds, mistakesCount, pointsEarned);
         }
 
         /// <summary>
         /// Records a level attempt with an explicit medal, preserving the best attempt and logging the individual attempt.
         /// </summary>
-        public LevelScoreRecord RecordLevelAttempt(string levelId, LevelMedal earnedMedal, float accuracyScore, float timeSeconds, int mistakesCount = 0)
+        public LevelScoreRecord RecordLevelAttempt(string levelId, LevelMedal earnedMedal, float accuracyScore, float timeSeconds, int mistakesCount = 0, int pointsEarned = 0)
         {
             if (string.IsNullOrEmpty(levelId)) return null;
 
@@ -302,6 +316,7 @@ namespace ComputerLearning
             if (record == null)
             {
                 record = new LevelScoreRecord(levelId, earnedMedal, accuracyScore, timeSeconds, mistakesCount);
+                record.bestPoints = Mathf.Max(0, pointsEarned);
                 levelRecords.Add(record);
                 isBetter = true;
             }
@@ -317,7 +332,7 @@ namespace ComputerLearning
                 }
                 else if (earnedMedal == record.bestMedal)
                 {
-                    if (accuracyScore > record.bestScore + 0.1f)
+                    if (pointsEarned > record.bestPoints || accuracyScore > record.bestScore + 0.1f)
                     {
                         isBetter = true;
                     }
@@ -328,6 +343,11 @@ namespace ComputerLearning
                             isBetter = true;
                         }
                     }
+                }
+
+                if (pointsEarned > record.bestPoints)
+                {
+                    record.bestPoints = pointsEarned;
                 }
 
                 if (isBetter)

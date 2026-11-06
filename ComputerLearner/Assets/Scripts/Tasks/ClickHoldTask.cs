@@ -18,7 +18,7 @@ namespace ComputerLearning
             TaskTargetMovement mover = GetComponent<TaskTargetMovement>();
             if (mover == null) mover = gameObject.AddComponent<TaskTargetMovement>();
             mover.Setup(definition);
-            mover.enabled = false; // Disable movement entirely because holding while moving is too hard
+            mover.SetMoving(false); // Keep component enabled for bounds clamping, disable movement
 
             if (definition != null)
             {

@@ -16,12 +16,26 @@ namespace ComputerLearning
         private Image progressBarFill;
         private float lastCleanedTime;
         private bool hasShownBetweenReminder = false;
+        private readonly List<RectTransform> activeSpots = new List<RectTransform>();
+
+        protected override RectTransform GetActiveFeedbackTarget()
+        {
+            for (int i = 0; i < activeSpots.Count; i++)
+            {
+                if (activeSpots[i] != null && activeSpots[i].gameObject.activeInHierarchy)
+                {
+                    return activeSpots[i];
+                }
+            }
+            return contentArea != null ? contentArea : (transform as RectTransform);
+        }
         
         protected override void SetupTask(TaskDefinition definition)
         {
             contentArea = GetComponent<RectTransform>();
             lastCleanedTime = Time.time;
             hasShownBetweenReminder = false;
+            activeSpots.Clear();
             CreateProgressBar();
             SpawnDirtSpots();
             SetupBackgroundClickInterceptor(OnBackgroundClicked);
@@ -36,22 +50,24 @@ namespace ComputerLearning
             if (!hasShownBetweenReminder && (Time.time - lastCleanedTime) >= 4.5f && spotsCleaned < spotsToSpawn)
             {
                 hasShownBetweenReminder = true;
-                VirtualMascot.ShowContextualFeedback(VirtualMascot.FeedbackDialogs.moveKeepMoving, contentArea, 2.8f);
+                VirtualMascot.ShowContextualFeedback(VirtualMascot.FeedbackDialogs.moveKeepMoving, GetActiveFeedbackTarget(), 2.8f);
             }
         }
 
         public void OnBackgroundClicked(PointerEventData eventData)
         {
             if (IsFinished) return;
-            RegisterAttempt(true);
-            VirtualMascot.ShowContextualFeedback(VirtualMascot.FeedbackDialogs.moveNoClick, contentArea, 2.8f);
+            RectTransform targetAnchor = GetActiveFeedbackTarget();
+            RegisterAttempt(true, targetAnchor);
+            VirtualMascot.ShowContextualFeedback(VirtualMascot.FeedbackDialogs.moveNoClick, targetAnchor, 2.8f);
         }
 
-        public void OnSpotClicked()
+        public void OnSpotClicked(Transform spotTransform = null)
         {
             if (IsFinished) return;
-            RegisterAttempt(true);
-            VirtualMascot.ShowContextualFeedback(VirtualMascot.FeedbackDialogs.moveNoClick, contentArea, 2.8f);
+            Transform targetAnchor = spotTransform != null ? spotTransform : GetActiveFeedbackTarget();
+            RegisterAttempt(true, targetAnchor);
+            VirtualMascot.ShowContextualFeedback(VirtualMascot.FeedbackDialogs.moveNoClick, targetAnchor as RectTransform, 2.8f);
         }
 
         private void CreateProgressBar()
@@ -80,9 +96,15 @@ namespace ComputerLearning
 
         private void SpawnDirtSpots()
         {
-            // Get content area size, fallback to 600x400 if layout isn't fully calculated yet
-            float width = contentArea.rect.width > 100 ? contentArea.rect.width : 600f;
-            float height = contentArea.rect.height > 100 ? contentArea.rect.height : 400f;
+            if (contentArea.rect.width <= 100f || contentArea.rect.height <= 100f)
+            {
+                LayoutRebuilder.ForceRebuildLayoutImmediate(contentArea);
+            }
+            // Get content area size with safe interior margin, fallback to 600x400 if layout isn't calculated yet
+            float rawWidth = contentArea.rect.width > 100f ? contentArea.rect.width : 600f;
+            float rawHeight = contentArea.rect.height > 100f ? contentArea.rect.height : 400f;
+            float width = Mathf.Max(200f, rawWidth - 80f);
+            float height = Mathf.Max(160f, rawHeight - 60f);
             
             // We reserve the top 15% for the progress bar
             float availableHeight = height * 0.8f;
@@ -130,6 +152,7 @@ namespace ComputerLearning
                     // Logic
                     DirtSpot spotLogic = spotObj.GetComponent<DirtSpot>();
                     spotLogic.task = this;
+                    activeSpots.Add(rect);
                     
                     spawned++;
                 }
@@ -143,6 +166,13 @@ namespace ComputerLearning
             NotifyUserInteraction();
             lastCleanedTime = Time.time;
             hasShownBetweenReminder = false;
+
+            if (spot != null)
+            {
+                RectTransform spotRt = spot.GetComponent<RectTransform>();
+                if (spotRt != null) activeSpots.Remove(spotRt);
+                TriggerHitScoreFeedback(spot.transform, 10, 5);
+            }
             
             spotsCleaned++;
             float progress = (float)spotsCleaned / spotsToSpawn;
@@ -155,6 +185,7 @@ namespace ComputerLearning
             
             if (spotsCleaned >= spotsToSpawn)
             {
+                hasSpawnedCompletionScorePopup = true;
                 Complete(true);
             }
         }
@@ -178,7 +209,7 @@ namespace ComputerLearning
         public void OnPointerClick(PointerEventData eventData)
         {
             if (isCleaned) return;
-            task?.OnSpotClicked();
+            task?.OnSpotClicked(transform);
         }
     }
 }

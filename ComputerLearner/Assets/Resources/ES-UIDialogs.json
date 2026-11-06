@@ -1,9 +1,14 @@
-﻿{
+{
     "menu_btn_play": "Jugar",
     "menu_btn_virtual_desktop": "Escritorio virtual",
     "menu_btn_stats": "Estadísticas",
     "menu_btn_reset_progress": "Reiniciar progreso",
     "menu_btn_exit": "Salir",
+    "menu_press_space_to_start": "Presiona ESPACIO o haz clic en Jugar para comenzar",
+    "assessment_intro_title": "¡Bienvenido al Test de Habilidades!",
+    "assessment_intro_description": "Antes de empezar, haremos unas pequeñas pruebas para ver cómo manejas el ratón (mover, hacer clic, arrastrar...). No te preocupes por equivocarte ni tengas prisa, ¡tómate todo el tiempo que necesites!",
+    "assessment_intro_prompt": "Presiona la barra ESPACIO para comenzar",
+    "celebration_points_format": "Puntuación: <b>{0} PTS</b>",
     "start_menu_btn_start": "Inicio",
     "start_menu_header": "Mi equipo",
     "start_menu_file_explorer": "Explorador de archivos",

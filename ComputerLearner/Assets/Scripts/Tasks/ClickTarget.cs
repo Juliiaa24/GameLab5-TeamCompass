@@ -71,25 +71,48 @@ namespace ComputerLearning
                 }
             }
 
-            if (!isMoving || parentRect == null) return;
+            if (parentRect == null || parentRect.rect.width <= 0f || parentRect.rect.height <= 0f) return;
 
             Vector2 pos = rectTransform.anchoredPosition;
-            pos += moveDirection * (moveSpeed * Time.deltaTime);
-
-            // Bounce off the edges of the parent rect
-            Rect bounds = parentRect.rect;
-            float halfW = rectTransform.rect.width  * 0.5f;
-            float halfH = rectTransform.rect.height * 0.5f;
-
-            if (pos.x - halfW < bounds.xMin || pos.x + halfW > bounds.xMax)
+            if (isMoving)
             {
-                moveDirection.x = -moveDirection.x;
-                pos.x = Mathf.Clamp(pos.x, bounds.xMin + halfW, bounds.xMax - halfW);
+                pos += moveDirection * (moveSpeed * Time.deltaTime);
             }
-            if (pos.y - halfH < bounds.yMin || pos.y + halfH > bounds.yMax)
+
+            // Clamp/bounce off the edges of the parent rect with safe interior margins
+            Rect bounds = parentRect.rect;
+            float marginW = (rectTransform.rect.width  * 0.5f) + 18f;
+            float marginH = (rectTransform.rect.height * 0.5f) + 18f;
+
+            float minX = bounds.xMin + marginW;
+            float maxX = bounds.xMax - marginW;
+            float minY = bounds.yMin + marginH;
+            float maxY = bounds.yMax - marginH - 22f;
+
+            if (maxX > minX)
             {
-                moveDirection.y = -moveDirection.y;
-                pos.y = Mathf.Clamp(pos.y, bounds.yMin + halfH, bounds.yMax - halfH);
+                if (pos.x < minX || pos.x > maxX)
+                {
+                    if (isMoving) moveDirection.x = -moveDirection.x;
+                    pos.x = Mathf.Clamp(pos.x, minX, maxX);
+                }
+            }
+            else
+            {
+                pos.x = bounds.center.x;
+            }
+
+            if (maxY > minY)
+            {
+                if (pos.y < minY || pos.y > maxY)
+                {
+                    if (isMoving) moveDirection.y = -moveDirection.y;
+                    pos.y = Mathf.Clamp(pos.y, minY, maxY);
+                }
+            }
+            else
+            {
+                pos.y = bounds.center.y;
             }
 
             rectTransform.anchoredPosition = pos;

@@ -1,15 +1,17 @@
-﻿/**
+/**
  * Author: Julia Vera & TeamCompass
  * Date: 11/09
  * Description: Controls changes between scenes with DontDestroyOnLoad persistence,
  *              preserves Inspector button bindings when reloading scenes, and handles
  *              Playtest Student ID progression and full reset (Assessment + Skills + Levels).
+ *              Enhanced with Space to Start and localized visual space hint.
 */
 
 using System;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
+using TMPro;
 
 namespace ComputerLearning
 {
@@ -76,20 +78,24 @@ namespace ComputerLearning
         private void OnEnable()
         {
             SceneManager.sceneLoaded += OnSceneLoaded;
+            LocalizationManager.OnLanguageChanged += HandleLanguageChangedForMenu;
         }
 
         private void OnDisable()
         {
             SceneManager.sceneLoaded -= OnSceneLoaded;
+            LocalizationManager.OnLanguageChanged -= HandleLanguageChangedForMenu;
         }
 
         private void Start()
         {
             EnsureMenuButtonsBound();
+            EnsurePlaySpaceHint();
         }
 
         private void OnDestroy()
         {
+            LocalizationManager.OnLanguageChanged -= HandleLanguageChangedForMenu;
             if (Instance == this) Instance = null;
         }
 
@@ -98,15 +104,39 @@ namespace ComputerLearning
             if (scene.name == "Menu")
             {
                 EnsureMenuButtonsBound();
+                EnsurePlaySpaceHint();
+            }
+        }
+
+        private void HandleLanguageChangedForMenu()
+        {
+            if (SceneManager.GetActiveScene().name == "Menu")
+            {
+                EnsurePlaySpaceHint();
             }
         }
 
         private void Update()
         {
-            if (UnityEngine.InputSystem.Keyboard.current != null && UnityEngine.InputSystem.Keyboard.current.escapeKey.wasPressedThisFrame)
+            if (UnityEngine.InputSystem.Keyboard.current != null)
             {
-                if (SceneManager.GetActiveScene().name == "Menu") Application.Quit();
-                else ChangeToMenu();
+                if (UnityEngine.InputSystem.Keyboard.current.escapeKey.wasPressedThisFrame)
+                {
+                    if (SceneManager.GetActiveScene().name == "Menu") Application.Quit();
+                    else ChangeToMenu();
+                }
+                else if (SceneManager.GetActiveScene().name == "Menu" && UnityEngine.InputSystem.Keyboard.current.spaceKey.wasPressedThisFrame)
+                {
+                    // Ensure the player is not currently typing into a student ID / text input field
+                    bool isInputFocused = UnityEngine.EventSystems.EventSystem.current != null &&
+                                          UnityEngine.EventSystems.EventSystem.current.currentSelectedGameObject != null &&
+                                          (UnityEngine.EventSystems.EventSystem.current.currentSelectedGameObject.GetComponent<TMP_InputField>() != null ||
+                                           UnityEngine.EventSystems.EventSystem.current.currentSelectedGameObject.GetComponent<InputField>() != null);
+                    if (!isInputFocused)
+                    {
+                        ChangeToMain();
+                    }
+                }
             }
         }
         #endregion
@@ -276,6 +306,52 @@ namespace ComputerLearning
                         btn.onClick.AddListener(Exit);
                         break;
                 }
+            }
+        }
+
+        private void EnsurePlaySpaceHint()
+        {
+            if (SceneManager.GetActiveScene().name != "Menu") return;
+
+            GameObject playBtnObj = GameObject.Find("Btn-Play");
+            if (playBtnObj == null) return;
+
+            Transform parent = playBtnObj.transform.parent;
+            if (parent == null) return;
+
+            Transform existing = parent.Find("PlaySpaceHint");
+            TextMeshProUGUI hintText = null;
+
+            if (existing == null)
+            {
+                GameObject hintObj = new GameObject("PlaySpaceHint", typeof(RectTransform), typeof(TextMeshProUGUI), typeof(LayoutElement));
+                hintObj.transform.SetParent(parent, false);
+                hintObj.transform.SetSiblingIndex(playBtnObj.transform.GetSiblingIndex() + 1);
+
+                hintText = hintObj.GetComponent<TextMeshProUGUI>();
+                TMP_Text btnText = playBtnObj.GetComponentInChildren<TMP_Text>(true);
+                if (btnText != null && btnText.font != null)
+                {
+                    hintText.font = btnText.font;
+                }
+                hintText.fontSize = 15f;
+                hintText.alignment = TextAlignmentOptions.Center;
+                hintText.color = new Color(0.92f, 0.95f, 0.98f, 0.88f);
+                hintText.raycastTarget = false;
+
+                LayoutElement le = hintObj.GetComponent<LayoutElement>();
+                le.minHeight = 22f;
+                le.preferredHeight = 24f;
+                le.flexibleWidth = 1f;
+            }
+            else
+            {
+                hintText = existing.GetComponent<TextMeshProUGUI>();
+            }
+
+            if (hintText != null)
+            {
+                hintText.text = UIDialogs.Current.menu_press_space_to_start;
             }
         }
 

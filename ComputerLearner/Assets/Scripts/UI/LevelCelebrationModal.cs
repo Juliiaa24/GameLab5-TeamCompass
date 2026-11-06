@@ -25,7 +25,8 @@ namespace ComputerLearning
             float duration, 
             int mistakes, 
             Action onClosed,
-            bool? autoAdvance = null)
+            bool? autoAdvance = null,
+            int pointsEarned = -1)
         {
             GameObject modalObj = new GameObject("LevelCelebrationModal", typeof(RectTransform), typeof(CanvasGroup), typeof(LevelCelebrationModal));
             modalObj.transform.SetParent(parent, false);
@@ -37,7 +38,7 @@ namespace ComputerLearning
             rt.offsetMax = Vector2.zero;
 
             LevelCelebrationModal modal = modalObj.GetComponent<LevelCelebrationModal>();
-            modal.Initialize(level, medal, accuracy, duration, mistakes, onClosed, autoAdvance);
+            modal.Initialize(level, medal, accuracy, duration, mistakes, onClosed, autoAdvance, pointsEarned);
             return modal;
         }
 
@@ -55,6 +56,7 @@ namespace ComputerLearning
         private float accuracyVal;
         private float durationVal;
         private int mistakesVal;
+        private int pointsVal;
         private Action onClosedCallback;
         private bool isAutoAdvancing;
         private bool isClosed = false;
@@ -76,13 +78,26 @@ namespace ComputerLearning
             float duration, 
             int mistakes, 
             Action onClosed,
-            bool? autoAdvance = null)
+            bool? autoAdvance = null,
+            int pointsEarned = -1)
         {
             levelDef = level;
             earnedMedal = medal;
             accuracyVal = accuracy;
             durationVal = duration;
             mistakesVal = mistakes;
+            if (pointsEarned >= 0)
+            {
+                pointsVal = pointsEarned;
+            }
+            else if (LevelRunner.ActiveRunner != null && LevelRunner.ActiveRunner.CurrentLevelScore > 0)
+            {
+                pointsVal = LevelRunner.ActiveRunner.CurrentLevelScore;
+            }
+            else
+            {
+                pointsVal = Mathf.Max(0, Mathf.RoundToInt(accuracy * 1.35f) - (mistakes * 25));
+            }
             onClosedCallback = onClosed;
             isAutoAdvancing = autoAdvance.HasValue ? autoAdvance.Value : ShouldAutoAdvance(level);
 
@@ -110,7 +125,7 @@ namespace ComputerLearning
             RectTransform borderRt = cardBorder.GetComponent<RectTransform>();
             borderRt.anchorMin = new Vector2(0.5f, 0.5f);
             borderRt.anchorMax = new Vector2(0.5f, 0.5f);
-            borderRt.sizeDelta = new Vector2(488f, 418f);
+            borderRt.sizeDelta = new Vector2(488f, 452f);
             borderRt.anchoredPosition = Vector2.zero;
             cardBorder.GetComponent<Image>().color = new Color(0.72f, 0.78f, 0.86f, 0.95f);
 
@@ -121,7 +136,7 @@ namespace ComputerLearning
             cardRectTransform = cardRt;
             cardRt.anchorMin = new Vector2(0.5f, 0.5f);
             cardRt.anchorMax = new Vector2(0.5f, 0.5f);
-            cardRt.sizeDelta = new Vector2(480f, 410f);
+            cardRt.sizeDelta = new Vector2(480f, 444f);
             cardRt.anchoredPosition = Vector2.zero;
 
             Image cardImg = card.GetComponent<Image>();
@@ -219,6 +234,17 @@ namespace ComputerLearning
                     medalBadgeText.color = new Color(0.40f, 0.45f, 0.55f);
                     break;
             }
+
+            // Additive Score Points Row
+            GameObject pointsObj = new GameObject("PointsText", typeof(RectTransform), typeof(TextMeshProUGUI));
+            pointsObj.transform.SetParent(card.transform, false);
+            TextMeshProUGUI pointsTxt = pointsObj.GetComponent<TextMeshProUGUI>();
+            string ptsFormat = !string.IsNullOrEmpty(ui.celebration_points_format) ? ui.celebration_points_format : "Score: <b>{0} PTS</b>";
+            pointsTxt.text = string.Format(ptsFormat, pointsVal);
+            pointsTxt.fontSize = 20;
+            pointsTxt.alignment = TextAlignmentOptions.Center;
+            pointsTxt.color = new Color(0.086f, 0.639f, 0.290f); // Emerald #16A34A
+            pointsTxt.GetComponent<RectTransform>().sizeDelta = new Vector2(430f, 26f);
 
             // Stats row (Accuracy, Time, Mistakes)
             GameObject statsObj = new GameObject("StatsText", typeof(RectTransform), typeof(TextMeshProUGUI));

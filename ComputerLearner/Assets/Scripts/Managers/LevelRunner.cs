@@ -22,17 +22,24 @@ namespace ComputerLearning
         [SerializeField] private int currentTaskIndex = 0;
         public bool IsCompleted { get; private set; } = false;
         
+        public static LevelRunner ActiveRunner { get; private set; }
+
         private BaseTask activeTask;
         private Window appWindow;
         private TutorialDialogs dialogs;
 
-        // Session performance tracking for medal evaluation
+        // Session performance tracking & additive scoring (starts at 0 points)
         private float levelStartTime = 0f;
         private bool hasRecordedLevelStartTime = false;
         private int tasksAttempted = 0;
         private int tasksSucceeded = 0;
         private int tasksFailed = 0;
         private int extraTaskMistakes = 0;
+        private int currentLevelScore = 0;
+        private int maxPossibleScore = 0;
+
+        public int CurrentLevelScore => currentLevelScore;
+        public int MaxPossibleScore => maxPossibleScore;
 
         // Discreet progress bar UI for target levels (no numbers, slightly larger bar)
         private GameObject progressBarContainer;
@@ -42,8 +49,44 @@ namespace ComputerLearning
 
         private void Awake()
         {
+            ActiveRunner = this;
             ReloadDialogs();
             appWindow = GetComponentInParent<Window>();
+        }
+
+        public int AwardHitPoints(float elapsedSeconds, float referenceTimeLimit = 0f, int basePoints = 100, int maxBonus = 50)
+        {
+            float refTime = referenceTimeLimit > 0f ? referenceTimeLimit : 10f;
+            int speedBonus = 0;
+            if (maxBonus > 0)
+            {
+                if (elapsedSeconds <= refTime * 0.4f)
+                {
+                    float fastRatio = 1f - Mathf.Clamp01(elapsedSeconds / Mathf.Max(0.1f, refTime * 0.4f));
+                    speedBonus = Mathf.RoundToInt(Mathf.Lerp(maxBonus * 0.7f, maxBonus, fastRatio));
+                }
+                else if (elapsedSeconds <= refTime)
+                {
+                    float midRatio = 1f - Mathf.Clamp01((elapsedSeconds - refTime * 0.4f) / Mathf.Max(0.1f, refTime * 0.6f));
+                    speedBonus = Mathf.RoundToInt(Mathf.Lerp(maxBonus * 0.56f, maxBonus * 0.7f, midRatio));
+                }
+                else
+                {
+                    speedBonus = Mathf.RoundToInt(maxBonus * 0.3f);
+                }
+            }
+
+            int totalEarned = basePoints + speedBonus;
+            currentLevelScore += totalEarned;
+            maxPossibleScore += (basePoints + maxBonus);
+            return totalEarned;
+        }
+
+        public int ApplyMistakePenalty(int penalty = 25)
+        {
+            int absPenalty = Mathf.Abs(penalty);
+            currentLevelScore = Mathf.Max(0, currentLevelScore - absPenalty);
+            return -absPenalty;
         }
 
         private void ReloadDialogs()
@@ -77,11 +120,14 @@ namespace ComputerLearning
             currentTaskIndex = 0;
             IsCompleted = false;
 
-            // Reset run metrics
+            // Reset run metrics (additive scoring starts at 0 points)
+            ActiveRunner = this;
             tasksAttempted = 0;
             tasksSucceeded = 0;
             tasksFailed = 0;
             extraTaskMistakes = 0;
+            currentLevelScore = 0;
+            maxPossibleScore = 0;
             hasRecordedLevelStartTime = false;
             displayedProgress = 0f;
             targetProgress = 0f;
@@ -245,7 +291,14 @@ namespace ComputerLearning
                 int totalActions = Mathf.Max(1, tasksSucceeded + totalMistakes);
                 float accuracy = ((float)tasksSucceeded / totalActions) * 100f;
 
-                LevelMedal medal = ProgressData.CalculateMedal(accuracy, totalMistakes);
+                if (maxPossibleScore <= 0)
+                {
+                    int fallbackTasks = Mathf.Max(1, tasksSucceeded);
+                    maxPossibleScore = fallbackTasks * 150;
+                    currentLevelScore = Mathf.Max(0, fallbackTasks * 135 - (totalMistakes * 25));
+                }
+
+                LevelMedal medal = ProgressData.CalculateMedalFromPoints(currentLevelScore, maxPossibleScore);
 
                 bool improvedMedal = false;
                 LevelMedal previousBestMedal = LevelMedal.None;
@@ -256,7 +309,7 @@ namespace ComputerLearning
                     previousBestMedal = prevRecord != null ? prevRecord.bestMedal : LevelMedal.None;
                     improvedMedal = hadPreviousAttempt && (int)medal > (int)previousBestMedal;
 
-                    ProgressData.Instance.RecordLevelAttempt(currentLevel.levelId, medal, accuracy, totalDuration, totalMistakes);
+                    ProgressData.Instance.RecordLevelAttempt(currentLevel.levelId, medal, accuracy, totalDuration, totalMistakes, currentLevelScore);
                     ProgressData.Instance.MarkLevelCompleted(currentLevel.levelId);
                 }
 
@@ -271,7 +324,7 @@ namespace ComputerLearning
                         DesktopManager.Instance?.TriggerAdvancedDesktopTourAfterLevel9();
                     }
                     if (appWindow != null) appWindow.CloseWindow();
-                });
+                }, null, currentLevelScore);
 
                 if (improvedMedal)
                 {
@@ -529,6 +582,7 @@ namespace ComputerLearning
         
         private void OnDestroy()
         {
+            if (ActiveRunner == this) ActiveRunner = null;
             if (activeTask != null)
             {
                 activeTask.OnTaskCompleted -= HandleTaskCompleted;

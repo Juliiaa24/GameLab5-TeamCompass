@@ -29,6 +29,7 @@ namespace ComputerLearning
         private RectTransform rect;
         private DraggableIcon[,] grid;
         private readonly List<DraggableIcon> registered = new List<DraggableIcon>();
+        private readonly Dictionary<DraggableIcon, Vector2Int> iconSlots = new Dictionary<DraggableIcon, Vector2Int>();
         #endregion
 
         #region Unity Methods
@@ -43,7 +44,7 @@ namespace ComputerLearning
 
         private void OnRectTransformDimensionsChange() 
         { 
-            EnsureGrid(); 
+            EnsureGrid(true); 
         }
         #endregion
 
@@ -101,6 +102,7 @@ namespace ComputerLearning
         public void Unregister(DraggableIcon icon)
         {
             registered.Remove(icon);
+            iconSlots.Remove(icon);
             if (grid == null) return;
             for (int x = 0; x < grid.GetLength(0); x++)
                 for (int y = 0; y < grid.GetLength(1); y++)
@@ -127,7 +129,7 @@ namespace ComputerLearning
         #endregion
 
         #region Private Methods
-        private void EnsureGrid()
+        private void EnsureGrid(bool forceReposition = false)
         {
             if (rect == null) rect = GetComponent<RectTransform>();
             if (rect == null) return;
@@ -140,12 +142,41 @@ namespace ComputerLearning
             int width = Mathf.Max(1, Mathf.FloorToInt((rect.rect.width - startX + 1f) / stepX));
             int height = targetRows > 0 ? targetRows : Mathf.Max(1, Mathf.FloorToInt((rect.rect.height - startY + 1f) / stepY));
 
-            if (grid != null && grid.GetLength(0) == width && grid.GetLength(1) == height) return;
+            bool sizeChanged = (grid == null || grid.GetLength(0) != width || grid.GetLength(1) != height);
+            if (!sizeChanged && !forceReposition) return;
+
             grid = new DraggableIcon[width, height];
             foreach (DraggableIcon icon in registered)
             {
-                if (icon != null) 
-                    Place(icon, GetGridPosition(rect.InverseTransformPoint(icon.transform.position)));
+                if (icon == null) continue;
+
+                Vector2Int slot;
+                if (!iconSlots.TryGetValue(icon, out slot))
+                {
+                    slot = GetGridPosition(rect.InverseTransformPoint(icon.transform.position));
+                }
+
+                slot.x = Mathf.Clamp(slot.x, 0, width - 1);
+                slot.y = Mathf.Clamp(slot.y, 0, height - 1);
+
+                if (grid[slot.x, slot.y] != null)
+                {
+                    Place(icon, slot);
+                }
+                else
+                {
+                    grid[slot.x, slot.y] = icon;
+                    iconSlots[icon] = slot;
+
+                    icon.transform.position = rect.TransformPoint(new Vector2(
+                        rect.rect.xMin + startX + slot.x * stepX + stepX * 0.5f,
+                        rect.rect.yMax - startY - slot.y * stepY - stepY * 0.5f));
+
+                    if (icon == DraggableIcon.SelectedIcon)
+                    {
+                        icon.UpdateSelectionCardTransform();
+                    }
+                }
             }
         }
 
@@ -187,6 +218,7 @@ namespace ComputerLearning
 
             if (closest.x < 0) return false;
             grid[closest.x, closest.y] = icon;
+            iconSlots[icon] = closest;
 
             float stepX = GetCellWidth();
             float stepY = GetCellHeight();
