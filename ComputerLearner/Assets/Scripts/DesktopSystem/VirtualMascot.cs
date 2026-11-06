@@ -187,7 +187,6 @@ namespace ComputerLearning
         public bool IsDesktopCompanion => isDesktopCompanion;
 
         private RectTransform targetRect;
-        private Vector2? targetOffset = null;
         private float floatTimer;
         private Coroutine bounceCoroutine;
         private Coroutine hideBubbleCoroutine;
@@ -357,7 +356,7 @@ namespace ComputerLearning
 
             if (targetRect != null && targetRect.gameObject.activeInHierarchy)
             {
-                // Get the true visual corners of the target
+                // Get the true visual center of the target, regardless of where its pivot is set
                 Vector3[] corners = new Vector3[4];
                 targetRect.GetWorldCorners(corners);
                 Vector3 basePos = (corners[0] + corners[2]) / 2f;
@@ -368,23 +367,10 @@ namespace ComputerLearning
 
                 RectTransform vis = GetMascotVisualRect();
                 if (vis != null) vis.anchoredPosition = new Vector2(0f, floatOffset);
-
-                Vector3 finalTargetPos;
-                if (targetOffset.HasValue)
-                {
-                    finalTargetPos = basePos + new Vector3(targetOffset.Value.x * scale, targetOffset.Value.y * scale, 0f);
-                }
-                else
-                {
-                    // Automatic safe lateral offset so mascot never obscures the interactive center
-                    float halfTargetW = Vector3.Distance(corners[0], corners[3]) * 0.5f;
-                    bool isOnRightSide = basePos.x > Screen.width * 0.5f;
-                    float sideOffset = (halfTargetW + 120f * scale) * (isOnRightSide ? -1f : 1f);
-                    finalTargetPos = new Vector3(basePos.x + sideOffset, basePos.y + (25f * scale), basePos.z);
-                }
+                Vector3 finalTargetPos = basePos;
 
                 // Clamp to screen bounds to prevent going completely off-screen
-                float margin = 20f * scale;
+                float margin = 5f * scale;
                 finalTargetPos.x = Mathf.Clamp(finalTargetPos.x, margin, Screen.width - margin);
                 finalTargetPos.y = Mathf.Clamp(finalTargetPos.y, margin, Screen.height - margin);
 
@@ -617,7 +603,6 @@ namespace ComputerLearning
 
             gameObject.SetActive(true);
             targetRect = target;
-            targetOffset = offset;
 
             Canvas canvas = GetComponentInParent<Canvas>();
             if (mascotRect == null) mascotRect = GetComponent<RectTransform>();
@@ -632,21 +617,9 @@ namespace ComputerLearning
                 }
                 else if (!wasActive && targetRect.gameObject.activeInHierarchy)
                 {
-                    float scale = canvas != null ? canvas.scaleFactor : 1f;
                     Vector3[] corners = new Vector3[4];
                     targetRect.GetWorldCorners(corners);
-                    Vector3 basePos = (corners[0] + corners[2]) / 2f;
-                    if (targetOffset.HasValue)
-                    {
-                        mascotRect.position = basePos + new Vector3(targetOffset.Value.x * scale, targetOffset.Value.y * scale, 0f);
-                    }
-                    else
-                    {
-                        float halfTargetW = Vector3.Distance(corners[0], corners[3]) * 0.5f;
-                        bool isOnRightSide = basePos.x > Screen.width * 0.5f;
-                        float sideOffset = (halfTargetW + 120f * scale) * (isOnRightSide ? -1f : 1f);
-                        mascotRect.position = new Vector3(basePos.x + sideOffset, basePos.y + (25f * scale), basePos.z);
-                    }
+                    mascotRect.position = (corners[0] + corners[2]) / 2f;
                 }
             }
 
