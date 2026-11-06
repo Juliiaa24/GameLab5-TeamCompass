@@ -619,6 +619,7 @@ namespace ComputerLearning
             targetRect = target;
             targetOffset = offset;
 
+            Canvas canvas = GetComponentInParent<Canvas>();
             if (mascotRect == null) mascotRect = GetComponent<RectTransform>();
             if (mascotRect != null)
             {
@@ -631,7 +632,6 @@ namespace ComputerLearning
                 }
                 else if (!wasActive && targetRect.gameObject.activeInHierarchy)
                 {
-                    Canvas canvas = GetComponentInParent<Canvas>();
                     float scale = canvas != null ? canvas.scaleFactor : 1f;
                     Vector3[] corners = new Vector3[4];
                     targetRect.GetWorldCorners(corners);
@@ -657,7 +657,6 @@ namespace ComputerLearning
 
             ApplyTextAndRebuildBubble(message);
 
-            Canvas canvas = GetComponentInParent<Canvas>();
             UpdateSpeechBubblePlacement(canvas);
 
             RectTransform vis = GetMascotVisualRect();
