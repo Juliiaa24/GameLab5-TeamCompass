@@ -70,6 +70,42 @@ namespace ComputerLearning
             tutorialBlocker = blockerObj.AddComponent<TutorialBlocker>();
         }
 
+        public static void StopTourAndCleanUp()
+        {
+            AdvancedDesktopTour tour = UnityEngine.Object.FindAnyObjectByType<AdvancedDesktopTour>();
+            if (tour != null)
+            {
+                tour.StopTour();
+            }
+            else
+            {
+                IsTourRunning = false;
+            }
+        }
+
+        public void StopTour()
+        {
+            IsTourRunning = false;
+            StopAllCoroutines();
+            if (activeRecycledListener != null)
+            {
+                RecycleBinIcon.OnIconRecycled -= activeRecycledListener;
+                activeRecycledListener = null;
+            }
+            if (cachedRecycleBin != null)
+            {
+                cachedRecycleBin.enabled = true;
+            }
+            if (tutorialBlocker != null)
+            {
+                tutorialBlocker.ClearTarget();
+                Destroy(tutorialBlocker.gameObject);
+                tutorialBlocker = null;
+            }
+            VirtualMascot.HideMascot();
+            Destroy(this);
+        }
+
         private void OnDestroy()
         {
             IsTourRunning = false;
@@ -322,6 +358,12 @@ namespace ComputerLearning
             float timer = 0f;
             while (!condition())
             {
+                if (!IsTourRunning || VirtualDesktopGuidedLevels.IsLevelRunning)
+                {
+                    StopTour();
+                    yield break;
+                }
+
                 timer += Time.deltaTime;
                 if (timer > 8.0f)
                 {

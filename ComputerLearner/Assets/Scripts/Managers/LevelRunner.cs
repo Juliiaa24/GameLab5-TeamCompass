@@ -301,7 +301,10 @@ namespace ComputerLearning
                     VirtualMascot.HideMascot();
                     if (currentLevel != null && string.Equals(currentLevel.levelId, "level9", System.StringComparison.OrdinalIgnoreCase))
                     {
-                        DesktopManager.Instance?.TriggerAdvancedDesktopTourAfterLevel9();
+                        if (PlayerPrefs.GetInt("AdvancedDesktopTourCompleted", 0) == 0 && !VirtualDesktopGuidedLevels.IsLevelRunning)
+                        {
+                            DesktopManager.Instance?.TriggerAdvancedDesktopTourAfterLevel9();
+                        }
                     }
                     if (appWindow != null) appWindow.CloseWindow();
                 }, null, currentLevelScore);
@@ -568,13 +571,7 @@ namespace ComputerLearning
                 activeTask.OnTaskCompleted -= HandleTaskCompleted;
                 activeTask.OnSubTaskProgressChanged -= HandleSubTaskProgressChanged;
             }
-            if (gameObject.scene.isLoaded && IsCompleted && currentLevel != null && string.Equals(currentLevel.levelId, "level9", System.StringComparison.OrdinalIgnoreCase))
-            {
-                if (DesktopManager.HasInstance)
-                {
-                    DesktopManager.Instance.TriggerAdvancedDesktopTourAfterLevel9();
-                }
-            }
+            // Level 9 tour trigger handled in celebration modal onClosed
         }
     }
 }

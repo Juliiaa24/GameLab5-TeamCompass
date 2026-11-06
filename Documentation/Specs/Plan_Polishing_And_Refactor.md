@@ -471,9 +471,9 @@ En dicho método:
    - [x] Targets en Ventanas: se mantienen dentro del marco visible con padding seguro y grid estable en WebGL (Fase 4).
    - [x] Puntuación Aditiva: inicia en 0, suma con aciertos y penaliza fallos (Fase 5).
    - [x] Feedback Flotante: números verdes `+pts` y rojos `-50` en tiempo real (Fase 6).
-   - [ ] Creación de Archivos: "+ New Image" crea y muestra imágenes dentro de las ventanas de Niveles y Minijuegos (Fase 7).
-   - [ ] Tecla "W": pulsar "W" jamás spawnea ventanas base ni congela la UI (Fase 8).
-   - [ ] Menú tras Escape en WebGL: botones responden siempre a clics sin quedarse bloqueados (Fase 9).
-   - [ ] Ciclo de Vida Tour Papelera: se cancela limpiamente si se inicia el Nivel 10 y no se solapa con el Nivel 11 (Fase 10).
-   - [ ] Balanceo de Medallas: tiempos lentos (53s en N14, 70s en N15, 148s en N16) no otorgan Oro; el Oro exige destreza (Fase 11).
+   - [x] Creación de Archivos: "+ New Image" crea y muestra imágenes dentro de las ventanas de Niveles y Minijuegos (Fase 7).
+   - [x] Tecla "W": pulsar "W" jamás spawnea ventanas base ni congela la UI (Fase 8).
+   - [x] Menú tras Escape en WebGL: botones responden siempre a clics sin quedarse bloqueados (Fase 9).
+   - [x] Ciclo de Vida Tour Papelera: se cancela limpiamente si se inicia el Nivel 10 y no se solapa con el Nivel 11 (Fase 10).
+   - [x] Balanceo de Medallas: tiempos lentos (53s en N14, 70s en N15, 148s en N16) no otorgan Oro; el Oro exige destreza (Fase 11).
 

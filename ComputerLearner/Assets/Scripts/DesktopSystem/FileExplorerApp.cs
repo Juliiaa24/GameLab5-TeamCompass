@@ -327,7 +327,7 @@ namespace ComputerLearning
 
             if (targetFolder == null)
             {
-                if (ActiveExplorerFolder != null && !IsReadOnlySystemFolderStatic(ActiveExplorerFolder))
+                if (ActiveExplorerFolder != null)
                 {
                     targetFolder = ActiveExplorerFolder;
                 }
@@ -377,7 +377,7 @@ namespace ComputerLearning
 
             if (targetFolder == null)
             {
-                if (ActiveExplorerFolder != null && !IsReadOnlySystemFolderStatic(ActiveExplorerFolder))
+                if (ActiveExplorerFolder != null)
                 {
                     targetFolder = ActiveExplorerFolder;
                 }
@@ -606,9 +606,7 @@ namespace ComputerLearning
         {
             if (currentFolder == null) return null;
 
-            ExplorerItemData target = IsReadOnlySystemFolderStatic(currentFolder)
-                ? FindOrCreateSystemFolder("Documents", true)
-                : currentFolder;
+            ExplorerItemData target = currentFolder;
 
             string uniqueName = GetUniqueItemName(target, customBaseName, ".txt");
             ExplorerItemData newDoc = new ExplorerItemData
@@ -630,9 +628,7 @@ namespace ComputerLearning
         {
             if (currentFolder == null) return null;
 
-            ExplorerItemData target = IsReadOnlySystemFolderStatic(currentFolder)
-                ? FindOrCreateSystemFolder("Pictures", true)
-                : currentFolder;
+            ExplorerItemData target = currentFolder;
 
             string uniqueName = GetUniqueItemName(target, customBaseName, ".png");
             ExplorerItemData newImg = SaveOrCreateImageDocument(uniqueName, null, target);

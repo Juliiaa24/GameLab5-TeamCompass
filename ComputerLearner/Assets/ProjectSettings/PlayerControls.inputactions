@@ -122,17 +122,6 @@
                     "action": "Scroll",
                     "isComposite": false,
                     "isPartOfComposite": false
-                },
-                {
-                    "name": "",
-                    "id": "a288e3c9-68e9-4a96-8b41-27af808d6548",
-                    "path": "<Keyboard>/w",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": "",
-                    "action": "spawnWindow",
-                    "isComposite": false,
-                    "isPartOfComposite": false
                 }
             ]
         }

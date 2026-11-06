@@ -171,6 +171,8 @@ namespace ComputerLearning
         { 
             ProgressData.Instance?.Save();
             PlayerPrefs.Save();
+            Cursor.visible = true;
+            Cursor.lockState = CursorLockMode.None;
             ChangeScene(SceneNames.Menu); 
         }
 
@@ -261,6 +263,14 @@ namespace ComputerLearning
         {
             if (SceneManager.GetActiveScene().name != "Menu") return;
 
+            // Ensure cursor and event system are clean and responsive (especially in WebGL)
+            Cursor.visible = true;
+            Cursor.lockState = CursorLockMode.None;
+            if (EventSystem.current != null)
+            {
+                EventSystem.current.SetSelectedGameObject(null);
+            }
+
             GameObject menuRootObj = GameObject.Find("Menu");
             Canvas menuCanvas = menuRootObj != null ? menuRootObj.GetComponent<Canvas>() : null;
             if (menuCanvas != null && menuCanvas.gameObject.scene.name == "Menu")
@@ -272,20 +282,6 @@ namespace ComputerLearning
             foreach (Button btn in buttons)
             {
                 if (btn == null) continue;
-
-                // Only add runtime listener if the Inspector persistent listener is missing/broken
-                bool hasValidPersistentListener = false;
-                int count = btn.onClick.GetPersistentEventCount();
-                for (int i = 0; i < count; i++)
-                {
-                    if (btn.onClick.GetPersistentTarget(i) != null && !string.IsNullOrEmpty(btn.onClick.GetPersistentMethodName(i)))
-                    {
-                        hasValidPersistentListener = true;
-                        break;
-                    }
-                }
-
-                if (hasValidPersistentListener) continue;
 
                 btn.onClick.RemoveAllListeners();
                 switch (btn.gameObject.name)

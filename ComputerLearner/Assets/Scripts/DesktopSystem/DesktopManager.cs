@@ -233,11 +233,11 @@ namespace ComputerLearning
         public void TriggerAdvancedDesktopTourAfterLevel9()
         {
             if (!IsVirtualDesktopScene()) return;
+            if (PlayerPrefs.GetInt("AdvancedDesktopTourCompleted", 0) == 1) return;
+            if (VirtualDesktopGuidedLevels.IsLevelRunning) return;
             if (isStartingAdvancedTour || AdvancedDesktopTour.IsTourRunning || UnityEngine.Object.FindAnyObjectByType<AdvancedDesktopTour>() != null) return;
 
             Debug.Log("[DesktopManager] Level 9 completed! Scheduling AdvancedDesktopTour...");
-            PlayerPrefs.SetInt("AdvancedDesktopTourCompleted", 0);
-            PlayerPrefs.Save();
             StartCoroutine(CheckAndStartAdvancedDesktopTour());
         }
 
@@ -252,7 +252,18 @@ namespace ComputerLearning
             while (UnityEngine.Object.FindAnyObjectByType<LevelCelebrationModal>() != null ||
                    DesktopTour.IsTourRunning)
             {
+                if (VirtualDesktopGuidedLevels.IsLevelRunning)
+                {
+                    isStartingAdvancedTour = false;
+                    yield break;
+                }
                 yield return new WaitForSeconds(0.2f);
+            }
+
+            if (VirtualDesktopGuidedLevels.IsLevelRunning || PlayerPrefs.GetInt("AdvancedDesktopTourCompleted", 0) == 1)
+            {
+                isStartingAdvancedTour = false;
+                yield break;
             }
 
             if (WindowManager.Instance != null)
