@@ -870,12 +870,18 @@ namespace ComputerLearning
                 string fileName = DateTime.Now.ToString("HH-mm-ss") + ".json";
                 string fullPath = Path.Combine(folderPath, fileName);
 
-                File.WriteAllText(fullPath, json);
-                Debug.Log($"[InitialTestManager] Successfully exported assessment JSON to: {fullPath}");
-
+                if (PlaytestDataManager.AutoDownloadEnabled)
+                {
+                    File.WriteAllText(fullPath, json);
+                    Debug.Log($"[InitialTestManager] Successfully exported assessment JSON to: {fullPath}");
 #if UNITY_EDITOR
-                UnityEditor.AssetDatabase.Refresh();
+                    UnityEditor.AssetDatabase.Refresh();
 #endif
+                }
+                else
+                {
+                    Debug.Log($"[InitialTestManager] Assessment report saved in-memory/prefs. Auto-download is disabled, skipping JSON file write ({fileName}).");
+                }
             }
             catch (Exception ex)
             {

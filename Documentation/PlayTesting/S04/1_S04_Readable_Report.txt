@@ -1,0 +1,144 @@
+﻿================================================================================================
+  STUDENT PLAYTEST EVALUATION & PROGRESS REPORT: S04
+================================================================================================
+  Student ID / Name        : S04
+  Session Start Time       : 2026-11-03 09:36:00
+  Last Saved Time          : 2026-11-03 10:03:19
+  In-Game Language         : EN
+  Initial Assessment       : Completed (Average Score: 95.7%)
+  Final Skills Average     : 100%  (Average Improvement: +4.3%)
+  Levels Completed         : 16 of 16
+  Total Tasks Played       : 91 (89 succeeded)
+================================================================================================
+
+1. INITIAL ASSESSMENT & SKILL PROGRESSION
+------------------------------------------------------------------------------------------------
+Skill                    | Initial Score |   Test Time | Final Score | Improvement | Difficulty |  Tasks (W/T)
+------------------------------------------------------------------------------------------------
+Move Cursor              |          100% |  1.05s (0e) |        100% |         +0% |   Tier 5/5 |   1/1 (100%)
+Hover                    |          100% |  2.81s (0e) |        100% |         +0% |   Tier 5/5 | 10/10 (100%)
+Single Click             |          100% |  1.87s (0e) |        100% |         +0% |   Tier 5/5 |  22/24 (92%)
+Double Click             |           90% |  3.46s (1e) |        100% |        +10% |   Tier 5/5 | 10/10 (100%)
+Right Click              |           90% |  1.79s (1e) |        100% |        +10% |   Tier 5/5 | 10/10 (100%)
+Click and Hold           |           90% |  3.43s (1e) |        100% |        +10% |   Tier 5/5 | 10/10 (100%)
+Drag and Drop            |          100% |  5.04s (0e) |        100% |         +0% |   Tier 5/5 | 25/25 (100%)
+------------------------------------------------------------------------------------------------
+
+2. LEVEL RESULTS (LEVELS 1 TO 16)
+------------------------------------------------------------------------------------------------
+Level                                  | Status       | Best Medal |  Accuracy |     Time | Mistakes | Attempts
+------------------------------------------------------------------------------------------------
+Level 1: Move                          | Completed    | Gold       |      100% |   14.74s |        0 |        1
+Level 2: Hover                         | Completed    | Silver     |       86% |   14.22s |        1 |        1
+Level 3: Click                         | Completed    | Silver     |       75% |   10.05s |        2 |        1
+Level 4: Adaptive                      | Completed    | Gold       |      100% |    7.93s |        0 |        1
+Level 5: Double Click                  | Completed    | Gold       |      100% |    8.44s |        0 |        1
+Level 6: Right Click                   | Completed    | Bronze     |       67% |    8.48s |        4 |        1
+Level 7: Click & Hold                  | Completed    | Bronze     |       73% |   14.90s |        3 |        1
+Level 8: Drag & Drop                   | Completed    | Gold       |      100% |   18.70s |        0 |        1
+Level 9: Mixed Skills Consolidation    | Completed    | None       |       33% |   10.46s |       12 |        1
+Level 10: Context Menu                 | Completed    | Bronze     |       63% |   13.94s |        3 |        1
+Level 11: Open Notepad & Typing        | Completed    | Gold       |      100% |   23.16s |        0 |        1
+Level 12: Copy, Paste & Cut            | Completed    | Gold       |      100% |   25.51s |        0 |        1
+Level 13: Undo Shortcut                | Completed    | Gold       |      100% |    9.51s |        0 |        1
+Level 14: Save Shortcut                | Completed    | Gold       |      100% |   22.01s |        0 |        1
+Level 15: Notepad Evaluation           | Completed    | Gold       |      100% |   40.90s |        0 |        1
+Level 16: Paint Usage                  | Completed    | Gold       |      100% |   26.66s |        0 |        1
+------------------------------------------------------------------------------------------------
+
+3. STEP-BY-STEP TASK HISTORY
+------------------------------------------------------------------------------------------------
+#    | Time     | Level                      | Skill              | Diff | Outcome   |    Time | Score Progression
+------------------------------------------------------------------------------------------------
+1    | 09:48:58 | Initial Assessment         | Move Cursor        | D1   | SUCCESS   |   1.05s | 100% -> 100% (+100)
+2    | 09:49:01 | Initial Assessment         | Hover              | D1   | SUCCESS   |   2.81s | 100% -> 100% (+100)
+3    | 09:49:03 | Initial Assessment         | Single Click       | D1   | SUCCESS   |   1.87s | 100% -> 100% (+100)
+4    | 09:49:07 | Initial Assessment         | Double Click       | D1   | SUCCESS   |   3.46s | 90% -> 100% (+90)
+5    | 09:49:09 | Initial Assessment         | Right Click        | D1   | SUCCESS   |   1.79s | 90% -> 100% (+90)
+6    | 09:49:13 | Initial Assessment         | Click and Hold     | D1   | SUCCESS   |   3.43s | 90% -> 100% (+90)
+7    | 09:49:18 | Initial Assessment         | Drag and Drop      | D1   | SUCCESS   |   5.04s | 100% -> 100% (+100)
+8    | 09:49:46 | Level 1: Move              | skill_move         | D1   | SUCCESS   |  14.74s | 0% -> 2% (+2)
+9    | 09:49:59 | Level 2: Hover             | Hover              | D1   | SUCCESS   |   1.49s | 100% -> 100% (+2)
+10   | 09:50:01 | Level 2: Hover             | Hover              | D2   | SUCCESS   |   1.93s | 100% -> 100% (+2)
+11   | 09:50:04 | Level 2: Hover             | Hover              | D3   | SUCCESS   |   2.89s | 100% -> 100% (+2)
+12   | 09:50:05 | Level 2: Hover             | Hover              | D1   | SUCCESS   |   1.39s | 100% -> 100% (+2)
+13   | 09:50:07 | Level 2: Hover             | Hover              | D2   | SUCCESS   |   2.04s | 100% -> 100% (+2)
+14   | 09:50:12 | Level 2: Hover             | Hover              | D3   | SUCCESS   |   4.47s | 100% -> 100% (+2)
+15   | 09:50:22 | Level 3: Click             | Single Click       | D1   | FAILED    |   0.19s | 100% -> 99% (-1)
+16   | 09:50:23 | Level 3: Click             | Single Click       | D1   | SUCCESS   |   1.01s | 99% -> 100% (+2)
+17   | 09:50:24 | Level 3: Click             | Single Click       | D2   | SUCCESS   |   0.78s | 100% -> 100% (+2)
+18   | 09:50:25 | Level 3: Click             | Single Click       | D2   | SUCCESS   |   0.81s | 100% -> 100% (+2)
+19   | 09:50:26 | Level 3: Click             | Single Click       | D3   | SUCCESS   |   1.01s | 100% -> 100% (+2)
+20   | 09:50:27 | Level 3: Click             | Single Click       | D3   | SUCCESS   |   0.76s | 100% -> 100% (+2)
+21   | 09:50:27 | Level 3: Click             | Single Click       | D3   | SUCCESS   |   0.65s | 100% -> 100% (+2)
+22   | 09:50:28 | Level 3: Click             | Single Click       | D1   | SUCCESS   |   0.65s | 100% -> 100% (+2)
+23   | 09:50:29 | Level 3: Click             | Single Click       | D2   | SUCCESS   |   0.72s | 100% -> 100% (+2)
+24   | 09:50:29 | Level 3: Click             | Single Click       | D2   | SUCCESS   |   0.77s | 100% -> 100% (+2)
+25   | 09:50:30 | Level 3: Click             | Single Click       | D3   | FAILED    |   0.79s | 100% -> 99% (-1)
+26   | 09:50:31 | Level 3: Click             | Single Click       | D3   | SUCCESS   |   0.55s | 99% -> 100% (+2)
+27   | 09:50:31 | Level 3: Click             | Single Click       | D3   | SUCCESS   |   0.61s | 100% -> 100% (+2)
+28   | 09:50:32 | Level 3: Click             | Single Click       | D3   | SUCCESS   |   0.76s | 100% -> 100% (+2)
+29   | 09:50:43 | Level 4: Adaptive          | Single Click       | D1   | SUCCESS   |   0.74s | 100% -> 100% (+2)
+30   | 09:50:44 | Level 4: Adaptive          | Single Click       | D1   | SUCCESS   |   0.68s | 100% -> 100% (+2)
+31   | 09:50:45 | Level 4: Adaptive          | Single Click       | D1   | SUCCESS   |   0.79s | 100% -> 100% (+2)
+32   | 09:50:45 | Level 4: Adaptive          | Single Click       | D1   | SUCCESS   |   0.54s | 100% -> 100% (+2)
+33   | 09:50:47 | Level 4: Adaptive          | Hover              | D1   | SUCCESS   |   1.48s | 100% -> 100% (+2)
+34   | 09:50:47 | Level 4: Adaptive          | Single Click       | D1   | SUCCESS   |   0.75s | 100% -> 100% (+2)
+35   | 09:50:48 | Level 4: Adaptive          | Single Click       | D1   | SUCCESS   |   0.63s | 100% -> 100% (+2)
+36   | 09:50:49 | Level 4: Adaptive          | Hover              | D1   | SUCCESS   |   1.24s | 100% -> 100% (+2)
+37   | 09:50:50 | Level 4: Adaptive          | Single Click       | D1   | SUCCESS   |   0.58s | 100% -> 100% (+2)
+38   | 09:50:50 | Level 4: Adaptive          | Single Click       | D1   | SUCCESS   |   0.50s | 100% -> 100% (+2)
+39   | 09:51:02 | Level 5: Double Click      | Double Click       | D1   | SUCCESS   |   1.22s | 100% -> 100% (+2)
+40   | 09:51:03 | Level 5: Double Click      | Double Click       | D2   | SUCCESS   |   0.95s | 100% -> 100% (+2)
+41   | 09:51:04 | Level 5: Double Click      | Double Click       | D1   | SUCCESS   |   0.71s | 100% -> 100% (+2)
+42   | 09:51:04 | Level 5: Double Click      | Double Click       | D3   | SUCCESS   |   0.80s | 100% -> 100% (+2)
+43   | 09:51:06 | Level 5: Double Click      | Double Click       | D2   | SUCCESS   |   1.14s | 100% -> 100% (+2)
+44   | 09:51:07 | Level 5: Double Click      | Double Click       | D4   | SUCCESS   |   1.29s | 100% -> 100% (+2)
+45   | 09:51:08 | Level 5: Double Click      | Double Click       | D3   | SUCCESS   |   1.06s | 100% -> 100% (+2)
+46   | 09:51:09 | Level 5: Double Click      | Double Click       | D4   | SUCCESS   |   1.27s | 100% -> 100% (+2)
+47   | 09:52:08 | Level 6: Right Click       | Right Click        | D1   | SUCCESS   |   2.83s | 100% -> 100% (+2)
+48   | 09:52:09 | Level 6: Right Click       | Right Click        | D2   | SUCCESS   |   0.98s | 100% -> 100% (+2)
+49   | 09:52:10 | Level 6: Right Click       | Right Click        | D1   | SUCCESS   |   0.55s | 100% -> 100% (+2)
+50   | 09:52:11 | Level 6: Right Click       | Right Click        | D3   | SUCCESS   |   0.67s | 100% -> 100% (+2)
+51   | 09:52:12 | Level 6: Right Click       | Right Click        | D2   | SUCCESS   |   1.04s | 100% -> 100% (+2)
+52   | 09:52:12 | Level 6: Right Click       | Right Click        | D4   | SUCCESS   |   0.76s | 100% -> 100% (+2)
+53   | 09:52:13 | Level 6: Right Click       | Right Click        | D3   | SUCCESS   |   0.83s | 100% -> 100% (+2)
+54   | 09:52:14 | Level 6: Right Click       | Right Click        | D4   | SUCCESS   |   0.83s | 100% -> 100% (+2)
+55   | 09:52:24 | Level 7: Click & Hold      | Click and Hold     | D1   | SUCCESS   |   2.17s | 100% -> 100% (+2)
+56   | 09:52:26 | Level 7: Click & Hold      | Click and Hold     | D2   | SUCCESS   |   1.57s | 100% -> 100% (+2)
+57   | 09:52:27 | Level 7: Click & Hold      | Click and Hold     | D1   | SUCCESS   |   1.31s | 100% -> 100% (+2)
+58   | 09:52:29 | Level 7: Click & Hold      | Click and Hold     | D3   | SUCCESS   |   1.62s | 100% -> 100% (+2)
+59   | 09:52:30 | Level 7: Click & Hold      | Click and Hold     | D2   | SUCCESS   |   1.41s | 100% -> 100% (+2)
+60   | 09:52:32 | Level 7: Click & Hold      | Click and Hold     | D4   | SUCCESS   |   2.21s | 100% -> 100% (+2)
+61   | 09:52:34 | Level 7: Click & Hold      | Click and Hold     | D3   | SUCCESS   |   2.02s | 100% -> 100% (+2)
+62   | 09:52:37 | Level 7: Click & Hold      | Click and Hold     | D4   | SUCCESS   |   2.60s | 100% -> 100% (+2)
+63   | 09:52:43 | Level 8: Drag & Drop       | Drag and Drop      | D1   | SUCCESS   |   1.17s | 100% -> 100% (+2)
+64   | 09:52:43 | Level 8: Drag & Drop       | Drag and Drop      | D1   | SUCCESS   |   0.00s | 100% -> 100% (+2)
+65   | 09:52:44 | Level 8: Drag & Drop       | Drag and Drop      | D2   | SUCCESS   |   1.36s | 100% -> 100% (+2)
+66   | 09:52:44 | Level 8: Drag & Drop       | Drag and Drop      | D2   | SUCCESS   |   0.00s | 100% -> 100% (+2)
+67   | 09:52:46 | Level 8: Drag & Drop       | Drag and Drop      | D1   | SUCCESS   |   1.16s | 100% -> 100% (+2)
+68   | 09:52:46 | Level 8: Drag & Drop       | Drag and Drop      | D1   | SUCCESS   |   0.00s | 100% -> 100% (+2)
+69   | 09:52:47 | Level 8: Drag & Drop       | Drag and Drop      | D3   | SUCCESS   |   1.36s | 100% -> 100% (+2)
+70   | 09:52:48 | Level 8: Drag & Drop       | Drag and Drop      | D3   | SUCCESS   |   1.50s | 100% -> 100% (+2)
+71   | 09:52:48 | Level 8: Drag & Drop       | Drag and Drop      | D3   | SUCCESS   |   0.00s | 100% -> 100% (+2)
+72   | 09:52:50 | Level 8: Drag & Drop       | Drag and Drop      | D2   | SUCCESS   |   1.10s | 100% -> 100% (+2)
+73   | 09:52:50 | Level 8: Drag & Drop       | Drag and Drop      | D2   | SUCCESS   |   0.00s | 100% -> 100% (+2)
+74   | 09:52:50 | Level 8: Drag & Drop       | Drag and Drop      | D4   | SUCCESS   |   0.99s | 100% -> 100% (+2)
+75   | 09:52:52 | Level 8: Drag & Drop       | Drag and Drop      | D4   | SUCCESS   |   1.41s | 100% -> 100% (+2)
+76   | 09:52:53 | Level 8: Drag & Drop       | Drag and Drop      | D4   | SUCCESS   |   1.48s | 100% -> 100% (+2)
+77   | 09:52:53 | Level 8: Drag & Drop       | Drag and Drop      | D4   | SUCCESS   |   0.00s | 100% -> 100% (+2)
+78   | 09:52:55 | Level 8: Drag & Drop       | Drag and Drop      | D3   | SUCCESS   |   1.63s | 100% -> 100% (+2)
+79   | 09:52:56 | Level 8: Drag & Drop       | Drag and Drop      | D3   | SUCCESS   |   1.36s | 100% -> 100% (+2)
+80   | 09:52:56 | Level 8: Drag & Drop       | Drag and Drop      | D3   | SUCCESS   |   0.00s | 100% -> 100% (+2)
+81   | 09:52:58 | Level 8: Drag & Drop       | Drag and Drop      | D5   | SUCCESS   |   1.56s | 100% -> 100% (+2)
+82   | 09:52:59 | Level 8: Drag & Drop       | Drag and Drop      | D5   | SUCCESS   |   1.30s | 100% -> 100% (+2)
+83   | 09:53:01 | Level 8: Drag & Drop       | Drag and Drop      | D5   | SUCCESS   |   1.31s | 100% -> 100% (+2)
+84   | 09:53:01 | Level 8: Drag & Drop       | Drag and Drop      | D5   | SUCCESS   |   0.00s | 100% -> 100% (+2)
+85   | 09:53:08 | Level 9: Mixed Skills Conâ€¦ | Single Click       | D1   | SUCCESS   |   0.76s | 100% -> 100% (+2)
+86   | 09:53:10 | Level 9: Mixed Skills Conâ€¦ | Double Click       | D1   | SUCCESS   |   2.00s | 100% -> 100% (+2)
+87   | 09:53:11 | Level 9: Mixed Skills Conâ€¦ | Right Click        | D1   | SUCCESS   |   1.17s | 100% -> 100% (+2)
+88   | 09:53:13 | Level 9: Mixed Skills Conâ€¦ | Drag and Drop      | D1   | SUCCESS   |   1.73s | 100% -> 100% (+2)
+89   | 09:53:13 | Level 9: Mixed Skills Conâ€¦ | Drag and Drop      | D1   | SUCCESS   |   0.00s | 100% -> 100% (+2)
+90   | 09:53:14 | Level 9: Mixed Skills Conâ€¦ | Hover              | D1   | SUCCESS   |   1.58s | 100% -> 100% (+2)
+91   | 09:53:17 | Level 9: Mixed Skills Conâ€¦ | Click and Hold     | D1   | SUCCESS   |   3.22s | 100% -> 100% (+2)
+------------------------------------------------------------------------------------------------

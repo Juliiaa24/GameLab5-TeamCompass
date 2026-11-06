@@ -176,9 +176,10 @@ namespace ComputerLearning
                 PlaytestDataManager.ExportCurrentStudentData("auto_before_reset");
             }
 
-            // 2. Preserve current language and student counter across the wipe
+            // 2. Preserve current language, student counter and auto-download setting across the wipe
             string activeLanguage = LocalizationManager.CurrentLanguage;
             int currentStudentCounter = Mathf.Max(1, PlayerPrefs.GetInt("Playtest_StudentCounter", 1));
+            int autoDownloadSetting = PlayerPrefs.GetInt("Playtest_AutoDownloadEnabled", 1);
 
             // 3. Clear all runtime managers
             if (ProgressData.ExistingInstance != null)
@@ -202,6 +203,7 @@ namespace ComputerLearning
             PlayerPrefs.DeleteAll();
             PlayerPrefs.SetString("SelectedLanguage", activeLanguage);
             PlayerPrefs.SetInt("Playtest_StudentCounter", currentStudentCounter);
+            PlayerPrefs.SetInt("Playtest_AutoDownloadEnabled", autoDownloadSetting);
             PlayerPrefs.SetInt("InitialAssessmentCompleted", 0);
             PlayerPrefs.SetInt("AutoSequenceCompleted", 0);
             PlayerPrefs.SetInt("DesktopTourCompleted", 0);
@@ -257,22 +259,27 @@ namespace ComputerLearning
 
                 if (hasValidPersistentListener) continue;
 
-                btn.onClick.RemoveAllListeners();
+                // Only bind the 5 main menu buttons; do NOT remove listeners from other UI widgets
                 switch (btn.gameObject.name)
                 {
                     case "Btn-Play":
+                        btn.onClick.RemoveAllListeners();
                         btn.onClick.AddListener(ChangeToMain);
                         break;
                     case "Btn-VirtualDesktop":
+                        btn.onClick.RemoveAllListeners();
                         btn.onClick.AddListener(ChangeToVirtualDesktop);
                         break;
                     case "Btn-Stats":
+                        btn.onClick.RemoveAllListeners();
                         btn.onClick.AddListener(ChangeToStats);
                         break;
                     case "Btn-1":
+                        btn.onClick.RemoveAllListeners();
                         btn.onClick.AddListener(ResetProgress);
                         break;
                     case "Btn-2":
+                        btn.onClick.RemoveAllListeners();
                         btn.onClick.AddListener(Exit);
                         break;
                 }

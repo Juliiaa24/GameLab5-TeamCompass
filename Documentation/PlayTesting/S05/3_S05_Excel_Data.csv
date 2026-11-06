@@ -1,0 +1,124 @@
+﻿sep=;
+STUDENT REPORT;S05;Session Start;2026-11-03 08:49:53;Last Saved;2026-11-03 09:10:35;Game Language;EN
+
+1. SKILL PROGRESSION (INITIAL ASSESSMENT VS FINAL)
+Skill;Tested in Initial Assessment;Initial Score (%);Initial Test Time (s);Initial Test Mistakes;Final Score (%);Improvement (%);Final Difficulty Tier (1-5);Tasks Attempted;Tasks Succeeded;Tasks Failed;Task Success Rate (%)
+Move Cursor;Yes;100;0.34;0;100;0;5;1;1;0;100
+Hover;Yes;90;3.28;1;100;10;5;12;12;0;100
+Single Click;Yes;100;2.18;0;100;0;5;21;20;1;95.2
+Double Click;Yes;100;1.7;0;100;0;5;10;10;0;100
+Right Click;Yes;100;1.7;0;100;0;5;10;10;0;100
+Click and Hold;Yes;56.6;11.38;3;74.6;18;4;10;10;0;100
+Drag and Drop;Yes;100;3.17;0;100;0;5;25;25;0;100
+
+2. LEVEL RESULTS (LEVELS 1 TO 16)
+Level ID;Level Name;Completed;Attempts;Best Medal;Best Accuracy (%);Best Time (s);Mistakes
+level1;Level 1: Move;Yes;1;Gold;100;13.17;0
+level2;Level 2: Hover;Yes;1;Gold;100;13.59;0
+level3;Level 3: Click;Yes;1;Silver;85.7;13.64;1
+level4;Level 4: Adaptive;Yes;1;Gold;90.9;10.74;1
+level5;Level 5: Double Click;Yes;1;Silver;80;8.39;2
+level6;Level 6: Right Click;Yes;1;Bronze;47.1;7.11;9
+level7;Level 7: Click & Hold;Yes;1;Bronze;53.3;15.77;7
+level8;Level 8: Drag & Drop;Yes;1;Silver;80;15.13;2
+level9;Level 9: Mixed Skills Consolidation;Yes;1;Bronze;54.5;9.75;5
+level10;Level 10: Context Menu;Yes;1;Bronze;71.4;15.56;2
+level11;Level 11: Open Notepad & Typing;Yes;1;Gold;100;22.2;0
+level12;Level 12: Copy, Paste & Cut;Yes;1;Bronze;71.4;55.57;2
+level13;Level 13: Undo Shortcut;Yes;1;Gold;100;10.68;0
+level14;Level 14: Save Shortcut;Yes;1;Gold;100;41.07;0
+level15;Level 15: Notepad Evaluation;Yes;1;Gold;100;62.13;0
+level16;Level 16: Paint Usage;Yes;1;Gold;100;31.3;0
+
+3. STEP-BY-STEP TASK PROGRESSION
+Step;Time;Level;Skill;Difficulty;Outcome;Extra Mistakes;Duration (s);Score Before (%);Score Change;Score After (%)
+1;08:55:27;Initial Assessment;Move Cursor;D1;Success;1;0.34;100;100;100
+2;08:55:31;Initial Assessment;Hover;D1;Success;2;3.28;90;90;100
+3;08:55:33;Initial Assessment;Single Click;D1;Success;1;2.18;100;100;100
+4;08:55:35;Initial Assessment;Double Click;D1;Success;1;1.7;100;100;100
+5;08:55:37;Initial Assessment;Right Click;D1;Success;1;1.7;100;100;100
+6;08:55:49;Initial Assessment;Click and Hold;D1;Success;4;11.38;56.6;56.6;100
+7;08:55:53;Initial Assessment;Drag and Drop;D1;Success;1;3.17;100;100;100
+8;08:56:19;Level 1: Move;skill_move;D1;Success;0;13.17;0;2;2
+9;08:56:33;Level 2: Hover;Hover;D1;Success;0;1.85;100;2;100
+10;08:56:35;Level 2: Hover;Hover;D2;Success;0;2.42;100;2;100
+11;08:56:38;Level 2: Hover;Hover;D3;Success;0;3.1;100;2;100
+12;08:56:40;Level 2: Hover;Hover;D1;Success;0;1.5;100;2;100
+13;08:56:42;Level 2: Hover;Hover;D2;Success;0;1.92;100;2;100
+14;08:56:44;Level 2: Hover;Hover;D3;Success;0;2.8;100;2;100
+15;08:56:56;Level 3: Click;Single Click;D1;Success;0;1.42;100;2;100
+16;08:56:57;Level 3: Click;Single Click;D2;Success;0;0.94;100;2;100
+17;08:56:58;Level 3: Click;Single Click;D2;Success;0;0.64;100;2;100
+18;08:57:01;Level 3: Click;Single Click;D3;Success;0;2.67;100;2;100
+19;08:57:01;Level 3: Click;Single Click;D3;Success;0;0.96;100;2;100
+20;08:57:03;Level 3: Click;Single Click;D3;Success;0;1.12;100;2;100
+21;08:57:04;Level 3: Click;Single Click;D1;Failed;1;0.93;100;-1;99
+22;08:57:04;Level 3: Click;Single Click;D1;Success;1;0.22;99;2;100
+23;08:57:05;Level 3: Click;Single Click;D2;Success;0;1.09;100;2;100
+24;08:57:06;Level 3: Click;Single Click;D2;Success;0;1.15;100;2;100
+25;08:57:07;Level 3: Click;Single Click;D3;Success;0;0.92;100;2;100
+26;08:57:08;Level 3: Click;Single Click;D3;Success;0;0.6;100;2;100
+27;08:57:08;Level 3: Click;Single Click;D3;Success;0;0.98;100;2;100
+28;08:57:21;Level 4: Adaptive;Hover;D1;Success;0;1.69;100;2;100
+29;08:57:21;Level 4: Adaptive;Single Click;D1;Success;0;0.84;100;2;100
+30;08:57:23;Level 4: Adaptive;Hover;D1;Success;0;1.72;100;2;100
+31;08:57:25;Level 4: Adaptive;Hover;D1;Success;0;1.57;100;2;100
+32;08:57:26;Level 4: Adaptive;Single Click;D1;Success;0;0.83;100;2;100
+33;08:57:27;Level 4: Adaptive;Hover;D1;Success;1;1.54;100;2;100
+34;08:57:28;Level 4: Adaptive;Single Click;D1;Success;0;0.76;100;2;100
+35;08:57:28;Level 4: Adaptive;Single Click;D1;Success;0;0.54;100;2;100
+36;08:57:29;Level 4: Adaptive;Single Click;D1;Success;0;0.81;100;2;100
+37;08:57:30;Level 4: Adaptive;Single Click;D1;Success;0;0.46;100;2;100
+38;08:57:42;Level 5: Double Click;Double Click;D1;Success;1;2;100;2;100
+39;08:57:43;Level 5: Double Click;Double Click;D2;Success;0;1.2;100;2;100
+40;08:57:44;Level 5: Double Click;Double Click;D1;Success;0;0.78;100;2;100
+41;08:57:45;Level 5: Double Click;Double Click;D3;Success;0;0.83;100;2;100
+42;08:57:46;Level 5: Double Click;Double Click;D2;Success;0;1.06;100;2;100
+43;08:57:47;Level 5: Double Click;Double Click;D4;Success;1;1.1;100;2;100
+44;08:57:48;Level 5: Double Click;Double Click;D3;Success;0;0.68;100;2;100
+45;08:57:49;Level 5: Double Click;Double Click;D4;Success;0;0.75;100;2;100
+46;08:58:57;Level 6: Right Click;Right Click;D1;Success;2;1.36;100;2;100
+47;08:58:58;Level 6: Right Click;Right Click;D2;Success;1;0.94;100;2;100
+48;08:58:58;Level 6: Right Click;Right Click;D1;Success;1;0.55;100;2;100
+49;08:58:59;Level 6: Right Click;Right Click;D3;Success;1;0.82;100;2;100
+50;08:59:00;Level 6: Right Click;Right Click;D2;Success;1;1.03;100;2;100
+51;08:59:01;Level 6: Right Click;Right Click;D4;Success;1;1.01;100;2;100
+52;08:59:02;Level 6: Right Click;Right Click;D3;Success;1;0.54;100;2;100
+53;08:59:03;Level 6: Right Click;Right Click;D4;Success;1;0.84;100;2;100
+54;08:59:12;Level 7: Click & Hold;Click and Hold;D1;Success;6;2.88;100;2;100
+55;08:59:13;Level 7: Click & Hold;Click and Hold;D2;Success;0;1.72;100;2;100
+56;08:59:15;Level 7: Click & Hold;Click and Hold;D1;Success;1;1.73;100;2;100
+57;08:59:17;Level 7: Click & Hold;Click and Hold;D3;Success;0;1.95;100;2;100
+58;08:59:18;Level 7: Click & Hold;Click and Hold;D2;Success;0;1.32;100;2;100
+59;08:59:20;Level 7: Click & Hold;Click and Hold;D4;Success;0;1.99;100;2;100
+60;08:59:22;Level 7: Click & Hold;Click and Hold;D3;Success;0;1.93;100;2;100
+61;08:59:25;Level 7: Click & Hold;Click and Hold;D4;Success;0;2.24;100;2;100
+62;08:59:31;Level 8: Drag & Drop;Drag and Drop;D1;Success;0;1.58;100;2;100
+63;08:59:31;Level 8: Drag & Drop;Drag and Drop;D1;Success;0;0;100;2;100
+64;08:59:32;Level 8: Drag & Drop;Drag and Drop;D2;Success;0;1.29;100;2;100
+65;08:59:32;Level 8: Drag & Drop;Drag and Drop;D2;Success;0;0;100;2;100
+66;08:59:33;Level 8: Drag & Drop;Drag and Drop;D1;Success;0;1.06;100;2;100
+67;08:59:33;Level 8: Drag & Drop;Drag and Drop;D1;Success;0;0;100;2;100
+68;08:59:34;Level 8: Drag & Drop;Drag and Drop;D3;Success;0;1.03;100;2;100
+69;08:59:35;Level 8: Drag & Drop;Drag and Drop;D3;Success;0;0.67;100;2;100
+70;08:59:35;Level 8: Drag & Drop;Drag and Drop;D3;Success;0;0;100;2;100
+71;08:59:36;Level 8: Drag & Drop;Drag and Drop;D2;Success;0;1.02;100;2;100
+72;08:59:36;Level 8: Drag & Drop;Drag and Drop;D2;Success;0;0;100;2;100
+73;08:59:37;Level 8: Drag & Drop;Drag and Drop;D4;Success;0;1.07;100;2;100
+74;08:59:38;Level 8: Drag & Drop;Drag and Drop;D4;Success;0;0.38;100;2;100
+75;08:59:39;Level 8: Drag & Drop;Drag and Drop;D4;Success;0;1.33;100;2;100
+76;08:59:39;Level 8: Drag & Drop;Drag and Drop;D4;Success;0;0;100;2;100
+77;08:59:40;Level 8: Drag & Drop;Drag and Drop;D3;Success;0;0.79;100;2;100
+78;08:59:40;Level 8: Drag & Drop;Drag and Drop;D3;Success;0;0.81;100;2;100
+79;08:59:40;Level 8: Drag & Drop;Drag and Drop;D3;Success;0;0;100;2;100
+80;08:59:41;Level 8: Drag & Drop;Drag and Drop;D5;Success;0;0.66;100;2;100
+81;08:59:42;Level 8: Drag & Drop;Drag and Drop;D5;Success;0;0.57;100;2;100
+82;08:59:45;Level 8: Drag & Drop;Drag and Drop;D5;Success;0;2.87;100;2;100
+83;08:59:45;Level 8: Drag & Drop;Drag and Drop;D5;Success;2;0;100;2;100
+84;08:59:50;Level 9: Mixed Skills Consolidation;Single Click;D1;Success;0;1.24;100;2;100
+85;08:59:53;Level 9: Mixed Skills Consolidation;Double Click;D1;Success;2;2.89;100;2;100
+86;08:59:54;Level 9: Mixed Skills Consolidation;Right Click;D1;Success;1;1.34;100;2;100
+87;08:59:55;Level 9: Mixed Skills Consolidation;Drag and Drop;D1;Success;0;1.01;100;2;100
+88;08:59:55;Level 9: Mixed Skills Consolidation;Drag and Drop;D1;Success;0;0;100;2;100
+89;08:59:56;Level 9: Mixed Skills Consolidation;Hover;D1;Success;0;1.33;100;2;100
+90;08:59:58;Level 9: Mixed Skills Consolidation;Click and Hold;D1;Success;2;1.95;100;2;100

@@ -135,6 +135,10 @@
     "skill_drag_drop": "Arrastrar y soltar",
     "playtest_student_id_label": "ID Alumno:",
     "playtest_btn_export": "Exportar datos",
+    "playtest_btn_auto_download_on": "Auto Download: ON",
+    "playtest_btn_auto_download_off": "Auto Download: OFF",
+    "playtest_auto_download_enabled_toast": "Descarga automática activada (los datos se guardarán automáticamente)",
+    "playtest_auto_download_disabled_toast": "Descarga automática desactivada (los datos solo se guardarán al pulsar Exportar)",
     "playtest_export_success": "Datos de {0} guardados en Escritorio/ComputerLearner_PlaytestData",
     "playtest_reset_success": "¡Progreso reiniciado! Siguiente alumno: {0}"
 }

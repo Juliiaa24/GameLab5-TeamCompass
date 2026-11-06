@@ -4,7 +4,7 @@
  * Description: Clean, minimalist Student ID & Export bar in the Main Menu ONLY.
  *              Matches the exact light rounded aesthetic of Menu.unity's buttons and Dropdown-Language,
  *              and uses a prefab-serialized TMP_InputField (plus direct key polling fallback)
- *              so the Student ID / Name can always be edited freely.
+ *              so the Student ID / Name can always be edited freely, with manual Export and Auto Download toggle.
  */
 using System;
 using System.Collections;
@@ -25,6 +25,7 @@ namespace ComputerLearning
         private TMP_InputField studentIdInputField;
         private TextMeshProUGUI fallbackValueText;
         private TextMeshProUGUI exportButtonLabel;
+        private TextMeshProUGUI autoDownloadButtonLabel;
         private GameObject toastContainer;
         private TextMeshProUGUI toastText;
         private Coroutine toastCoroutine;
@@ -39,21 +40,7 @@ namespace ComputerLearning
             Transform existing = canvasTransform.Find("PlaytestStudentWidget");
             if (existing != null)
             {
-                // If an older version of the widget exists without StudentIdPill, replace it
-                if (existing.Find("StudentIdPill") == null)
-                {
-                    DestroyImmediate(existing.gameObject);
-                }
-                else
-                {
-                    existing.SetAsLastSibling();
-                    PlaytestStudentWidget w = existing.GetComponent<PlaytestStudentWidget>();
-                    if (w != null)
-                    {
-                        w.RefreshUI();
-                        return w;
-                    }
-                }
+                DestroyImmediate(existing.gameObject);
             }
 
             GameObject rootObj = new GameObject("PlaytestStudentWidget", typeof(RectTransform), typeof(PlaytestStudentWidget));
@@ -79,6 +66,7 @@ namespace ComputerLearning
         {
             LocalizationManager.OnLanguageChanged += RefreshUI;
             PlaytestDataManager.OnStudentIdChanged += OnStudentIdChangedHandler;
+            PlaytestDataManager.OnAutoDownloadChanged += OnAutoDownloadChangedHandler;
             SceneManager.sceneLoaded += OnSceneLoaded;
         }
 
@@ -87,6 +75,7 @@ namespace ComputerLearning
             CommitPendingInput();
             LocalizationManager.OnLanguageChanged -= RefreshUI;
             PlaytestDataManager.OnStudentIdChanged -= OnStudentIdChangedHandler;
+            PlaytestDataManager.OnAutoDownloadChanged -= OnAutoDownloadChangedHandler;
             SceneManager.sceneLoaded -= OnSceneLoaded;
         }
 
@@ -174,6 +163,11 @@ namespace ComputerLearning
             }
         }
 
+        private void OnAutoDownloadChangedHandler(bool enabled)
+        {
+            RefreshUI();
+        }
+
         private void BuildUI(Transform canvasTransform)
         {
             PlaytestDataManager.EnsureInitialized();
@@ -209,7 +203,7 @@ namespace ComputerLearning
             rootRt.anchorMax = new Vector2(0f, 0f);
             rootRt.pivot = new Vector2(0f, 0f);
             rootRt.anchoredPosition = new Vector2(40f, 30f);
-            rootRt.sizeDelta = new Vector2(450f, 58.127f);
+            rootRt.sizeDelta = new Vector2(658f, 58.127f);
 
             // 1. Left Pill: Student ID Container (matches Dropdown-Language style)
             GameObject idPillObj = new GameObject("StudentIdPill", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
@@ -219,10 +213,11 @@ namespace ComputerLearning
             idPillRt.anchorMax = new Vector2(0f, 1f);
             idPillRt.pivot = new Vector2(0f, 0.5f);
             idPillRt.anchoredPosition = Vector2.zero;
-            idPillRt.sizeDelta = new Vector2(256f, 0f);
+            idPillRt.sizeDelta = new Vector2(250f, 0f);
 
             Image idPillImg = idPillObj.GetComponent<Image>();
             idPillImg.color = menuPillColor;
+            idPillImg.raycastTarget = false;
             if (menuRoundedSprite != null)
             {
                 idPillImg.sprite = menuRoundedSprite;
@@ -237,7 +232,7 @@ namespace ComputerLearning
             lblRt.anchorMax = new Vector2(0f, 1f);
             lblRt.pivot = new Vector2(0f, 0.5f);
             lblRt.anchoredPosition = new Vector2(14f, 0f);
-            lblRt.sizeDelta = new Vector2(106f, 0f);
+            lblRt.sizeDelta = new Vector2(100f, 0f);
 
             studentIdLabel = lblObj.GetComponent<TextMeshProUGUI>();
             if (menuFont != null) studentIdLabel.font = menuFont;
@@ -265,13 +260,14 @@ namespace ComputerLearning
                 inputRt.anchorMin = new Vector2(0f, 0.5f);
                 inputRt.anchorMax = new Vector2(0f, 0.5f);
                 inputRt.pivot = new Vector2(0f, 0.5f);
-                inputRt.anchoredPosition = new Vector2(122f, 0f);
-                inputRt.sizeDelta = new Vector2(122f, 40f);
+                inputRt.anchoredPosition = new Vector2(118f, 0f);
+                inputRt.sizeDelta = new Vector2(120f, 40f);
 
                 Image inputBg = studentIdInputField.GetComponent<Image>();
                 if (inputBg != null)
                 {
                     inputBg.color = Color.white;
+                    inputBg.raycastTarget = true;
                     if (menuRoundedSprite != null)
                     {
                         inputBg.sprite = menuRoundedSprite;
@@ -292,6 +288,7 @@ namespace ComputerLearning
                     studentIdInputField.textComponent.fontSize = 19;
                     studentIdInputField.textComponent.color = menuTextColor;
                     studentIdInputField.textComponent.alignment = TextAlignmentOptions.Center;
+                    studentIdInputField.textComponent.raycastTarget = false;
                 }
 
                 studentIdInputField.pointSize = 19f;
@@ -315,11 +312,12 @@ namespace ComputerLearning
                 fbRt.anchorMin = new Vector2(0f, 0.5f);
                 fbRt.anchorMax = new Vector2(0f, 0.5f);
                 fbRt.pivot = new Vector2(0f, 0.5f);
-                fbRt.anchoredPosition = new Vector2(122f, 0f);
-                fbRt.sizeDelta = new Vector2(122f, 40f);
+                fbRt.anchoredPosition = new Vector2(118f, 0f);
+                fbRt.sizeDelta = new Vector2(120f, 40f);
 
                 Image fbImg = fallbackBox.GetComponent<Image>();
                 fbImg.color = Color.white;
+                fbImg.raycastTarget = true;
                 if (menuRoundedSprite != null)
                 {
                     fbImg.sprite = menuRoundedSprite;
@@ -341,21 +339,23 @@ namespace ComputerLearning
                 fallbackValueText.fontSize = 19;
                 fallbackValueText.color = menuTextColor;
                 fallbackValueText.alignment = TextAlignmentOptions.Center;
+                fallbackValueText.raycastTarget = false;
                 fallbackValueText.text = PlaytestDataManager.CurrentStudentId;
             }
 
-            // 2. Right Pill: Export Data Button (Exact same aesthetic as Menu buttons & Dropdown-Language)
+            // 2. Middle Pill: Export Data Button (Exact same aesthetic as Menu buttons & Dropdown-Language)
             GameObject btnObj = new GameObject("Btn-ExportPlaytest", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button));
             btnObj.transform.SetParent(transform, false);
             RectTransform btnRt = btnObj.GetComponent<RectTransform>();
             btnRt.anchorMin = new Vector2(0f, 0f);
             btnRt.anchorMax = new Vector2(0f, 1f);
             btnRt.pivot = new Vector2(0f, 0.5f);
-            btnRt.anchoredPosition = new Vector2(270f, 0f);
-            btnRt.sizeDelta = new Vector2(180f, 0f);
+            btnRt.anchoredPosition = new Vector2(264f, 0f);
+            btnRt.sizeDelta = new Vector2(170f, 0f);
 
             Image exportBg = btnObj.GetComponent<Image>();
             exportBg.color = menuPillColor;
+            exportBg.raycastTarget = true;
             if (menuRoundedSprite != null)
             {
                 exportBg.sprite = menuRoundedSprite;
@@ -370,6 +370,8 @@ namespace ComputerLearning
             cb.pressedColor = new Color(0.82f, 0.85f, 0.90f, 1f);
             cb.selectedColor = Color.white;
             exportBtn.colors = cb;
+            exportBtn.navigation = new Navigation { mode = Navigation.Mode.None };
+            exportBtn.onClick.RemoveAllListeners();
             exportBtn.onClick.AddListener(OnExportButtonClicked);
 
             GameObject btnTxtObj = new GameObject("Text", typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI));
@@ -377,17 +379,59 @@ namespace ComputerLearning
             RectTransform btRt = btnTxtObj.GetComponent<RectTransform>();
             btRt.anchorMin = Vector2.zero;
             btRt.anchorMax = Vector2.one;
-            btRt.offsetMin = new Vector2(10f, 0f);
-            btRt.offsetMax = new Vector2(-10f, 0f);
+            btRt.offsetMin = new Vector2(8f, 0f);
+            btRt.offsetMax = new Vector2(-8f, 0f);
 
             exportButtonLabel = btnTxtObj.GetComponent<TextMeshProUGUI>();
             if (menuFont != null) exportButtonLabel.font = menuFont;
-            exportButtonLabel.fontSize = 18;
+            exportButtonLabel.fontSize = 17;
             exportButtonLabel.color = menuTextColor;
             exportButtonLabel.alignment = TextAlignmentOptions.Center;
             exportButtonLabel.raycastTarget = false;
 
-            // 3. Subtle Toast Banner above the widget (matching light Menu aesthetic)
+            // 3. Right Pill: Auto-Download Toggle Button (English, matches Menu aesthetic)
+            GameObject autoBtnObj = new GameObject("Btn-AutoDownload", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button));
+            autoBtnObj.transform.SetParent(transform, false);
+            RectTransform autoBtnRt = autoBtnObj.GetComponent<RectTransform>();
+            autoBtnRt.anchorMin = new Vector2(0f, 0f);
+            autoBtnRt.anchorMax = new Vector2(0f, 1f);
+            autoBtnRt.pivot = new Vector2(0f, 0.5f);
+            autoBtnRt.anchoredPosition = new Vector2(448f, 0f);
+            autoBtnRt.sizeDelta = new Vector2(210f, 0f);
+
+            Image autoBg = autoBtnObj.GetComponent<Image>();
+            autoBg.color = menuPillColor;
+            autoBg.raycastTarget = true;
+            if (menuRoundedSprite != null)
+            {
+                autoBg.sprite = menuRoundedSprite;
+                autoBg.type = Image.Type.Sliced;
+            }
+
+            Button autoBtn = autoBtnObj.GetComponent<Button>();
+            autoBtn.targetGraphic = autoBg;
+            autoBtn.colors = cb;
+            autoBtn.navigation = new Navigation { mode = Navigation.Mode.None };
+            autoBtn.onClick.RemoveAllListeners();
+            autoBtn.onClick.AddListener(OnAutoDownloadButtonClicked);
+
+            GameObject autoTxtObj = new GameObject("Text", typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI));
+            autoTxtObj.transform.SetParent(autoBtnObj.transform, false);
+            RectTransform atRt = autoTxtObj.GetComponent<RectTransform>();
+            atRt.anchorMin = Vector2.zero;
+            atRt.anchorMax = Vector2.one;
+            atRt.offsetMin = new Vector2(8f, 0f);
+            atRt.offsetMax = new Vector2(-8f, 0f);
+
+            autoDownloadButtonLabel = autoTxtObj.GetComponent<TextMeshProUGUI>();
+            if (menuFont != null) autoDownloadButtonLabel.font = menuFont;
+            autoDownloadButtonLabel.fontSize = 17;
+            autoDownloadButtonLabel.color = menuTextColor;
+            autoDownloadButtonLabel.alignment = TextAlignmentOptions.Center;
+            autoDownloadButtonLabel.richText = true;
+            autoDownloadButtonLabel.raycastTarget = false;
+
+            // 4. Subtle Toast Banner above the widget (matching light Menu aesthetic)
             toastContainer = new GameObject("ToastBanner", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
             toastContainer.transform.SetParent(transform, false);
             RectTransform toastRt = toastContainer.GetComponent<RectTransform>();
@@ -395,16 +439,16 @@ namespace ComputerLearning
             toastRt.anchorMax = new Vector2(0f, 1f);
             toastRt.pivot = new Vector2(0f, 0f);
             toastRt.anchoredPosition = new Vector2(0f, 10f);
-            toastRt.sizeDelta = new Vector2(450f, 42f);
+            toastRt.sizeDelta = new Vector2(658f, 42f);
 
             Image toastImg = toastContainer.GetComponent<Image>();
             toastImg.color = menuPillColor;
+            toastImg.raycastTarget = false;
             if (menuRoundedSprite != null)
             {
                 toastImg.sprite = menuRoundedSprite;
                 toastImg.type = Image.Type.Sliced;
             }
-            toastImg.raycastTarget = false;
 
             GameObject toastTxtObj = new GameObject("ToastText", typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI));
             toastTxtObj.transform.SetParent(toastContainer.transform, false);
@@ -449,6 +493,20 @@ namespace ComputerLearning
             }
         }
 
+        private void OnAutoDownloadButtonClicked()
+        {
+            FeedbackManager.PlayClick();
+            bool newState = PlaytestDataManager.ToggleAutoDownload();
+            RefreshUI();
+
+            UIDialogs ui = UIDialogs.Current;
+            string msg = newState
+                ? (!string.IsNullOrEmpty(ui.playtest_auto_download_enabled_toast) ? ui.playtest_auto_download_enabled_toast : "Auto download enabled (data will save automatically)")
+                : (!string.IsNullOrEmpty(ui.playtest_auto_download_disabled_toast) ? ui.playtest_auto_download_disabled_toast : "Auto download disabled (data will only save when clicking Export)");
+            ShowToast(msg, 3.5f);
+            Debug.Log($"[PlaytestStudentWidget] Auto Download toggled. State is now: {(newState ? "ON" : "OFF")}");
+        }
+
         public void RefreshUI()
         {
             UIDialogs ui = UIDialogs.Current;
@@ -459,6 +517,14 @@ namespace ComputerLearning
             if (exportButtonLabel != null)
             {
                 exportButtonLabel.text = ui.playtest_btn_export;
+            }
+            if (autoDownloadButtonLabel != null)
+            {
+                bool isAutoOn = PlaytestDataManager.AutoDownloadEnabled;
+                autoDownloadButtonLabel.text = isAutoOn 
+                    ? "Auto Download: <color=#16a34a><b>ON</b></color>" 
+                    : "Auto Download: <color=#dc2626><b>OFF</b></color>";
+                autoDownloadButtonLabel.ForceMeshUpdate();
             }
             if (studentIdInputField != null && !studentIdInputField.isFocused)
             {

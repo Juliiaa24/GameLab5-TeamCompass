@@ -162,6 +162,10 @@ namespace ComputerLearning
         // Playtest Student ID & Data Export
         public string playtest_student_id_label = "Student ID:";
         public string playtest_btn_export = "Export Data";
+        public string playtest_btn_auto_download_on = "Auto Download: ON";
+        public string playtest_btn_auto_download_off = "Auto Download: OFF";
+        public string playtest_auto_download_enabled_toast = "Auto download enabled (data will save automatically)";
+        public string playtest_auto_download_disabled_toast = "Auto download disabled (data will only save when clicking Export)";
         public string playtest_export_success = "Exported {0} to Desktop/ComputerLearner_PlaytestData";
         public string playtest_reset_success = "Progress reset! Next student ID: {0}";
 

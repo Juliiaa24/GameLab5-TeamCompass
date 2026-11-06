@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Author: Julia & AI (TeamCompass)
  * Date: 01/11/2026
  * Description: Manages Playtesting Student IDs (auto-incremental S01, S02... + custom override)
@@ -106,6 +106,7 @@ namespace ComputerLearning
         private const string SessionStartKey = "Playtest_SessionStartTime";
         private const string LastExportedFolderKey = "Playtest_LastExportedStudentFolder";
         private const string CurrentAssessmentJsonKey = "Playtest_CurrentAssessmentJson";
+        private const string AutoDownloadKey = "Playtest_AutoDownloadEnabled";
         private const string MainDesktopFolderName = "ComputerLearner_PlaytestData";
 
         public static readonly string[] AllSkillIds =
@@ -121,6 +122,31 @@ namespace ComputerLearning
 
         public static event Action<string> OnStudentIdChanged;
         public static event Action<string> OnDataExported;
+        public static event Action<bool> OnAutoDownloadChanged;
+
+        public static bool AutoDownloadEnabled
+        {
+            get
+            {
+                EnsureInitialized();
+                return PlayerPrefs.GetInt(AutoDownloadKey, 0) == 1;
+            }
+        }
+
+        public static void SetAutoDownloadEnabled(bool enabled)
+        {
+            EnsureInitialized();
+            PlayerPrefs.SetInt(AutoDownloadKey, enabled ? 1 : 0);
+            PlayerPrefs.Save();
+            OnAutoDownloadChanged?.Invoke(enabled);
+        }
+
+        public static bool ToggleAutoDownload()
+        {
+            bool nextState = !AutoDownloadEnabled;
+            SetAutoDownloadEnabled(nextState);
+            return nextState;
+        }
 
         public static string CurrentStudentId
         {
@@ -145,6 +171,19 @@ namespace ComputerLearning
             if (!PlayerPrefs.HasKey(CounterKey))
             {
                 PlayerPrefs.SetInt(CounterKey, 1);
+            }
+
+            // Default Auto Download to OFF as requested
+            if (!PlayerPrefs.HasKey("Playtest_AutoDownloadDefaultOff_v2"))
+            {
+                PlayerPrefs.SetInt(AutoDownloadKey, 0);
+                PlayerPrefs.SetInt("Playtest_AutoDownloadDefaultOff_v2", 1);
+                PlayerPrefs.Save();
+            }
+
+            if (!PlayerPrefs.HasKey(AutoDownloadKey))
+            {
+                PlayerPrefs.SetInt(AutoDownloadKey, 0);
             }
 
             if (string.IsNullOrWhiteSpace(PlayerPrefs.GetString(CurrentStudentIdKey, string.Empty)))
@@ -356,6 +395,12 @@ namespace ComputerLearning
         public static string ExportCurrentStudentData(string triggerReason = "manual")
         {
             EnsureInitialized();
+            if (!AutoDownloadEnabled && !triggerReason.StartsWith("manual", StringComparison.OrdinalIgnoreCase))
+            {
+                Debug.Log($"[PlaytestDataManager] Auto-download is disabled. Skipping automatic export trigger: {triggerReason}");
+                return string.Empty;
+            }
+
             try
             {
                 string rootDir = GetDesktopExportRootPath();
@@ -659,7 +704,7 @@ namespace ComputerLearning
             foreach (var s in r.skillProgression)
             {
                 string initStr = s.testedInAssessment ? $"{s.initialAssessmentScore:0}%" : "Not tested";
-                string timeStr = s.testedInAssessment ? $"{s.initialAssessmentTimeSeconds:0.0}s ({s.initialAssessmentExtraAttempts}e)" : "-";
+                string timeStr = s.testedInAssessment ? $"{s.initialAssessmentTimeSeconds:0.00}s ({s.initialAssessmentExtraAttempts}e)" : "-";
                 string finalStr = $"{s.finalScore:0}%";
                 string deltaStr = $"{(s.improvementDelta >= 0 ? "+" : "")}{s.improvementDelta:0}%";
                 string diffStr = $"Tier {s.finalDifficulty}/5";
@@ -684,7 +729,7 @@ namespace ComputerLearning
             {
                 string status = l.completed ? "Completed" : (l.attemptsCount > 0 ? "Attempted" : "Pending");
                 string acc = l.attemptsCount > 0 ? $"{l.bestAccuracyPercent:0}%" : "-";
-                string time = l.attemptsCount > 0 ? $"{l.bestTimeSeconds:0.1}s" : "-";
+                string time = l.attemptsCount > 0 ? $"{l.bestTimeSeconds:0.00}s" : "-";
                 string err = l.attemptsCount > 0 ? l.bestMistakes.ToString() : "-";
 
                 sb.AppendLine(string.Format(
@@ -715,7 +760,7 @@ namespace ComputerLearning
                     string scoreEvolution = $"{t.scoreBefore:0}% -> {t.scoreAfter:0}% ({changeSign}{t.scoreChange:0})";
 
                     sb.AppendLine(string.Format(
-                        "{0,-4} | {1,-8} | {2,-26} | {3,-18} | D{4,-3} | {5,-9} | {6,6:0.1}s | {7}",
+                        "{0,-4} | {1,-8} | {2,-26} | {3,-18} | D{4,-3} | {5,-9} | {6,6:0.00}s | {7}",
                         t.stepIndex,
                         t.timestamp,
                         Truncate(t.levelName, 26),
@@ -773,7 +818,7 @@ namespace ComputerLearning
             foreach (var s in r.skillProgression)
             {
                 string initCell = s.testedInAssessment ? $"<b>{s.initialAssessmentScore:0}%</b>" : "<span class='badge-pending'>Not tested</span>";
-                string initMeta = s.testedInAssessment ? $"{s.initialAssessmentTimeSeconds:0.1}s ({s.initialAssessmentExtraAttempts} mistakes)" : "-";
+                string initMeta = s.testedInAssessment ? $"{s.initialAssessmentTimeSeconds:0.00}s ({s.initialAssessmentExtraAttempts} mistakes)" : "-";
                 string deltaColor = s.improvementDelta > 0 ? "#16a34a" : (s.improvementDelta < 0 ? "#dc2626" : "#64748b");
                 string deltaStr = $"<span style='color:{deltaColor};font-weight:bold;'>{(s.improvementDelta >= 0 ? "+" : "")}{s.improvementDelta:0}%</span>";
                 string barHtml = $"<div class='bar-bg'><div class='bar-fill' style='width:{Mathf.Clamp(s.finalScore, 0, 100):0}%'></div></div><b>{s.finalScore:0}%</b>";
@@ -792,7 +837,7 @@ namespace ComputerLearning
                     ? "<span class='badge-ok'>Completed</span>"
                     : "<span class='badge-pending'>Pending</span>";
                 string acc = l.attemptsCount > 0 ? $"{l.bestAccuracyPercent:0}%" : "-";
-                string time = l.attemptsCount > 0 ? $"{l.bestTimeSeconds:0.1}s" : "-";
+                string time = l.attemptsCount > 0 ? $"{l.bestTimeSeconds:0.00}s" : "-";
                 string err = l.attemptsCount > 0 ? l.bestMistakes.ToString() : "-";
 
                 sb.AppendLine($"<tr><td><b>{l.levelName}</b></td><td>{statusBadge}</td><td>{l.bestMedal}</td><td>{acc}</td><td>{time}</td><td>{err}</td><td>{l.attemptsCount}</td></tr>");
@@ -814,7 +859,7 @@ namespace ComputerLearning
                         ? "<span class='badge-ok'>SUCCESS</span>"
                         : "<span class='badge-pending' style='background:#fee2e2;color:#991b1b;'>FAILED</span>";
                     string sign = t.scoreChange >= 0 ? "+" : "";
-                    sb.AppendLine($"<tr><td>{t.stepIndex}</td><td>{t.timestamp}</td><td>{t.levelName}</td><td>{t.skillName}</td><td>D{t.difficulty}</td><td>{resBadge}</td><td>{t.completionTimeSeconds:0.1}s</td><td>{t.scoreBefore:0}% → <b>{t.scoreAfter:0}%</b> ({sign}{t.scoreChange:0})</td></tr>");
+                    sb.AppendLine($"<tr><td>{t.stepIndex}</td><td>{t.timestamp}</td><td>{t.levelName}</td><td>{t.skillName}</td><td>D{t.difficulty}</td><td>{resBadge}</td><td>{t.completionTimeSeconds:0.00}s</td><td>{t.scoreBefore:0}% → <b>{t.scoreAfter:0}%</b> ({sign}{t.scoreChange:0})</td></tr>");
                 }
                 sb.AppendLine("</table>");
             }
@@ -954,7 +999,7 @@ namespace ComputerLearning
             {
                 if (levelMap.TryGetValue(levelId, out var l) && (l.completed || l.attemptsCount > 0))
                 {
-                    rowValues.Add(EscapeSemi($"{l.bestMedal} | {l.bestAccuracyPercent:0}% | {l.bestTimeSeconds:0.1}s ({l.bestMistakes} err)"));
+                    rowValues.Add(EscapeSemi($"{l.bestMedal} | {l.bestAccuracyPercent:0}% | {l.bestTimeSeconds:0.00}s ({l.bestMistakes} err)"));
                 }
                 else
                 {
@@ -1091,7 +1136,7 @@ namespace ComputerLearning
 
         private static string F(float val)
         {
-            return val.ToString("0.#", CultureInfo.InvariantCulture);
+            return val.ToString("0.##", CultureInfo.InvariantCulture);
         }
     }
 }
