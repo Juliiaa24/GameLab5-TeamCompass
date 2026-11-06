@@ -7,7 +7,7 @@
     "menu_press_space_to_start": "Press SPACE or click Play to start",
     "assessment_intro_title": "Welcome to the Skills Test!",
     "assessment_intro_description": "Before starting, we will do a few quick tests to see how you use the mouse (moving, clicking, dragging...). Don't worry about making mistakes or rushing, take all the time you need!",
-    "assessment_intro_prompt": "Press SPACE to start",
+    "assessment_intro_prompt": "Press SPACE or click to start",
     "celebration_points_format": "Score: <b>{0} PTS</b>",
     "start_menu_btn_start": "Start",
     "start_menu_header": "My Computer",

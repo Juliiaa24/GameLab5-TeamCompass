@@ -156,7 +156,11 @@ namespace ComputerLearning
         {
             if (isShowingIntro)
             {
-                if (UnityEngine.InputSystem.Keyboard.current != null && UnityEngine.InputSystem.Keyboard.current.spaceKey.wasPressedThisFrame)
+                bool spacePressed = UnityEngine.InputSystem.Keyboard.current != null &&
+                                    UnityEngine.InputSystem.Keyboard.current.spaceKey.wasPressedThisFrame;
+                bool mouseClicked = UnityEngine.InputSystem.Mouse.current != null &&
+                                    UnityEngine.InputSystem.Mouse.current.leftButton.wasPressedThisFrame;
+                if (spacePressed || mouseClicked)
                 {
                     DismissIntroAndStart();
                 }
@@ -294,6 +298,9 @@ namespace ComputerLearning
             btnHlg.childControlHeight = true;
             btnHlg.childForceExpandWidth = true;
             btnHlg.childForceExpandHeight = true;
+
+            Button badgeBtn = btnObj.AddComponent<Button>();
+            badgeBtn.onClick.AddListener(DismissIntroAndStart);
 
             GameObject btnLabelObj = new GameObject("BtnLabel", typeof(RectTransform), typeof(TextMeshProUGUI));
             btnLabelObj.transform.SetParent(btnObj.transform, false);

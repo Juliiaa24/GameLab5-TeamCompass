@@ -17,7 +17,7 @@ namespace ComputerLearning
         // Assessment Intro Modal
         public string assessment_intro_title = "Welcome to the Skills Test!";
         public string assessment_intro_description = "Before starting, we will do a few quick tests to see how you use the mouse (moving, clicking, dragging...). Don't worry about making mistakes or rushing, take all the time you need!";
-        public string assessment_intro_prompt = "Press SPACE to start";
+        public string assessment_intro_prompt = "Press SPACE or click to start";
 
         // Desktop Start Menu (StartMenuController)
         public string start_menu_btn_start = "Start";

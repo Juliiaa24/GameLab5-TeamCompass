@@ -7,7 +7,7 @@
   "menu_press_space_to_start": "Trykk MELLOMROM eller klikk Spill for å starte",
   "assessment_intro_title": "Velkommen til ferdighetstesten!",
   "assessment_intro_description": "Før vi starter, skal vi gjøre noen raske øvelser for å se hvordan du bruker musa (bevege, klikke, dra...). Ikke vær redd for å gjøre feil, og ta den tiden du trenger!",
-  "assessment_intro_prompt": "Trykk MELLOMROM for å starte",
+  "assessment_intro_prompt": "Trykk MELLOMROM eller klikk for å starte",
   "celebration_points_format": "Poengsum: <b>{0} PTS</b>",
   "start_menu_btn_start": "Start",
   "start_menu_header": "Min PC",

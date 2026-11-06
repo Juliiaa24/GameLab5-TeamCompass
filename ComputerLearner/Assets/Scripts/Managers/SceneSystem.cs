@@ -317,20 +317,32 @@ namespace ComputerLearning
             if (playBtnObj == null) return;
 
             Transform parent = playBtnObj.transform.parent;
-            if (parent == null) return;
+            if (parent != null)
+            {
+                Transform oldSiblingHint = parent.Find("PlaySpaceHint");
+                if (oldSiblingHint != null)
+                {
+                    Destroy(oldSiblingHint.gameObject);
+                }
+            }
 
-            Transform existing = parent.Find("PlaySpaceHint");
+            Transform existing = playBtnObj.transform.Find("PlaySpaceHint");
             TextMeshProUGUI hintText = null;
 
             if (existing == null)
             {
                 GameObject hintObj = new GameObject("PlaySpaceHint", typeof(RectTransform), typeof(TextMeshProUGUI), typeof(LayoutElement));
-                hintObj.transform.SetParent(parent, false);
-                // Place directly ABOVE Btn-Play in the VerticalLayoutGroup
-                hintObj.transform.SetSiblingIndex(playBtnObj.transform.GetSiblingIndex());
+                hintObj.transform.SetParent(playBtnObj.transform, false);
+
+                LayoutElement le = hintObj.GetComponent<LayoutElement>();
+                le.ignoreLayout = true;
 
                 RectTransform hintRt = hintObj.GetComponent<RectTransform>();
-                hintRt.sizeDelta = new Vector2(460f, 30f);
+                hintRt.anchorMin = new Vector2(0.5f, 1f);
+                hintRt.anchorMax = new Vector2(0.5f, 1f);
+                hintRt.pivot = new Vector2(0.5f, 0f);
+                hintRt.anchoredPosition = new Vector2(0f, 10f);
+                hintRt.sizeDelta = new Vector2(480f, 32f);
 
                 hintText = hintObj.GetComponent<TextMeshProUGUI>();
                 TMP_Text btnText = playBtnObj.GetComponentInChildren<TMP_Text>(true);
@@ -344,24 +356,19 @@ namespace ComputerLearning
                 hintText.alignment = TextAlignmentOptions.Center;
                 hintText.color = new Color(0.10f, 0.14f, 0.20f, 1f);
                 hintText.raycastTarget = false;
-
-                LayoutElement le = hintObj.GetComponent<LayoutElement>();
-                le.minHeight = 28f;
-                le.preferredHeight = 30f;
-                le.preferredWidth = 460f;
-                le.flexibleWidth = 1f;
             }
             else
             {
-                existing.SetSiblingIndex(Mathf.Max(0, playBtnObj.transform.GetSiblingIndex() - (existing.GetSiblingIndex() < playBtnObj.transform.GetSiblingIndex() ? 0 : 1)));
-                hintText = existing.GetComponent<TextMeshProUGUI>();
-                if (hintText != null)
+                RectTransform hintRt = existing.GetComponent<RectTransform>();
+                if (hintRt != null)
                 {
-                    hintText.fontSize = 18f;
-                    hintText.fontStyle = FontStyles.Bold;
-                    hintText.textWrappingMode = TextWrappingModes.NoWrap;
-                    hintText.color = new Color(0.10f, 0.14f, 0.20f, 1f);
+                    hintRt.anchorMin = new Vector2(0.5f, 1f);
+                    hintRt.anchorMax = new Vector2(0.5f, 1f);
+                    hintRt.pivot = new Vector2(0.5f, 0f);
+                    hintRt.anchoredPosition = new Vector2(0f, 10f);
+                    hintRt.sizeDelta = new Vector2(480f, 32f);
                 }
+                hintText = existing.GetComponent<TextMeshProUGUI>();
             }
 
             if (hintText != null)
