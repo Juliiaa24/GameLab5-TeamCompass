@@ -171,7 +171,7 @@ namespace ComputerLearning
             {
                 RectTransform spotRt = spot.GetComponent<RectTransform>();
                 if (spotRt != null) activeSpots.Remove(spotRt);
-                TriggerHitScoreFeedback(spot.transform, 10, 5);
+                TriggerHitScoreFeedback(spot.transform, 15);
             }
             
             spotsCleaned++;

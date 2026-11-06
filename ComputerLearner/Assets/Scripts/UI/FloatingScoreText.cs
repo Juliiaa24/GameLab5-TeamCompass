@@ -4,8 +4,8 @@ using TMPro;
 namespace ComputerLearning
 {
     /// <summary>
-    /// Lightweight floating score popup (+100 in green, -25 in red) spawned at the target's position
-    /// when a player hits a target or makes a mistake.
+    /// Lightweight floating score popup (+pts in green at target position, -pts in red above the mouse cursor)
+    /// rendered on top of the active Canvas so targets never obscure it.
     /// </summary>
     [RequireComponent(typeof(RectTransform), typeof(CanvasGroup))]
     public class FloatingScoreText : MonoBehaviour
@@ -13,44 +13,109 @@ namespace ComputerLearning
         private RectTransform rectTransform;
         private CanvasGroup canvasGroup;
         private float elapsed;
-        private const float Duration = 0.85f;
-        private const float FloatSpeed = 55f;
+        private const float Duration = 0.90f;
+        private const float FloatSpeed = 60f;
 
         public static void Spawn(Transform contextTransform, Vector3 worldPosition, int pointDelta, string customText = null)
         {
             if (pointDelta == 0 && string.IsNullOrEmpty(customText)) return;
 
-            // Choose a persistent parent (LevelRunner.taskContentArea or Window/Canvas) so the popup
-            // is not destroyed when the last target of a task completes and destroys the task prefab.
-            Transform spawnParent = null;
-            if (contextTransform != null)
-            {
-                LevelRunner runner = contextTransform.GetComponentInParent<LevelRunner>();
-                if (runner != null && runner.taskContentArea != null)
-                {
-                    spawnParent = runner.taskContentArea;
-                }
-                else
-                {
-                    Canvas canvas = contextTransform.GetComponentInParent<Canvas>();
-                    if (canvas != null) spawnParent = canvas.transform;
-                    else spawnParent = contextTransform;
-                }
-            }
-            else if (LevelRunner.ActiveRunner != null && LevelRunner.ActiveRunner.taskContentArea != null)
+            Canvas canvas = FindTargetCanvas(contextTransform);
+            Transform spawnParent = canvas != null ? canvas.transform : null;
+            if (spawnParent == null && LevelRunner.ActiveRunner != null && LevelRunner.ActiveRunner.taskContentArea != null)
             {
                 spawnParent = LevelRunner.ActiveRunner.taskContentArea;
             }
-
+            if (spawnParent == null && contextTransform != null)
+            {
+                spawnParent = contextTransform;
+            }
             if (spawnParent == null) return;
 
+            CreatePopup(spawnParent, canvas, worldPosition, false, Vector2.zero, pointDelta, customText);
+        }
+
+        public static void SpawnAtMouseCursor(Transform contextTransform, int pointDelta, string customText = null)
+        {
+            if (pointDelta == 0 && string.IsNullOrEmpty(customText)) return;
+
+            Canvas canvas = FindTargetCanvas(contextTransform);
+            Transform spawnParent = canvas != null ? canvas.transform : null;
+            if (spawnParent == null && LevelRunner.ActiveRunner != null && LevelRunner.ActiveRunner.taskContentArea != null)
+            {
+                spawnParent = LevelRunner.ActiveRunner.taskContentArea;
+            }
+            if (spawnParent == null && contextTransform != null)
+            {
+                spawnParent = contextTransform;
+            }
+            if (spawnParent == null) return;
+
+            Vector2 screenPos = new Vector2(Screen.width * 0.5f, Screen.height * 0.5f);
+            if (UnityEngine.InputSystem.Mouse.current != null)
+            {
+                screenPos = UnityEngine.InputSystem.Mouse.current.position.ReadValue();
+            }
+            else if (Input.mousePresent)
+            {
+                screenPos = Input.mousePosition;
+            }
+
+            float scale = canvas != null ? canvas.scaleFactor : 1f;
+            // Offset slightly above the cursor tip so the cursor does not cover the text
+            screenPos += new Vector2(0f, 28f * scale);
+
+            CreatePopup(spawnParent, canvas, Vector3.zero, true, screenPos, pointDelta, customText);
+        }
+
+        private static Canvas FindTargetCanvas(Transform contextTransform)
+        {
+            if (contextTransform != null)
+            {
+                Canvas c = contextTransform.GetComponentInParent<Canvas>();
+                if (c != null) return c.rootCanvas != null ? c.rootCanvas : c;
+            }
+            if (LevelRunner.ActiveRunner != null)
+            {
+                Canvas c = LevelRunner.ActiveRunner.GetComponentInParent<Canvas>();
+                if (c != null) return c.rootCanvas != null ? c.rootCanvas : c;
+            }
+            return Object.FindAnyObjectByType<Canvas>();
+        }
+
+        private static void CreatePopup(
+            Transform spawnParent,
+            Canvas canvas,
+            Vector3 worldPosition,
+            bool useScreenPos,
+            Vector2 screenPos,
+            int pointDelta,
+            string customText)
+        {
             GameObject go = new GameObject("FloatingScoreText", typeof(RectTransform), typeof(CanvasGroup), typeof(TextMeshProUGUI), typeof(FloatingScoreText));
             go.transform.SetParent(spawnParent, false);
             go.transform.SetAsLastSibling();
 
             RectTransform rt = go.GetComponent<RectTransform>();
-            rt.sizeDelta = new Vector2(180f, 44f);
-            rt.position = worldPosition;
+            rt.sizeDelta = new Vector2(200f, 48f);
+
+            if (useScreenPos)
+            {
+                RectTransform parentRt = spawnParent as RectTransform;
+                Camera cam = (canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay) ? canvas.worldCamera : null;
+                if (parentRt != null && RectTransformUtility.ScreenPointToWorldPointInRectangle(parentRt, screenPos, cam, out Vector3 worldPt))
+                {
+                    rt.position = worldPt;
+                }
+                else
+                {
+                    rt.position = new Vector3(screenPos.x, screenPos.y, 0f);
+                }
+            }
+            else
+            {
+                rt.position = worldPosition;
+            }
 
             CanvasGroup cg = go.GetComponent<CanvasGroup>();
             cg.interactable = false;
@@ -60,7 +125,7 @@ namespace ComputerLearning
             TextMeshProUGUI tmp = go.GetComponent<TextMeshProUGUI>();
             tmp.raycastTarget = false;
             tmp.alignment = TextAlignmentOptions.Center;
-            tmp.fontSize = 28;
+            tmp.fontSize = 30;
             tmp.fontStyle = FontStyles.Bold;
             tmp.text = !string.IsNullOrEmpty(customText)
                 ? customText
@@ -73,7 +138,7 @@ namespace ComputerLearning
             }
             else
             {
-                // Coral red (#EF4444)
+                // Bright coral red (#EF4444)
                 tmp.color = new Color(0.937f, 0.267f, 0.267f, 1f);
             }
 
@@ -100,14 +165,14 @@ namespace ComputerLearning
 
                 // Subtle pop scale in first 0.2s
                 float scale = t < 0.2f
-                    ? Mathf.Lerp(0.85f, 1.18f, t / 0.2f)
-                    : Mathf.Lerp(1.18f, 1.0f, Mathf.Clamp01((t - 0.2f) / 0.25f));
+                    ? Mathf.Lerp(0.85f, 1.22f, t / 0.2f)
+                    : Mathf.Lerp(1.22f, 1.0f, Mathf.Clamp01((t - 0.2f) / 0.25f));
                 rectTransform.localScale = new Vector3(scale, scale, 1f);
             }
 
             if (canvasGroup != null)
             {
-                canvasGroup.alpha = t < 0.4f ? 1f : Mathf.Lerp(1f, 0f, (t - 0.4f) / 0.6f);
+                canvasGroup.alpha = t < 0.45f ? 1f : Mathf.Lerp(1f, 0f, (t - 0.45f) / 0.55f);
             }
 
             if (elapsed >= Duration)

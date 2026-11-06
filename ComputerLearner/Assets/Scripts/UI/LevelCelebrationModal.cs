@@ -96,7 +96,7 @@ namespace ComputerLearning
             }
             else
             {
-                pointsVal = Mathf.Max(0, Mathf.RoundToInt(accuracy * 1.35f) - (mistakes * 25));
+                pointsVal = Mathf.Max(0, Mathf.RoundToInt(accuracy * 1.0f) - (mistakes * 50));
             }
             onClosedCallback = onClosed;
             isAutoAdvancing = autoAdvance.HasValue ? autoAdvance.Value : ShouldAutoAdvance(level);

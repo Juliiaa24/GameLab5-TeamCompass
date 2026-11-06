@@ -95,26 +95,70 @@ namespace ComputerLearning
             return transform as RectTransform;
         }
 
-        protected void TriggerHitScoreFeedback(Transform targetTransform = null, int basePoints = 100, int maxBonus = 50)
+        /// <summary>
+        /// Returns standardized points inversely proportional to target size:
+        /// smaller targets award more points, larger targets award fewer points,
+        /// and targets of the same size/config always award the exact same round amount.
+        /// </summary>
+        protected virtual int GetStandardizedTargetPoints()
         {
-            float elapsed = Mathf.Max(0.05f, Time.time - startTime);
-            float timeLimit = (Definition != null && Definition.config != null) ? Definition.config.timeLimit : 0f;
+            if (Definition == null || Definition.config == null) return 100;
+
+            float size = Definition.config.targetSize;
+            bool moving = Definition.config.isMoving;
+
+            int pts;
+            if (size <= 0f || size >= 220f)
+            {
+                pts = 100; // Large targets (e.g. 230, 250, 300)
+            }
+            else if (size >= 160f)
+            {
+                pts = 125; // Medium-large targets (e.g. 170, 180, 190, 210)
+            }
+            else if (size >= 120f)
+            {
+                pts = 150; // Medium targets (e.g. 120, 130, 150)
+            }
+            else if (size >= 95f)
+            {
+                pts = 175; // Small targets (e.g. 100, 110)
+            }
+            else if (size >= 75f)
+            {
+                pts = 200; // Very small targets (e.g. 80, 90)
+            }
+            else
+            {
+                pts = 225; // Extra-small targets (e.g. 70)
+            }
+
+            if (moving)
+            {
+                pts += 25;
+            }
+
+            return pts;
+        }
+
+        protected void TriggerHitScoreFeedback(Transform targetTransform = null, int overrideFixedPoints = -1)
+        {
+            int fixedPts = overrideFixedPoints > 0 ? overrideFixedPoints : GetStandardizedTargetPoints();
             LevelRunner runner = GetComponentInParent<LevelRunner>() ?? LevelRunner.ActiveRunner;
-            int pts = runner != null ? runner.AwardHitPoints(elapsed, timeLimit, basePoints, maxBonus) : basePoints;
+            int pts = runner != null ? runner.AwardHitPoints(fixedPts) : fixedPts;
 
             Transform anchor = targetTransform != null ? targetTransform : GetActiveFeedbackTarget();
             Vector3 worldPos = anchor != null ? anchor.position : transform.position;
             FloatingScoreText.Spawn(transform, worldPos, pts);
         }
 
-        protected void TriggerMistakeScoreFeedback(Transform targetTransform = null, int penalty = 25)
+        protected void TriggerMistakeScoreFeedback(Transform targetTransform = null, int penalty = 50)
         {
             LevelRunner runner = GetComponentInParent<LevelRunner>() ?? LevelRunner.ActiveRunner;
             int delta = runner != null ? runner.ApplyMistakePenalty(penalty) : -Mathf.Abs(penalty);
 
-            Transform anchor = targetTransform != null ? targetTransform : GetActiveFeedbackTarget();
-            Vector3 worldPos = anchor != null ? anchor.position : transform.position;
-            FloatingScoreText.Spawn(transform, worldPos, delta);
+            // Spawn mistake penalty directly above the player's mouse cursor so the target never covers it
+            FloatingScoreText.SpawnAtMouseCursor(transform, delta);
         }
 
         /// <summary>

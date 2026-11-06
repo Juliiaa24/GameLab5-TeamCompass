@@ -54,35 +54,15 @@ namespace ComputerLearning
             appWindow = GetComponentInParent<Window>();
         }
 
-        public int AwardHitPoints(float elapsedSeconds, float referenceTimeLimit = 0f, int basePoints = 100, int maxBonus = 50)
+        public int AwardHitPoints(int exactPoints = 100)
         {
-            float refTime = referenceTimeLimit > 0f ? referenceTimeLimit : 10f;
-            int speedBonus = 0;
-            if (maxBonus > 0)
-            {
-                if (elapsedSeconds <= refTime * 0.4f)
-                {
-                    float fastRatio = 1f - Mathf.Clamp01(elapsedSeconds / Mathf.Max(0.1f, refTime * 0.4f));
-                    speedBonus = Mathf.RoundToInt(Mathf.Lerp(maxBonus * 0.7f, maxBonus, fastRatio));
-                }
-                else if (elapsedSeconds <= refTime)
-                {
-                    float midRatio = 1f - Mathf.Clamp01((elapsedSeconds - refTime * 0.4f) / Mathf.Max(0.1f, refTime * 0.6f));
-                    speedBonus = Mathf.RoundToInt(Mathf.Lerp(maxBonus * 0.56f, maxBonus * 0.7f, midRatio));
-                }
-                else
-                {
-                    speedBonus = Mathf.RoundToInt(maxBonus * 0.3f);
-                }
-            }
-
-            int totalEarned = basePoints + speedBonus;
-            currentLevelScore += totalEarned;
-            maxPossibleScore += (basePoints + maxBonus);
-            return totalEarned;
+            int pts = Mathf.Max(1, exactPoints);
+            currentLevelScore += pts;
+            maxPossibleScore += pts;
+            return pts;
         }
 
-        public int ApplyMistakePenalty(int penalty = 25)
+        public int ApplyMistakePenalty(int penalty = 50)
         {
             int absPenalty = Mathf.Abs(penalty);
             currentLevelScore = Mathf.Max(0, currentLevelScore - absPenalty);
@@ -294,8 +274,8 @@ namespace ComputerLearning
                 if (maxPossibleScore <= 0)
                 {
                     int fallbackTasks = Mathf.Max(1, tasksSucceeded);
-                    maxPossibleScore = fallbackTasks * 150;
-                    currentLevelScore = Mathf.Max(0, fallbackTasks * 135 - (totalMistakes * 25));
+                    maxPossibleScore = fallbackTasks * 100;
+                    currentLevelScore = Mathf.Max(0, fallbackTasks * 100 - (totalMistakes * 50));
                 }
 
                 LevelMedal medal = ProgressData.CalculateMedalFromPoints(currentLevelScore, maxPossibleScore);
