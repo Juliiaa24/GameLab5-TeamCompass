@@ -10,6 +10,7 @@
 using System;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
 using UnityEngine.SceneManagement;
 using TMPro;
 
@@ -128,10 +129,10 @@ namespace ComputerLearning
                 else if (SceneManager.GetActiveScene().name == "Menu" && UnityEngine.InputSystem.Keyboard.current.spaceKey.wasPressedThisFrame)
                 {
                     // Ensure the player is not currently typing into a student ID / text input field
-                    bool isInputFocused = UnityEngine.EventSystems.EventSystem.current != null &&
-                                          UnityEngine.EventSystems.EventSystem.current.currentSelectedGameObject != null &&
-                                          (UnityEngine.EventSystems.EventSystem.current.currentSelectedGameObject.GetComponent<TMP_InputField>() != null ||
-                                           UnityEngine.EventSystems.EventSystem.current.currentSelectedGameObject.GetComponent<InputField>() != null);
+                    bool isInputFocused = EventSystem.current != null &&
+                                          EventSystem.current.currentSelectedGameObject != null &&
+                                          (EventSystem.current.currentSelectedGameObject.GetComponent<TMP_InputField>() != null ||
+                                           EventSystem.current.currentSelectedGameObject.GetComponent<InputField>() != null);
                     if (!isInputFocused)
                     {
                         ChangeToMain();
