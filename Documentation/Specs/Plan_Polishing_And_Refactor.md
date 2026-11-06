@@ -460,6 +460,189 @@ En dicho método:
 
 ---
 
+## Fase 12: UI, Accesibilidad y Posicionamiento de la Mascota
+
+### Diagnóstico
+1. **Instrucciones en Assessment:** En la pantalla de evaluación inicial (`InitialTestManager.cs`), los textos explicativos superiores y los botones de acción resultan demasiado pequeños para niños o pantallas de alta resolución.
+2. **Contraste de iconos en escritorio:** Los textos de los iconos del escritorio son de color blanco puro sin borde, lo que provoca que se pierdan o resulten casi ilegibles sobre zonas claras o blancas del fondo de pantalla.
+3. **Mascota bloqueando el botón Continuar:** Al finalizar un nivel (`LevelCelebrationModal.cs`), la mascota virtual aparece en el centro exacto de la pantalla, posicionándose justo encima del botón "Continue" de la tarjeta de resultados e impidiendo hacer clic cómodamente.
+
+### Archivos a modificar
+- `ComputerLearner/Assets/Scripts/Managers/InitialTestManager.cs`
+- `ComputerLearner/Assets/Scripts/DesktopSystem/DraggableIcon.cs`
+- `ComputerLearner/Assets/Scripts/UI/LevelCelebrationModal.cs`
+- `ComputerLearner/Assets/Scripts/DesktopSystem/VirtualMascot.cs`
+
+### Especificación Técnica
+1. **Aumento de Tipografía y Botones en Assessment:**
+   - En `InitialTestManager.cs`:
+     - Incrementar el tamaño de fuente de las instrucciones superiores de ~16pt a **22–24pt** con buen interlineado y negrita suave.
+     - Agrandar las dimensiones del contenedor y de los botones superiores de control a un tamaño táctil/cómodo de mínimo **180x48px** con texto a **18pt**.
+2. **Borde / Outline Oscuro en Textos de Iconos:**
+   - En `DraggableIcon.cs` y componentes de iconos de escritorio:
+     - Configurar en el `TextMeshProUGUI` del nombre del icono un efecto de contorno (`Outline`) o sombra marcada con color oscuro sólido (`#0F172A` o negro al 90% de opacidad) y grosor de **0.25f a 0.35f**.
+     - Garantizar que el texto blanco sea 100% legible y nítido independientemente de los colores o zonas blancas del fondo de pantalla.
+3. **Posicionamiento Lateral de la Mascota en Celebración:**
+   - En `LevelCelebrationModal.cs` y `VirtualMascot.cs`:
+     - Cuando se muestra la tarjeta modal de celebración de fin de nivel (`LevelCelebrationModal`), situar a la mascota en una posición lateral fija (`anchoredPosition = new Vector2(330f, 0f)` o a la izquierda según espacio).
+     - El bocadillo de diálogo de la mascota debe orientarse hacia la tarjeta, manteniendo el botón inferior "Continue" **completamente despejado y accesible**.
+
+### Criterios de Aceptación
+- Las instrucciones y botones superiores del Assessment son grandes y legibles.
+- Los nombres de los iconos del escritorio tienen un contorno oscuro nítido y son perfectamente legibles sobre cualquier wallpaper.
+- Al ganar un nivel, la mascota aparece al lado de la tarjeta de resultados y jamás tapa el botón de continuar.
+
+---
+
+## Fase 13: Gestión de Archivos, Explorador, Atajos de Teclado y Papelera
+
+### Diagnóstico
+1. **Carpeta Minijuegos innecesaria:** La carpeta "Minijuegos" del escritorio y del sistema de archivos carece de propósito educativo central y genera confusión.
+2. **Botones sobrantes en la Papelera:** Cuando el usuario abre la Papelera de reciclaje, la barra de herramientas sigue mostrando los botones para crear nuevas carpetas o imágenes.
+3. **Falta de creación directa de texto:** El explorador cuenta con botones para "+ New Folder" y "+ New Image", pero carece de un botón directo para crear archivos de texto (`.txt`).
+4. **Falta de nombrado inmediato:** Al crear una carpeta o archivo, el sistema asigna un nombre por defecto pero no permite escribir el nombre deseado de forma inmediata.
+5. **Sin soporte para tecla Delete (`Supr`):** No se pueden enviar archivos o carpetas a la papelera pulsando la tecla física `Delete`.
+6. **Sin portapapeles de archivos (Copiar / Pegar):** No existe soporte para duplicar archivos ni por atajos de teclado (`Ctrl+C` / `Ctrl+V`) ni por menú contextual.
+7. **Posición de la Papelera en el escritorio:** La papelera se genera en la 5ª posición (abajo a la izquierda) en lugar de en la esquina superior izquierda como es estándar en Windows.
+
+### Archivos a modificar
+- `ComputerLearner/Assets/Scripts/DesktopSystem/FileExplorerApp.cs`
+- `ComputerLearner/Assets/Scripts/DesktopSystem/DesktopManager.cs`
+- `ComputerLearner/Assets/Scripts/DesktopSystem/DesktopContextMenuTrigger.cs`
+- `ComputerLearner/Assets/Scripts/DesktopSystem/DraggableIcon.cs`
+- `ComputerLearner/Assets/Scenes/VirtualDesktop.unity`
+
+### Especificación Técnica
+1. **Eliminación Completa de la Carpeta Minijuegos:**
+   - En `FileExplorerApp.InitializeDefaultFileSystem()`, eliminar la creación de la carpeta "Minijuegos" del árbol de directorios y de la carpeta Desktop.
+   - En `DesktopManager.cs`, retirar "Minijuegos" de los iconos iniciales del escritorio y del menú inicio.
+2. **Ocultar Creación en la Papelera:**
+   - En `FileExplorerApp.cs`, cuando la carpeta actual sea "Recycle Bin", ocultar o desactivar los botones de crear carpeta, texto e imagen de la barra superior y retirarlos del menú contextual.
+3. **Botón "+ New Text" en la Barra de Herramientas:**
+   - Añadir en la barra superior del Explorador el botón `btnNewTextToolbar` junto a los existentes, vinculado a `CreateNewTextDocument()`.
+4. **Nombrado Inmediato al Crear:**
+   - En `FileExplorerApp.cs` y `DesktopContextMenuTrigger.cs`:
+     - Al crear una carpeta, texto o imagen, invocar automáticamente `PromptRenameItem` (o `PromptRenameDesktopIcon`) para que se abra de inmediato la ventana modal de renombramiento con el nombre por defecto seleccionado, permitiendo al usuario teclear su nombre y pulsar Enter.
+5. **Borrado con Tecla Delete (`Supr`):**
+   - En `FileExplorerApp.Update()` y `DesktopManager.Update()`:
+     - Al presionar `Keyboard.current.deleteKey.wasPressedThisFrame` con un elemento seleccionado (y ningún campo de texto enfocado), enviar el elemento a la papelera invocando `DeleteItemToRecycleBin()` o `DeleteDesktopIconToRecycleBin()`.
+     - Si el elemento es un archivo o carpeta protegida del sistema, mostrar un mensaje de aviso y no eliminarlo.
+6. **Copiar y Pegar Archivos (`Ctrl+C` / `Ctrl+V`):**
+   - En `FileExplorerApp.cs`:
+     - Declarar un portapapeles estático `private static ExplorerItemData clipboardItem;`.
+     - Añadir las opciones "Copy" y "Paste" en el menú contextual de archivos y carpetas.
+     - En `Update()`: capturar `Ctrl+C` para copiar el elemento seleccionado en el portapapeles, y `Ctrl+V` para duplicarlo en la carpeta activa con el prefijo `"Copia de [Nombre]"` (o `"Copy of [Name]"`).
+7. **Papelera en la Esquina Superior Izquierda:**
+   - En `VirtualDesktop.unity` y `DesktopManager.cs`: ubicar la Papelera de reciclaje en el primer índice (`index 0`, fila 0, columna 0) del grid del escritorio.
+
+### Criterios de Aceptación
+- La carpeta "Minijuegos" ya no aparece en el sistema.
+- En la Papelera de reciclaje no se pueden crear carpetas ni archivos.
+- El Explorador de Archivos tiene botón funcional para "+ New Text".
+- Toda creación de carpeta/archivo abre al instante el modal para nombrarlo.
+- Pulsar la tecla `Delete` sobre un elemento seleccionado lo envía a la papelera.
+- `Ctrl+C` y `Ctrl+V` duplican archivos correctamente en el explorador y escritorio.
+- La Papelera se sitúa en la esquina superior izquierda por defecto.
+
+---
+
+## Fase 14: Fondos de Pantalla, Fixes de Assets y Sincronización en Vivo
+
+### Diagnóstico
+1. **Error de importación de Sprites en Resources:** En `Assets/Resources/FolderIcons/` y `Assets/Resources/RecyclingBin*.png`, las texturas tienen `textureType: 0` (`Default Texture2D`) en sus archivos `.meta` en vez de `8` (`Sprite`), haciendo que `Resources.Load<Sprite>` devuelva `null` en compilaciones WebGL y Standalone.
+2. **Icono de papelera vacía/llena no cambia en WebGL:** Por el fallo de carga del sprite y por buscar `Image` únicamente en la raíz del objeto en vez de en hijos (`GetComponentInChildren<Image>()`).
+3. **Fondo de pantalla invariable:** No existe mecanismo para que el usuario personalice o cambie el fondo de pantalla del escritorio.
+4. **Archivos `Mascot.png` y de papelera sin contenido real:** `Mascot.png` cargaba la imagen bajo `#if UNITY_EDITOR` (quedando en blanco en build), y `Old_Drawing.png` en la papelera no tenía imagen asignada.
+5. **Desincronización tras guardar en Paint:** Cuando un usuario edita y guarda una imagen desde Paint, los visores de imágenes abiertos o los iconos del escritorio no actualizan su textura en vivo.
+
+### Archivos a modificar
+- `ComputerLearner/Assets/Resources/FolderIcons/*.meta`
+- `ComputerLearner/Assets/Resources/RecyclingBin*.meta`
+- `ComputerLearner/Assets/Scripts/DesktopSystem/RecycleBinIcon.cs`
+- `ComputerLearner/Assets/Scripts/DesktopSystem/DesktopManager.cs`
+- `ComputerLearner/Assets/Scripts/DesktopSystem/DesktopContextMenuTrigger.cs`
+- `ComputerLearner/Assets/Scripts/DesktopSystem/FileExplorerApp.cs`
+- `ComputerLearner/Assets/Scripts/DesktopSystem/ImageViewerApp.cs`
+
+### Especificación Técnica
+1. **Configuración de Metas en Resources:**
+   - Actualizar los archivos `.meta` en `Assets/Resources/FolderIcons/` y `Assets/Resources/RecyclingBin_Icon_01*.png.meta` fijando `textureType: 8` (`Sprite (2D and UI)`).
+2. **Dinamismo del Icono de la Papelera:**
+   - En `RecycleBinIcon.cs`: localizar el componente visual mediante `GetComponentInChildren<Image>()`, cargar los sprites desde `Resources/RecyclingBin_Icon_01` y `Resources/RecyclingBin_Icon_01_Empty`, y alternar dinámicamente entre icono lleno y vacío en función de `FileExplorerApp.GetRecycleBinCount() > 0`.
+3. **Sistema de Fondos de Pantalla (Wallpapers):**
+   - En `FileExplorerApp.cs` y `ImageViewerApp.cs`: añadir la opción contextual *"Set as Desktop Background"* al hacer clic derecho en cualquier archivo `.png`. Al pulsarse, actualizar de inmediato el componente `Image` del wallpaper en `DesktopManager` y persistir la selección en `PlayerPrefs`.
+   - En `DesktopContextMenuTrigger.cs`: añadir en el menú contextual del escritorio la opción *"Change Wallpaper"* que permita alternar entre fondos/colores placeholder agradables (Azul retro clásico, Verde azulado moderno, Púrpura suave, Wallpaper original).
+   - En `DesktopManager.cs`: al inicializarse, restaurar el fondo guardado en `PlayerPrefs`.
+4. **Contenido Real para Mascot y Archivos de Papelera:**
+   - En `FileExplorerApp.cs`:
+     - Asignar al archivo `Mascot.png` el sprite real de la mascota cargado en tiempo de ejecución.
+     - Asignar al archivo `Old_Drawing.png` en la papelera una ilustración/dibujo real de ejemplo para que al abrirse en ImageViewer o Paint no esté vacío.
+5. **Sincronización en Tiempo Real tras Guardar en Paint:**
+   - En `ImageViewerApp.cs` y `DesktopManager.cs`: suscribirse al evento `FileExplorerApp.OnFileSystemChanged`. Si la imagen mostrada ha sido modificada y guardada en Paint, refrescar de inmediato el sprite asignado en pantalla.
+
+### Criterios de Aceptación
+- El cambio de color de carpetas funciona perfectamente en WebGL y Standalone.
+- La papelera cambia de icono entre llena y vacía en tiempo real.
+- El jugador puede cambiar el fondo de pantalla desde el menú contextual y desde imágenes `.png`.
+- `Mascot.png` y `Old_Drawing.png` muestran ilustraciones reales al abrirse.
+- Guardar una imagen en Paint actualiza al instante la vista previa en el explorador y en el visor abierto.
+
+---
+
+## Fase 15: Puntería Concéntrica, Movimiento de Dianas, Penalizaciones y Flujo de Niveles
+
+### Diagnóstico
+1. **Puntos idénticos en toda la diana:** Actualmente, acertar en el borde exterior de una diana otorga la misma puntuación que un impacto directo en el centro (Bullseye), haciendo que obtener la medalla de Oro sea demasiado permisivo.
+2. **Dianas estáticas en niveles de clic:** Los targets de clic simple son completamente fijos, restando dinamismo respecto a otros niveles.
+3. **Sin penalización en Drag & Drop:** Si el jugador suelta un objeto fuera de la zona receptora válida, no se le restan puntos ni se registra fallo.
+4. **Inconsistencia en barra de progreso de Nivel 1:** La barra de progreso de `MoveMouseTask.cs` utiliza un diseño personalizado verde flotante que no encaja con la barra discreta del resto de niveles.
+5. **Salto involuntario de resultados (Celebration Modal):** En niveles que continúan automáticamente, clics residuales del jugador pueden descartar la pantalla de resultados antes de ver las estrellas y puntos.
+6. **Desviaciones en Nivel 10 y Tour de la Papelera:** En el Nivel 10 el jugador puede crear archivos en vez de carpetas; en el tour tras el Nivel 9 el jugador puede abrir la nota de práctica por accidente mientras la arrastra a la papelera.
+
+### Archivos a modificar
+- `ComputerLearner/Assets/Scripts/Tasks/ClickTarget.cs`
+- `ComputerLearner/Assets/Scripts/Tasks/ClickTargetTask.cs`
+- `ComputerLearner/Assets/Scripts/Tasks/TaskTargetMovement.cs`
+- `ComputerLearner/Assets/Scripts/Tasks/DragDropTask.cs`
+- `ComputerLearner/Assets/Scripts/Tasks/MoveMouseTask.cs`
+- `ComputerLearner/Assets/Scripts/UI/LevelCelebrationModal.cs`
+- `ComputerLearner/Assets/Scripts/DesktopSystem/VirtualDesktopGuidedLevels.cs`
+- `ComputerLearner/Assets/Scripts/DesktopSystem/AdvancedDesktopTour.cs`
+
+### Especificación Técnica
+1. **Puntuación Concéntrica (Diana de Precisión):**
+   - En `ClickTarget.cs`:
+     - Al recibir el clic, calcular la distancia euclídea normalizada desde el punto de impacto al centro del target (`float distanceRatio = Vector2.Distance(clickPos, centerPos) / radius;`):
+       - **Centro (Bullseye, radio <= 0.35f):** **+100 puntos** (Oro).
+       - **Anillo medio (0.35f < radio <= 0.70f):** **+70 puntos**.
+       - **Anillo exterior (radio > 0.70f):** **+40 puntos**.
+       - **Clic fallido fuera de la diana:** **-50 puntos**.
+     - Emitir `FloatingScoreText` en verde sobre la diana con los puntos obtenidos (`+100`, `+70` o `+40`), y en rojo sobre el cursor en caso de fallo (`-50`).
+2. **Dianas en Movimiento y Ajuste de Velocidad:**
+   - Añadir componentes `TaskTargetMovement` con oscilación suave en los niveles de dianas fijas para dotarles de vida.
+   - En los niveles donde las dianas ya se desplazaban, aumentar su velocidad en un **20%**.
+3. **Penalización en Drag & Drop:**
+   - En `DragDropTask.cs`: si el jugador suelta el elemento arrastrado fuera del área receptora válida (`targetDropArea`), registrar un fallo, restar **-50 puntos** y mostrar `FloatingScoreText.SpawnMistake(mousePos, -50)`.
+4. **Homogeneización de Barra de Progreso de Nivel 1:**
+   - En `MoveMouseTask.cs`: reemplazar la barra flotante local por el contenedor de progreso estándar que utiliza `LevelRunner` para que todos los niveles compartan la misma identidad visual.
+5. **Protección contra Cierre Prematuro en Celebration Modal:**
+   - En `LevelCelebrationModal.cs`: incorporar un temporizador de bloqueo inicial de **0.8 segundos** (`canDismiss = false`) antes de permitir que cualquier clic o pulsación de tecla cierre la pantalla de celebración.
+6. **Blindaje de Flujo en Nivel 10 y Tour:**
+   - En `VirtualDesktopGuidedLevels.cs:RunLevel10ContextMenu`: durante el tutorial del menú contextual, mostrar y habilitar exclusivamente la opción de crear carpeta (`+ New Folder`), ocultando o deshabilitando las de texto e imagen.
+   - En `AdvancedDesktopTour.cs`: en el paso 7 de arrastrar a la papelera, asegurar explícitamente `appIcon.AllowDoubleClick = false;` para que la nota de práctica no se pueda abrir durante el arrastre.
+7. **Regla de Exclusión:**
+   - **NO modificar** los iconos de las aplicaciones Notepad y Paint, ni los sprites de dianas de doble clic, clic derecho o clic sostenido (se mantendrán los actuales hasta recibir los artes definitivos).
+
+### Criterios de Aceptación
+- La puntuación en dianas premia la precisión concéntrica (+100, +70, +40) y castiga los fallos fuera (-50).
+- Las dianas se mueven de forma suave y atractiva.
+- Soltar objetos fuera en Drag & Drop resta 50 puntos.
+- La barra de progreso de Nivel 1 coincide en diseño con el resto del juego.
+- La pantalla de resultados nunca se salta por accidente tras terminar un nivel.
+- Nivel 10 y el tour de la papelera guían limpiamente al usuario sin posibles bloqueos.
+
+---
+
 ## Verificación Final y Criterios de Calidad
 
 1. **Compilación:** Cero errores de compilación de C# y cero advertencias críticas en Unity.
@@ -476,4 +659,9 @@ En dicho método:
    - [x] Menú tras Escape en WebGL: botones responden siempre a clics sin quedarse bloqueados (Fase 9).
    - [x] Ciclo de Vida Tour Papelera: se cancela limpiamente si se inicia el Nivel 10 y no se solapa con el Nivel 11 (Fase 10).
    - [x] Balanceo de Medallas: tiempos lentos (53s en N14, 70s en N15, 148s en N16) no otorgan Oro; el Oro exige destreza (Fase 11).
+   - [ ] UI de Assessment y Textos: textos de assessment ampliados, texto de iconos con borde oscuro, mascota al lateral en victoria (Fase 12).
+   - [ ] Gestión de Archivos: carpeta Minijuegos eliminada, papelera limpia, botón "+ New Text", nombrado inmediato, borrado con Delete, copiar y pegar (Fase 13).
+   - [ ] Fondos y Assets: fix de sprites en Resources, papelera llena/vacía dinámica, selector de wallpapers, contenido real en Mascot y papelera, actualización en vivo desde Paint (Fase 14).
+   - [ ] Puntería y Flujo: puntuación concéntrica en dianas, movimiento de targets, penalización en Drag & Drop, barra de N1 homogénea, blindaje de N10 y tour (Fase 15).
+
 
