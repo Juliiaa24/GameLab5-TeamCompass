@@ -198,7 +198,7 @@ namespace ComputerLearning
                 Mathf.Clamp(row, 0, Mathf.Max(0, maxRow)));
         }
 
-        private bool Place(DraggableIcon icon, Vector2Int target)
+        public bool Place(DraggableIcon icon, Vector2Int target)
         {
             Vector2Int closest = new Vector2Int(-1, -1);
             float distance = float.MaxValue;

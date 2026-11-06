@@ -25,6 +25,8 @@ namespace ComputerLearning
         #region Public Variables
         /// <summary>Fired when the player left-clicks this target.</summary>
         public event Action OnClicked;
+        /// <summary>Fired when the player left-clicks this target, reporting precision points (100 center, 70 mid, 40 outer).</summary>
+        public event Action<int> OnClickedWithScore;
         /// <summary>Fired when the player clicks with the wrong button (right click).</summary>
         public event Action OnWrongButtonClicked;
         /// <summary>Fired when the player hovers over the target for > 2.5s without clicking.</summary>
@@ -35,6 +37,10 @@ namespace ComputerLearning
         [SerializeField] private Image backgroundImage;
 
         private bool isMoving;
+        private bool isSwayingOnly;
+        private float swayTimer;
+        private Vector2 baseAnchoredPosition;
+        private bool hasRecordedBasePos;
         private float moveSpeed;
         private RectTransform rectTransform;
         private RectTransform parentRect;
@@ -72,6 +78,32 @@ namespace ComputerLearning
             }
 
             if (parentRect == null || parentRect.rect.width <= 0f || parentRect.rect.height <= 0f) return;
+
+            if (isSwayingOnly)
+            {
+                if (!hasRecordedBasePos && rectTransform.anchoredPosition != Vector2.zero)
+                {
+                    baseAnchoredPosition = rectTransform.anchoredPosition;
+                    hasRecordedBasePos = true;
+                }
+
+                swayTimer += Time.deltaTime * 1.5f;
+                Vector2 swayOffset = new Vector2(Mathf.Sin(swayTimer) * 32f, Mathf.Cos(swayTimer * 0.85f) * 22f);
+                Vector2 targetPos = (hasRecordedBasePos ? baseAnchoredPosition : rectTransform.anchoredPosition) + swayOffset;
+
+                Rect swayBounds = parentRect.rect;
+                float sMarginW = (rectTransform.rect.width * 0.5f) + 18f;
+                float sMarginH = (rectTransform.rect.height * 0.5f) + 18f;
+                float sMinX = swayBounds.xMin + sMarginW;
+                float sMaxX = swayBounds.xMax - sMarginW;
+                float sMinY = swayBounds.yMin + sMarginH;
+                float sMaxY = swayBounds.yMax - sMarginH - 22f;
+
+                targetPos.x = (sMaxX > sMinX) ? Mathf.Clamp(targetPos.x, sMinX, sMaxX) : swayBounds.center.x;
+                targetPos.y = (sMaxY > sMinY) ? Mathf.Clamp(targetPos.y, sMinY, sMaxY) : swayBounds.center.y;
+                rectTransform.anchoredPosition = targetPos;
+                return;
+            }
 
             Vector2 pos = rectTransform.anchoredPosition;
             if (isMoving)
@@ -127,8 +159,19 @@ namespace ComputerLearning
         {
             if (rectTransform == null) rectTransform = GetComponent<RectTransform>();
             rectTransform.sizeDelta = new Vector2(size, size);
-            isMoving  = moving;
-            moveSpeed = speed;
+            if (moving)
+            {
+                isMoving = true;
+                isSwayingOnly = false;
+                moveSpeed = (speed > 0f ? speed : 100f) * 1.2f; // +20% speed
+            }
+            else
+            {
+                isMoving = false;
+                isSwayingOnly = true;
+                moveSpeed = 35f;
+                swayTimer = UnityEngine.Random.Range(0f, 6.28f);
+            }
             hasBeenClicked = false;
             isHovering = false;
             hoverDwellTime = 0f;
@@ -170,7 +213,11 @@ namespace ComputerLearning
 
             hasBeenClicked = true;
 
-            // Contextual Feedback 2: Edge hit ("Almost out! Aim closer to the center!")
+            // Concentric precision scoring:
+            // Center (Bullseye, <= 35% radius): +100
+            // Mid ring (35% - 70% radius): +70
+            // Outer ring (> 70% radius): +40
+            int scorePoints = 100;
             if (rectTransform != null)
             {
                 Camera eventCamera = eventData.pressEventCamera;
@@ -178,13 +225,25 @@ namespace ComputerLearning
                 {
                     float radius = Mathf.Max(rectTransform.rect.width, rectTransform.rect.height) * 0.5f;
                     float distFromCenter = localPoint.magnitude;
-                    if (radius > 1f && (distFromCenter / radius) >= 0.75f)
+                    float ratio = radius > 1f ? (distFromCenter / radius) : 0f;
+
+                    if (ratio <= 0.35f)
                     {
+                        scorePoints = 100; // Center (Bullseye)
+                    }
+                    else if (ratio <= 0.70f)
+                    {
+                        scorePoints = 70; // Mid ring
+                    }
+                    else
+                    {
+                        scorePoints = 40; // Outer ring
                         VirtualMascot.ShowAlmostOutFeedback(rectTransform);
                     }
                 }
             }
 
+            OnClickedWithScore?.Invoke(scorePoints);
             OnClicked?.Invoke();
         }
         #endregion

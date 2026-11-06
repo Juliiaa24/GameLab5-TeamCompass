@@ -390,6 +390,7 @@ namespace ComputerLearning
         #region Level 10: Context Menu Level
         private IEnumerator RunLevel10ContextMenu(LevelDefinition levelDef)
         {
+            DesktopContextMenuTrigger.RestrictToFolderCreationOnly = true;
             yield return new WaitForSeconds(0.6f);
 
             RectTransform bgRect = DesktopManager.Instance != null && DesktopManager.Instance.DesktopIconContainer != null
@@ -432,6 +433,7 @@ namespace ComputerLearning
             FileExplorerApp.OnFileSystemChanged += onFsChange;
             RegisterCleanup(() =>
             {
+                DesktopContextMenuTrigger.RestrictToFolderCreationOnly = false;
                 ContextMenuController.OnMenuItemClicked -= onMenuClick;
                 FileExplorerApp.OnFileSystemChanged -= onFsChange;
             });

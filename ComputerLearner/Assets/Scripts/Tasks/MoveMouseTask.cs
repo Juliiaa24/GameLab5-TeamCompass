@@ -36,7 +36,7 @@ namespace ComputerLearning
             lastCleanedTime = Time.time;
             hasShownBetweenReminder = false;
             activeSpots.Clear();
-            CreateProgressBar();
+            NotifySubTaskProgress(0f);
             SpawnDirtSpots();
             SetupBackgroundClickInterceptor(OnBackgroundClicked);
         }
@@ -176,6 +176,7 @@ namespace ComputerLearning
             
             spotsCleaned++;
             float progress = (float)spotsCleaned / spotsToSpawn;
+            NotifySubTaskProgress(progress);
             
             if (progressBarFill != null)
             {

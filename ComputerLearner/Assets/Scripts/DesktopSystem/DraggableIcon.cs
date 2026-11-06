@@ -232,7 +232,22 @@ namespace ComputerLearning
                 {
                     label.rectTransform.sizeDelta = new Vector2(290f, 60f);
                 }
+                ApplyLabelOutline(label);
             }
+        }
+
+        public static void ApplyLabelOutline(TMPro.TextMeshProUGUI label)
+        {
+            if (label == null) return;
+            label.outlineColor = new Color32(15, 23, 42, 230);
+            label.outlineWidth = 0.28f;
+            var outline = label.gameObject.GetComponent<UnityEngine.UI.Outline>();
+            if (outline == null)
+            {
+                outline = label.gameObject.AddComponent<UnityEngine.UI.Outline>();
+            }
+            outline.effectColor = new Color(0.06f, 0.09f, 0.16f, 0.95f);
+            outline.effectDistance = new Vector2(1.5f, -1.5f);
         }
 
         private void Start()

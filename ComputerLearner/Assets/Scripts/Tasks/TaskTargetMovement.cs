@@ -9,6 +9,10 @@ namespace ComputerLearning
         private RectTransform parentRect;
         private Vector2 moveDirection;
         private bool isMoving;
+        private bool isSwayingOnly;
+        private float swayTimer;
+        private Vector2 baseAnchoredPosition;
+        private bool hasRecordedBasePos;
         private float moveSpeed;
 
         public void Setup(TaskDefinition definition)
@@ -22,8 +26,21 @@ namespace ComputerLearning
             float size = definition.config.targetSize > 0 ? definition.config.targetSize : 100f;
             rectTransform.sizeDelta = new Vector2(size, size);
 
-            isMoving = definition.config.isMoving;
-            moveSpeed = definition.config.moveSpeed > 0 ? definition.config.moveSpeed : 100f;
+            if (definition.config.isMoving)
+            {
+                isMoving = true;
+                isSwayingOnly = false;
+                float baseSpeed = definition.config.moveSpeed > 0 ? definition.config.moveSpeed : 100f;
+                moveSpeed = baseSpeed * 1.2f; // +20% speed on existing movers
+            }
+            else
+            {
+                // Subtle sinusoidal oscillation for static targets to give life
+                isMoving = false;
+                isSwayingOnly = true;
+                moveSpeed = 35f;
+                swayTimer = Random.Range(0f, 6.28f);
+            }
 
             // Pick a random starting direction
             moveDirection = Random.insideUnitCircle.normalized;
@@ -51,16 +68,45 @@ namespace ComputerLearning
             float rx = (maxX > minX) ? Random.Range(minX, maxX) : bounds.center.x;
             float ry = (maxY > minY) ? Random.Range(minY, maxY) : bounds.center.y;
             rectTransform.anchoredPosition = new Vector2(rx, ry);
+            baseAnchoredPosition = rectTransform.anchoredPosition;
+            hasRecordedBasePos = true;
         }
 
         public void SetMoving(bool moving)
         {
             isMoving = moving;
+            if (moving) isSwayingOnly = false;
         }
 
         private void Update()
         {
             if (parentRect == null || parentRect.rect.width <= 0f || parentRect.rect.height <= 0f) return;
+
+            if (isSwayingOnly)
+            {
+                if (!hasRecordedBasePos && rectTransform.anchoredPosition != Vector2.zero)
+                {
+                    baseAnchoredPosition = rectTransform.anchoredPosition;
+                    hasRecordedBasePos = true;
+                }
+
+                swayTimer += Time.deltaTime * 1.5f;
+                Vector2 swayOffset = new Vector2(Mathf.Sin(swayTimer) * 32f, Mathf.Cos(swayTimer * 0.85f) * 22f);
+                Vector2 targetPos = (hasRecordedBasePos ? baseAnchoredPosition : rectTransform.anchoredPosition) + swayOffset;
+
+                Rect swayBounds = parentRect.rect;
+                float sMarginW = (rectTransform.rect.width * 0.5f) + 18f;
+                float sMarginH = (rectTransform.rect.height * 0.5f) + 18f;
+                float sMinX = swayBounds.xMin + sMarginW;
+                float sMaxX = swayBounds.xMax - sMarginW;
+                float sMinY = swayBounds.yMin + sMarginH;
+                float sMaxY = swayBounds.yMax - sMarginH - 22f;
+
+                targetPos.x = (sMaxX > sMinX) ? Mathf.Clamp(targetPos.x, sMinX, sMaxX) : swayBounds.center.x;
+                targetPos.y = (sMaxY > sMinY) ? Mathf.Clamp(targetPos.y, sMinY, sMaxY) : swayBounds.center.y;
+                rectTransform.anchoredPosition = targetPos;
+                return;
+            }
 
             Vector2 pos = rectTransform.anchoredPosition;
             if (isMoving)

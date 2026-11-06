@@ -187,6 +187,7 @@ namespace ComputerLearning
         public bool IsDesktopCompanion => isDesktopCompanion;
 
         private RectTransform targetRect;
+        private Vector2 currentTargetOffset = Vector2.zero;
         private float floatTimer;
         private Coroutine bounceCoroutine;
         private Coroutine hideBubbleCoroutine;
@@ -367,7 +368,7 @@ namespace ComputerLearning
 
                 RectTransform vis = GetMascotVisualRect();
                 if (vis != null) vis.anchoredPosition = new Vector2(0f, floatOffset);
-                Vector3 finalTargetPos = basePos;
+                Vector3 finalTargetPos = basePos + new Vector3(currentTargetOffset.x * scale, currentTargetOffset.y * scale, 0f);
 
                 // Clamp to screen bounds to prevent going completely off-screen
                 float margin = 5f * scale;
@@ -487,7 +488,7 @@ namespace ComputerLearning
         }
 
         #region Contextual Mistake & Feedback System
-        public static void ShowContextualFeedback(string message, RectTransform target = null, float duration = -1f)
+        public static void ShowContextualFeedback(string message, RectTransform target = null, float duration = -1f, Vector2? offset = null)
         {
             if (Instance == null)
             {
@@ -498,7 +499,7 @@ namespace ComputerLearning
                 int wordCount = !string.IsNullOrEmpty(message) ? message.Split(new char[] { ' ', '\n' }, System.StringSplitOptions.RemoveEmptyEntries).Length : 0;
                 float dynamicDuration = Mathf.Clamp(4.5f + (wordCount * 0.45f), 8.5f, 10.5f);
                 float finalDuration = duration > 0f ? Mathf.Max(duration, dynamicDuration) : dynamicDuration;
-                Instance.ShowTemporaryFeedback(message, target, finalDuration);
+                Instance.ShowTemporaryFeedback(message, target, finalDuration, offset);
             }
         }
 
@@ -568,12 +569,21 @@ namespace ComputerLearning
                     : "{0}\nYou earned the {1} Medal! ({2:F0}%)";
                 msg = string.Format(fmt, praise, newMedalName, accuracy);
             }
-            ShowContextualFeedback(msg, target, displayDuration);
+            if (target == null)
+            {
+                LevelCelebrationModal modal = Object.FindFirstObjectByType<LevelCelebrationModal>();
+                if (modal != null && modal.CardRect != null)
+                {
+                    target = modal.CardRect;
+                }
+            }
+            Vector2 sideOffset = target != null ? new Vector2(330f, 0f) : new Vector2(-120f, 60f);
+            ShowContextualFeedback(msg, target, displayDuration, sideOffset);
         }
 
-        public void ShowTemporaryFeedback(string message, RectTransform target, float duration)
+        public void ShowTemporaryFeedback(string message, RectTransform target, float duration, Vector2? offset = null)
         {
-            ShowMessage(message, target);
+            ShowMessage(message, target, offset);
             if (bounceCoroutine != null) StopCoroutine(bounceCoroutine);
             bounceCoroutine = StartCoroutine(BounceAnimation());
 
@@ -603,8 +613,10 @@ namespace ComputerLearning
 
             gameObject.SetActive(true);
             targetRect = target;
+            currentTargetOffset = offset ?? Vector2.zero;
 
             Canvas canvas = GetComponentInParent<Canvas>();
+            float scale = canvas != null ? canvas.scaleFactor : 1f;
             if (mascotRect == null) mascotRect = GetComponent<RectTransform>();
             if (mascotRect != null)
             {
@@ -619,7 +631,7 @@ namespace ComputerLearning
                 {
                     Vector3[] corners = new Vector3[4];
                     targetRect.GetWorldCorners(corners);
-                    mascotRect.position = (corners[0] + corners[2]) / 2f;
+                    mascotRect.position = ((corners[0] + corners[2]) / 2f) + new Vector3(currentTargetOffset.x * scale, currentTargetOffset.y * scale, 0f);
                 }
             }
 

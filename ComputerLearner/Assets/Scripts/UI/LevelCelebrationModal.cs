@@ -68,6 +68,7 @@ namespace ComputerLearning
         private Button continueBtn;
         private Coroutine autoAdvanceCoroutine;
         private RectTransform cardRectTransform;
+        private float spawnTime;
 
         public RectTransform CardRect => cardRectTransform;
 
@@ -100,6 +101,7 @@ namespace ComputerLearning
             }
             onClosedCallback = onClosed;
             isAutoAdvancing = autoAdvance.HasValue ? autoAdvance.Value : ShouldAutoAdvance(level);
+            spawnTime = Time.unscaledTime;
 
             BuildVisuals();
             StartCoroutine(AnimateSequence());
@@ -292,6 +294,13 @@ namespace ComputerLearning
             btnTxt.fontSize = 18;
             btnTxt.alignment = TextAlignmentOptions.Center;
             btnTxt.color = Color.white;
+
+            // Ensure mascot appears on the side of the card so it never blocks the Continue button
+            if (VirtualMascot.Instance != null && VirtualMascot.Instance.gameObject.activeSelf)
+            {
+                string mascotMsg = VirtualMascot.Instance.speechText != null ? VirtualMascot.Instance.speechText.text : string.Empty;
+                VirtualMascot.Show(mascotMsg, cardRectTransform, new Vector2(330f, 0f));
+            }
         }
 
         private IEnumerator AnimateSequence()
@@ -410,7 +419,7 @@ namespace ComputerLearning
             }
 #endif
 
-            if (proceed)
+            if (proceed && Time.unscaledTime - spawnTime >= 0.8f)
             {
                 CloseModalInternal(true);
             }
@@ -424,6 +433,8 @@ namespace ComputerLearning
         private void CloseModalInternal(bool isUserAction)
         {
             if (isClosed) return;
+            // Prevent accidental early skips from lingering clicks when modal appears
+            if (isUserAction && Time.unscaledTime - spawnTime < 0.8f) return;
             isClosed = true;
 
             if (autoAdvanceCoroutine != null)

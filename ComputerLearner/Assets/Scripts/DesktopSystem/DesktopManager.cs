@@ -137,6 +137,7 @@ namespace ComputerLearning
             }
             if (bg != null)
             {
+                WallpaperImage = bg.GetComponent<UnityEngine.UI.Image>();
                 RectTransform rt = bg as RectTransform;
                 if (rt != null)
                 {
@@ -170,6 +171,8 @@ namespace ComputerLearning
 
         private void Start()
         {
+            EnsureRecycleBinTopLeft();
+            RestoreSavedWallpaper();
             SpawnInitialIcons();
             EnsureScoresAppIcon();
             if (string.Equals(UnityEngine.SceneManagement.SceneManager.GetActiveScene().name, "Desktop1", StringComparison.OrdinalIgnoreCase) || !enableScoresAppIcon)
@@ -283,6 +286,139 @@ namespace ComputerLearning
             }
         }
         #endregion
+
+        private void EnsureRecycleBinTopLeft()
+        {
+            if (initialDesktopIcons != null)
+            {
+                initialDesktopIcons.RemoveAll(d => d != null && string.Equals(d.iconName, "Minigames", StringComparison.OrdinalIgnoreCase));
+                int binIdx = initialDesktopIcons.FindIndex(d => d != null && string.Equals(d.iconName, "Recycle Bin", StringComparison.OrdinalIgnoreCase));
+                if (binIdx > 0)
+                {
+                    var bin = initialDesktopIcons[binIdx];
+                    initialDesktopIcons.RemoveAt(binIdx);
+                    initialDesktopIcons.Insert(0, bin);
+                }
+            }
+
+            if (desktopIconContainer != null)
+            {
+                Transform minigamesChild = desktopIconContainer.Find("Minigames");
+                if (minigamesChild != null)
+                {
+                    DraggableIcon di = minigamesChild.GetComponent<DraggableIcon>();
+                    if (di != null) activeIcons.Remove(di);
+                    Destroy(minigamesChild.gameObject);
+                }
+
+                Transform binChild = desktopIconContainer.Find("Recycle Bin") ?? desktopIconContainer.Find("Icon_RecycleBin");
+                if (binChild == null)
+                {
+                    foreach (Transform c in desktopIconContainer)
+                    {
+                        if (c != null && c.name.IndexOf("Recycle", StringComparison.OrdinalIgnoreCase) >= 0)
+                        {
+                            binChild = c;
+                            break;
+                        }
+                    }
+                }
+                if (binChild != null)
+                {
+                    binChild.SetSiblingIndex(0);
+                    DraggableIcon di = binChild.GetComponent<DraggableIcon>();
+                    IconGrid grid = desktopIconContainer.GetComponent<IconGrid>();
+                    if (di != null && grid != null)
+                    {
+                        grid.Place(di, new Vector2Int(0, 0));
+                    }
+                }
+            }
+        }
+
+        private void Update()
+        {
+            var kb = UnityEngine.InputSystem.Keyboard.current;
+            if (kb == null) return;
+
+            if (UnityEngine.EventSystems.EventSystem.current != null)
+            {
+                var sel = UnityEngine.EventSystems.EventSystem.current.currentSelectedGameObject;
+                if (sel != null && (sel.GetComponent<TMPro.TMP_InputField>() != null || sel.GetComponent<UnityEngine.UI.InputField>() != null))
+                {
+                    return;
+                }
+            }
+
+            if (kb.deleteKey.wasPressedThisFrame)
+            {
+                if (DraggableIcon.SelectedIcon != null && !DraggableIcon.SelectedIcon.IsProtected)
+                {
+                    DraggableIcon.SelectedIcon.DeleteDesktopIconToRecycleBin();
+                }
+            }
+        }
+
+        public UnityEngine.UI.Image WallpaperImage { get; private set; }
+        public static Sprite CustomWallpaperSprite { get; set; }
+
+        public void SetDesktopWallpaperTheme(string theme)
+        {
+            CustomWallpaperSprite = null;
+            PlayerPrefs.SetString("DesktopWallpaperTheme", theme);
+            PlayerPrefs.Save();
+            RestoreSavedWallpaper();
+            FeedbackManager.PlaySuccess();
+        }
+
+        public void SetDesktopWallpaperSprite(Sprite sprite)
+        {
+            CustomWallpaperSprite = sprite;
+            PlayerPrefs.SetString("DesktopWallpaperTheme", "custom");
+            PlayerPrefs.Save();
+            if (WallpaperImage != null && sprite != null)
+            {
+                WallpaperImage.sprite = sprite;
+                WallpaperImage.color = Color.white;
+            }
+        }
+
+        public void RestoreSavedWallpaper()
+        {
+            if (WallpaperImage == null)
+            {
+                Transform bg = transform.Find("Background");
+                if (bg == null)
+                {
+                    Canvas c = GetComponentInParent<Canvas>();
+                    if (c != null) bg = c.transform.Find("Background");
+                }
+                if (bg != null) WallpaperImage = bg.GetComponent<UnityEngine.UI.Image>();
+            }
+
+            if (CustomWallpaperSprite != null)
+            {
+                SetDesktopWallpaperSprite(CustomWallpaperSprite);
+                return;
+            }
+
+            string theme = PlayerPrefs.GetString("DesktopWallpaperTheme", "default");
+            switch (theme.ToLowerInvariant())
+            {
+                case "blue":
+                    if (WallpaperImage != null) { WallpaperImage.sprite = null; WallpaperImage.color = new Color(0.12f, 0.25f, 0.48f, 1f); }
+                    break;
+                case "teal":
+                    if (WallpaperImage != null) { WallpaperImage.sprite = null; WallpaperImage.color = new Color(0.08f, 0.38f, 0.40f, 1f); }
+                    break;
+                case "purple":
+                    if (WallpaperImage != null) { WallpaperImage.sprite = null; WallpaperImage.color = new Color(0.28f, 0.18f, 0.44f, 1f); }
+                    break;
+                default:
+                    if (WallpaperImage != null) { WallpaperImage.color = Color.white; }
+                    break;
+            }
+        }
 
         #region Private Methods
         private void InitializeDesktop()
@@ -513,7 +649,11 @@ namespace ComputerLearning
                             // Sync name & sprite in case it was renamed or edited in Paint/Notepad
                             icon.gameObject.name = icon.LinkedExplorerItem.name;
                             var tmp = icon.GetComponentInChildren<TMPro.TextMeshProUGUI>();
-                            if (tmp != null) tmp.text = icon.LinkedExplorerItem.name;
+                            if (tmp != null)
+                            {
+                                tmp.text = icon.LinkedExplorerItem.name;
+                                DraggableIcon.ApplyLabelOutline(tmp);
+                            }
 
                             var img = icon.GetComponent<UnityEngine.UI.Image>();
                             if (img != null)
@@ -694,6 +834,7 @@ namespace ComputerLearning
             if (textComponent != null)
             {
                 textComponent.text = iconData.iconName;
+                DraggableIcon.ApplyLabelOutline(textComponent);
             }
 
             if (draggable != null)

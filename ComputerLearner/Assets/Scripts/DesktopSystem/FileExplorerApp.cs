@@ -99,6 +99,8 @@ namespace ComputerLearning
         [SerializeField] private Button btnBack;
         [SerializeField] private Button btnNewFolderToolbar;
         [SerializeField] private Button btnNewImageToolbar;
+        [SerializeField] private Button btnNewTextToolbar;
+        private static ExplorerItemData clipboardItem;
         [SerializeField] private TextMeshProUGUI statusFooterText;
 
         [Header("Items Grid & Container")]
@@ -168,6 +170,20 @@ namespace ComputerLearning
                 btnNewImageToolbar.onClick.RemoveAllListeners();
                 btnNewImageToolbar.onClick.AddListener(() => CreateNewImageDocument("New Drawing"));
             }
+            if (btnNewTextToolbar == null && btnNewFolderToolbar != null && btnNewFolderToolbar.transform.parent != null)
+            {
+                GameObject textBtnObj = Instantiate(btnNewFolderToolbar.gameObject, btnNewFolderToolbar.transform.parent);
+                textBtnObj.name = "BtnNewTextToolbar";
+                btnNewTextToolbar = textBtnObj.GetComponent<Button>();
+                var tmp = textBtnObj.GetComponentInChildren<TextMeshProUGUI>();
+                if (tmp != null) tmp.text = "+ New Text";
+                textBtnObj.transform.SetSiblingIndex(btnNewImageToolbar != null ? btnNewImageToolbar.transform.GetSiblingIndex() + 1 : btnNewFolderToolbar.transform.GetSiblingIndex() + 1);
+            }
+            if (btnNewTextToolbar != null)
+            {
+                btnNewTextToolbar.onClick.RemoveAllListeners();
+                btnNewTextToolbar.onClick.AddListener(() => CreateNewTextDocument("New Document"));
+            }
 
             EnsureSharedFileSystem();
             rootFolder = sharedRootFolder;
@@ -235,6 +251,92 @@ namespace ComputerLearning
                 relay = target.AddComponent<ExplorerClickRelay>();
             }
             relay.targetExplorer = this;
+        }
+
+        private void Update()
+        {
+            var kb = UnityEngine.InputSystem.Keyboard.current;
+            if (kb == null) return;
+
+            if (UnityEngine.EventSystems.EventSystem.current != null)
+            {
+                var sel = UnityEngine.EventSystems.EventSystem.current.currentSelectedGameObject;
+                if (sel != null && (sel.GetComponent<TMPro.TMP_InputField>() != null || sel.GetComponent<UnityEngine.UI.InputField>() != null))
+                {
+                    return;
+                }
+            }
+
+            if (kb.deleteKey.wasPressedThisFrame && selectedItemData != null)
+            {
+                if (selectedItemData.isProtected)
+                {
+                    SetStatusMessage("<color=#D9534F>System item is protected and cannot be deleted.</color>");
+                }
+                else
+                {
+                    DeleteItemToRecycleBin(selectedItemData);
+                    ClearSelection();
+                }
+            }
+
+            bool isCtrl = kb.leftCtrlKey.isPressed || kb.rightCtrlKey.isPressed;
+            if (isCtrl && kb.cKey.wasPressedThisFrame && selectedItemData != null)
+            {
+                CopySelectedItem();
+            }
+            else if (isCtrl && kb.vKey.wasPressedThisFrame && currentFolder != null)
+            {
+                PasteClipboardItem();
+            }
+        }
+        #endregion
+
+        private void SetImageAsDesktopWallpaper(ExplorerItemData item)
+        {
+            if (item == null) return;
+            Sprite s = item.imageContent != null ? item.imageContent : item.icon;
+            if (s != null && DesktopManager.Instance != null)
+            {
+                DesktopManager.Instance.SetDesktopWallpaperSprite(s);
+                SetStatusMessage($"Set '{item.name}' as desktop background.");
+                FeedbackManager.PlaySuccess();
+            }
+        }
+
+        #region Clipboard Operations
+        public void CopySelectedItem()
+        {
+            if (selectedItemData == null) return;
+            clipboardItem = selectedItemData;
+            SetStatusMessage($"Copied '{selectedItemData.name}' to clipboard.");
+        }
+
+        public void PasteClipboardItem()
+        {
+            if (clipboardItem == null || currentFolder == null) return;
+            if (currentFolder.name.Equals("Recycle Bin", StringComparison.OrdinalIgnoreCase)) return;
+
+            string baseName = clipboardItem.name;
+            string ext = System.IO.Path.GetExtension(baseName);
+            string nameWithoutExt = System.IO.Path.GetFileNameWithoutExtension(baseName);
+            string copyName = GetUniqueItemName(currentFolder, $"Copy of {nameWithoutExt}", ext);
+
+            ExplorerItemData duplicate = new ExplorerItemData
+            {
+                name = copyName,
+                fileType = clipboardItem.fileType,
+                icon = clipboardItem.icon,
+                textContent = clipboardItem.textContent,
+                imageContent = clipboardItem.imageContent,
+                isProtected = false,
+                children = new List<ExplorerItemData>()
+            };
+
+            if (currentFolder.children == null) currentFolder.children = new List<ExplorerItemData>();
+            currentFolder.children.Add(duplicate);
+            NotifyFileSystemChanged();
+            SetStatusMessage($"Pasted '{copyName}'");
         }
         #endregion
 
@@ -599,6 +701,10 @@ namespace ComputerLearning
             target.children.Add(newFolder);
             NotifyFileSystemChanged();
             SetStatusMessage($"Created folder '{uniqueName}'");
+            if (!VirtualDesktopGuidedLevels.IsLevelRunning)
+            {
+                PromptRenameItem(newFolder);
+            }
             return newFolder;
         }
 
@@ -621,6 +727,10 @@ namespace ComputerLearning
             target.children.Add(newDoc);
             NotifyFileSystemChanged();
             SetStatusMessage($"Created text file '{uniqueName}'");
+            if (!VirtualDesktopGuidedLevels.IsLevelRunning)
+            {
+                PromptRenameItem(newDoc);
+            }
             return newDoc;
         }
 
@@ -633,6 +743,10 @@ namespace ComputerLearning
             string uniqueName = GetUniqueItemName(target, customBaseName, ".png");
             ExplorerItemData newImg = SaveOrCreateImageDocument(uniqueName, null, target);
             SetStatusMessage($"Created image file '{uniqueName}'");
+            if (newImg != null && !VirtualDesktopGuidedLevels.IsLevelRunning)
+            {
+                PromptRenameItem(newImg);
+            }
             return newImg;
         }
 
@@ -648,6 +762,12 @@ namespace ComputerLearning
             currentFolder = folder;
             ActiveExplorerFolder = currentFolder;
             ClearSelection();
+
+            bool inRecycleBin = currentFolder != null && currentFolder.name.Equals("Recycle Bin", StringComparison.OrdinalIgnoreCase);
+            if (btnNewFolderToolbar != null) btnNewFolderToolbar.gameObject.SetActive(!inRecycleBin);
+            if (btnNewImageToolbar != null) btnNewImageToolbar.gameObject.SetActive(!inRecycleBin);
+            if (btnNewTextToolbar != null) btnNewTextToolbar.gameObject.SetActive(!inRecycleBin);
+
             UpdatePathDisplay();
             RefreshItemsView();
         }
@@ -741,6 +861,7 @@ namespace ComputerLearning
             {
                 menuItems.Add(new ContextMenuItem("Open", () => OpenImageFile(item), true));
                 menuItems.Add(new ContextMenuItem("Open in Paint", () => OpenImageInPaint(item), true));
+                menuItems.Add(new ContextMenuItem("Set as Desktop Background", () => SetImageAsDesktopWallpaper(item), true));
             }
             else
             {
@@ -769,6 +890,7 @@ namespace ComputerLearning
                 }
 
                 bool canModify = !item.isProtected;
+                menuItems.Add(new ContextMenuItem("Copy", CopySelectedItem, true));
                 menuItems.Add(new ContextMenuItem("Rename", () => PromptRenameItem(item), canModify));
                 menuItems.Add(new ContextMenuItem("Delete", () => DeleteItemToRecycleBin(item), canModify));
 
@@ -886,6 +1008,7 @@ namespace ComputerLearning
                 menuItems.Add(new ContextMenuItem("+ New Folder", () => CreateNewFolder("New Folder"), true));
                 menuItems.Add(new ContextMenuItem("+ New Text Document (.txt)", () => CreateNewTextDocument("New Document"), true));
                 menuItems.Add(new ContextMenuItem("+ New Image (.png)", () => CreateNewImageDocument("New Drawing"), true));
+                menuItems.Add(new ContextMenuItem("Paste", PasteClipboardItem, clipboardItem != null));
                 menuItems.Add(new ContextMenuItem("Refresh", RefreshItemsView, true));
             }
 
@@ -1779,11 +1902,24 @@ namespace ComputerLearning
             Sprite imgSprite = defaultImageIcon != null ? defaultImageIcon : GetImageFileSprite();
             Sprite folderSprite = defaultFolderIcon != null ? defaultFolderIcon : GetFolderSprite();
 
-            Sprite mascotImgContent = imgSprite;
+            Sprite mascotImgContent = null;
+            if (VirtualMascot.Instance != null)
+            {
+                var vis = VirtualMascot.Instance.GetComponentInChildren<UnityEngine.UI.Image>();
+                if (vis != null && vis.sprite != null) mascotImgContent = vis.sprite;
+            }
+            if (mascotImgContent == null)
+            {
+                mascotImgContent = Resources.Load<Sprite>("cursor") ?? Resources.Load<Sprite>("RecyclingBin_Icon_01");
+            }
 #if UNITY_EDITOR
-            Sprite presentationSprite = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Art/UI/App icons/Computer Presentation.png");
-            if (presentationSprite != null) mascotImgContent = presentationSprite;
+            if (mascotImgContent == null)
+            {
+                mascotImgContent = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Art/cursor.png") ??
+                                   UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Art/UI/App icons/Computer Presentation.png");
+            }
 #endif
+            if (mascotImgContent == null) mascotImgContent = imgSprite;
 
             rootFolder = new ExplorerItemData
             {
@@ -1875,7 +2011,6 @@ namespace ComputerLearning
             EnsureGuidedLevelsInFolder(levelsFolder, SharedGameIcon);
 
             desktopFolder.children.Add(levelsFolder);
-            desktopFolder.children.Add(gamesFolder);
 
             // 5. Folder Recycle Bin
             ExplorerItemData recycleFolder = new ExplorerItemData
@@ -2053,7 +2188,6 @@ namespace ComputerLearning
             EnsureGuidedLevelsInFolder(levelsFolder, SharedGameIcon);
 
             desktopFolder.children.Add(levelsFolder);
-            desktopFolder.children.Add(gamesFolder);
 
             sharedRootFolder.children.Add(desktopFolder);
             sharedRootFolder.children.Add(docsFolder);

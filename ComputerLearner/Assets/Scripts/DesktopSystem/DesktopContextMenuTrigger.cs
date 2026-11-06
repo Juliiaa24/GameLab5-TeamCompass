@@ -13,6 +13,8 @@ namespace ComputerLearning
 {
     public class DesktopContextMenuTrigger : MonoBehaviour, IPointerClickHandler, IPointerDownHandler
     {
+        public static bool RestrictToFolderCreationOnly { get; set; } = false;
+
         #region Private Variables
         [Header("Desktop Creation Configuration")]
         [SerializeField] private Sprite folderSprite;
@@ -64,28 +66,38 @@ namespace ComputerLearning
                 if (ContextMenuController.Instance != null)
                 {
                     int binCount = FileExplorerApp.GetRecycleBinCount();
-                    var menuItems = new List<ContextMenuItem>
+                    var menuItems = new List<ContextMenuItem>();
+
+                    if (RestrictToFolderCreationOnly)
                     {
-                        new ContextMenuItem("+ New Folder", CreateFolderOnDesktop, true),
-                        new ContextMenuItem("+ New Text Document (.txt)", CreateTextDocumentOnDesktop, true),
-                        new ContextMenuItem("+ New Image (.png)", CreateImageDocumentOnDesktop, true),
-                        new ContextMenuItem("Open File Explorer", () =>
+                        menuItems.Add(new ContextMenuItem("+ New Folder", CreateFolderOnDesktop, true));
+                    }
+                    else
+                    {
+                        menuItems.Add(new ContextMenuItem("+ New Folder", CreateFolderOnDesktop, true));
+                        menuItems.Add(new ContextMenuItem("+ New Text Document (.txt)", CreateTextDocumentOnDesktop, true));
+                        menuItems.Add(new ContextMenuItem("+ New Image (.png)", CreateImageDocumentOnDesktop, true));
+                        menuItems.Add(new ContextMenuItem("Open File Explorer", () =>
                         {
                             if (StartMenuController.Instance != null) StartMenuController.Instance.OpenFileExplorer();
-                        }, StartMenuController.Instance != null),
-                        new ContextMenuItem("Open Notepad", () =>
+                        }, StartMenuController.Instance != null));
+                        menuItems.Add(new ContextMenuItem("Open Notepad", () =>
                         {
                             if (StartMenuController.Instance != null) StartMenuController.Instance.OpenNotepad();
-                        }, StartMenuController.Instance != null),
-                        new ContextMenuItem("Open Paint", () =>
+                        }, StartMenuController.Instance != null));
+                        menuItems.Add(new ContextMenuItem("Open Paint", () =>
                         {
                             if (StartMenuController.Instance != null) StartMenuController.Instance.OpenPaint();
-                        }, StartMenuController.Instance != null),
-                        new ContextMenuItem($"Empty Recycle Bin ({binCount})", () =>
+                        }, StartMenuController.Instance != null));
+                        menuItems.Add(new ContextMenuItem($"Empty Recycle Bin ({binCount})", () =>
                         {
                             FileExplorerApp.EmptyRecycleBin();
-                        }, binCount > 0)
-                    };
+                        }, binCount > 0));
+                        menuItems.Add(new ContextMenuItem("Wallpaper: Default", () => DesktopManager.Instance?.SetDesktopWallpaperTheme("default"), true));
+                        menuItems.Add(new ContextMenuItem("Wallpaper: Classic Blue", () => DesktopManager.Instance?.SetDesktopWallpaperTheme("blue"), true));
+                        menuItems.Add(new ContextMenuItem("Wallpaper: Modern Teal", () => DesktopManager.Instance?.SetDesktopWallpaperTheme("teal"), true));
+                        menuItems.Add(new ContextMenuItem("Wallpaper: Retro Purple", () => DesktopManager.Instance?.SetDesktopWallpaperTheme("purple"), true));
+                    }
 
                     ContextMenuController.Instance.Show(eventData.position, menuItems);
                 }
@@ -155,6 +167,11 @@ namespace ComputerLearning
 
             desktopMgr.SpawnIcon(newIconData);
             FileExplorerApp.NotifyFileSystemChanged();
+            if (!VirtualDesktopGuidedLevels.IsLevelRunning)
+            {
+                DraggableIcon di = desktopMgr.GetIconByName(folderName);
+                di?.PromptRenameDesktopIcon();
+            }
             Debug.Log($"[DesktopContextMenuTrigger] Created new desktop folder: {folderName}");
         }
 
@@ -199,6 +216,11 @@ namespace ComputerLearning
             }
 
             FileExplorerApp.NotifyFileSystemChanged();
+            if (!VirtualDesktopGuidedLevels.IsLevelRunning)
+            {
+                DraggableIcon di = desktopMgr.GetIconByName(docName);
+                di?.PromptRenameDesktopIcon();
+            }
             Debug.Log($"[DesktopContextMenuTrigger] Created new desktop text document: {docName}");
         }
 
@@ -243,6 +265,11 @@ namespace ComputerLearning
             }
 
             FileExplorerApp.NotifyFileSystemChanged();
+            if (!VirtualDesktopGuidedLevels.IsLevelRunning)
+            {
+                DraggableIcon di = desktopMgr.GetIconByName(imgName);
+                di?.PromptRenameDesktopIcon();
+            }
             Debug.Log($"[DesktopContextMenuTrigger] Created new desktop image (.png): {imgName}");
         }
         #endregion

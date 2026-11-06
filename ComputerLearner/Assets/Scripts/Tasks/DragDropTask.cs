@@ -169,6 +169,7 @@ namespace ComputerLearning
         private void HandlePieceMissed()
         {
             RegisterAttempt(true, dropTarget);
+            TriggerMistakeScoreFeedback(dropTarget, 50);
             var fb = VirtualMascot.FeedbackDialogs;
             string msg = MascotFeedbackDialogs.PickRandom(fb.dragMissedDropMessages, fb.dragAlmost);
             VirtualMascot.ShowContextualFeedback(msg, dropTarget, 3.0f);

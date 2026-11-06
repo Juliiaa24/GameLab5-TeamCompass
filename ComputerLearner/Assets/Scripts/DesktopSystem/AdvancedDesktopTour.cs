@@ -49,6 +49,7 @@ namespace ComputerLearning
         private AdvancedDesktopTourDialogs dialogs;
         private TutorialBlocker tutorialBlocker;
         private RecycleBinIcon cachedRecycleBin;
+        private DraggableIcon cachedTourAppIcon;
         private Action<DraggableIcon> activeRecycledListener;
 
         private void LoadDialogs()
@@ -96,6 +97,11 @@ namespace ComputerLearning
             {
                 cachedRecycleBin.enabled = true;
             }
+            if (cachedTourAppIcon != null)
+            {
+                cachedTourAppIcon.AllowDoubleClick = true;
+                cachedTourAppIcon = null;
+            }
             if (tutorialBlocker != null)
             {
                 tutorialBlocker.ClearTarget();
@@ -117,6 +123,11 @@ namespace ComputerLearning
             if (cachedRecycleBin != null)
             {
                 cachedRecycleBin.enabled = true;
+            }
+            if (cachedTourAppIcon != null)
+            {
+                cachedTourAppIcon.AllowDoubleClick = true;
+                cachedTourAppIcon = null;
             }
             if (tutorialBlocker != null)
             {
@@ -197,6 +208,7 @@ namespace ComputerLearning
 
             // Disable the recycle bin initially so the user doesn't accidentally use it early
             cachedRecycleBin = recycleBin;
+            cachedTourAppIcon = appIcon;
             recycleBin.enabled = false;
 
             RectTransform iconRect = appIcon.GetComponent<RectTransform>();
@@ -303,6 +315,10 @@ namespace ComputerLearning
             VirtualMascot.Show(dialogs.step9_recycle, binRect, new Vector2(250, 0));
 
             recycleBin.enabled = true; // Enable the recycle bin only now!
+            if (appIcon != null)
+            {
+                appIcon.AllowDoubleClick = false; // Disallow double clicking Practice Note while dragging to Recycle Bin
+            }
 
             bool recycled = false;
             activeRecycledListener = (icon) => { if (icon != null) recycled = true; };

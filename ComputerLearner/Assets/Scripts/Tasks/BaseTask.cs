@@ -165,7 +165,7 @@ namespace ComputerLearning
         /// Generates and records an intermediate result without ending the task.
         /// Useful for tasks with multiple distinct sub-goals (e.g. clicking multiple targets).
         /// </summary>
-        protected void RecordIntermediateResult(bool success, Transform feedbackTarget = null)
+        protected void RecordIntermediateResult(bool success, Transform feedbackTarget = null, int overrideFixedPoints = -1)
         {
             if (IsFinished) return;
 
@@ -174,7 +174,7 @@ namespace ComputerLearning
             if (success)
             {
                 FeedbackManager.PlaySuccess();
-                TriggerHitScoreFeedback(feedbackTarget);
+                TriggerHitScoreFeedback(feedbackTarget, overrideFixedPoints);
             }
             else
             {
@@ -216,7 +216,7 @@ namespace ComputerLearning
             startTime = Time.time;
         }
 
-        protected void Complete(bool success, Transform feedbackTarget = null)
+        protected void Complete(bool success, Transform feedbackTarget = null, int overrideFixedPoints = -1)
         {
             if (IsFinished) return;
             IsFinished = true;
@@ -229,7 +229,7 @@ namespace ComputerLearning
                 if (!hasSpawnedCompletionScorePopup)
                 {
                     hasSpawnedCompletionScorePopup = true;
-                    TriggerHitScoreFeedback(feedbackTarget);
+                    TriggerHitScoreFeedback(feedbackTarget, overrideFixedPoints);
                 }
             }
             else

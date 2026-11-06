@@ -147,7 +147,7 @@ namespace ComputerLearning
             rectTransform.sizeDelta = new Vector2(size, size);
             requiredDuration = Mathf.Max(0.1f, duration);
             isMoving  = moving;
-            moveSpeed = speed;
+            moveSpeed = moving ? ((speed > 0f ? speed : 100f) * 1.2f) : speed;
         }
 
         /// <summary>Sets the parent rect used as movement boundary.</summary>

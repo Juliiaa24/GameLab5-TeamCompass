@@ -139,7 +139,7 @@ namespace ComputerLearning
             RectTransform targetRect = target.GetComponent<RectTransform>();
             targetRect.anchoredPosition = new Vector2(x, y);
 
-            target.OnClicked += () => OnTargetClicked(target);
+            target.OnClickedWithScore += (score) => OnTargetClicked(target, score);
             target.OnWrongButtonClicked += () =>
             {
                 if (IsFinished) return;
@@ -155,7 +155,7 @@ namespace ComputerLearning
             activeTargets.Add(target);
         }
 
-        private void OnTargetClicked(ClickTarget target)
+        private void OnTargetClicked(ClickTarget target, int scorePoints = 100)
         {
             if (IsFinished) return;
 
@@ -170,11 +170,11 @@ namespace ComputerLearning
 
             if (targetsRemaining <= 0)
             {
-                Complete(true, hitTransform);
+                Complete(true, hitTransform, scorePoints);
             }
             else
             {
-                RecordIntermediateResult(true, hitTransform);
+                RecordIntermediateResult(true, hitTransform, scorePoints);
             }
 
             if (target != null) Destroy(target.gameObject);
