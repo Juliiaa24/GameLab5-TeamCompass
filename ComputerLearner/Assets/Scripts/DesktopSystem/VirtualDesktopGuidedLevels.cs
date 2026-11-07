@@ -1697,19 +1697,19 @@ namespace ComputerLearning
                 if (canvas != null) modalParent = canvas.transform;
             }
 
+            LevelCelebrationModal.Show(modalParent, levelDef, medal, accuracy, duration, mistakes, () =>
+            {
+                VirtualMascot.HideMascot();
+            }, null, finalScore);
+
             if (improvedMedal)
             {
-                VirtualMascot.ShowMedalImprovementFeedback(previousBestMedal, medal, accuracy, duration, modalParent as RectTransform, 5.5f);
+                VirtualMascot.ShowMedalImprovementFeedback(previousBestMedal, medal, accuracy, duration, null, 5.5f);
             }
             else
             {
                 VirtualMascot.HideMascot();
             }
-
-            LevelCelebrationModal.Show(modalParent, levelDef, medal, accuracy, duration, mistakes, () =>
-            {
-                VirtualMascot.HideMascot();
-            }, null, finalScore);
         }
 
         public static LevelDefinition GetOrCreateLevelDefinition(string levelId)

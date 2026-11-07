@@ -569,15 +569,12 @@ namespace ComputerLearning
                     : "{0}\nYou earned the {1} Medal! ({2:F0}%)";
                 msg = string.Format(fmt, praise, newMedalName, accuracy);
             }
-            if (target == null)
+            LevelCelebrationModal modal = Object.FindFirstObjectByType<LevelCelebrationModal>();
+            if (modal != null && modal.CardRect != null)
             {
-                LevelCelebrationModal modal = Object.FindFirstObjectByType<LevelCelebrationModal>();
-                if (modal != null && modal.CardRect != null)
-                {
-                    target = modal.CardRect;
-                }
+                target = modal.CardRect;
             }
-            Vector2 sideOffset = target != null ? new Vector2(330f, 0f) : new Vector2(-120f, 60f);
+            Vector2 sideOffset = new Vector2(330f, 0f);
             ShowContextualFeedback(msg, target, displayDuration, sideOffset);
         }
 
@@ -613,7 +610,8 @@ namespace ComputerLearning
 
             gameObject.SetActive(true);
             targetRect = target;
-            currentTargetOffset = offset ?? Vector2.zero;
+            bool isCelebrationTarget = target != null && target.GetComponentInParent<LevelCelebrationModal>() != null;
+            currentTargetOffset = isCelebrationTarget ? (offset ?? new Vector2(330f, 0f)) : Vector2.zero;
 
             Canvas canvas = GetComponentInParent<Canvas>();
             float scale = canvas != null ? canvas.scaleFactor : 1f;
@@ -665,6 +663,7 @@ namespace ComputerLearning
             if (vis != null) vis.localScale = Vector3.one;
             isDesktopCompanion = false;
             targetRect = null;
+            currentTargetOffset = Vector2.zero;
             gameObject.SetActive(false);
         }
 
