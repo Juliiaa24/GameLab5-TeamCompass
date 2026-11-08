@@ -1626,9 +1626,13 @@ namespace ComputerLearning
             }
             else
             {
-                menuItems.Add(new ContextMenuItem("+ New Folder", () => CreateNewFolder("New Folder"), true));
-                menuItems.Add(new ContextMenuItem("+ New Text Document (.txt)", () => CreateNewTextDocument("New Document"), true));
-                menuItems.Add(new ContextMenuItem("+ New Image (.png)", () => CreateNewImageDocument("New Drawing"), true));
+                var newSubMenu = new List<ContextMenuItem>
+                {
+                    new ContextMenuItem("Folder", () => CreateNewFolder("New Folder"), true),
+                    new ContextMenuItem("Text Document (.txt)", () => CreateNewTextDocument("New Document"), true),
+                    new ContextMenuItem("Image (.png)", () => CreateNewImageDocument("New Drawing"), true)
+                };
+                menuItems.Add(new ContextMenuItem("New", newSubMenu, true));
                 menuItems.Add(new ContextMenuItem("Paste", PasteClipboardItem, clipboardItem != null));
                 menuItems.Add(new ContextMenuItem("Refresh", RefreshItemsView, true));
             }

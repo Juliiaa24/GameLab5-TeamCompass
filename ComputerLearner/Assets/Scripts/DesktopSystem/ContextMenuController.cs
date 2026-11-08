@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
 using TMPro;
 
 namespace ComputerLearning
@@ -17,12 +18,34 @@ namespace ComputerLearning
         public string label;
         public Action action;
         public bool isEnabled;
+        public List<ContextMenuItem> subItems;
+
+        public bool HasSubMenu => subItems != null && subItems.Count > 0;
 
         public ContextMenuItem(string label, Action action, bool isEnabled = true)
         {
             this.label = label;
             this.action = action;
             this.isEnabled = isEnabled;
+            this.subItems = null;
+        }
+
+        public ContextMenuItem(string label, List<ContextMenuItem> subItems, bool isEnabled = true)
+        {
+            this.label = label;
+            this.action = null;
+            this.isEnabled = isEnabled;
+            this.subItems = subItems;
+        }
+    }
+
+    public class ContextMenuRowHoverHandler : MonoBehaviour, IPointerEnterHandler
+    {
+        public Action OnHoverEnter;
+
+        public void OnPointerEnter(PointerEventData eventData)
+        {
+            OnHoverEnter?.Invoke();
         }
     }
 
@@ -66,6 +89,8 @@ namespace ComputerLearning
 
         private Action onNewFolderCallback;
         private readonly List<Button> spawnedButtons = new List<Button>();
+        private RectTransform subMenuPanel;
+        private readonly List<Button> spawnedSubButtons = new List<Button>();
         private GameObject activeModalObject;
         private GameObject activeColorPaletteObject;
         #endregion
@@ -137,8 +162,10 @@ namespace ComputerLearning
                     if (menuPanel != null)
                     {
                         Camera cam = targetCanvas != null && targetCanvas.renderMode != RenderMode.ScreenSpaceOverlay ? targetCanvas.worldCamera : null;
-                        bool inside = RectTransformUtility.RectangleContainsScreenPoint(menuPanel, mousePos, cam);
-                        if (!inside)
+                        bool insideMain = RectTransformUtility.RectangleContainsScreenPoint(menuPanel, mousePos, cam);
+                        bool insideSub = subMenuPanel != null && subMenuPanel.gameObject.activeSelf &&
+                                         RectTransformUtility.RectangleContainsScreenPoint(subMenuPanel, mousePos, cam);
+                        if (!insideMain && !insideSub)
                         {
                             Hide();
                         }
@@ -178,6 +205,7 @@ namespace ComputerLearning
             if (menuPanel == null) menuPanel = transform as RectTransform;
             if (menuPanel == null) return;
 
+            HideSubMenu();
             RebuildMenuButtons(items);
 
             menuPanel.gameObject.SetActive(true);
@@ -188,10 +216,11 @@ namespace ComputerLearning
         }
 
         /// <summary>
-        /// Hides the context menu.
+        /// Hides the context menu and any active submenu.
         /// </summary>
         public void Hide()
         {
+            HideSubMenu();
             if (menuPanel != null)
             {
                 menuPanel.gameObject.SetActive(false);
@@ -199,10 +228,15 @@ namespace ComputerLearning
             onNewFolderCallback = null;
         }
 
-        /// <summary>
-        /// Instantiates the InputModalDialog prefab on the main Canvas to prompt the user for a name (Rename / Save As).
-        /// </summary>
-                private Canvas GetTargetCanvas()
+        public void HideSubMenu()
+        {
+            if (subMenuPanel != null)
+            {
+                subMenuPanel.gameObject.SetActive(false);
+            }
+        }
+
+        private Canvas GetTargetCanvas()
         {
             if (targetCanvas != null && targetCanvas.GetComponent<CRTOverlayController>() == null)
                 return targetCanvas;
@@ -222,6 +256,10 @@ namespace ComputerLearning
             }
             return targetCanvas;
         }
+
+        /// <summary>
+        /// Instantiates the InputModalDialog prefab on the main Canvas to prompt the user for a name (Rename / Save As).
+        /// </summary>
         public void ShowInputModal(string title, string initialValue, string confirmText, Action<string> onConfirm)
         {
             Hide();
@@ -275,7 +313,8 @@ namespace ComputerLearning
                 );
             }
         }
-                /// <summary>
+
+        /// <summary>
         /// Displays an interactive retro folder color palette to change folder colors.
         /// </summary>
         public void ShowFolderColorPicker(Vector2 screenPosition, Action<Sprite> onColorSelected)
@@ -459,6 +498,200 @@ namespace ComputerLearning
         #endregion
 
         #region Private Methods
+        private void EnsureSubMenuPanel()
+        {
+            if (subMenuPanel != null) return;
+            if (menuPanel == null) return;
+
+            Transform parentTransform = menuPanel.parent != null ? menuPanel.parent : transform;
+            GameObject subObj = new GameObject("ContextSubMenuPanel", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+            subObj.transform.SetParent(parentTransform, false);
+            subMenuPanel = subObj.GetComponent<RectTransform>();
+            subMenuPanel.anchorMin = new Vector2(0.5f, 0.5f);
+            subMenuPanel.anchorMax = new Vector2(0.5f, 0.5f);
+            subMenuPanel.pivot = new Vector2(0f, 1f);
+
+            Image mainImg = menuPanel.GetComponent<Image>();
+            Image subImg = subObj.GetComponent<Image>();
+            if (mainImg != null && subImg != null)
+            {
+                subImg.sprite = mainImg.sprite;
+                subImg.type = mainImg.type;
+                subImg.color = mainImg.color;
+                subImg.material = mainImg.material;
+                subImg.pixelsPerUnitMultiplier = mainImg.pixelsPerUnitMultiplier;
+            }
+            else if (subImg != null)
+            {
+                subImg.color = new Color(0.95f, 0.96f, 0.97f, 1f);
+            }
+
+            Outline mainOutline = menuPanel.GetComponent<Outline>();
+            if (mainOutline != null)
+            {
+                Outline subOutline = subObj.AddComponent<Outline>();
+                subOutline.effectColor = mainOutline.effectColor;
+                subOutline.effectDistance = mainOutline.effectDistance;
+            }
+
+            Shadow mainShadow = menuPanel.GetComponent<Shadow>();
+            if (mainShadow != null)
+            {
+                Shadow subShadow = subObj.AddComponent<Shadow>();
+                subShadow.effectColor = mainShadow.effectColor;
+                subShadow.effectDistance = mainShadow.effectDistance;
+            }
+
+            subMenuPanel.gameObject.SetActive(false);
+        }
+
+        private void ConfigureRowArrow(Button btn, TextMeshProUGUI labelTmp, bool showArrow, Color color)
+        {
+            if (btn == null) return;
+            Transform arrowTrans = btn.transform.Find("SubMenuArrow");
+            if (!showArrow)
+            {
+                if (arrowTrans != null) arrowTrans.gameObject.SetActive(false);
+                return;
+            }
+
+            TextMeshProUGUI arrowTmp;
+            if (arrowTrans == null)
+            {
+                GameObject arrowObj = new GameObject("SubMenuArrow", typeof(RectTransform), typeof(TextMeshProUGUI));
+                arrowObj.transform.SetParent(btn.transform, false);
+                RectTransform arrowRt = arrowObj.GetComponent<RectTransform>();
+                arrowRt.anchorMin = new Vector2(1f, 0f);
+                arrowRt.anchorMax = new Vector2(1f, 1f);
+                arrowRt.pivot = new Vector2(1f, 0.5f);
+                arrowRt.sizeDelta = new Vector2(22f, 0f);
+                arrowRt.anchoredPosition = new Vector2(-10f, 0f);
+                arrowTmp = arrowObj.GetComponent<TextMeshProUGUI>();
+                arrowTmp.raycastTarget = false;
+                arrowTmp.alignment = TextAlignmentOptions.MidlineRight;
+            }
+            else
+            {
+                arrowTmp = arrowTrans.GetComponent<TextMeshProUGUI>();
+                arrowTrans.gameObject.SetActive(true);
+            }
+
+            if (arrowTmp != null)
+            {
+                if (labelTmp != null)
+                {
+                    arrowTmp.font = labelTmp.font;
+                    arrowTmp.fontSize = labelTmp.fontSize;
+                }
+                arrowTmp.text = ">";
+                arrowTmp.color = color;
+            }
+        }
+
+        private void ShowSubMenu(int parentRowIndex, List<ContextMenuItem> subItems)
+        {
+            if (subItems == null || subItems.Count == 0 || parentRowIndex < 0 || parentRowIndex >= spawnedButtons.Count)
+            {
+                HideSubMenu();
+                return;
+            }
+
+            EnsureSubMenuPanel();
+            if (subMenuPanel == null) return;
+
+            while (spawnedSubButtons.Count < subItems.Count)
+            {
+                if (btnNewFolder == null) break;
+                Button newBtn = Instantiate(btnNewFolder, subMenuPanel);
+                newBtn.name = $"ContextSubMenuButton_{spawnedSubButtons.Count}";
+                spawnedSubButtons.Add(newBtn);
+            }
+
+            float totalSubHeight = menuPadding * 2f + subItems.Count * itemHeight + Mathf.Max(0, subItems.Count - 1) * itemSpacing;
+            subMenuPanel.sizeDelta = new Vector2(menuWidth, totalSubHeight);
+
+            for (int i = 0; i < spawnedSubButtons.Count; i++)
+            {
+                Button btn = spawnedSubButtons[i];
+                if (btn == null) continue;
+
+                if (i < subItems.Count)
+                {
+                    ContextMenuItem subItem = subItems[i];
+                    btn.gameObject.SetActive(true);
+
+                    RectTransform rt = btn.GetComponent<RectTransform>();
+                    rt.anchorMin = new Vector2(0f, 1f);
+                    rt.anchorMax = new Vector2(1f, 1f);
+                    rt.pivot = new Vector2(0.5f, 1f);
+                    float yOffset = -menuPadding - i * (itemHeight + itemSpacing);
+                    rt.anchoredPosition = new Vector2(0f, yOffset);
+                    rt.sizeDelta = new Vector2(-menuPadding * 2f, itemHeight);
+
+                    TextMeshProUGUI labelTmp = btn.GetComponentInChildren<TextMeshProUGUI>(true);
+                    Color textColor = subItem.isEnabled ? enabledTextColor : disabledTextColor;
+                    if (labelTmp != null)
+                    {
+                        labelTmp.text = subItem.label;
+                        labelTmp.color = textColor;
+                    }
+                    ConfigureRowArrow(btn, labelTmp, false, textColor);
+
+                    btn.interactable = subItem.isEnabled;
+                    btn.onClick.RemoveAllListeners();
+                    if (subItem.isEnabled && subItem.action != null)
+                    {
+                        Action callback = subItem.action;
+                        string itemLabel = subItem.label;
+                        btn.onClick.AddListener(() =>
+                        {
+                            Hide();
+                            OnMenuItemClicked?.Invoke(itemLabel);
+                            callback.Invoke();
+                        });
+                    }
+                }
+                else
+                {
+                    btn.gameObject.SetActive(false);
+                }
+            }
+
+            subMenuPanel.gameObject.SetActive(true);
+            subMenuPanel.transform.SetAsLastSibling();
+
+            RectTransform parentBtnRect = spawnedButtons[parentRowIndex].GetComponent<RectTransform>();
+            RectTransform containerRect = subMenuPanel.parent as RectTransform;
+            if (parentBtnRect != null && containerRect != null)
+            {
+                Camera cam = targetCanvas != null && targetCanvas.renderMode != RenderMode.ScreenSpaceOverlay ? targetCanvas.worldCamera : null;
+                Vector3[] btnCorners = new Vector3[4];
+                parentBtnRect.GetWorldCorners(btnCorners);
+
+                Vector2 topLeftScreen = RectTransformUtility.WorldToScreenPoint(cam, btnCorners[1]);
+                Vector2 topRightScreen = RectTransformUtility.WorldToScreenPoint(cam, btnCorners[2]);
+
+                if (RectTransformUtility.ScreenPointToLocalPointInRectangle(containerRect, topRightScreen, cam, out Vector2 topRightLocal) &&
+                    RectTransformUtility.ScreenPointToLocalPointInRectangle(containerRect, topLeftScreen, cam, out Vector2 topLeftLocal))
+                {
+                    Vector2 halfCanvas = containerRect.rect.size * 0.5f;
+                    float subX = topRightLocal.x + menuPadding;
+                    if (subX + menuWidth > halfCanvas.x)
+                    {
+                        subX = topLeftLocal.x - menuPadding - menuWidth;
+                    }
+
+                    float subY = topRightLocal.y + menuPadding;
+                    if (subY - totalSubHeight < -halfCanvas.y)
+                    {
+                        subY = -halfCanvas.y + totalSubHeight;
+                    }
+
+                    subMenuPanel.anchoredPosition = new Vector2(subX, subY);
+                }
+            }
+        }
+
         private void RebuildMenuButtons(List<ContextMenuItem> items)
         {
             if (btnNewFolder != null)
@@ -485,6 +718,7 @@ namespace ComputerLearning
                 if (i < items.Count)
                 {
                     ContextMenuItem item = items[i];
+                    int rowIndex = i;
                     btn.gameObject.SetActive(true);
 
                     RectTransform rt = btn.GetComponent<RectTransform>();
@@ -496,24 +730,54 @@ namespace ComputerLearning
                     rt.sizeDelta = new Vector2(-menuPadding * 2f, itemHeight);
 
                     TextMeshProUGUI labelTmp = btn.GetComponentInChildren<TextMeshProUGUI>(true);
+                    Color textColor = item.isEnabled ? enabledTextColor : disabledTextColor;
                     if (labelTmp != null)
                     {
                         labelTmp.text = item.label;
-                        labelTmp.color = item.isEnabled ? enabledTextColor : disabledTextColor;
+                        labelTmp.color = textColor;
+                    }
+
+                    bool hasSub = item.HasSubMenu;
+                    ConfigureRowArrow(btn, labelTmp, hasSub, textColor);
+
+                    ContextMenuRowHoverHandler hoverHandler = btn.GetComponent<ContextMenuRowHoverHandler>();
+                    if (hoverHandler == null)
+                    {
+                        hoverHandler = btn.gameObject.AddComponent<ContextMenuRowHoverHandler>();
+                    }
+                    if (hasSub && item.isEnabled)
+                    {
+                        List<ContextMenuItem> capturedSubItems = item.subItems;
+                        hoverHandler.OnHoverEnter = () => ShowSubMenu(rowIndex, capturedSubItems);
+                    }
+                    else
+                    {
+                        hoverHandler.OnHoverEnter = HideSubMenu;
                     }
 
                     btn.interactable = item.isEnabled;
                     btn.onClick.RemoveAllListeners();
-                    if (item.isEnabled && item.action != null)
+                    if (item.isEnabled)
                     {
-                        Action callback = item.action;
-                        string itemLabel = item.label;
-                        btn.onClick.AddListener(() =>
+                        if (hasSub)
                         {
-                            Hide();
-                            OnMenuItemClicked?.Invoke(itemLabel);
-                            callback.Invoke();
-                        });
+                            List<ContextMenuItem> capturedSubItems = item.subItems;
+                            btn.onClick.AddListener(() =>
+                            {
+                                ShowSubMenu(rowIndex, capturedSubItems);
+                            });
+                        }
+                        else if (item.action != null)
+                        {
+                            Action callback = item.action;
+                            string itemLabel = item.label;
+                            btn.onClick.AddListener(() =>
+                            {
+                                Hide();
+                                OnMenuItemClicked?.Invoke(itemLabel);
+                                callback.Invoke();
+                            });
+                        }
                     }
                 }
                 else

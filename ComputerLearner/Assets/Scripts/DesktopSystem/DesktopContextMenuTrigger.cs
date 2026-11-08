@@ -74,33 +74,49 @@ namespace ComputerLearning
                     }
                     else
                     {
-                        menuItems.Add(new ContextMenuItem("+ New Folder", CreateFolderOnDesktop, true));
-                        menuItems.Add(new ContextMenuItem("+ New Text Document (.txt)", CreateTextDocumentOnDesktop, true));
-                        menuItems.Add(new ContextMenuItem("+ New Image (.png)", CreateImageDocumentOnDesktop, true));
+                        var newSubMenu = new List<ContextMenuItem>
+                        {
+                            new ContextMenuItem("Folder", CreateFolderOnDesktop, true),
+                            new ContextMenuItem("Text Document (.txt)", CreateTextDocumentOnDesktop, true),
+                            new ContextMenuItem("Image (.png)", CreateImageDocumentOnDesktop, true)
+                        };
+                        menuItems.Add(new ContextMenuItem("New", newSubMenu, true));
+
+                        var openAppSubMenu = new List<ContextMenuItem>
+                        {
+                            new ContextMenuItem("File Explorer", () =>
+                            {
+                                if (StartMenuController.Instance != null) StartMenuController.Instance.OpenFileExplorer();
+                            }, StartMenuController.Instance != null),
+                            new ContextMenuItem("Notepad", () =>
+                            {
+                                if (StartMenuController.Instance != null) StartMenuController.Instance.OpenNotepad();
+                            }, StartMenuController.Instance != null),
+                            new ContextMenuItem("Paint", () =>
+                            {
+                                if (StartMenuController.Instance != null) StartMenuController.Instance.OpenPaint();
+                            }, StartMenuController.Instance != null)
+                        };
+                        menuItems.Add(new ContextMenuItem("Open App", openAppSubMenu, StartMenuController.Instance != null));
+
+                        var wallpaperSubMenu = new List<ContextMenuItem>
+                        {
+                            new ContextMenuItem("Default", () => DesktopManager.Instance?.SetDesktopWallpaperTheme("default"), true),
+                            new ContextMenuItem("Classic Blue", () => DesktopManager.Instance?.SetDesktopWallpaperTheme("blue"), true),
+                            new ContextMenuItem("Modern Teal", () => DesktopManager.Instance?.SetDesktopWallpaperTheme("teal"), true),
+                            new ContextMenuItem("Retro Purple", () => DesktopManager.Instance?.SetDesktopWallpaperTheme("purple"), true)
+                        };
+                        menuItems.Add(new ContextMenuItem("Wallpaper", wallpaperSubMenu, true));
+
                         menuItems.Add(new ContextMenuItem("Paste", () =>
                         {
                             FileExplorerApp.PasteClipboardIntoFolder(FileExplorerApp.GetDesktopFolder());
                         }, FileExplorerApp.SharedClipboardItem != null));
-                        menuItems.Add(new ContextMenuItem("Open File Explorer", () =>
-                        {
-                            if (StartMenuController.Instance != null) StartMenuController.Instance.OpenFileExplorer();
-                        }, StartMenuController.Instance != null));
-                        menuItems.Add(new ContextMenuItem("Open Notepad", () =>
-                        {
-                            if (StartMenuController.Instance != null) StartMenuController.Instance.OpenNotepad();
-                        }, StartMenuController.Instance != null));
-                        menuItems.Add(new ContextMenuItem("Open Paint", () =>
-                        {
-                            if (StartMenuController.Instance != null) StartMenuController.Instance.OpenPaint();
-                        }, StartMenuController.Instance != null));
+
                         menuItems.Add(new ContextMenuItem($"Empty Recycle Bin ({binCount})", () =>
                         {
                             FileExplorerApp.EmptyRecycleBin();
                         }, binCount > 0));
-                        menuItems.Add(new ContextMenuItem("Wallpaper: Default", () => DesktopManager.Instance?.SetDesktopWallpaperTheme("default"), true));
-                        menuItems.Add(new ContextMenuItem("Wallpaper: Classic Blue", () => DesktopManager.Instance?.SetDesktopWallpaperTheme("blue"), true));
-                        menuItems.Add(new ContextMenuItem("Wallpaper: Modern Teal", () => DesktopManager.Instance?.SetDesktopWallpaperTheme("teal"), true));
-                        menuItems.Add(new ContextMenuItem("Wallpaper: Retro Purple", () => DesktopManager.Instance?.SetDesktopWallpaperTheme("purple"), true));
                     }
 
                     ContextMenuController.Instance.Show(eventData.position, menuItems);
