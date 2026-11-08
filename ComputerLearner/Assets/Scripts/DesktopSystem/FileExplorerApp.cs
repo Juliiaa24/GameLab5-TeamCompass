@@ -48,8 +48,46 @@ namespace ComputerLearning
 
         public static ExplorerItemData ActiveExplorerFolder { get; private set; }
         public static bool IsClipboardCut { get; set; }
+        public static bool IsDesktopFocused { get; set; } = true;
+        private static readonly List<FileExplorerApp> activeExplorers = new List<FileExplorerApp>();
+        private static int lastClipboardShortcutFrame = -1;
         private static bool isRestoringSnapshot;
         private const string SNAPSHOT_PREFS_KEY = "VirtualFileSystemSnapshot_v1";
+
+        public static void ClearAllExplorerSelections(FileExplorerApp except = null)
+        {
+            for (int i = activeExplorers.Count - 1; i >= 0; i--)
+            {
+                FileExplorerApp exp = activeExplorers[i];
+                if (exp == null)
+                {
+                    activeExplorers.RemoveAt(i);
+                    continue;
+                }
+                if (exp != except)
+                {
+                    exp.ClearSelection();
+                }
+            }
+        }
+
+        public static bool HasActiveFocusedExplorer()
+        {
+            for (int i = activeExplorers.Count - 1; i >= 0; i--)
+            {
+                FileExplorerApp exp = activeExplorers[i];
+                if (exp == null)
+                {
+                    activeExplorers.RemoveAt(i);
+                    continue;
+                }
+                if (exp.gameObject.activeInHierarchy)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
 
         [Serializable]
         private class VirtualFileSystemSnapshot
@@ -492,6 +530,13 @@ namespace ComputerLearning
 
         private void OnEnable()
         {
+            if (!activeExplorers.Contains(this))
+            {
+                activeExplorers.Add(this);
+            }
+            DraggableIcon.ClearSelection();
+            IsDesktopFocused = false;
+
             if (ProgressData.Instance != null)
             {
                 ProgressData.Instance.OnProgressChanged += RefreshItemsView;
@@ -501,6 +546,7 @@ namespace ComputerLearning
 
         private void OnDisable()
         {
+            activeExplorers.Remove(this);
             if (ProgressData.HasInstance)
             {
                 ProgressData.Instance.OnProgressChanged -= RefreshItemsView;
@@ -554,21 +600,64 @@ namespace ComputerLearning
             relay.targetExplorer = this;
         }
 
-        private void Update()
+        private static bool IsTextInputFocused()
         {
-            var kb = UnityEngine.InputSystem.Keyboard.current;
-            if (kb == null) return;
-
             if (UnityEngine.EventSystems.EventSystem.current != null)
             {
                 var sel = UnityEngine.EventSystems.EventSystem.current.currentSelectedGameObject;
                 if (sel != null && (sel.GetComponent<TMPro.TMP_InputField>() != null || sel.GetComponent<UnityEngine.UI.InputField>() != null))
                 {
-                    return;
+                    return true;
                 }
             }
+            if (WindowManager.Instance != null && WindowManager.Instance.ActiveWindow != null &&
+                WindowManager.Instance.ActiveWindow.GetComponentInChildren<NotepadApp>() != null)
+            {
+                return true;
+            }
+            return false;
+        }
 
-            if (kb.deleteKey.wasPressedThisFrame && selectedItemData != null)
+        private bool IsPrimaryActiveExplorer()
+        {
+            if (!gameObject.activeInHierarchy) return false;
+            if (parentWindow == null) parentWindow = GetComponentInParent<Window>();
+            if (parentWindow != null && WindowManager.Instance != null && WindowManager.Instance.ActiveWindow != null)
+            {
+                if (WindowManager.Instance.ActiveWindow == parentWindow) return true;
+                // If another FileExplorerApp window is the ActiveWindow, let that one handle shortcuts
+                if (WindowManager.Instance.ActiveWindow.GetComponentInChildren<FileExplorerApp>() != null) return false;
+            }
+            for (int i = activeExplorers.Count - 1; i >= 0; i--)
+            {
+                if (activeExplorers[i] != null && activeExplorers[i].gameObject.activeInHierarchy)
+                {
+                    return activeExplorers[i] == this;
+                }
+            }
+            return true;
+        }
+
+        private void Update()
+        {
+            if (IsTextInputFocused()) return;
+
+            var kb = UnityEngine.InputSystem.Keyboard.current;
+            bool deletePressed = kb != null && kb.deleteKey.wasPressedThisFrame;
+            bool isCtrl = kb != null && (kb.ctrlKey.isPressed || kb.leftCtrlKey.isPressed || kb.rightCtrlKey.isPressed);
+            bool isC = kb != null && kb.cKey.wasPressedThisFrame;
+            bool isX = kb != null && kb.xKey.wasPressedThisFrame;
+            bool isV = kb != null && kb.vKey.wasPressedThisFrame;
+
+#if ENABLE_LEGACY_INPUT_MANAGER
+            if (!deletePressed) deletePressed = Input.GetKeyDown(KeyCode.Delete);
+            if (!isCtrl) isCtrl = Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl);
+            if (!isC) isC = Input.GetKeyDown(KeyCode.C);
+            if (!isX) isX = Input.GetKeyDown(KeyCode.X);
+            if (!isV) isV = Input.GetKeyDown(KeyCode.V);
+#endif
+
+            if (deletePressed && selectedItemData != null)
             {
                 if (selectedItemData.isProtected)
                 {
@@ -581,19 +670,70 @@ namespace ComputerLearning
                 }
             }
 
-            bool isCtrl = kb.leftCtrlKey.isPressed || kb.rightCtrlKey.isPressed;
-            if (isCtrl && kb.cKey.wasPressedThisFrame && selectedItemData != null && DraggableIcon.SelectedIcon == null)
+            if (!isCtrl || Time.frameCount == lastClipboardShortcutFrame) return;
+
+            if (isC && selectedItemData != null)
             {
+                lastClipboardShortcutFrame = Time.frameCount;
                 CopySelectedItem();
             }
-            else if (isCtrl && kb.xKey.wasPressedThisFrame && selectedItemData != null && DraggableIcon.SelectedIcon == null)
+            else if (isX && selectedItemData != null)
             {
+                lastClipboardShortcutFrame = Time.frameCount;
                 CutSelectedItem();
             }
-            else if (isCtrl && kb.vKey.wasPressedThisFrame && currentFolder != null && DraggableIcon.SelectedIcon == null)
+            else if (isV && currentFolder != null && !IsDesktopFocused && IsPrimaryActiveExplorer())
             {
+                lastClipboardShortcutFrame = Time.frameCount;
                 PasteClipboardItem();
             }
+        }
+
+        private void OnGUI()
+        {
+            Event e = Event.current;
+            if (e == null || IsTextInputFocused()) return;
+
+            if (e.type == EventType.ValidateCommand || e.type == EventType.ExecuteCommand)
+            {
+                string cmd = e.commandName;
+                if (cmd == "Copy" || cmd == "Cut" || cmd == "Paste")
+                {
+                    if (e.type == EventType.ValidateCommand)
+                    {
+                        e.Use();
+                        return;
+                    }
+
+                    if (Time.frameCount == lastClipboardShortcutFrame) return;
+
+                    if (cmd == "Copy" && selectedItemData != null)
+                    {
+                        lastClipboardShortcutFrame = Time.frameCount;
+                        CopySelectedItem();
+                        e.Use();
+                    }
+                    else if (cmd == "Cut" && selectedItemData != null)
+                    {
+                        lastClipboardShortcutFrame = Time.frameCount;
+                        CutSelectedItem();
+                        e.Use();
+                    }
+                    else if (cmd == "Paste" && currentFolder != null && !IsDesktopFocused && IsPrimaryActiveExplorer())
+                    {
+                        lastClipboardShortcutFrame = Time.frameCount;
+                        PasteClipboardItem();
+                        e.Use();
+                    }
+                }
+            }
+        }
+
+        public static bool TryConsumeClipboardShortcutFrame()
+        {
+            if (Time.frameCount == lastClipboardShortcutFrame) return false;
+            lastClipboardShortcutFrame = Time.frameCount;
+            return true;
         }
 
         private void OnApplicationQuit()
@@ -626,9 +766,19 @@ namespace ComputerLearning
                 SetStatusMessage("<color=#D9534F>System item is protected and cannot be copied.</color>");
                 return;
             }
-            clipboardItem = selectedItemData;
+            clipboardItem = new ExplorerItemData
+            {
+                name = selectedItemData.name,
+                fileType = selectedItemData.fileType,
+                icon = selectedItemData.icon,
+                textContent = selectedItemData.textContent,
+                imageContent = selectedItemData.imageContent,
+                isProtected = false,
+                children = CloneChildrenRecursive(selectedItemData.children)
+            };
             IsClipboardCut = false;
             SetStatusMessage($"Copied '{selectedItemData.name}' to clipboard.");
+            FeedbackManager.PlayClick();
         }
 
         public void CutSelectedItem()
@@ -639,9 +789,40 @@ namespace ComputerLearning
                 SetStatusMessage("<color=#D9534F>System item is protected and cannot be cut.</color>");
                 return;
             }
-            clipboardItem = selectedItemData;
+            string cutName = selectedItemData.name;
+            ExplorerItemData itemToCut = selectedItemData;
+            ClearSelection();
+            if (CutItemToClipboard(itemToCut))
+            {
+                SetStatusMessage($"Cut '{cutName}' to clipboard.");
+                FeedbackManager.PlayClick();
+            }
+        }
+
+        public static bool CutItemToClipboard(ExplorerItemData itemToCut)
+        {
+            if (itemToCut == null || itemToCut.isProtected || IsReadOnlySystemFolderStatic(itemToCut))
+                return false;
+
+            clipboardItem = new ExplorerItemData
+            {
+                name = itemToCut.name,
+                fileType = itemToCut.fileType,
+                icon = itemToCut.icon,
+                textContent = itemToCut.textContent,
+                imageContent = itemToCut.imageContent,
+                isProtected = false,
+                children = CloneChildrenRecursive(itemToCut.children)
+            };
             IsClipboardCut = true;
-            SetStatusMessage($"Cut '{selectedItemData.name}' to clipboard.");
+
+            ExplorerItemData root = GetRootFolder();
+            if (root != null)
+            {
+                RemoveItemRecursive(root, itemToCut);
+            }
+            NotifyFileSystemChanged();
+            return true;
         }
 
         public void PasteClipboardItem()
@@ -657,6 +838,7 @@ namespace ComputerLearning
             if (duplicate != null)
             {
                 SetStatusMessage($"Pasted '{duplicate.name}'");
+                FeedbackManager.PlaySuccess();
             }
         }
 
@@ -718,14 +900,6 @@ namespace ComputerLearning
 
             if (IsClipboardCut)
             {
-                if (targetFolder.children.Contains(clipboardItem))
-                {
-                    ExplorerItemData sameItem = clipboardItem;
-                    clipboardItem = null;
-                    IsClipboardCut = false;
-                    return sameItem;
-                }
-
                 ExplorerItemData root = GetRootFolder();
                 if (root != null)
                 {
@@ -745,7 +919,6 @@ namespace ComputerLearning
                 };
 
                 targetFolder.children.Add(movedItem);
-                clipboardItem = null;
                 IsClipboardCut = false;
                 NotifyFileSystemChanged();
                 return movedItem;
@@ -1102,6 +1275,12 @@ namespace ComputerLearning
         #region Public Instance Methods
         public void OnPointerClick(PointerEventData eventData)
         {
+            DraggableIcon.ClearSelection();
+            ClearAllExplorerSelections(this);
+            IsDesktopFocused = false;
+            if (parentWindow == null) parentWindow = GetComponentInParent<Window>();
+            if (parentWindow != null) parentWindow.BringToFront();
+
             if (eventData.button == PointerEventData.InputButton.Right)
             {
                 ShowEmptySpaceContextMenu(eventData.position);
@@ -1203,6 +1382,8 @@ namespace ComputerLearning
 
             currentFolder = folder;
             ActiveExplorerFolder = currentFolder;
+            DraggableIcon.ClearSelection();
+            IsDesktopFocused = false;
             ClearSelection();
 
             bool isReadOnly = IsReadOnlySystemFolderStatic(currentFolder);
@@ -2046,6 +2227,12 @@ namespace ComputerLearning
 
         public void SelectItem(GameObject itemGo, ExplorerItemData item)
         {
+            DraggableIcon.ClearSelection();
+            ClearAllExplorerSelections(this);
+            IsDesktopFocused = false;
+            if (parentWindow == null) parentWindow = GetComponentInParent<Window>();
+            if (parentWindow != null) parentWindow.BringToFront();
+
             ClearSelection();
             selectedItemVisual = itemGo;
             selectedItemData = item;

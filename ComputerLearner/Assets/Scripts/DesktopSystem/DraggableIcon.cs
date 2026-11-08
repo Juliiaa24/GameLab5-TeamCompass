@@ -37,6 +37,12 @@ namespace ComputerLearning
 
         public static void SelectIcon(DraggableIcon icon)
         {
+            if (icon != null)
+            {
+                FileExplorerApp.IsDesktopFocused = true;
+                FileExplorerApp.ClearAllExplorerSelections();
+            }
+
             if (SelectedIcon == icon)
             {
                 if (icon != null) icon.UpdateSelectionCardTransform();
@@ -86,6 +92,7 @@ namespace ComputerLearning
             {
                 selectionCard.SetActive(false);
             }
+            FileExplorerApp.IsDesktopFocused = true;
         }
 
         private static void EnsureSelectionCard(Transform parent)
@@ -825,6 +832,7 @@ namespace ComputerLearning
             {
                 FileExplorerApp.SharedClipboardItem = LinkedExplorerItem;
                 FileExplorerApp.IsClipboardCut = false;
+                FeedbackManager.PlayClick();
             }
         }
 
@@ -834,8 +842,30 @@ namespace ComputerLearning
             EnsureLinkedExplorerItem();
             if (LinkedExplorerItem != null && !LinkedExplorerItem.isProtected)
             {
-                FileExplorerApp.SharedClipboardItem = LinkedExplorerItem;
-                FileExplorerApp.IsClipboardCut = true;
+                FileExplorerApp.CutItemToClipboard(LinkedExplorerItem);
+                FeedbackManager.PlayClick();
+
+                if (appWindow != null && !appWindow.IsClosed)
+                {
+#if UNITY_EDITOR
+                    if (!Application.isPlaying) DestroyImmediate(appWindow.gameObject);
+                    else Destroy(appWindow.gameObject);
+#else
+                    Destroy(appWindow.gameObject);
+#endif
+                }
+
+                if (DesktopManager.Instance != null)
+                {
+                    DesktopManager.Instance.UnregisterIcon(this);
+                }
+
+#if UNITY_EDITOR
+                if (!Application.isPlaying) DestroyImmediate(gameObject);
+                else Destroy(gameObject);
+#else
+                Destroy(gameObject);
+#endif
             }
         }
 
@@ -920,6 +950,9 @@ namespace ComputerLearning
             {
                 VirtualMascot.HideMascot();
             }
+
+            ClearSelection();
+            FileExplorerApp.IsDesktopFocused = false;
 
             StartMenuController smc = StartMenuController.Instance ?? FindAnyObjectByType<StartMenuController>(FindObjectsInactive.Include);
 

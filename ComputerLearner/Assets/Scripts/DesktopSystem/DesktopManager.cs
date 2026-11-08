@@ -319,9 +319,6 @@ namespace ComputerLearning
 
         private void Update()
         {
-            var kb = UnityEngine.InputSystem.Keyboard.current;
-            if (kb == null) return;
-
             if (UnityEngine.EventSystems.EventSystem.current != null)
             {
                 var sel = UnityEngine.EventSystems.EventSystem.current.currentSelectedGameObject;
@@ -330,8 +327,28 @@ namespace ComputerLearning
                     return;
                 }
             }
+            if (WindowManager.Instance != null && WindowManager.Instance.ActiveWindow != null &&
+                WindowManager.Instance.ActiveWindow.GetComponentInChildren<NotepadApp>() != null)
+            {
+                return;
+            }
 
-            if (kb.deleteKey.wasPressedThisFrame)
+            var kb = UnityEngine.InputSystem.Keyboard.current;
+            bool deletePressed = kb != null && kb.deleteKey.wasPressedThisFrame;
+            bool isCtrl = kb != null && (kb.ctrlKey.isPressed || kb.leftCtrlKey.isPressed || kb.rightCtrlKey.isPressed);
+            bool isC = kb != null && kb.cKey.wasPressedThisFrame;
+            bool isX = kb != null && kb.xKey.wasPressedThisFrame;
+            bool isV = kb != null && kb.vKey.wasPressedThisFrame;
+
+#if ENABLE_LEGACY_INPUT_MANAGER
+            if (!deletePressed) deletePressed = Input.GetKeyDown(KeyCode.Delete);
+            if (!isCtrl) isCtrl = Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl);
+            if (!isC) isC = Input.GetKeyDown(KeyCode.C);
+            if (!isX) isX = Input.GetKeyDown(KeyCode.X);
+            if (!isV) isV = Input.GetKeyDown(KeyCode.V);
+#endif
+
+            if (deletePressed)
             {
                 if (DraggableIcon.SelectedIcon != null && !DraggableIcon.SelectedIcon.IsProtected)
                 {
@@ -339,28 +356,92 @@ namespace ComputerLearning
                 }
             }
 
-            bool isCtrl = kb.leftCtrlKey.isPressed || kb.rightCtrlKey.isPressed;
-            if (isCtrl && kb.cKey.wasPressedThisFrame)
+            if (!isCtrl) return;
+
+            if (isC)
             {
-                if (DraggableIcon.SelectedIcon != null && !DraggableIcon.SelectedIcon.IsProtected)
+                if (DraggableIcon.SelectedIcon != null && !DraggableIcon.SelectedIcon.IsProtected &&
+                    FileExplorerApp.TryConsumeClipboardShortcutFrame())
                 {
                     DraggableIcon.SelectedIcon.CopyDesktopIcon();
                 }
             }
-            else if (isCtrl && kb.xKey.wasPressedThisFrame)
+            else if (isX)
             {
-                if (DraggableIcon.SelectedIcon != null && !DraggableIcon.SelectedIcon.IsProtected)
+                if (DraggableIcon.SelectedIcon != null && !DraggableIcon.SelectedIcon.IsProtected &&
+                    FileExplorerApp.TryConsumeClipboardShortcutFrame())
                 {
                     DraggableIcon.SelectedIcon.CutDesktopIcon();
                 }
             }
-            else if (isCtrl && kb.vKey.wasPressedThisFrame)
+            else if (isV)
             {
-                FileExplorerApp activeExplorer = UnityEngine.Object.FindAnyObjectByType<FileExplorerApp>();
-                bool explorerHasFocus = activeExplorer != null && activeExplorer.gameObject.activeInHierarchy && DraggableIcon.SelectedIcon == null;
-                if (!explorerHasFocus && FileExplorerApp.SharedClipboardItem != null)
+                bool shouldPasteOnDesktop = FileExplorerApp.IsDesktopFocused || !FileExplorerApp.HasActiveFocusedExplorer();
+                if (shouldPasteOnDesktop && FileExplorerApp.SharedClipboardItem != null &&
+                    FileExplorerApp.TryConsumeClipboardShortcutFrame())
                 {
                     FileExplorerApp.PasteClipboardIntoFolder(FileExplorerApp.GetDesktopFolder());
+                    FeedbackManager.PlaySuccess();
+                }
+            }
+        }
+
+        private void OnGUI()
+        {
+            Event e = Event.current;
+            if (e == null) return;
+            if (UnityEngine.EventSystems.EventSystem.current != null)
+            {
+                var sel = UnityEngine.EventSystems.EventSystem.current.currentSelectedGameObject;
+                if (sel != null && (sel.GetComponent<TMPro.TMP_InputField>() != null || sel.GetComponent<UnityEngine.UI.InputField>() != null))
+                {
+                    return;
+                }
+            }
+            if (WindowManager.Instance != null && WindowManager.Instance.ActiveWindow != null &&
+                WindowManager.Instance.ActiveWindow.GetComponentInChildren<NotepadApp>() != null)
+            {
+                return;
+            }
+
+            if (e.type == EventType.ValidateCommand || e.type == EventType.ExecuteCommand)
+            {
+                string cmd = e.commandName;
+                if (cmd == "Copy" || cmd == "Cut" || cmd == "Paste")
+                {
+                    if (e.type == EventType.ValidateCommand)
+                    {
+                        e.Use();
+                        return;
+                    }
+
+                    if (cmd == "Copy" && DraggableIcon.SelectedIcon != null && !DraggableIcon.SelectedIcon.IsProtected)
+                    {
+                        if (FileExplorerApp.TryConsumeClipboardShortcutFrame())
+                        {
+                            DraggableIcon.SelectedIcon.CopyDesktopIcon();
+                            e.Use();
+                        }
+                    }
+                    else if (cmd == "Cut" && DraggableIcon.SelectedIcon != null && !DraggableIcon.SelectedIcon.IsProtected)
+                    {
+                        if (FileExplorerApp.TryConsumeClipboardShortcutFrame())
+                        {
+                            DraggableIcon.SelectedIcon.CutDesktopIcon();
+                            e.Use();
+                        }
+                    }
+                    else if (cmd == "Paste")
+                    {
+                        bool shouldPasteOnDesktop = FileExplorerApp.IsDesktopFocused || !FileExplorerApp.HasActiveFocusedExplorer();
+                        if (shouldPasteOnDesktop && FileExplorerApp.SharedClipboardItem != null &&
+                            FileExplorerApp.TryConsumeClipboardShortcutFrame())
+                        {
+                            FileExplorerApp.PasteClipboardIntoFolder(FileExplorerApp.GetDesktopFolder());
+                            FeedbackManager.PlaySuccess();
+                            e.Use();
+                        }
+                    }
                 }
             }
         }
