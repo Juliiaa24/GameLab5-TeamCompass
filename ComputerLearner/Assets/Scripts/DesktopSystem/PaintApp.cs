@@ -82,6 +82,14 @@ namespace ComputerLearning
         private RectTransform brushCursorPreviewRect;
         private Image brushCursorPreviewImage;
         private bool isPointerOverCanvas;
+        private bool isHidingHardwareCursor;
+
+        private void SetHardwareCursorHidden(bool hidden)
+        {
+            if (isHidingHardwareCursor == hidden) return;
+            isHidingHardwareCursor = hidden;
+            Cursor.visible = !hidden;
+        }
         private static Sprite sharedRingSprite;
         #endregion
 
@@ -107,7 +115,16 @@ namespace ComputerLearning
             if (parentWindow == null) parentWindow = GetComponentInParent<Window>();
 
             bool isAppFocused = parentWindow != null ? parentWindow.IsFocused : true;
-            if (!isAppFocused) return;
+            if (!isAppFocused)
+            {
+                if (isHidingHardwareCursor)
+                {
+                    isPointerOverCanvas = false;
+                    if (brushCursorPreviewRect != null) brushCursorPreviewRect.gameObject.SetActive(false);
+                    SetHardwareCursorHidden(false);
+                }
+                return;
+            }
 
             bool isCtrl = false;
             bool isZ = false;
@@ -141,8 +158,15 @@ namespace ComputerLearning
             }
         }
 
+        private void OnDisable()
+        {
+            isPointerOverCanvas = false;
+            SetHardwareCursorHidden(false);
+        }
+
         private void OnDestroy()
         {
+            SetHardwareCursorHidden(false);
             if (drawingTexture != null)
             {
                 Destroy(drawingTexture);
@@ -279,6 +303,7 @@ namespace ComputerLearning
         internal void HandleCanvasPointerExit(PointerEventData eventData)
         {
             isPointerOverCanvas = false;
+            SetHardwareCursorHidden(false);
             if (brushCursorPreviewRect != null && brushCursorPreviewRect.gameObject.activeSelf)
             {
                 brushCursorPreviewRect.gameObject.SetActive(false);
@@ -361,6 +386,7 @@ namespace ComputerLearning
             if (canvasRect == null && canvasDisplay != null) canvasRect = canvasDisplay.rectTransform;
             if (canvasRect == null || !isPointerOverCanvas || activeTool == PaintTool.Fill)
             {
+                SetHardwareCursorHidden(false);
                 if (brushCursorPreviewRect.gameObject.activeSelf)
                 {
                     brushCursorPreviewRect.gameObject.SetActive(false);
@@ -371,6 +397,7 @@ namespace ComputerLearning
             if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(canvasRect, screenPos, eventCamera, out Vector2 localPos) ||
                 !canvasRect.rect.Contains(localPos))
             {
+                SetHardwareCursorHidden(false);
                 if (brushCursorPreviewRect.gameObject.activeSelf)
                 {
                     brushCursorPreviewRect.gameObject.SetActive(false);
@@ -388,6 +415,7 @@ namespace ComputerLearning
 
             brushCursorPreviewRect.sizeDelta = new Vector2(diameterX, diameterY);
             brushCursorPreviewRect.localPosition = new Vector3(localPos.x, localPos.y, 0f);
+            SetHardwareCursorHidden(true);
 
             if (!brushCursorPreviewRect.gameObject.activeSelf)
             {
@@ -741,6 +769,7 @@ namespace ComputerLearning
             if (activeTool == PaintTool.Fill && brushCursorPreviewRect != null)
             {
                 brushCursorPreviewRect.gameObject.SetActive(false);
+                SetHardwareCursorHidden(false);
             }
         }
 
