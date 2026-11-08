@@ -1,8 +1,8 @@
 /**
  * Author: TeamCompass
- * Description: Clean, minimalist Learning Path selector panel on the Main Menu (offline teacher / playtest control).
- *              Matches Menu.unity's rounded light aesthetic and connects directly to SessionManager
- *              so all 5 Learning Paths (plus optional Assessment override) can be tested locally.
+ * Description: Clean Learning Path selector and independent Assessment Level ON/OFF button on the Main Menu.
+ *              Supports the 3 progressive student flows (Beginner Foundations, Intermediate, Advanced),
+ *              all completing Levels 1-16 with different levels of tutorial guidance.
  */
 using System;
 using UnityEngine;
@@ -18,23 +18,28 @@ namespace ComputerLearning
 
         private static readonly LearningPath[] SelectablePaths =
         {
-            LearningPath.DiagnosticFull,
             LearningPath.BeginnerFoundations,
-            LearningPath.StandardIntermediate,
-            LearningPath.AdvancedApplications,
-            LearningPath.FreePractice
+            LearningPath.Intermediate,
+            LearningPath.Advanced
         };
 
         private Image[] pathButtonBackgrounds;
-        private TextMeshProUGUI[] pathButtonLabels;
+        private TextMeshProUGUI[] pathButtonTitles;
+        private TextMeshProUGUI[] pathButtonSubtitles;
+        private TextMeshProUGUI headerTitleLabel;
         private Image assessmentToggleBg;
         private TextMeshProUGUI assessmentToggleLabel;
         private TextMeshProUGUI summaryFooterText;
 
         private readonly Color activePathBgColor = new Color(0.15f, 0.39f, 0.92f, 1f);
         private readonly Color inactivePathBgColor = Color.white;
-        private readonly Color activePathTextColor = Color.white;
-        private readonly Color inactivePathTextColor = new Color(0.16f, 0.20f, 0.27f, 1f);
+        private readonly Color activePathTitleColor = Color.white;
+        private readonly Color activePathSubtitleColor = new Color(0.88f, 0.93f, 1f, 1f);
+        private readonly Color inactivePathTitleColor = new Color(0.14f, 0.18f, 0.25f, 1f);
+        private readonly Color inactivePathSubtitleColor = new Color(0.38f, 0.45f, 0.55f, 1f);
+
+        private readonly Color assessmentOnBgColor = new Color(0.09f, 0.60f, 0.36f, 1f);
+        private readonly Color assessmentOffBgColor = new Color(0.39f, 0.45f, 0.55f, 1f);
 
         public static LearningPathSelectorWidget EnsureOnCanvas(Transform canvasTransform)
         {
@@ -103,7 +108,6 @@ namespace ComputerLearning
 
         private void BuildUI(Transform canvasTransform)
         {
-            // Ensure SessionManager is initialized
             _ = SessionManager.Instance;
 
             Sprite menuRoundedSprite = null;
@@ -140,8 +144,8 @@ namespace ComputerLearning
             rootRt.anchorMin = new Vector2(0f, 1f);
             rootRt.anchorMax = new Vector2(0f, 1f);
             rootRt.pivot = new Vector2(0f, 1f);
-            rootRt.anchoredPosition = new Vector2(40f, -30f);
-            rootRt.sizeDelta = new Vector2(456f, 326f);
+            rootRt.anchoredPosition = new Vector2(40f, -28f);
+            rootRt.sizeDelta = new Vector2(464f, 322f);
 
             Image cardImg = gameObject.AddComponent<Image>();
             cardImg.color = cardBgColor;
@@ -152,28 +156,27 @@ namespace ComputerLearning
                 cardImg.type = Image.Type.Sliced;
             }
 
-            // Header Title ("Learning Path")
-            TextMeshProUGUI headerLabel = CreateText("HeaderLabel", transform, menuFont, 18f, FontStyles.Bold, headerTextColor, TextAlignmentOptions.MidlineLeft);
-            RectTransform headerRt = headerLabel.GetComponent<RectTransform>();
+            // Header Title
+            headerTitleLabel = CreateText("HeaderLabel", transform, menuFont, 18f, FontStyles.Bold, headerTextColor, TextAlignmentOptions.MidlineLeft);
+            RectTransform headerRt = headerTitleLabel.GetComponent<RectTransform>();
             headerRt.anchorMin = new Vector2(0f, 1f);
-            headerRt.anchorMax = new Vector2(0f, 1f);
-            headerRt.pivot = new Vector2(0f, 1f);
-            headerRt.anchoredPosition = new Vector2(16f, -12f);
-            headerRt.sizeDelta = new Vector2(235f, 32f);
-            headerLabel.text = "Learning Path";
+            headerRt.anchorMax = new Vector2(1f, 1f);
+            headerRt.pivot = new Vector2(0.5f, 1f);
+            headerRt.anchoredPosition = new Vector2(0f, -12f);
+            headerRt.sizeDelta = new Vector2(-30f, 28f);
 
-            // Assessment Override Toggle Pill in top-right of card
+            // Prominent Assessment Level ON/OFF Button (full width row right below header)
             GameObject toggleObj = new GameObject("Btn-ToggleAssessment", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button));
             toggleObj.transform.SetParent(transform, false);
             RectTransform toggleRt = toggleObj.GetComponent<RectTransform>();
-            toggleRt.anchorMin = new Vector2(1f, 1f);
+            toggleRt.anchorMin = new Vector2(0f, 1f);
             toggleRt.anchorMax = new Vector2(1f, 1f);
-            toggleRt.pivot = new Vector2(1f, 1f);
-            toggleRt.anchoredPosition = new Vector2(-14f, -12f);
-            toggleRt.sizeDelta = new Vector2(182f, 32f);
+            toggleRt.pivot = new Vector2(0.5f, 1f);
+            toggleRt.anchoredPosition = new Vector2(0f, -46f);
+            toggleRt.sizeDelta = new Vector2(-28f, 40f);
 
             assessmentToggleBg = toggleObj.GetComponent<Image>();
-            assessmentToggleBg.color = Color.white;
+            assessmentToggleBg.color = assessmentOnBgColor;
             if (menuRoundedSprite != null)
             {
                 assessmentToggleBg.sprite = menuRoundedSprite;
@@ -182,20 +185,27 @@ namespace ComputerLearning
 
             Button toggleBtn = toggleObj.GetComponent<Button>();
             toggleBtn.targetGraphic = assessmentToggleBg;
+            ColorBlock toggleCb = toggleBtn.colors;
+            toggleCb.normalColor = Color.white;
+            toggleCb.highlightedColor = new Color(0.92f, 0.95f, 1f, 1f);
+            toggleCb.pressedColor = new Color(0.84f, 0.88f, 0.94f, 1f);
+            toggleCb.selectedColor = Color.white;
+            toggleBtn.colors = toggleCb;
             toggleBtn.navigation = new Navigation { mode = Navigation.Mode.None };
             toggleBtn.onClick.AddListener(OnToggleAssessmentClicked);
 
-            assessmentToggleLabel = CreateText("Label", toggleObj.transform, menuFont, 14f, FontStyles.Bold, headerTextColor, TextAlignmentOptions.Center);
+            assessmentToggleLabel = CreateText("Label", toggleObj.transform, menuFont, 15.5f, FontStyles.Bold, Color.white, TextAlignmentOptions.Center);
             assessmentToggleLabel.richText = true;
-            StretchFull(assessmentToggleLabel.GetComponent<RectTransform>(), 6f, 0f);
+            StretchFull(assessmentToggleLabel.GetComponent<RectTransform>(), 12f, 0f);
 
-            // 5 Path Buttons stacked cleanly
+            // 3 Learning Path Flow Buttons (Title + Subtitle inside each row)
             pathButtonBackgrounds = new Image[SelectablePaths.Length];
-            pathButtonLabels = new TextMeshProUGUI[SelectablePaths.Length];
+            pathButtonTitles = new TextMeshProUGUI[SelectablePaths.Length];
+            pathButtonSubtitles = new TextMeshProUGUI[SelectablePaths.Length];
 
-            float startY = -54f;
-            float rowHeight = 40f;
-            float rowSpacing = 6f;
+            float startY = -98f;
+            float rowHeight = 54f;
+            float rowSpacing = 8f;
 
             for (int i = 0; i < SelectablePaths.Length; i++)
             {
@@ -230,22 +240,33 @@ namespace ComputerLearning
                 btn.navigation = new Navigation { mode = Navigation.Mode.None };
                 btn.onClick.AddListener(() => OnPathButtonClicked(SelectablePaths[capturedIndex]));
 
-                TextMeshProUGUI lbl = CreateText("Text", btnObj.transform, menuFont, 16f, FontStyles.Normal, inactivePathTextColor, TextAlignmentOptions.MidlineLeft);
-                StretchFull(lbl.GetComponent<RectTransform>(), 14f, 0f);
-                lbl.text = GetDetailedRowLabel(path, i + 1);
+                TextMeshProUGUI titleLbl = CreateText("Title", btnObj.transform, menuFont, 16f, FontStyles.Bold, inactivePathTitleColor, TextAlignmentOptions.MidlineLeft);
+                RectTransform titleRt = titleLbl.GetComponent<RectTransform>();
+                titleRt.anchorMin = new Vector2(0f, 0.5f);
+                titleRt.anchorMax = new Vector2(1f, 1f);
+                titleRt.offsetMin = new Vector2(14f, -2f);
+                titleRt.offsetMax = new Vector2(-14f, -4f);
+
+                TextMeshProUGUI subLbl = CreateText("Subtitle", btnObj.transform, menuFont, 13f, FontStyles.Normal, inactivePathSubtitleColor, TextAlignmentOptions.MidlineLeft);
+                RectTransform subRt = subLbl.GetComponent<RectTransform>();
+                subRt.anchorMin = new Vector2(0f, 0f);
+                subRt.anchorMax = new Vector2(1f, 0.5f);
+                subRt.offsetMin = new Vector2(14f, 4f);
+                subRt.offsetMax = new Vector2(-14f, 2f);
 
                 pathButtonBackgrounds[i] = bg;
-                pathButtonLabels[i] = lbl;
+                pathButtonTitles[i] = titleLbl;
+                pathButtonSubtitles[i] = subLbl;
             }
 
             // Footer summary line
-            summaryFooterText = CreateText("SummaryFooter", transform, menuFont, 13.5f, FontStyles.Normal, subtleTextColor, TextAlignmentOptions.MidlineLeft);
+            summaryFooterText = CreateText("SummaryFooter", transform, menuFont, 13f, FontStyles.Normal, subtleTextColor, TextAlignmentOptions.MidlineLeft);
             RectTransform footerRt = summaryFooterText.GetComponent<RectTransform>();
             footerRt.anchorMin = new Vector2(0f, 0f);
             footerRt.anchorMax = new Vector2(1f, 0f);
             footerRt.pivot = new Vector2(0.5f, 0f);
-            footerRt.anchoredPosition = new Vector2(0f, 10f);
-            footerRt.sizeDelta = new Vector2(-28f, 30f);
+            footerRt.anchoredPosition = new Vector2(0f, 8f);
+            footerRt.sizeDelta = new Vector2(-28f, 28f);
 
             RefreshUI();
         }
@@ -260,7 +281,7 @@ namespace ComputerLearning
             {
                 StudentConfiguration cfg = SessionManager.Instance.CurrentConfiguration;
                 PlaytestStudentWidget.Instance.ShowToast(
-                    $"Path set: {StudentConfiguration.GetPathDisplayName(selectedPath)} ({StudentConfiguration.GetPathShortSummary(cfg)})",
+                    $"{StudentConfiguration.GetPathDisplayName(selectedPath)}  ({StudentConfiguration.GetPathShortSummary(cfg)})",
                     3.2f);
             }
         }
@@ -275,11 +296,15 @@ namespace ComputerLearning
 
             if (PlaytestStudentWidget.Instance != null)
             {
-                PlaytestStudentWidget.Instance.ShowToast(
-                    nextState
-                        ? "Initial Assessment enabled before starting path"
-                        : "Initial Assessment skipped (using path skill preset)",
-                    3.0f);
+                bool isEs = string.Equals(LocalizationManager.CurrentLanguage, "ES", StringComparison.OrdinalIgnoreCase);
+                string msg = isEs
+                    ? (nextState
+                        ? "Assessment inicial ACTIVADO antes del flujo"
+                        : "Assessment inicial DESACTIVADO (se usa perfil de habilidades del flujo)")
+                    : (nextState
+                        ? "Assessment Level ENABLED before starting flow"
+                        : "Assessment Level DISABLED (using flow skill preset)");
+                PlaytestStudentWidget.Instance.ShowToast(msg, 3.0f);
             }
         }
 
@@ -288,29 +313,52 @@ namespace ComputerLearning
             StudentConfiguration cfg = SessionManager.Instance.CurrentConfiguration;
             if (cfg == null) return;
 
-            if (pathButtonBackgrounds != null && pathButtonLabels != null)
+            bool isEs = string.Equals(LocalizationManager.CurrentLanguage, "ES", StringComparison.OrdinalIgnoreCase);
+
+            if (headerTitleLabel != null)
             {
-                for (int i = 0; i < SelectablePaths.Length; i++)
-                {
-                    bool isSelected = cfg.learningPath == SelectablePaths[i];
-                    if (pathButtonBackgrounds[i] != null)
-                    {
-                        pathButtonBackgrounds[i].color = isSelected ? activePathBgColor : inactivePathBgColor;
-                    }
-                    if (pathButtonLabels[i] != null)
-                    {
-                        pathButtonLabels[i].color = isSelected ? activePathTextColor : inactivePathTextColor;
-                        pathButtonLabels[i].fontStyle = isSelected ? FontStyles.Bold : FontStyles.Normal;
-                    }
-                }
+                headerTitleLabel.text = isEs ? "Flujo de Aprendizaje (Learning Path)" : "Learning Path";
+            }
+
+            if (assessmentToggleBg != null)
+            {
+                assessmentToggleBg.color = cfg.runAssessment ? assessmentOnBgColor : assessmentOffBgColor;
             }
 
             if (assessmentToggleLabel != null)
             {
-                assessmentToggleLabel.text = cfg.runAssessment
-                    ? "Assessment: <color=#16a34a><b>ON</b></color>"
-                    : "Assessment: <color=#64748b><b>SKIP</b></color>";
+                assessmentToggleLabel.text = isEs
+                    ? (cfg.runAssessment
+                        ? "Assessment Level:  ACTIVO  (Clic para desactivar)"
+                        : "Assessment Level:  DESACTIVADO  (Clic para activar)")
+                    : (cfg.runAssessment
+                        ? "Assessment Level:  ON  (Click to disable)"
+                        : "Assessment Level:  OFF  (Click to enable)");
                 assessmentToggleLabel.ForceMeshUpdate();
+            }
+
+            if (pathButtonBackgrounds != null && pathButtonTitles != null && pathButtonSubtitles != null)
+            {
+                for (int i = 0; i < SelectablePaths.Length; i++)
+                {
+                    LearningPath path = SelectablePaths[i];
+                    bool isSelected = cfg.learningPath == path;
+
+                    if (pathButtonBackgrounds[i] != null)
+                    {
+                        pathButtonBackgrounds[i].color = isSelected ? activePathBgColor : inactivePathBgColor;
+                    }
+                    if (pathButtonTitles[i] != null)
+                    {
+                        pathButtonTitles[i].text = $"{i + 1}. {StudentConfiguration.GetPathDisplayName(path)}";
+                        pathButtonTitles[i].color = isSelected ? activePathTitleColor : inactivePathTitleColor;
+                    }
+                    if (pathButtonSubtitles[i] != null)
+                    {
+                        pathButtonSubtitles[i].text = GetRowSubtitle(path, isEs);
+                        pathButtonSubtitles[i].color = isSelected ? activePathSubtitleColor : inactivePathSubtitleColor;
+                    }
+                }
             }
 
             if (summaryFooterText != null)
@@ -319,22 +367,27 @@ namespace ComputerLearning
             }
         }
 
-        private static string GetDetailedRowLabel(LearningPath path, int number)
+        private static string GetRowSubtitle(LearningPath path, bool isEs)
         {
             switch (path)
             {
-                case LearningPath.DiagnosticFull:
-                    return $"{number}. Diagnostic  -  Test + Full Curriculum (L1-L16)";
                 case LearningPath.BeginnerFoundations:
-                    return $"{number}. Beginner  -  Guided Basics (L1-L9, No Test)";
-                case LearningPath.StandardIntermediate:
-                    return $"{number}. Standard  -  Core Mouse & OS (Starts L6)";
-                case LearningPath.AdvancedApplications:
-                    return $"{number}. Advanced  -  OS, Shortcuts & Apps (Starts L10)";
-                case LearningPath.FreePractice:
-                    return $"{number}. Free Practice  -  Open Sandbox (All 16 Unlocked)";
+                    return isEs
+                        ? "Guiado completo desde inicio  •  Niveles 1–16 progresivos"
+                        : "Full initial guided tutorial  •  Levels 1–16 progressive";
+
+                case LearningPath.Intermediate:
+                    return isEs
+                        ? "Sin tutorial inicial, con tutorial de ventanas  •  Niveles 1–16"
+                        : "Window tutorial only, then full OS  •  Levels 1–16 progressive";
+
+                case LearningPath.Advanced:
+                    return isEs
+                        ? "Escritorio virtual libre sin tutoriales  •  Niveles 1–16"
+                        : "Direct Virtual Desktop, no tutorials  •  Levels 1–16 progressive";
+
                 default:
-                    return $"{number}. {path}";
+                    return string.Empty;
             }
         }
 

@@ -1,7 +1,7 @@
 /**
  * Author: TeamCompass
  * Description: Serializable skill score entry and preset factory / ScriptableObject for seeding
- *              SkillManager when a student starts a LearningPath without taking the Initial Assessment.
+ *              SkillManager when a student starts a LearningPath with the Initial Assessment disabled.
  */
 using System;
 using System.Collections.Generic;
@@ -51,7 +51,7 @@ namespace ComputerLearning
         };
 
         /// <summary>
-        /// Generates the canonical default skill score profile for a given LearningPath.
+        /// Generates the canonical default skill score profile for a given LearningPath when Assessment is OFF.
         /// Tier mapping in DifficultyConfig:
         ///   0-19  -> Difficulty 1
         ///   20-39 -> Difficulty 2
@@ -66,7 +66,7 @@ namespace ComputerLearning
                 case LearningPath.BeginnerFoundations:
                     return CreateUniformProfile(10f);
 
-                case LearningPath.StandardIntermediate:
+                case LearningPath.Intermediate:
                     return new List<SkillScoreEntry>
                     {
                         new SkillScoreEntry("mouse_move", 55f),
@@ -80,7 +80,7 @@ namespace ComputerLearning
                         new SkillScoreEntry("shortcuts", 20f)
                     };
 
-                case LearningPath.AdvancedApplications:
+                case LearningPath.Advanced:
                     return new List<SkillScoreEntry>
                     {
                         new SkillScoreEntry("mouse_move", 75f),
@@ -94,13 +94,9 @@ namespace ComputerLearning
                         new SkillScoreEntry("shortcuts", 60f)
                     };
 
-                case LearningPath.FreePractice:
-                    return CreateUniformProfile(50f);
-
-                case LearningPath.DiagnosticFull:
                 case LearningPath.Custom:
                 default:
-                    return CreateUniformProfile(0f);
+                    return CreateUniformProfile(10f);
             }
         }
 

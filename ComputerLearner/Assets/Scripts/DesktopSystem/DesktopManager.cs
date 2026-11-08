@@ -156,10 +156,7 @@ namespace ComputerLearning
             RestoreSavedWallpaper();
             SpawnInitialIcons();
             EnsureScoresAppIcon();
-            string activeSceneName = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
-            if (string.Equals(activeSceneName, "Desktop1", StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(activeSceneName, "Desktop2", StringComparison.OrdinalIgnoreCase) ||
-                !enableScoresAppIcon)
+            if (string.Equals(UnityEngine.SceneManagement.SceneManager.GetActiveScene().name, "Desktop1", StringComparison.OrdinalIgnoreCase) || !enableScoresAppIcon)
             {
                 RemoveScoresIconIfExists();
             }
@@ -191,12 +188,6 @@ namespace ComputerLearning
                     {
                         gameObject.AddComponent<VirtualDesktopIntro>();
                     }
-                }
-                else if (PlayerPrefs.GetInt("AdvancedDesktopTourCompleted", 0) == 0 &&
-                         ProgressData.Instance != null &&
-                         ProgressData.Instance.AreAllLevelsCompletedUpTo(9))
-                {
-                    TriggerAdvancedDesktopTourAfterLevel9();
                 }
 
                 // Tutorial 2: Trigger AdvancedDesktopTour after Level 9 is completed
@@ -1056,8 +1047,7 @@ namespace ComputerLearning
             if (desktopIconContainer == null) return;
 
             string currentScene = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
-            if (string.Equals(currentScene, "Desktop1", StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(currentScene, "Desktop2", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(currentScene, "Desktop1", StringComparison.OrdinalIgnoreCase))
             {
                 return;
             }

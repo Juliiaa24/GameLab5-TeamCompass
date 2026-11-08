@@ -1,9 +1,9 @@
 /**
  * Author: TeamCompass
  * Description: Persistent session coordinator (DontDestroyOnLoad) that manages the active
- *              StudentConfiguration and LearningPath, seeds SkillManager and ProgressData,
- *              and routes scene transitions across AssessmentScene, Desktop1, Desktop2, and VirtualDesktop.
- *              Built to operate both offline (local Menu path selector) and with future LAN Host->Client delivery.
+ *              StudentConfiguration, 3 Learning Paths, and independent Assessment ON/OFF toggle,
+ *              seeds SkillManager and ProgressData, and routes scene transitions across
+ *              AssessmentScene, Desktop1, and VirtualDesktop.
  */
 using System;
 using UnityEngine;
@@ -14,10 +14,11 @@ namespace ComputerLearning
     [DefaultExecutionOrder(-120)]
     public class SessionManager : MonoBehaviour
     {
-        private const string SelectedPathPrefKey = "Session_SelectedLearningPath";
-        private const string ConfigJsonPrefKey = "Session_CurrentConfigJson";
-        private const string AppliedSignaturePrefKey = "Session_AppliedSignature";
-        private const string PendingSwitchPrefKey = "Session_PendingPathSwitch";
+        private const string SelectedPathPrefKey = "Session_SelectedLearningPath_v2";
+        private const string RunAssessmentPrefKey = "Session_RunAssessment_v2";
+        private const string ConfigJsonPrefKey = "Session_CurrentConfigJson_v2";
+        private const string AppliedSignaturePrefKey = "Session_AppliedSignature_v2";
+        private const string PendingSwitchPrefKey = "Session_PendingPathSwitch_v2";
 
         private static SessionManager instance;
 
@@ -44,7 +45,10 @@ namespace ComputerLearning
         public StudentConfiguration CurrentConfiguration { get; private set; }
 
         public LearningPath ActiveLearningPath =>
-            CurrentConfiguration != null ? CurrentConfiguration.learningPath : LearningPath.DiagnosticFull;
+            CurrentConfiguration != null ? CurrentConfiguration.learningPath : LearningPath.BeginnerFoundations;
+
+        public bool IsAssessmentEnabled =>
+            CurrentConfiguration != null ? CurrentConfiguration.runAssessment : PlayerPrefs.GetInt(RunAssessmentPrefKey, 1) == 1;
 
         public event Action<StudentConfiguration> OnConfigurationChanged;
 
@@ -85,24 +89,31 @@ namespace ComputerLearning
         }
 
         /// <summary>
-        /// Selects one of the 5 predefined Learning Paths for the current student (offline Menu / local teacher).
-        /// Actual state seeding occurs cleanly when starting the session (or immediately on demand).
+        /// Selects one of the 3 Learning Paths while preserving the current Assessment ON/OFF toggle state.
         /// </summary>
         public void SetLearningPath(LearningPath path)
         {
+            EnsureConfigurationLoaded();
             PlaytestDataManager.EnsureInitialized();
-            StudentConfiguration nextConfig = StudentConfiguration.FromLearningPath(path, PlaytestDataManager.CurrentStudentId);
-            CurrentConfiguration = nextConfig;
+
+            bool keepAssessment = CurrentConfiguration != null
+                ? CurrentConfiguration.runAssessment
+                : PlayerPrefs.GetInt(RunAssessmentPrefKey, 1) == 1;
+
+            CurrentConfiguration = StudentConfiguration.FromLearningPath(
+                path,
+                PlaytestDataManager.CurrentStudentId,
+                keepAssessment);
 
             SaveConfigurationToPrefs();
             MarkPendingSwitch(true);
 
-            Debug.Log($"[SessionManager] Selected LearningPath '{path}' for student '{CurrentConfiguration.studentId}'.");
+            Debug.Log($"[SessionManager] Selected LearningPath '{path}' (Assessment={keepAssessment}) for student '{CurrentConfiguration.studentId}'.");
             OnConfigurationChanged?.Invoke(CurrentConfiguration);
         }
 
         /// <summary>
-        /// Allows overriding whether the Initial Assessment runs before entering the selected path's starting desktop.
+        /// Toggles or sets whether the Initial Assessment level runs before entering the selected Learning Path.
         /// </summary>
         public void SetRunAssessmentOverride(bool runAssessment)
         {
@@ -113,7 +124,7 @@ namespace ComputerLearning
             SaveConfigurationToPrefs();
             MarkPendingSwitch(true);
 
-            Debug.Log($"[SessionManager] Assessment override set to {runAssessment} for path '{CurrentConfiguration.learningPath}'.");
+            Debug.Log($"[SessionManager] Assessment toggle set to {runAssessment} for path '{CurrentConfiguration.learningPath}'.");
             OnConfigurationChanged?.Invoke(CurrentConfiguration);
         }
 
@@ -202,10 +213,10 @@ namespace ComputerLearning
             bool pendingSwitch = PlayerPrefs.GetInt(PendingSwitchPrefKey, 0) == 1;
             bool isAppliedForStudent = IsConfigurationAppliedForCurrentStudent();
 
-            // Backward compatibility: if launching into existing DiagnosticFull progress with no pending switch, resume it
+            // Backward compatibility: if launching into existing BeginnerFoundations + Assessment progress with no pending switch, resume it
             if (!pendingSwitch &&
                 !isAppliedForStudent &&
-                CurrentConfiguration.learningPath == LearningPath.DiagnosticFull &&
+                CurrentConfiguration.learningPath == LearningPath.BeginnerFoundations &&
                 CurrentConfiguration.runAssessment &&
                 PlaytestDataManager.HasAnyRecordedActivityForCurrentStudent())
             {
@@ -216,7 +227,6 @@ namespace ComputerLearning
 
             if (pendingSwitch || !isAppliedForStudent)
             {
-                // If auto-download is enabled and the current student already played something before switching paths, save snapshot first
                 if (pendingSwitch && PlaytestDataManager.HasAnyRecordedActivityForCurrentStudent())
                 {
                     PlaytestDataManager.ExportCurrentStudentData("auto_before_path_switch");
@@ -227,7 +237,7 @@ namespace ComputerLearning
                     ? CurrentConfiguration.startingScene
                     : ResolveResumeScene();
 
-                Debug.Log($"[SessionManager] Starting fresh '{CurrentConfiguration.learningPath}' session for '{CurrentConfiguration.studentId}' -> {startScene}");
+                Debug.Log($"[SessionManager] Starting fresh '{CurrentConfiguration.learningPath}' (Assessment={CurrentConfiguration.runAssessment}) session for '{CurrentConfiguration.studentId}' -> {startScene}");
                 SceneManager.LoadScene(startScene);
                 return;
             }
@@ -238,8 +248,8 @@ namespace ComputerLearning
         }
 
         /// <summary>
-        /// Ensures pending VirtualDesktop-based configurations (AdvancedApplications / FreePractice)
-        /// are also applied if the user clicks the 'Virtual Desktop' shortcut button on the Main Menu.
+        /// Ensures pending VirtualDesktop-based configurations (Intermediate / Advanced)
+        /// are applied if the user clicks the 'Virtual Desktop' shortcut button on the Main Menu.
         /// </summary>
         public void PrepareForDirectVirtualDesktopEntry()
         {
@@ -248,7 +258,7 @@ namespace ComputerLearning
             bool isApplied = IsConfigurationAppliedForCurrentStudent();
 
             if ((pendingSwitch || !isApplied) &&
-                string.Equals(CurrentConfiguration.startingScene, "VirtualDesktop", StringComparison.OrdinalIgnoreCase))
+                string.Equals(CurrentConfiguration.postAssessmentScene, "VirtualDesktop", StringComparison.OrdinalIgnoreCase))
             {
                 ApplyConfiguration(CurrentConfiguration, resetExistingProgress: true);
             }
@@ -256,7 +266,7 @@ namespace ComputerLearning
 
         /// <summary>
         /// Called by InitialTestManager when AssessmentScene finishes or is skipped.
-        /// Routes to the configured post-assessment scene without wiping path flags or prior progress on retakes.
+        /// Routes to the configured post-assessment scene (Desktop1 for BeginnerFoundations, VirtualDesktop for Intermediate/Advanced).
         /// </summary>
         public void HandleAssessmentCompleted()
         {
@@ -289,7 +299,7 @@ namespace ComputerLearning
             // Assessment was retaken later (e.g. from StatsScene): preserve completed tours/levels and resume
             if (ProgressData.ExistingInstance == null && !PlaytestDataManager.HasAnyRecordedActivityForCurrentStudent())
             {
-                PlayerPrefs.SetInt("AutoSequenceCompleted", 0);
+                PlayerPrefs.SetInt("AutoSequenceCompleted", CurrentConfiguration.runInitialGuidedTutorial ? 0 : 1);
             }
             PlayerPrefs.Save();
 
@@ -299,30 +309,12 @@ namespace ComputerLearning
         }
 
         /// <summary>
-        /// Determines the scene to load after FirstDesktopTutorial completes Level 5 in Desktop1.
-        /// Routes BeginnerFoundations (routeDesktop1ToDesktop2 == true) to Desktop2, and DiagnosticFull to VirtualDesktop.
-        /// </summary>
-        public string GetPostDesktop1Scene()
-        {
-            EnsureConfigurationLoaded();
-            if (CurrentConfiguration != null &&
-                CurrentConfiguration.routeDesktop1ToDesktop2 &&
-                PlayerPrefs.GetInt("SemiGuidedSequenceCompleted", 0) == 0 &&
-                !(ProgressData.Instance != null && ProgressData.Instance.AreAllLevelsCompletedUpTo(9)))
-            {
-                return "Desktop2";
-            }
-
-            return "VirtualDesktop";
-        }
-
-        /// <summary>
         /// Called during SceneSystem.ResetProgress() after PlayerPrefs are wiped and Student ID advances.
-        /// Preserves the teacher's selected LearningPath ready for the next student.
+        /// Preserves both the teacher's selected LearningPath and Assessment ON/OFF toggle ready for the next student.
         /// </summary>
-        public void ResetForNextStudent(string nextStudentId, LearningPath pathToKeep)
+        public void ResetForNextStudent(string nextStudentId, LearningPath pathToKeep, bool assessmentEnabled = true)
         {
-            CurrentConfiguration = StudentConfiguration.FromLearningPath(pathToKeep, nextStudentId);
+            CurrentConfiguration = StudentConfiguration.FromLearningPath(pathToKeep, nextStudentId, assessmentEnabled);
             SaveConfigurationToPrefs();
             PlayerPrefs.DeleteKey(AppliedSignaturePrefKey);
             MarkPendingSwitch(true);
@@ -333,6 +325,7 @@ namespace ComputerLearning
 
         /// <summary>
         /// Resolves which scene an in-progress session should resume into based on current completion flags.
+        /// Only AssessmentScene, Desktop1, and VirtualDesktop are active in the game flow.
         /// </summary>
         public string ResolveResumeScene()
         {
@@ -348,27 +341,12 @@ namespace ComputerLearning
                 return "AssessmentScene";
             }
 
-            string firstGameplay = CurrentConfiguration.runAssessment
-                ? CurrentConfiguration.postAssessmentScene
-                : CurrentConfiguration.startingScene;
-
-            bool usesDesktop1 = string.Equals(firstGameplay, "Desktop1", StringComparison.OrdinalIgnoreCase);
             bool autoDone = PlayerPrefs.GetInt("AutoSequenceCompleted", 0) == 1 ||
                             (ProgressData.Instance != null && ProgressData.Instance.AreAllLevelsCompletedUpTo(5));
 
-            if (usesDesktop1 && !autoDone)
+            if (CurrentConfiguration.runInitialGuidedTutorial && !autoDone)
             {
                 return "Desktop1";
-            }
-
-            bool usesDesktop2 = string.Equals(firstGameplay, "Desktop2", StringComparison.OrdinalIgnoreCase) ||
-                                CurrentConfiguration.routeDesktop1ToDesktop2;
-            bool semiDone = PlayerPrefs.GetInt("SemiGuidedSequenceCompleted", 0) == 1 ||
-                            (ProgressData.Instance != null && ProgressData.Instance.AreAllLevelsCompletedUpTo(9));
-
-            if (usesDesktop2 && !semiDone)
-            {
-                return "Desktop2";
             }
 
             return "VirtualDesktop";
@@ -378,16 +356,18 @@ namespace ComputerLearning
         {
             if (instance != null && instance.CurrentConfiguration != null)
             {
-                return StudentConfiguration.GetPathDisplayName(instance.CurrentConfiguration.learningPath);
+                string name = StudentConfiguration.GetPathDisplayName(instance.CurrentConfiguration.learningPath);
+                string assess = instance.CurrentConfiguration.runAssessment ? "Assessment: ON" : "Assessment: OFF";
+                return $"{name} ({assess})";
             }
 
-            int savedPath = PlayerPrefs.GetInt(SelectedPathPrefKey, (int)LearningPath.DiagnosticFull);
-            if (Enum.IsDefined(typeof(LearningPath), savedPath))
-            {
-                return StudentConfiguration.GetPathDisplayName((LearningPath)savedPath);
-            }
+            int savedPath = PlayerPrefs.GetInt(SelectedPathPrefKey, (int)LearningPath.BeginnerFoundations);
+            bool savedAssess = PlayerPrefs.GetInt(RunAssessmentPrefKey, 1) == 1;
+            LearningPath path = Enum.IsDefined(typeof(LearningPath), savedPath)
+                ? (LearningPath)savedPath
+                : LearningPath.BeginnerFoundations;
 
-            return StudentConfiguration.GetPathDisplayName(LearningPath.DiagnosticFull);
+            return $"{StudentConfiguration.GetPathDisplayName(path)} ({(savedAssess ? "Assessment: ON" : "Assessment: OFF")})";
         }
 
         private void EnsureConfigurationLoaded()
@@ -406,14 +386,24 @@ namespace ComputerLearning
                 try
                 {
                     StudentConfiguration parsed = JsonUtility.FromJson<StudentConfiguration>(json);
-                    if (parsed != null)
+                    if (parsed != null && Enum.IsDefined(typeof(LearningPath), parsed.learningPath))
                     {
-                        parsed.studentId = PlaytestDataManager.CurrentStudentId;
-                        if (parsed.initialSkillScores == null || parsed.initialSkillScores.Count == 0)
+                        if (parsed.learningPath == LearningPath.Custom)
                         {
-                            parsed.initialSkillScores = SkillProfilePreset.GetDefaultEntriesForPath(parsed.learningPath);
+                            parsed.studentId = PlaytestDataManager.CurrentStudentId;
+                            if (parsed.initialSkillScores == null || parsed.initialSkillScores.Count == 0)
+                            {
+                                parsed.initialSkillScores = SkillProfilePreset.GetDefaultEntriesForPath(parsed.learningPath);
+                            }
+                            CurrentConfiguration = parsed;
                         }
-                        CurrentConfiguration = parsed;
+                        else
+                        {
+                            CurrentConfiguration = StudentConfiguration.FromLearningPath(
+                                parsed.learningPath,
+                                PlaytestDataManager.CurrentStudentId,
+                                parsed.runAssessment);
+                        }
                         return;
                     }
                 }
@@ -423,12 +413,16 @@ namespace ComputerLearning
                 }
             }
 
-            int savedPathInt = PlayerPrefs.GetInt(SelectedPathPrefKey, (int)LearningPath.DiagnosticFull);
-            LearningPath path = Enum.IsDefined(typeof(LearningPath), savedPathInt)
+            int savedPathInt = PlayerPrefs.GetInt(SelectedPathPrefKey, (int)LearningPath.BeginnerFoundations);
+            bool savedAssessment = PlayerPrefs.GetInt(RunAssessmentPrefKey, 1) == 1;
+            LearningPath resolvedPath = Enum.IsDefined(typeof(LearningPath), savedPathInt)
                 ? (LearningPath)savedPathInt
-                : LearningPath.DiagnosticFull;
+                : LearningPath.BeginnerFoundations;
 
-            CurrentConfiguration = StudentConfiguration.FromLearningPath(path, PlaytestDataManager.CurrentStudentId);
+            CurrentConfiguration = StudentConfiguration.FromLearningPath(
+                resolvedPath,
+                PlaytestDataManager.CurrentStudentId,
+                savedAssessment);
             SaveConfigurationToPrefs();
         }
 
@@ -436,6 +430,7 @@ namespace ComputerLearning
         {
             if (CurrentConfiguration == null) return;
             PlayerPrefs.SetInt(SelectedPathPrefKey, (int)CurrentConfiguration.learningPath);
+            PlayerPrefs.SetInt(RunAssessmentPrefKey, CurrentConfiguration.runAssessment ? 1 : 0);
             PlayerPrefs.SetString(ConfigJsonPrefKey, JsonUtility.ToJson(CurrentConfiguration));
             PlayerPrefs.Save();
         }

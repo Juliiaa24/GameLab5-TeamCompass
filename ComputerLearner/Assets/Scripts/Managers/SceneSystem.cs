@@ -33,7 +33,6 @@ namespace ComputerLearning
             AssessmentScene,
             StatsScene,
             Desktop1,
-            Desktop2,
             VirtualDesktop
         }
         #endregion
@@ -149,11 +148,6 @@ namespace ComputerLearning
             ChangeScene(SceneNames.Menu); 
         }
 
-        public void ChangeToDesktop2()
-        {
-            ChangeScene(SceneNames.Desktop2);
-        }
-
         public void ChangeToVirtualDesktop() 
         { 
             SessionManager.Instance.PrepareForDirectVirtualDesktopEntry();
@@ -187,11 +181,12 @@ namespace ComputerLearning
                 PlaytestDataManager.ExportCurrentStudentData("auto_before_reset");
             }
 
-            // 2. Preserve current language, student counter, auto-download setting, and selected LearningPath across the wipe
+            // 2. Preserve current language, student counter, auto-download setting, selected LearningPath, and Assessment toggle
             string activeLanguage = LocalizationManager.CurrentLanguage;
             int currentStudentCounter = Mathf.Max(1, PlayerPrefs.GetInt("Playtest_StudentCounter", 1));
             int autoDownloadSetting = PlayerPrefs.GetInt("Playtest_AutoDownloadEnabled", 0);
             LearningPath selectedPath = SessionManager.Instance.ActiveLearningPath;
+            bool assessmentEnabled = SessionManager.Instance.IsAssessmentEnabled;
 
             // 3. Clear all runtime managers
             if (ProgressData.ExistingInstance != null)
@@ -225,9 +220,9 @@ namespace ComputerLearning
             PlayerPrefs.SetInt("VirtualDesktopIntroCompleted", 0);
             PlayerPrefs.Save();
 
-            // 5. Advance to the next sequential Student ID (e.g. S01 -> S02) and re-arm selected LearningPath
+            // 5. Advance to the next sequential Student ID (e.g. S01 -> S02) and re-arm selected LearningPath + Assessment toggle
             string nextStudentId = PlaytestDataManager.AdvanceToNextStudent();
-            SessionManager.Instance.ResetForNextStudent(nextStudentId, selectedPath);
+            SessionManager.Instance.ResetForNextStudent(nextStudentId, selectedPath, assessmentEnabled);
 
             LocalizationManager.SetLanguage(activeLanguage);
 
@@ -385,9 +380,6 @@ namespace ComputerLearning
                 case SceneNames.Main:
                 case SceneNames.Desktop1:
                     SceneManager.LoadScene("Desktop1");
-                    break;
-                case SceneNames.Desktop2:
-                    SceneManager.LoadScene("Desktop2");
                     break;
                 case SceneNames.VirtualDesktop:
                     SceneManager.LoadScene("VirtualDesktop");

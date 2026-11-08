@@ -7,43 +7,36 @@ using System;
 namespace ComputerLearning
 {
     /// <summary>
-    /// Explicit student profiles / learning branches controlled locally or by a teacher host.
+    /// Explicit student profiles / learning flows controlled locally or by a teacher host.
+    /// All three flows complete Levels 1 through 16 progressively, differing in tutorial guidance.
     /// </summary>
     [Serializable]
     public enum LearningPath
     {
         /// <summary>
-        /// Runs the Initial Assessment first, then guides the student through the full curriculum (Levels 1-16).
+        /// Flow 1: Full guided progression as originally planned.
+        /// Runs the initial blocking tutorial in Desktop1 (Levels 1-5), then enters VirtualDesktop
+        /// with the window management tutorial (DesktopTour), Levels 6-9, AdvancedDesktopTour, and Levels 10-16.
         /// </summary>
-        DiagnosticFull = 0,
+        BeginnerFoundations = 0,
 
         /// <summary>
-        /// Skips the stressful timed assessment, seeds Tier 1 beginner skill scores,
-        /// and guides the student step-by-step through Desktop1 (L1-L5) and Desktop2 (L6-L9) into VirtualDesktop.
+        /// Flow 2: Skips the initial blocking Desktop1 tutorial.
+        /// Enters VirtualDesktop directly, completes the window management tutorial (DesktopTour),
+        /// and then unlocks the entire Virtual Desktop while completing Levels 1-16 progressively.
         /// </summary>
-        BeginnerFoundations = 1,
+        Intermediate = 1,
 
         /// <summary>
-        /// Skips the basic auto-opened mouse levels (L1-L5), seeds Tier 2-3 intermediate scores,
-        /// and starts in semi-guided Desktop2 (Levels 6-9) before transitioning to VirtualDesktop.
+        /// Flow 3: No tutorials or input blockers of any kind.
+        /// Enters VirtualDesktop directly with all desktop features and applications immediately unlocked,
+        /// while still completing Levels 1-16 progressively (Levels 2-16 locked until completed in order).
         /// </summary>
-        StandardIntermediate = 2,
+        Advanced = 2,
 
         /// <summary>
-        /// Skips mouse tutorials (L1-L9) and basic desktop tours, seeds Tier 4 advanced mouse scores,
-        /// and enters VirtualDesktop ready for OS context menus, keyboard shortcuts, Notepad, and Paint (Levels 10-16).
+        /// Teacher-customized configuration for future LAN host overrides.
         /// </summary>
-        AdvancedApplications = 3,
-
-        /// <summary>
-        /// Skips assessment and all blocking tours, unlocks all 16 levels and desktop applications,
-        /// and opens VirtualDesktop immediately as an open sandbox.
-        /// </summary>
-        FreePractice = 4,
-
-        /// <summary>
-        /// Teacher-customized configuration (e.g. a preset path with manual overrides such as forcing assessment).
-        /// </summary>
-        Custom = 5
+        Custom = 3
     }
 }
