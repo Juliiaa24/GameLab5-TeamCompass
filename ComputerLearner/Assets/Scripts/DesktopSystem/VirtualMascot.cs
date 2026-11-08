@@ -534,9 +534,8 @@ namespace ComputerLearning
             }
             if (Instance != null)
             {
-                int wordCount = !string.IsNullOrEmpty(message) ? message.Split(new char[] { ' ', '\n' }, System.StringSplitOptions.RemoveEmptyEntries).Length : 0;
-                float dynamicDuration = Mathf.Clamp(4.5f + (wordCount * 0.45f), 8.5f, 10.5f);
-                float finalDuration = duration > 0f ? Mathf.Max(duration, dynamicDuration) : dynamicDuration;
+                bool isCelebration = target != null && target.GetComponentInParent<LevelCelebrationModal>() != null;
+                float finalDuration = isCelebration ? (duration > 0f ? duration : 5.5f) : (duration > 0f ? Mathf.Min(duration, 2.0f) : 1.8f);
                 Instance.ShowTemporaryFeedback(message, target, finalDuration, offset);
             }
         }
@@ -628,7 +627,7 @@ namespace ComputerLearning
 
         private IEnumerator AutoHideFeedback(float delay)
         {
-            yield return new WaitForSeconds(delay);
+            yield return new WaitForSecondsRealtime(delay);
             Hide();
             hideBubbleCoroutine = null;
         }
@@ -810,7 +809,7 @@ namespace ComputerLearning
 
         private IEnumerator AutoHideBubble(float delay)
         {
-            yield return new WaitForSeconds(delay);
+            yield return new WaitForSecondsRealtime(delay);
             if (speechBubble != null)
             {
                 speechBubble.SetActive(false);
