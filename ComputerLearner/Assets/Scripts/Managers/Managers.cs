@@ -41,5 +41,8 @@ namespace ComputerLearning
 
         /// <summary>SoundManager singleton.</summary>
         public static SoundManager Sound() => SoundManager.Instance;
+
+        /// <summary>AspectRatioController singleton — forces 16:9 aspect ratio and letterboxing.</summary>
+        public static AspectRatioController Aspect() => AspectRatioController.Instance;
     }
 }

@@ -386,8 +386,22 @@ namespace ComputerLearning
 
                 // Clamp to screen bounds to prevent going completely off-screen
                 float margin = 5f * scale;
-                finalTargetPos.x = Mathf.Clamp(finalTargetPos.x, margin, Screen.width - margin);
-                finalTargetPos.y = Mathf.Clamp(finalTargetPos.y, margin, Screen.height - margin);
+                Camera cam = canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay ? canvas.worldCamera : null;
+                if (cam != null)
+                {
+                    Vector3 sp = cam.WorldToScreenPoint(finalTargetPos);
+                    sp.x = Mathf.Clamp(sp.x, cam.pixelRect.xMin + margin, cam.pixelRect.xMax - margin);
+                    sp.y = Mathf.Clamp(sp.y, cam.pixelRect.yMin + margin, cam.pixelRect.yMax - margin);
+                    if (RectTransformUtility.ScreenPointToWorldPointInRectangle(canvas.transform as RectTransform, sp, cam, out Vector3 worldPt))
+                    {
+                        finalTargetPos = worldPt;
+                    }
+                }
+                else
+                {
+                    finalTargetPos.x = Mathf.Clamp(finalTargetPos.x, margin, Screen.width - margin);
+                    finalTargetPos.y = Mathf.Clamp(finalTargetPos.y, margin, Screen.height - margin);
+                }
 
                 mascotRect.position = Vector3.Lerp(mascotRect.position, finalTargetPos, Time.deltaTime * followSpeed);
             }
@@ -448,7 +462,8 @@ namespace ComputerLearning
             if (autoFlipMascot && !isCelebrationTarget)
             {
                 Vector3 screenPoint = RectTransformUtility.WorldToScreenPoint(cam, mascotRect.position);
-                isOnRightSide = screenPoint.x > Screen.width * 0.5f;
+                float centerX = cam != null ? cam.pixelRect.center.x : Screen.width * 0.5f;
+                isOnRightSide = screenPoint.x > centerX;
             }
 
             float flipScale = isOnRightSide ? -1f : 1f;
@@ -484,14 +499,17 @@ namespace ComputerLearning
                 float marginY = 14f;
                 float currentScale = canvas != null ? canvas.scaleFactor : 1f;
 
-                if (bottomEdge.y < marginY)
+                float minY = cam != null ? cam.pixelRect.yMin : 0f;
+                float maxY = cam != null ? cam.pixelRect.yMax : Screen.height;
+
+                if (bottomEdge.y < minY + marginY)
                 {
-                    float difference = (marginY - bottomEdge.y) / currentScale;
+                    float difference = ((minY + marginY) - bottomEdge.y) / currentScale;
                     finalBubblePos.y += difference;
                 }
-                else if (topEdge.y > Screen.height - marginY)
+                else if (topEdge.y > maxY - marginY)
                 {
-                    float difference = (topEdge.y - (Screen.height - marginY)) / currentScale;
+                    float difference = (topEdge.y - (maxY - marginY)) / currentScale;
                     finalBubblePos.y -= difference;
                 }
 
@@ -581,8 +599,22 @@ namespace ComputerLearning
                 float scale = canvas != null ? canvas.scaleFactor : 1f;
                 float margin = 5f * scale;
                 Vector3 clampedPos = worldPos + new Vector3(currentTargetOffset.x * scale, currentTargetOffset.y * scale, 0f);
-                clampedPos.x = Mathf.Clamp(clampedPos.x, margin, Screen.width - margin);
-                clampedPos.y = Mathf.Clamp(clampedPos.y, margin, Screen.height - margin);
+                Camera cam = canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay ? canvas.worldCamera : null;
+                if (cam != null)
+                {
+                    Vector3 sp = cam.WorldToScreenPoint(clampedPos);
+                    sp.x = Mathf.Clamp(sp.x, cam.pixelRect.xMin + margin, cam.pixelRect.xMax - margin);
+                    sp.y = Mathf.Clamp(sp.y, cam.pixelRect.yMin + margin, cam.pixelRect.yMax - margin);
+                    if (RectTransformUtility.ScreenPointToWorldPointInRectangle(canvas.transform as RectTransform, sp, cam, out Vector3 worldPt))
+                    {
+                        clampedPos = worldPt;
+                    }
+                }
+                else
+                {
+                    clampedPos.x = Mathf.Clamp(clampedPos.x, margin, Screen.width - margin);
+                    clampedPos.y = Mathf.Clamp(clampedPos.y, margin, Screen.height - margin);
+                }
                 mascotRect.position = clampedPos;
             }
         }
