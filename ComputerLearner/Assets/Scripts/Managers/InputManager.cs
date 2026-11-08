@@ -69,12 +69,7 @@ namespace ComputerLearning
 
         private void Update()
         {
-            if (spawnWindow != null && spawnWindow.action != null && spawnWindow.action.WasPressedThisFrame())
-            {
-                WindowManager manager = WindowManager.Instance;
-                if (manager != null) manager.OpenWindow(windowPrefab);
-                else if (windowPrefab != null && windowSpawner != null) Instantiate(windowPrefab, windowSpawner);
-            }
+            // Debug window spawning shortcut disabled
         }
 
         #endregion

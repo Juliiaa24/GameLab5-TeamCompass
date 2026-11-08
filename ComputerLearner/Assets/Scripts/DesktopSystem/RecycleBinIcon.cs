@@ -36,7 +36,7 @@ namespace ComputerLearning
         private void Start()
         {
             if (myRect == null) myRect = GetComponent<RectTransform>();
-            if (binImage == null) binImage = GetComponent<Image>();
+            if (binImage == null) binImage = GetComponentInChildren<Image>();
 
             bool isTutorialScene = FindAnyObjectByType<AdvancedDesktopTour>() != null;
             DraggableIcon di = GetComponent<DraggableIcon>();
@@ -79,7 +79,7 @@ namespace ComputerLearning
 
         public void UpdateVisualState()
         {
-            if (binImage == null) binImage = GetComponent<Image>();
+            if (binImage == null) binImage = GetComponentInChildren<Image>();
             EnsureSpritesLoaded();
 
             int count = FileExplorerApp.GetRecycleBinCount();

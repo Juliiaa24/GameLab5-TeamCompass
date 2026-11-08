@@ -141,6 +141,8 @@ namespace ComputerLearning
         public void BringToFront()
         {
             if (IsClosed || IsMinimized) return;
+            DraggableIcon.ClearSelection();
+            FileExplorerApp.IsDesktopFocused = false;
             if (manager != null) manager.FocusWindow(this);
             else transform.SetAsLastSibling();
         }

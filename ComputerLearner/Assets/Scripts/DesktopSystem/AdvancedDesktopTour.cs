@@ -49,6 +49,7 @@ namespace ComputerLearning
         private AdvancedDesktopTourDialogs dialogs;
         private TutorialBlocker tutorialBlocker;
         private RecycleBinIcon cachedRecycleBin;
+        private DraggableIcon cachedTourAppIcon;
         private Action<DraggableIcon> activeRecycledListener;
 
         private void LoadDialogs()
@@ -70,6 +71,47 @@ namespace ComputerLearning
             tutorialBlocker = blockerObj.AddComponent<TutorialBlocker>();
         }
 
+        public static void StopTourAndCleanUp()
+        {
+            AdvancedDesktopTour tour = UnityEngine.Object.FindAnyObjectByType<AdvancedDesktopTour>();
+            if (tour != null)
+            {
+                tour.StopTour();
+            }
+            else
+            {
+                IsTourRunning = false;
+            }
+        }
+
+        public void StopTour()
+        {
+            IsTourRunning = false;
+            StopAllCoroutines();
+            if (activeRecycledListener != null)
+            {
+                RecycleBinIcon.OnIconRecycled -= activeRecycledListener;
+                activeRecycledListener = null;
+            }
+            if (cachedRecycleBin != null)
+            {
+                cachedRecycleBin.enabled = true;
+            }
+            if (cachedTourAppIcon != null)
+            {
+                cachedTourAppIcon.AllowDoubleClick = true;
+                cachedTourAppIcon = null;
+            }
+            if (tutorialBlocker != null)
+            {
+                tutorialBlocker.ClearTarget();
+                Destroy(tutorialBlocker.gameObject);
+                tutorialBlocker = null;
+            }
+            VirtualMascot.HideMascot();
+            Destroy(this);
+        }
+
         private void OnDestroy()
         {
             IsTourRunning = false;
@@ -81,6 +123,11 @@ namespace ComputerLearning
             if (cachedRecycleBin != null)
             {
                 cachedRecycleBin.enabled = true;
+            }
+            if (cachedTourAppIcon != null)
+            {
+                cachedTourAppIcon.AllowDoubleClick = true;
+                cachedTourAppIcon = null;
             }
             if (tutorialBlocker != null)
             {
@@ -161,6 +208,7 @@ namespace ComputerLearning
 
             // Disable the recycle bin initially so the user doesn't accidentally use it early
             cachedRecycleBin = recycleBin;
+            cachedTourAppIcon = appIcon;
             recycleBin.enabled = false;
 
             RectTransform iconRect = appIcon.GetComponent<RectTransform>();
@@ -169,7 +217,7 @@ namespace ComputerLearning
             // 1. Welcome
             tutorialBlocker?.SetAllowedTarget(null);
             VirtualMascot.Show(dialogs.step1_welcome, iconRect, new Vector2(250, 0));
-            yield return new WaitForSeconds(4.0f);
+            yield return VirtualMascot.WaitForDialogue(4.0f);
 
             // 2. Move Icon
             appIcon.AllowDoubleClick = false; // Block opening it by accident
@@ -182,7 +230,7 @@ namespace ComputerLearning
 
             tutorialBlocker?.SetAllowedTarget(null);
             VirtualMascot.Show(dialogs.step2_perfect, iconRect, new Vector2(250, 0));
-            yield return new WaitForSeconds(2.0f);
+            yield return VirtualMascot.WaitForDialogue(2.0f);
 
             // 3. Open Window
             appIcon.AllowDoubleClick = true;
@@ -231,7 +279,7 @@ namespace ComputerLearning
 
                 tutorialBlocker?.SetAllowedTarget(null);
                 VirtualMascot.Show(dialogs.step4_veryGood, windowRect, new Vector2(0, 200));
-                yield return new WaitForSeconds(2.0f);
+                yield return VirtualMascot.WaitForDialogue(2.0f);
 
                 // 5. Resize Window
                 VirtualMascot.Show(dialogs.step5_resizeWindow, windowRect, new Vector2(250, 0));
@@ -249,7 +297,7 @@ namespace ComputerLearning
                 tutorialBlocker?.SetAllowedTarget(null);
 
                 VirtualMascot.Show(dialogs.step5_awesome, windowRect, new Vector2(250, 0));
-                yield return new WaitForSeconds(2.5f);
+                yield return VirtualMascot.WaitForDialogue(2.5f);
 
                 // 6. Close Window (Minimize and Maximize steps omitted as they are already taught in DesktopTour)
                 RectTransform closeBtnRect = btnClose as RectTransform ?? windowRect;
@@ -267,6 +315,10 @@ namespace ComputerLearning
             VirtualMascot.Show(dialogs.step9_recycle, binRect, new Vector2(250, 0));
 
             recycleBin.enabled = true; // Enable the recycle bin only now!
+            if (appIcon != null)
+            {
+                appIcon.AllowDoubleClick = false; // Disallow double clicking Practice Note while dragging to Recycle Bin
+            }
 
             bool recycled = false;
             activeRecycledListener = (icon) => { if (icon != null) recycled = true; };
@@ -292,7 +344,7 @@ namespace ComputerLearning
             }
 
             VirtualMascot.Show(dialogs.step9_congrats, binRect, new Vector2(250, 0));
-            yield return new WaitForSeconds(4.0f);
+            yield return VirtualMascot.WaitForDialogue(4.0f);
 
             CompleteTutorial();
         }
@@ -322,6 +374,12 @@ namespace ComputerLearning
             float timer = 0f;
             while (!condition())
             {
+                if (!IsTourRunning || VirtualDesktopGuidedLevels.IsLevelRunning)
+                {
+                    StopTour();
+                    yield break;
+                }
+
                 timer += Time.deltaTime;
                 if (timer > 8.0f)
                 {

@@ -26,6 +26,40 @@ namespace ComputerLearning
         [SerializeField] private float maxZoom = 3.0f;
 
         private Action onEditCallback;
+        private ExplorerItemData currentItem;
+
+        private void OnEnable()
+        {
+            FileExplorerApp.OnFileSystemChanged += HandleFileSystemChanged;
+        }
+
+        private void OnDisable()
+        {
+            FileExplorerApp.OnFileSystemChanged -= HandleFileSystemChanged;
+        }
+
+        private void HandleFileSystemChanged()
+        {
+            if (currentItem != null && currentItem.imageContent != null && displayedImage != null)
+            {
+                displayedImage.sprite = currentItem.imageContent;
+                if (infoText != null)
+                {
+                    Sprite s = currentItem.imageContent;
+                    string dimensions = s != null && s.texture != null ? $" ({s.texture.width}x{s.texture.height}px)" : string.Empty;
+                    infoText.text = $"{currentItem.name}{dimensions}";
+                }
+            }
+        }
+
+        public void SetAsDesktopBackground()
+        {
+            if (displayedImage != null && displayedImage.sprite != null && DesktopManager.Instance != null)
+            {
+                DesktopManager.Instance.SetDesktopWallpaperSprite(displayedImage.sprite);
+                FeedbackManager.PlaySuccess();
+            }
+        }
 
         private void Awake()
         {
@@ -53,6 +87,7 @@ namespace ComputerLearning
 
         public void Initialize(ExplorerItemData item, Sprite sprite, Action onEditInPaintAction)
         {
+            currentItem = item;
             onEditCallback = onEditInPaintAction;
 
             if (displayedImage != null)

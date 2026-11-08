@@ -44,19 +44,28 @@ namespace ComputerLearning
             if (!hasShownDelayReminder && (Time.time - lastActionTime) >= 5.0f && targetsRemaining > 0)
             {
                 hasShownDelayReminder = true;
-                RectTransform anchor = activeTargets.Count > 0 && activeTargets[0] != null
-                    ? activeTargets[0].GetComponent<RectTransform>()
-                    : (spawnArea != null ? spawnArea : GetComponent<RectTransform>());
-                VirtualMascot.ShowContextualFeedback(VirtualMascot.FeedbackDialogs.clickDelayReminder, anchor, 2.8f);
+                VirtualMascot.ShowContextualFeedback(VirtualMascot.FeedbackDialogs.clickDelayReminder, GetActiveFeedbackTarget(), 2.8f);
             }
 
             if (!timeLimitActive) return;
             elapsed += Time.deltaTime;
-            if (elapsed >= timeLimit) Complete(false);
+            if (elapsed >= timeLimit) Complete(false, GetActiveFeedbackTarget());
         }
         #endregion
 
         #region Protected Methods
+        protected override RectTransform GetActiveFeedbackTarget()
+        {
+            for (int i = 0; i < activeTargets.Count; i++)
+            {
+                if (activeTargets[i] != null && activeTargets[i].gameObject.activeInHierarchy)
+                {
+                    return activeTargets[i].GetComponent<RectTransform>();
+                }
+            }
+            return spawnArea != null ? spawnArea : GetComponent<RectTransform>();
+        }
+
         protected override void SetupTask(TaskDefinition definition)
         {
             TaskConfig cfg = definition.config;
@@ -91,9 +100,9 @@ namespace ComputerLearning
                 }
             }
 
-            RecordIntermediateResult(false);
+            RectTransform feedbackAnchor = GetActiveFeedbackTarget();
+            RecordIntermediateResult(false, feedbackAnchor);
 
-            RectTransform feedbackAnchor = spawnArea != null ? spawnArea : GetComponent<RectTransform>();
             if (eventData != null && eventData.button == PointerEventData.InputButton.Right)
             {
                 VirtualMascot.ShowWrongClickFeedback(feedbackAnchor, false);
@@ -112,37 +121,41 @@ namespace ComputerLearning
             target.SetParentRect(spawnArea);
             target.Configure(cfg.targetSize, cfg.isMoving, cfg.moveSpeed);
 
-            Rect  area     = spawnArea.rect;
-            float halfSize = cfg.targetSize * 0.5f;
+            if (spawnArea.rect.width <= 0f || spawnArea.rect.height <= 0f)
+            {
+                UnityEngine.UI.LayoutRebuilder.ForceRebuildLayoutImmediate(spawnArea);
+            }
+            Rect area = spawnArea.rect;
+            float padding = (cfg.targetSize * 0.5f) + 24f;
 
-            float maxX = area.xMax - halfSize;
-            float minX = area.xMin + halfSize;
-            float maxY = area.yMax - halfSize;
-            float minY = area.yMin + halfSize;
+            float minX = area.xMin + padding;
+            float maxX = area.xMax - padding;
+            float minY = area.yMin + padding;
+            float maxY = area.yMax - padding - 22f;
 
-            float x = (maxX > minX) ? Random.Range(minX, maxX) : 0f;
-            float y = (maxY > minY) ? Random.Range(minY, maxY) : 0f;
+            float x = (maxX > minX) ? Random.Range(minX, maxX) : area.center.x;
+            float y = (maxY > minY) ? Random.Range(minY, maxY) : area.center.y;
 
             RectTransform targetRect = target.GetComponent<RectTransform>();
             targetRect.anchoredPosition = new Vector2(x, y);
 
-            target.OnClicked += () => OnTargetClicked(target);
+            target.OnClickedWithScore += (score) => OnTargetClicked(target, score);
             target.OnWrongButtonClicked += () =>
             {
                 if (IsFinished) return;
-                RecordIntermediateResult(false);
+                RecordIntermediateResult(false, targetRect);
                 VirtualMascot.ShowWrongClickFeedback(targetRect, false);
             };
             target.OnHoverStagnant += () =>
             {
                 if (IsFinished) return;
-                RegisterAttempt(false);
+                RegisterAttempt(false, targetRect);
                 VirtualMascot.ShowContextualFeedback(VirtualMascot.FeedbackDialogs.clickHoverStagnant, targetRect, 2.5f);
             };
             activeTargets.Add(target);
         }
 
-        private void OnTargetClicked(ClickTarget target)
+        private void OnTargetClicked(ClickTarget target, int scorePoints = 100)
         {
             if (IsFinished) return;
 
@@ -150,19 +163,21 @@ namespace ComputerLearning
             lastActionTime = Time.time;
             hasShownDelayReminder = false;
 
+            Transform hitTransform = target != null ? target.transform : null;
             activeTargets.Remove(target);
-            if (target != null) Destroy(target.gameObject);
             targetsRemaining--;
             NotifySubTaskProgress((float)(totalTargetsInitial - targetsRemaining) / Mathf.Max(1, totalTargetsInitial));
 
             if (targetsRemaining <= 0)
             {
-                Complete(true);
+                Complete(true, hitTransform, scorePoints);
             }
             else
             {
-                RecordIntermediateResult(true);
+                RecordIntermediateResult(true, hitTransform, scorePoints);
             }
+
+            if (target != null) Destroy(target.gameObject);
         }
         #endregion
     }

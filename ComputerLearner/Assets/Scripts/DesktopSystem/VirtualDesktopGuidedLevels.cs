@@ -221,6 +221,15 @@ namespace ComputerLearning
         {
             if (levelDef == null) return;
 
+            // Immediately abort and cleanup any active desktop tours before starting a guided level
+            AdvancedDesktopTour.StopTourAndCleanUp();
+            if (DesktopTour.IsTourRunning)
+            {
+                DesktopTour dt = UnityEngine.Object.FindAnyObjectByType<DesktopTour>();
+                if (dt != null) UnityEngine.Object.Destroy(dt);
+            }
+            VirtualMascot.HideMascot();
+
             if (Instance == null)
             {
                 DesktopManager desktopMgr = DesktopManager.Instance != null ? DesktopManager.Instance : FindAnyObjectByType<DesktopManager>();
@@ -317,6 +326,14 @@ namespace ComputerLearning
         {
             if (levelDef == null) return;
 
+            AdvancedDesktopTour.StopTourAndCleanUp();
+            if (DesktopTour.IsTourRunning)
+            {
+                DesktopTour dt = UnityEngine.Object.FindAnyObjectByType<DesktopTour>();
+                if (dt != null) UnityEngine.Object.Destroy(dt);
+            }
+            VirtualMascot.HideMascot();
+
             LoadDialogs();
             CleanupActiveSubscriptions();
             if (activeLevelCoroutine != null)
@@ -373,6 +390,7 @@ namespace ComputerLearning
         #region Level 10: Context Menu Level
         private IEnumerator RunLevel10ContextMenu(LevelDefinition levelDef)
         {
+            DesktopContextMenuTrigger.RestrictToFolderCreationOnly = true;
             yield return new WaitForSeconds(0.6f);
 
             RectTransform bgRect = DesktopManager.Instance != null && DesktopManager.Instance.DesktopIconContainer != null
@@ -415,6 +433,7 @@ namespace ComputerLearning
             FileExplorerApp.OnFileSystemChanged += onFsChange;
             RegisterCleanup(() =>
             {
+                DesktopContextMenuTrigger.RestrictToFolderCreationOnly = false;
                 ContextMenuController.OnMenuItemClicked -= onMenuClick;
                 FileExplorerApp.OnFileSystemChanged -= onFsChange;
             });
@@ -451,7 +470,7 @@ namespace ComputerLearning
 
             SoundManager.PlaySuccess();
             VirtualMascot.Show(dialogs.l10_done, bgRect, new Vector2(0, 50));
-            yield return new WaitForSeconds(2.8f);
+            yield return VirtualMascot.WaitForDialogue(2.8f);
 
             CompleteLevel(levelDef);
         }
@@ -543,7 +562,7 @@ namespace ComputerLearning
 
             SoundManager.PlaySuccess();
             VirtualMascot.Show(dialogs.l11_done, winRect, new Vector2(0, 180));
-            yield return new WaitForSeconds(2.5f);
+            yield return VirtualMascot.WaitForDialogue(2.5f);
 
             CompleteLevel(levelDef);
         }
@@ -648,7 +667,7 @@ namespace ComputerLearning
 
             SoundManager.PlaySuccess();
             VirtualMascot.Show(dialogs.l12_copyDone, winRect, new Vector2(0, 180));
-            yield return new WaitForSeconds(2.0f);
+            yield return VirtualMascot.WaitForDialogue(2.0f);
 
             // Step 2: Paste
             VirtualMascot.Show(dialogs.l12_pastePrompt, winRect, new Vector2(0, 180));
@@ -719,7 +738,7 @@ namespace ComputerLearning
 
             SoundManager.PlaySuccess();
             VirtualMascot.Show(dialogs.l12_pasteDone, winRect, new Vector2(0, 180));
-            yield return new WaitForSeconds(2.0f);
+            yield return VirtualMascot.WaitForDialogue(2.0f);
 
             // Step 3: Cut
             VirtualMascot.Show(dialogs.l12_cutPrompt, winRect, new Vector2(0, 180));
@@ -797,7 +816,7 @@ namespace ComputerLearning
 
             SoundManager.PlaySuccess();
             VirtualMascot.Show(dialogs.l12_done, winRect, new Vector2(0, 180));
-            yield return new WaitForSeconds(2.5f);
+            yield return VirtualMascot.WaitForDialogue(2.5f);
 
             CompleteLevel(levelDef);
         }
@@ -827,7 +846,7 @@ namespace ComputerLearning
             tutorialBlocker?.SetAllowedTarget(winRect);
 
             VirtualMascot.Show(dialogs.l13_welcome, winRect, new Vector2(0, 180));
-            yield return new WaitForSeconds(3.0f);
+            yield return VirtualMascot.WaitForDialogue(3.0f);
 
             if (notepad == null || !notepad.gameObject.activeInHierarchy)
             {
@@ -914,7 +933,7 @@ namespace ComputerLearning
 
             SoundManager.PlaySuccess();
             VirtualMascot.Show(dialogs.l13_done, winRect, new Vector2(0, 180));
-            yield return new WaitForSeconds(2.8f);
+            yield return VirtualMascot.WaitForDialogue(2.8f);
 
             CompleteLevel(levelDef);
         }
@@ -1000,7 +1019,7 @@ namespace ComputerLearning
 
             SoundManager.PlaySuccess();
             VirtualMascot.Show(dialogs.l14_done, winRect, new Vector2(0, 180));
-            yield return new WaitForSeconds(2.8f);
+            yield return VirtualMascot.WaitForDialogue(2.8f);
 
             CompleteLevel(levelDef);
         }
@@ -1012,7 +1031,7 @@ namespace ComputerLearning
             yield return new WaitForSeconds(0.6f);
 
             VirtualMascot.Show(dialogs.l15_welcome, null, new Vector2(0, 80));
-            yield return new WaitForSeconds(3.0f);
+            yield return VirtualMascot.WaitForDialogue(3.0f);
 
             NotepadApp notepad = EnsureNotepadOpen();
             while (notepad == null || !notepad.gameObject.activeInHierarchy)
@@ -1316,7 +1335,7 @@ namespace ComputerLearning
 
             SoundManager.PlaySuccess();
             VirtualMascot.Show(dialogs.l15_done, winRect, new Vector2(0, 180));
-            yield return new WaitForSeconds(2.8f);
+            yield return VirtualMascot.WaitForDialogue(2.8f);
 
             CompleteLevel(levelDef);
         }
@@ -1389,7 +1408,7 @@ namespace ComputerLearning
 
             SoundManager.PlaySuccess();
             VirtualMascot.Show(dialogs.l16_drawDone, winRect, new Vector2(0, 180));
-            yield return new WaitForSeconds(2.0f);
+            yield return VirtualMascot.WaitForDialogue(2.0f);
 
             // Step 2: Undo
             VirtualMascot.Show(dialogs.l16_undoPrompt, winRect, new Vector2(0, 180));
@@ -1417,7 +1436,7 @@ namespace ComputerLearning
 
             SoundManager.PlaySuccess();
             VirtualMascot.Show(dialogs.l16_undoDone, winRect, new Vector2(0, 180));
-            yield return new WaitForSeconds(2.0f);
+            yield return VirtualMascot.WaitForDialogue(2.0f);
 
             // Step 3: Save
             VirtualMascot.Show(dialogs.l16_savePrompt, winRect, new Vector2(0, 180));
@@ -1440,7 +1459,7 @@ namespace ComputerLearning
 
             SoundManager.PlaySuccess();
             VirtualMascot.Show(dialogs.l16_done, winRect, new Vector2(0, 180));
-            yield return new WaitForSeconds(3.0f);
+            yield return VirtualMascot.WaitForDialogue(3.0f);
 
             CompleteLevel(levelDef);
         }
@@ -1543,6 +1562,83 @@ namespace ComputerLearning
             return FindAnyObjectByType<NotepadApp>();
         }
 
+        public static LevelMedal CalculateGuidedLevelMedal(string levelId, float durationSeconds, int mistakesCount)
+        {
+            string clean = string.IsNullOrEmpty(levelId) ? "" : levelId.ToLower().Trim();
+            switch (clean)
+            {
+                case "level10": // Context Menu on Wallpaper
+                    if (durationSeconds <= 12.0f && mistakesCount == 0) return LevelMedal.Gold;
+                    if (durationSeconds <= 25.0f && mistakesCount <= 2) return LevelMedal.Silver;
+                    return LevelMedal.Bronze;
+
+                case "level11": // Notepad Open & Typing
+                    if (durationSeconds <= 20.0f && mistakesCount == 0) return LevelMedal.Gold;
+                    if (durationSeconds <= 35.0f && mistakesCount <= 2) return LevelMedal.Silver;
+                    return LevelMedal.Bronze;
+
+                case "level12": // Copy, Paste, Cut
+                    if (durationSeconds <= 25.0f && mistakesCount == 0) return LevelMedal.Gold;
+                    if (durationSeconds <= 45.0f && mistakesCount <= 2) return LevelMedal.Silver;
+                    return LevelMedal.Bronze;
+
+                case "level13": // Undo Shortcut Ctrl+Z
+                    if (durationSeconds <= 18.0f && mistakesCount == 0) return LevelMedal.Gold;
+                    if (durationSeconds <= 35.0f && mistakesCount <= 2) return LevelMedal.Silver;
+                    return LevelMedal.Bronze;
+
+                case "level14": // Save Shortcut Ctrl+S
+                    if (durationSeconds <= 20.0f && mistakesCount == 0) return LevelMedal.Gold;
+                    if (durationSeconds <= 38.0f && mistakesCount <= 1) return LevelMedal.Silver;
+                    return LevelMedal.Bronze;
+
+                case "level15": // Notepad Full (Type, Cut, Paste, Undo, Save)
+                    if (durationSeconds <= 35.0f && mistakesCount == 0) return LevelMedal.Gold;
+                    if (durationSeconds <= 60.0f && mistakesCount <= 2) return LevelMedal.Silver;
+                    return LevelMedal.Bronze;
+
+                case "level16": // Paint Usage (Open, Brush, Draw, Eraser, Erase, Save)
+                    if (durationSeconds <= 40.0f && mistakesCount == 0) return LevelMedal.Gold;
+                    if (durationSeconds <= 75.0f && mistakesCount <= 2) return LevelMedal.Silver;
+                    return LevelMedal.Bronze;
+
+                default:
+                    if (durationSeconds <= 25.0f && mistakesCount == 0) return LevelMedal.Gold;
+                    if (durationSeconds <= 50.0f && mistakesCount <= 2) return LevelMedal.Silver;
+                    return LevelMedal.Bronze;
+            }
+        }
+
+        private static float GetParTimeForLevel(string levelId)
+        {
+            switch (levelId.ToLower().Trim())
+            {
+                case "level10": return 15f;
+                case "level11": return 25f;
+                case "level12": return 30f;
+                case "level13": return 20f;
+                case "level14": return 25f;
+                case "level15": return 45f;
+                case "level16": return 50f;
+                default: return 30f;
+            }
+        }
+
+        private static int GetExpectedActionsForLevel(string levelId)
+        {
+            switch (levelId.ToLower().Trim())
+            {
+                case "level10": return 4;
+                case "level11": return 5;
+                case "level12": return 6;
+                case "level13": return 5;
+                case "level14": return 5;
+                case "level15": return 8;
+                case "level16": return 8;
+                default: return 5;
+            }
+        }
+
         private void CompleteLevel(LevelDefinition levelDef)
         {
             CleanupActiveSubscriptions();
@@ -1556,9 +1652,19 @@ namespace ComputerLearning
 
             float duration = Mathf.Max(2.5f, Time.time - levelStartTime);
             int mistakes = currentLevelMistakes;
-            int totalActions = Mathf.Max(1, 5 + mistakes);
-            float accuracy = Mathf.Clamp(((float)5 / totalActions) * 100f, 0f, 100f);
-            LevelMedal medal = ProgressData.CalculateMedal(accuracy, mistakes);
+            string cleanId = levelDef != null ? levelDef.levelId : "";
+
+            LevelMedal medal = CalculateGuidedLevelMedal(cleanId, duration, mistakes);
+
+            // Compute additive score with speed bonus and mistake penalty
+            float parTime = GetParTimeForLevel(cleanId);
+            int baseScore = 600;
+            int speedBonus = Mathf.Max(0, Mathf.RoundToInt(Mathf.Max(0f, parTime - duration) * 15f));
+            int mistakePenalty = mistakes * 50;
+            int finalScore = Mathf.Max(100, baseScore + speedBonus - mistakePenalty);
+
+            int expectedActions = GetExpectedActionsForLevel(cleanId);
+            float accuracy = Mathf.Clamp(((float)expectedActions / (expectedActions + mistakes)) * 100f, 10f, 100f);
 
             bool improvedMedal = false;
             LevelMedal previousBestMedal = LevelMedal.None;
@@ -1571,7 +1677,7 @@ namespace ComputerLearning
             }
             if (ProgressData.Instance != null && levelDef != null && !string.IsNullOrEmpty(levelDef.levelId))
             {
-                ProgressData.Instance.RecordLevelAttempt(levelDef.levelId, medal, accuracy, duration, mistakes);
+                ProgressData.Instance.RecordLevelAttempt(levelDef.levelId, medal, accuracy, duration, mistakes, finalScore);
                 ProgressData.Instance.MarkLevelCompleted(levelDef.levelId);
             }
 
@@ -1591,19 +1697,18 @@ namespace ComputerLearning
                 if (canvas != null) modalParent = canvas.transform;
             }
 
-            if (improvedMedal)
-            {
-                VirtualMascot.ShowMedalImprovementFeedback(previousBestMedal, medal, accuracy, duration, modalParent as RectTransform, 5.5f);
-            }
-            else
-            {
-                VirtualMascot.HideMascot();
-            }
-
             LevelCelebrationModal.Show(modalParent, levelDef, medal, accuracy, duration, mistakes, () =>
             {
                 VirtualMascot.HideMascot();
-            });
+            }, null, finalScore);
+
+            VirtualMascot.ShowMedalImprovementFeedback(
+                improvedMedal ? previousBestMedal : LevelMedal.None,
+                medal,
+                accuracy,
+                duration,
+                null,
+                6.5f);
         }
 
         public static LevelDefinition GetOrCreateLevelDefinition(string levelId)

@@ -187,6 +187,11 @@ namespace ComputerLearning
         public bool IsDesktopCompanion => isDesktopCompanion;
 
         private RectTransform targetRect;
+        private bool hasAssignedTarget;
+        private bool isPinnedAtWorldPos;
+        private Vector3 pinnedWorldPos;
+        public bool IsPinnedAtWorldPos => isPinnedAtWorldPos;
+        private Vector2 currentTargetOffset = Vector2.zero;
         private float floatTimer;
         private Coroutine bounceCoroutine;
         private Coroutine hideBubbleCoroutine;
@@ -303,9 +308,11 @@ namespace ComputerLearning
                 layoutElement.preferredHeight = -1;
 
                 float rawWidth = speechText.preferredWidth;
-                if (rawWidth > 380f)
+                bool isCelebration = targetRect != null && targetRect.GetComponentInParent<LevelCelebrationModal>() != null;
+                float maxBubbleTextWidth = isCelebration ? 240f : 380f;
+                if (rawWidth > maxBubbleTextWidth)
                 {
-                    layoutElement.preferredWidth = 380f;
+                    layoutElement.preferredWidth = maxBubbleTextWidth;
                 }
 
                 // Force the layout to rebuild immediately so it resizes vertically before the next frame
@@ -316,28 +323,58 @@ namespace ComputerLearning
 
         private void Update()
         {
+            Canvas canvas = GetComponentInParent<Canvas>();
+            float scale = canvas != null ? canvas.scaleFactor : 1f;
+
+            // Early dismissal of speech bubble via Space or clicking on the bubble (only during sequential tutorial dialogues)
+            if (AllowSpaceToSkipDialogue && speechBubble != null && speechBubble.activeSelf)
+            {
+                bool spacePressed = UnityEngine.InputSystem.Keyboard.current != null &&
+                                    UnityEngine.InputSystem.Keyboard.current.spaceKey.wasPressedThisFrame;
+                bool bubbleClicked = false;
+                if (UnityEngine.InputSystem.Mouse.current != null && UnityEngine.InputSystem.Mouse.current.leftButton.wasPressedThisFrame)
+                {
+                    RectTransform bubbleRt = speechBubble.GetComponent<RectTransform>();
+                    Camera cam = canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay ? canvas.worldCamera : null;
+                    if (bubbleRt != null && RectTransformUtility.RectangleContainsScreenPoint(bubbleRt, UnityEngine.InputSystem.Mouse.current.position.ReadValue(), cam))
+                    {
+                        bubbleClicked = true;
+                    }
+                }
+
+                if (spacePressed || bubbleClicked)
+                {
+                    DismissActiveFeedback();
+                }
+            }
+
             if (isDesktopCompanion)
             {
                 UpdateCompanionPosition();
                 return;
             }
 
-            if (targetRect != null && !targetRect.gameObject.activeInHierarchy)
+            if (hasAssignedTarget && (targetRect == null || !targetRect.gameObject.activeInHierarchy))
             {
                 // If target was destroyed or hidden, hide mascot
                 Hide();
                 return;
             }
 
-            Canvas canvas = GetComponentInParent<Canvas>();
-            float scale = canvas != null ? canvas.scaleFactor : 1f;
-
-            if (targetRect != null && targetRect.gameObject.activeInHierarchy)
+            if ((targetRect != null && targetRect.gameObject.activeInHierarchy) || isPinnedAtWorldPos)
             {
-                // Get the true visual center of the target, regardless of where its pivot is set
-                Vector3[] corners = new Vector3[4];
-                targetRect.GetWorldCorners(corners);
-                Vector3 basePos = (corners[0] + corners[2]) / 2f;
+                Vector3 basePos;
+                if (isPinnedAtWorldPos)
+                {
+                    basePos = pinnedWorldPos;
+                }
+                else
+                {
+                    // Get the true visual center of the target, regardless of where its pivot is set
+                    Vector3[] corners = new Vector3[4];
+                    targetRect.GetWorldCorners(corners);
+                    basePos = (corners[0] + corners[2]) / 2f;
+                }
 
                 // Float animation isolated to mascotVisualRect so speechBubble does not bob
                 floatTimer += Time.deltaTime;
@@ -345,7 +382,7 @@ namespace ComputerLearning
 
                 RectTransform vis = GetMascotVisualRect();
                 if (vis != null) vis.anchoredPosition = new Vector2(0f, floatOffset);
-                Vector3 finalTargetPos = basePos;
+                Vector3 finalTargetPos = basePos + new Vector3(currentTargetOffset.x * scale, currentTargetOffset.y * scale, 0f);
 
                 // Clamp to screen bounds to prevent going completely off-screen
                 float margin = 5f * scale;
@@ -358,13 +395,57 @@ namespace ComputerLearning
             UpdateSpeechBubblePlacement(canvas);
         }
 
+        public static int DialogueSkipVersion { get; private set; }
+        public static bool AllowSpaceToSkipDialogue { get; private set; }
+
+        public static IEnumerator WaitForDialogue(float duration)
+        {
+            AllowSpaceToSkipDialogue = true;
+            try
+            {
+                int initialVersion = DialogueSkipVersion;
+                float elapsed = 0f;
+                while (elapsed < duration)
+                {
+                    if (DialogueSkipVersion != initialVersion)
+                    {
+                        yield return null;
+                        yield break;
+                    }
+                    elapsed += Time.deltaTime;
+                    yield return null;
+                }
+            }
+            finally
+            {
+                AllowSpaceToSkipDialogue = false;
+            }
+        }
+
+        public void DismissActiveFeedback()
+        {
+            DialogueSkipVersion++;
+            bool wasTemporary = hideBubbleCoroutine != null;
+            if (hideBubbleCoroutine != null)
+            {
+                StopCoroutine(hideBubbleCoroutine);
+                hideBubbleCoroutine = null;
+            }
+            if (speechBubble != null) speechBubble.SetActive(false);
+            if (!isDesktopCompanion && wasTemporary)
+            {
+                Hide();
+            }
+        }
+
         private void UpdateSpeechBubblePlacement(Canvas canvas)
         {
             if (mascotRect == null) return;
 
+            bool isCelebrationTarget = targetRect != null && targetRect.GetComponentInParent<LevelCelebrationModal>() != null;
             bool isOnRightSide = false;
             Camera cam = canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay ? canvas.worldCamera : null;
-            if (autoFlipMascot)
+            if (autoFlipMascot && !isCelebrationTarget)
             {
                 Vector3 screenPoint = RectTransformUtility.WorldToScreenPoint(cam, mascotRect.position);
                 isOnRightSide = screenPoint.x > Screen.width * 0.5f;
@@ -450,7 +531,7 @@ namespace ComputerLearning
         }
 
         #region Contextual Mistake & Feedback System
-        public static void ShowContextualFeedback(string message, RectTransform target = null, float duration = 3.5f)
+        public static void ShowContextualFeedback(string message, RectTransform target = null, float duration = -1f, Vector2? offset = null)
         {
             if (Instance == null)
             {
@@ -458,7 +539,9 @@ namespace ComputerLearning
             }
             if (Instance != null)
             {
-                Instance.ShowTemporaryFeedback(message, target, duration);
+                bool isCelebration = target != null && target.GetComponentInParent<LevelCelebrationModal>() != null;
+                float finalDuration = isCelebration ? (duration > 0f ? duration : 5.5f) : (duration > 0f ? Mathf.Min(duration, 2.0f) : 1.8f);
+                Instance.ShowTemporaryFeedback(message, target, finalDuration, offset);
             }
         }
 
@@ -466,17 +549,47 @@ namespace ComputerLearning
         {
             MascotFeedbackDialogs fb = FeedbackDialogs;
             string msg = isRightClickExpected ? fb.wrongLeftClick : fb.wrongRightClick;
-            ShowContextualFeedback(msg, target, 3.5f);
+            ShowContextualFeedback(msg, target, -1f);
         }
 
         public static void ShowAlmostOutFeedback(RectTransform target)
         {
-            ShowContextualFeedback(FeedbackDialogs.almostOut, target, 3.0f);
+            Vector3? worldCenter = null;
+            if (target != null)
+            {
+                Vector3[] corners = new Vector3[4];
+                target.GetWorldCorners(corners);
+                worldCenter = (corners[0] + corners[2]) / 2f;
+            }
+            ShowContextualFeedback(FeedbackDialogs.almostOut, target, 1.8f);
+            if (Instance != null && worldCenter.HasValue)
+            {
+                Instance.PinAtWorldPosition(worldCenter.Value);
+            }
+        }
+
+        public void PinAtWorldPosition(Vector3 worldPos)
+        {
+            hasAssignedTarget = false;
+            isPinnedAtWorldPos = false;
+            targetRect = null;
+            isPinnedAtWorldPos = true;
+            pinnedWorldPos = worldPos;
+            if (mascotRect != null)
+            {
+                Canvas canvas = GetComponentInParent<Canvas>();
+                float scale = canvas != null ? canvas.scaleFactor : 1f;
+                float margin = 5f * scale;
+                Vector3 clampedPos = worldPos + new Vector3(currentTargetOffset.x * scale, currentTargetOffset.y * scale, 0f);
+                clampedPos.x = Mathf.Clamp(clampedPos.x, margin, Screen.width - margin);
+                clampedPos.y = Mathf.Clamp(clampedPos.y, margin, Screen.height - margin);
+                mascotRect.position = clampedPos;
+            }
         }
 
         public static void ShowSingleClickFeedback(RectTransform target)
         {
-            ShowContextualFeedback(FeedbackDialogs.singleClick, target, 3.0f);
+            ShowContextualFeedback(FeedbackDialogs.singleClick, target, -1f);
         }
 
         public static void ShowInactivityReminder(RectTransform target = null)
@@ -484,7 +597,7 @@ namespace ComputerLearning
             string[] inactivityPool = FeedbackDialogs.inactivityMessages;
             if (inactivityPool == null || inactivityPool.Length == 0) return;
             string msg = inactivityPool[UnityEngine.Random.Range(0, inactivityPool.Length)];
-            ShowContextualFeedback(msg, target, 4.0f);
+            ShowContextualFeedback(msg, target, -1f);
         }
 
         public static string GetRandomMedalImprovementMessage()
@@ -508,32 +621,19 @@ namespace ComputerLearning
 
         public static void ShowMedalImprovementFeedback(LevelMedal previousMedal, LevelMedal newMedal, float accuracy, float durationSeconds, RectTransform target = null, float displayDuration = 5.5f)
         {
-            MascotFeedbackDialogs fb = FeedbackDialogs;
-            string praise = GetRandomMedalImprovementMessage();
-            string newMedalName = LevelScoreRecord.GetMedalName(newMedal).ToUpper();
-            string prevMedalName = LevelScoreRecord.GetMedalName(previousMedal);
-
-            string msg;
-            if (previousMedal != LevelMedal.None)
+            string msg = GetRandomMedalImprovementMessage();
+            LevelCelebrationModal modal = Object.FindFirstObjectByType<LevelCelebrationModal>();
+            if (modal != null && modal.CardRect != null)
             {
-                string fmt = !string.IsNullOrEmpty(fb.medalImprovementUpgradeFormat)
-                    ? fb.medalImprovementUpgradeFormat
-                    : "{0}\nUpgraded from {1} to {2} Medal! ({3:F0}%)";
-                msg = string.Format(fmt, praise, prevMedalName, newMedalName, accuracy);
+                target = modal.CardRect;
             }
-            else
-            {
-                string fmt = !string.IsNullOrEmpty(fb.medalImprovementEarnedFormat)
-                    ? fb.medalImprovementEarnedFormat
-                    : "{0}\nYou earned the {1} Medal! ({2:F0}%)";
-                msg = string.Format(fmt, praise, newMedalName, accuracy);
-            }
-            ShowContextualFeedback(msg, target, displayDuration);
+            Vector2 sideOffset = new Vector2(330f, -20f);
+            ShowContextualFeedback(msg, target, displayDuration, sideOffset);
         }
 
-        public void ShowTemporaryFeedback(string message, RectTransform target, float duration)
+        public void ShowTemporaryFeedback(string message, RectTransform target, float duration, Vector2? offset = null)
         {
-            ShowMessage(message, target);
+            ShowMessage(message, target, offset);
             if (bounceCoroutine != null) StopCoroutine(bounceCoroutine);
             bounceCoroutine = StartCoroutine(BounceAnimation());
 
@@ -543,7 +643,7 @@ namespace ComputerLearning
 
         private IEnumerator AutoHideFeedback(float delay)
         {
-            yield return new WaitForSeconds(delay);
+            yield return new WaitForSecondsRealtime(delay);
             Hide();
             hideBubbleCoroutine = null;
         }
@@ -563,7 +663,13 @@ namespace ComputerLearning
 
             gameObject.SetActive(true);
             targetRect = target;
+            hasAssignedTarget = (target != null);
+            isPinnedAtWorldPos = false;
+            bool isCelebrationTarget = target != null && target.GetComponentInParent<LevelCelebrationModal>() != null;
+            currentTargetOffset = isCelebrationTarget ? (offset ?? new Vector2(330f, -20f)) : Vector2.zero;
 
+            Canvas canvas = GetComponentInParent<Canvas>();
+            float scale = canvas != null ? canvas.scaleFactor : 1f;
             if (mascotRect == null) mascotRect = GetComponent<RectTransform>();
             if (mascotRect != null)
             {
@@ -578,7 +684,7 @@ namespace ComputerLearning
                 {
                     Vector3[] corners = new Vector3[4];
                     targetRect.GetWorldCorners(corners);
-                    mascotRect.position = (corners[0] + corners[2]) / 2f;
+                    mascotRect.position = ((corners[0] + corners[2]) / 2f) + new Vector3(currentTargetOffset.x * scale, currentTargetOffset.y * scale, 0f);
                 }
             }
 
@@ -589,7 +695,6 @@ namespace ComputerLearning
 
             ApplyTextAndRebuildBubble(message);
 
-            Canvas canvas = GetComponentInParent<Canvas>();
             UpdateSpeechBubblePlacement(canvas);
 
             RectTransform vis = GetMascotVisualRect();
@@ -612,7 +717,11 @@ namespace ComputerLearning
             RectTransform vis = GetMascotVisualRect();
             if (vis != null) vis.localScale = Vector3.one;
             isDesktopCompanion = false;
+            AllowSpaceToSkipDialogue = false;
+            hasAssignedTarget = false;
+            isPinnedAtWorldPos = false;
             targetRect = null;
+            currentTargetOffset = Vector2.zero;
             gameObject.SetActive(false);
         }
 
@@ -623,6 +732,8 @@ namespace ComputerLearning
         public void InitAsDesktopCompanion()
         {
             isDesktopCompanion = true;
+            hasAssignedTarget = false;
+            isPinnedAtWorldPos = false;
             targetRect = null;
             gameObject.SetActive(true);
 
@@ -710,12 +821,14 @@ namespace ComputerLearning
                 UnityEngine.UI.LayoutRebuilder.ForceRebuildLayoutImmediate(bubbleRt);
             }
 
-            hideBubbleCoroutine = StartCoroutine(AutoHideBubble(5f));
+            int wordCount = !string.IsNullOrEmpty(message) ? message.Split(new char[] { ' ', '\n' }, System.StringSplitOptions.RemoveEmptyEntries).Length : 0;
+            float dynamicDuration = Mathf.Clamp(4.5f + (wordCount * 0.45f), 8.5f, 10.5f);
+            hideBubbleCoroutine = StartCoroutine(AutoHideBubble(dynamicDuration));
         }
 
         private IEnumerator AutoHideBubble(float delay)
         {
-            yield return new WaitForSeconds(delay);
+            yield return new WaitForSecondsRealtime(delay);
             if (speechBubble != null)
             {
                 speechBubble.SetActive(false);

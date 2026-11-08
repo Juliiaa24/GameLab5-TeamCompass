@@ -79,6 +79,18 @@ namespace ComputerLearning
         private Window parentWindow;
         private bool listenersBound;
         private readonly Stack<Color32[]> undoHistory = new Stack<Color32[]>();
+        private RectTransform brushCursorPreviewRect;
+        private Image brushCursorPreviewImage;
+        private bool isPointerOverCanvas;
+        private bool isHidingHardwareCursor;
+
+        private void SetHardwareCursorHidden(bool hidden)
+        {
+            if (isHidingHardwareCursor == hidden) return;
+            isHidingHardwareCursor = hidden;
+            Cursor.visible = !hidden;
+        }
+        private static Sprite sharedRingSprite;
         #endregion
 
         #region Unity Methods
@@ -103,7 +115,16 @@ namespace ComputerLearning
             if (parentWindow == null) parentWindow = GetComponentInParent<Window>();
 
             bool isAppFocused = parentWindow != null ? parentWindow.IsFocused : true;
-            if (!isAppFocused) return;
+            if (!isAppFocused)
+            {
+                if (isHidingHardwareCursor)
+                {
+                    isPointerOverCanvas = false;
+                    if (brushCursorPreviewRect != null) brushCursorPreviewRect.gameObject.SetActive(false);
+                    SetHardwareCursorHidden(false);
+                }
+                return;
+            }
 
             bool isCtrl = false;
             bool isZ = false;
@@ -137,8 +158,15 @@ namespace ComputerLearning
             }
         }
 
+        private void OnDisable()
+        {
+            isPointerOverCanvas = false;
+            SetHardwareCursorHidden(false);
+        }
+
         private void OnDestroy()
         {
+            SetHardwareCursorHidden(false);
             if (drawingTexture != null)
             {
                 Destroy(drawingTexture);
@@ -266,8 +294,139 @@ namespace ComputerLearning
         #endregion
 
         #region Drawing Operations
+        internal void HandleCanvasPointerEnter(PointerEventData eventData)
+        {
+            isPointerOverCanvas = true;
+            UpdateBrushCursorPreview(eventData.position, eventData.enterEventCamera);
+        }
+
+        internal void HandleCanvasPointerExit(PointerEventData eventData)
+        {
+            isPointerOverCanvas = false;
+            SetHardwareCursorHidden(false);
+            if (brushCursorPreviewRect != null && brushCursorPreviewRect.gameObject.activeSelf)
+            {
+                brushCursorPreviewRect.gameObject.SetActive(false);
+            }
+        }
+
+        internal void HandleCanvasPointerMove(PointerEventData eventData)
+        {
+            isPointerOverCanvas = true;
+            UpdateBrushCursorPreview(eventData.position, eventData.enterEventCamera);
+        }
+
+        private void EnsureBrushCursorPreview()
+        {
+            if (brushCursorPreviewRect != null || canvasDisplay == null) return;
+
+            GameObject previewObj = new GameObject("BrushCursorPreview", typeof(RectTransform), typeof(Image));
+            previewObj.transform.SetParent(canvasDisplay.transform, false);
+            brushCursorPreviewRect = previewObj.GetComponent<RectTransform>();
+            brushCursorPreviewRect.anchorMin = new Vector2(0.5f, 0.5f);
+            brushCursorPreviewRect.anchorMax = new Vector2(0.5f, 0.5f);
+            brushCursorPreviewRect.pivot = new Vector2(0.5f, 0.5f);
+
+            brushCursorPreviewImage = previewObj.GetComponent<Image>();
+            brushCursorPreviewImage.sprite = GetOrCreateRingSprite();
+            brushCursorPreviewImage.raycastTarget = false;
+            previewObj.SetActive(false);
+        }
+
+        private static Sprite GetOrCreateRingSprite()
+        {
+            if (sharedRingSprite != null) return sharedRingSprite;
+
+            const int size = 64;
+            Texture2D ringTex = new Texture2D(size, size, TextureFormat.RGBA32, false);
+            ringTex.filterMode = FilterMode.Bilinear;
+            ringTex.wrapMode = TextureWrapMode.Clamp;
+
+            float center = (size - 1) * 0.5f;
+            Color32 clear = new Color32(0, 0, 0, 0);
+            Color32 darkRing = new Color32(25, 25, 30, 220);
+            Color32 lightRing = new Color32(255, 255, 255, 220);
+
+            Color32[] pixels = new Color32[size * size];
+            for (int y = 0; y < size; y++)
+            {
+                for (int x = 0; x < size; x++)
+                {
+                    float dx = x - center;
+                    float dy = y - center;
+                    float dist = Mathf.Sqrt(dx * dx + dy * dy);
+
+                    if (dist >= 27.5f && dist <= 30.8f)
+                    {
+                        pixels[y * size + x] = darkRing;
+                    }
+                    else if (dist >= 24.8f && dist < 27.5f)
+                    {
+                        pixels[y * size + x] = lightRing;
+                    }
+                    else
+                    {
+                        pixels[y * size + x] = clear;
+                    }
+                }
+            }
+
+            ringTex.SetPixels32(pixels);
+            ringTex.Apply();
+
+            sharedRingSprite = Sprite.Create(ringTex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100f);
+            return sharedRingSprite;
+        }
+
+        private void UpdateBrushCursorPreview(Vector2 screenPos, Camera eventCamera)
+        {
+            EnsureBrushCursorPreview();
+            if (brushCursorPreviewRect == null) return;
+
+            if (canvasRect == null && canvasDisplay != null) canvasRect = canvasDisplay.rectTransform;
+            if (canvasRect == null || !isPointerOverCanvas || activeTool == PaintTool.Fill)
+            {
+                SetHardwareCursorHidden(false);
+                if (brushCursorPreviewRect.gameObject.activeSelf)
+                {
+                    brushCursorPreviewRect.gameObject.SetActive(false);
+                }
+                return;
+            }
+
+            if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(canvasRect, screenPos, eventCamera, out Vector2 localPos) ||
+                !canvasRect.rect.Contains(localPos))
+            {
+                SetHardwareCursorHidden(false);
+                if (brushCursorPreviewRect.gameObject.activeSelf)
+                {
+                    brushCursorPreviewRect.gameObject.SetActive(false);
+                }
+                return;
+            }
+
+            int rad = activeTool == PaintTool.Eraser ? Mathf.Max(brushRadius * 2, 8) : brushRadius;
+            Rect r = canvasRect.rect;
+            float scaleX = r.width > 0f ? (r.width / Mathf.Max(1, textureWidth)) : 1f;
+            float scaleY = r.height > 0f ? (r.height / Mathf.Max(1, textureHeight)) : 1f;
+
+            float diameterX = Mathf.Max(10f, (rad * 2f + 1f) * scaleX);
+            float diameterY = Mathf.Max(10f, (rad * 2f + 1f) * scaleY);
+
+            brushCursorPreviewRect.sizeDelta = new Vector2(diameterX, diameterY);
+            brushCursorPreviewRect.localPosition = new Vector3(localPos.x, localPos.y, 0f);
+            SetHardwareCursorHidden(true);
+
+            if (!brushCursorPreviewRect.gameObject.activeSelf)
+            {
+                brushCursorPreviewRect.gameObject.SetActive(true);
+            }
+        }
+
         internal void HandleCanvasPointerDown(PointerEventData eventData)
         {
+            isPointerOverCanvas = true;
+            UpdateBrushCursorPreview(eventData.position, eventData.pressEventCamera);
             if (eventData.button != PointerEventData.InputButton.Left) return;
             if (!TryGetPixelCoord(eventData, out int px, out int py)) return;
 
@@ -290,6 +449,8 @@ namespace ComputerLearning
 
         internal void HandleCanvasDrag(Vector2 prevScreenPos, PointerEventData eventData)
         {
+            isPointerOverCanvas = true;
+            UpdateBrushCursorPreview(eventData.position, eventData.pressEventCamera);
             if (eventData.button != PointerEventData.InputButton.Left) return;
             if (activeTool == PaintTool.Fill) return;
 
@@ -542,6 +703,7 @@ namespace ComputerLearning
 
                 PaintCanvasInputRelay relay = canvasDisplay.GetComponent<PaintCanvasInputRelay>();
                 if (relay != null) relay.owner = this;
+                EnsureBrushCursorPreview();
             }
 
             if (listenersBound) return;
@@ -604,6 +766,11 @@ namespace ComputerLearning
             activeTool = tool;
             UpdateToolHighlight();
             UpdateStatusText();
+            if (activeTool == PaintTool.Fill && brushCursorPreviewRect != null)
+            {
+                brushCursorPreviewRect.gameObject.SetActive(false);
+                SetHardwareCursorHidden(false);
+            }
         }
 
         public void SelectBrushSize(int radius)

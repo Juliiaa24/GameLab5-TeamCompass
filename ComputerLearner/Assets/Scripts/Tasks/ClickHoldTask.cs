@@ -12,13 +12,15 @@ namespace ComputerLearning
         private bool isHovering = false;
         private float hoverDwellTime = 0f;
         private bool hasWarnedHoverStagnant = false;
+        private Vector2 lastPointerScreenPos;
+        private Camera lastEventCamera;
 
         protected override void SetupTask(TaskDefinition definition)
         {
             TaskTargetMovement mover = GetComponent<TaskTargetMovement>();
             if (mover == null) mover = gameObject.AddComponent<TaskTargetMovement>();
             mover.Setup(definition);
-            mover.enabled = false; // Disable movement entirely because holding while moving is too hard
+            mover.SetMoving(false); // Keep component enabled for bounds clamping, disable movement
 
             if (definition != null)
             {
@@ -56,6 +58,11 @@ namespace ComputerLearning
 
             if (isHolding)
             {
+                if (UnityEngine.InputSystem.Mouse.current != null)
+                {
+                    lastPointerScreenPos = UnityEngine.InputSystem.Mouse.current.position.ReadValue();
+                }
+
                 currentHoldTime += Time.deltaTime;
                 NotifyUserInteraction();
 
@@ -69,8 +76,14 @@ namespace ComputerLearning
                 if (currentHoldTime >= requiredHoldTime)
                 {
                     isHolding = false;
+                    RectTransform rt = transform as RectTransform;
+                    int scorePoints = BaseTask.CalculatePrecisionAndSizeScore(rt, lastPointerScreenPos, lastEventCamera, out bool isOuterRing);
+                    if (isOuterRing && rt != null)
+                    {
+                        VirtualMascot.ShowAlmostOutFeedback(rt);
+                    }
                     Debug.Log("[ClickHoldTask] Hold complete!");
-                    Complete(true);
+                    Complete(true, transform, scorePoints);
                 }
             }
             else
@@ -119,6 +132,8 @@ namespace ComputerLearning
             if (eventData.button != PointerEventData.InputButton.Left) return;
 
             isHolding = true;
+            lastPointerScreenPos = eventData.position;
+            lastEventCamera = eventData.pressEventCamera;
             currentHoldTime = 0f;
             hoverDwellTime = 0f;
             hasWarnedHoverStagnant = true;

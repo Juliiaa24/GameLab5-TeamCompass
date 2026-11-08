@@ -127,25 +127,7 @@ namespace ComputerLearning
         {
             Instance = this;
             InitializeDesktop();
-
-            // Self-healing: ensure desktop wallpaper stretches across full screen regardless of aspect ratio (16:10, 21:9, etc.)
-            Transform bg = transform.Find("Background");
-            if (bg == null)
-            {
-                Canvas canvas = GetComponentInParent<Canvas>();
-                if (canvas != null) bg = canvas.transform.Find("Background");
-            }
-            if (bg != null)
-            {
-                RectTransform rt = bg as RectTransform;
-                if (rt != null)
-                {
-                    rt.anchorMin = Vector2.zero;
-                    rt.anchorMax = Vector2.one;
-                    rt.anchoredPosition = Vector2.zero;
-                    rt.sizeDelta = Vector2.zero;
-                }
-            }
+            EnsureWallpaperImage();
         }
 
         private void OnDestroy()
@@ -170,6 +152,8 @@ namespace ComputerLearning
 
         private void Start()
         {
+            EnsureRecycleBinTopLeft();
+            RestoreSavedWallpaper();
             SpawnInitialIcons();
             EnsureScoresAppIcon();
             if (string.Equals(UnityEngine.SceneManagement.SceneManager.GetActiveScene().name, "Desktop1", StringComparison.OrdinalIgnoreCase) || !enableScoresAppIcon)
@@ -233,11 +217,11 @@ namespace ComputerLearning
         public void TriggerAdvancedDesktopTourAfterLevel9()
         {
             if (!IsVirtualDesktopScene()) return;
+            if (PlayerPrefs.GetInt("AdvancedDesktopTourCompleted", 0) == 1) return;
+            if (VirtualDesktopGuidedLevels.IsLevelRunning) return;
             if (isStartingAdvancedTour || AdvancedDesktopTour.IsTourRunning || UnityEngine.Object.FindAnyObjectByType<AdvancedDesktopTour>() != null) return;
 
             Debug.Log("[DesktopManager] Level 9 completed! Scheduling AdvancedDesktopTour...");
-            PlayerPrefs.SetInt("AdvancedDesktopTourCompleted", 0);
-            PlayerPrefs.Save();
             StartCoroutine(CheckAndStartAdvancedDesktopTour());
         }
 
@@ -252,7 +236,18 @@ namespace ComputerLearning
             while (UnityEngine.Object.FindAnyObjectByType<LevelCelebrationModal>() != null ||
                    DesktopTour.IsTourRunning)
             {
+                if (VirtualDesktopGuidedLevels.IsLevelRunning)
+                {
+                    isStartingAdvancedTour = false;
+                    yield break;
+                }
                 yield return new WaitForSeconds(0.2f);
+            }
+
+            if (VirtualDesktopGuidedLevels.IsLevelRunning || PlayerPrefs.GetInt("AdvancedDesktopTourCompleted", 0) == 1)
+            {
+                isStartingAdvancedTour = false;
+                yield break;
             }
 
             if (WindowManager.Instance != null)
@@ -272,6 +267,322 @@ namespace ComputerLearning
             }
         }
         #endregion
+
+        private void EnsureRecycleBinTopLeft()
+        {
+            if (initialDesktopIcons != null)
+            {
+                initialDesktopIcons.RemoveAll(d => d != null && string.Equals(d.iconName, "Minigames", StringComparison.OrdinalIgnoreCase));
+                int binIdx = initialDesktopIcons.FindIndex(d => d != null && string.Equals(d.iconName, "Recycle Bin", StringComparison.OrdinalIgnoreCase));
+                if (binIdx > 0)
+                {
+                    var bin = initialDesktopIcons[binIdx];
+                    initialDesktopIcons.RemoveAt(binIdx);
+                    initialDesktopIcons.Insert(0, bin);
+                }
+            }
+
+            if (desktopIconContainer != null)
+            {
+                Transform minigamesChild = desktopIconContainer.Find("Minigames");
+                if (minigamesChild != null)
+                {
+                    DraggableIcon di = minigamesChild.GetComponent<DraggableIcon>();
+                    if (di != null) activeIcons.Remove(di);
+                    Destroy(minigamesChild.gameObject);
+                }
+
+                Transform binChild = desktopIconContainer.Find("Recycle Bin") ?? desktopIconContainer.Find("Icon_RecycleBin");
+                if (binChild == null)
+                {
+                    foreach (Transform c in desktopIconContainer)
+                    {
+                        if (c != null && c.name.IndexOf("Recycle", StringComparison.OrdinalIgnoreCase) >= 0)
+                        {
+                            binChild = c;
+                            break;
+                        }
+                    }
+                }
+                if (binChild != null)
+                {
+                    binChild.SetSiblingIndex(0);
+                    DraggableIcon di = binChild.GetComponent<DraggableIcon>();
+                    IconGrid grid = desktopIconContainer.GetComponent<IconGrid>();
+                    if (di != null && grid != null)
+                    {
+                        grid.Place(di, new Vector2Int(0, 0));
+                    }
+                }
+            }
+        }
+
+        private void Update()
+        {
+            if (UnityEngine.EventSystems.EventSystem.current != null)
+            {
+                var sel = UnityEngine.EventSystems.EventSystem.current.currentSelectedGameObject;
+                if (sel != null && (sel.GetComponent<TMPro.TMP_InputField>() != null || sel.GetComponent<UnityEngine.UI.InputField>() != null))
+                {
+                    return;
+                }
+            }
+            if (WindowManager.Instance != null && WindowManager.Instance.ActiveWindow != null &&
+                WindowManager.Instance.ActiveWindow.GetComponentInChildren<NotepadApp>() != null)
+            {
+                return;
+            }
+
+            var kb = UnityEngine.InputSystem.Keyboard.current;
+            bool deletePressed = kb != null && kb.deleteKey.wasPressedThisFrame;
+            bool isCtrl = kb != null && (kb.ctrlKey.isPressed || kb.leftCtrlKey.isPressed || kb.rightCtrlKey.isPressed);
+            bool isC = kb != null && kb.cKey.wasPressedThisFrame;
+            bool isX = kb != null && kb.xKey.wasPressedThisFrame;
+            bool isV = kb != null && kb.vKey.wasPressedThisFrame;
+
+#if ENABLE_LEGACY_INPUT_MANAGER
+            if (!deletePressed) deletePressed = Input.GetKeyDown(KeyCode.Delete);
+            if (!isCtrl) isCtrl = Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl);
+            if (!isC) isC = Input.GetKeyDown(KeyCode.C);
+            if (!isX) isX = Input.GetKeyDown(KeyCode.X);
+            if (!isV) isV = Input.GetKeyDown(KeyCode.V);
+#endif
+
+            if (deletePressed)
+            {
+                if (DraggableIcon.SelectedIcon != null && !DraggableIcon.SelectedIcon.IsProtected)
+                {
+                    DraggableIcon.SelectedIcon.DeleteDesktopIconToRecycleBin();
+                }
+            }
+
+            if (!isCtrl) return;
+
+            if (isC)
+            {
+                if (DraggableIcon.SelectedIcon != null && !DraggableIcon.SelectedIcon.IsProtected &&
+                    FileExplorerApp.TryConsumeClipboardShortcutFrame())
+                {
+                    DraggableIcon.SelectedIcon.CopyDesktopIcon();
+                }
+            }
+            else if (isX)
+            {
+                if (DraggableIcon.SelectedIcon != null && !DraggableIcon.SelectedIcon.IsProtected &&
+                    FileExplorerApp.TryConsumeClipboardShortcutFrame())
+                {
+                    DraggableIcon.SelectedIcon.CutDesktopIcon();
+                }
+            }
+            else if (isV)
+            {
+                bool shouldPasteOnDesktop = FileExplorerApp.IsDesktopFocused || !FileExplorerApp.HasActiveFocusedExplorer();
+                if (shouldPasteOnDesktop && FileExplorerApp.SharedClipboardItem != null &&
+                    FileExplorerApp.TryConsumeClipboardShortcutFrame())
+                {
+                    FileExplorerApp.PasteClipboardIntoFolder(FileExplorerApp.GetDesktopFolder());
+                    FeedbackManager.PlaySuccess();
+                }
+            }
+        }
+
+        private void OnGUI()
+        {
+            Event e = Event.current;
+            if (e == null) return;
+            if (UnityEngine.EventSystems.EventSystem.current != null)
+            {
+                var sel = UnityEngine.EventSystems.EventSystem.current.currentSelectedGameObject;
+                if (sel != null && (sel.GetComponent<TMPro.TMP_InputField>() != null || sel.GetComponent<UnityEngine.UI.InputField>() != null))
+                {
+                    return;
+                }
+            }
+            if (WindowManager.Instance != null && WindowManager.Instance.ActiveWindow != null &&
+                WindowManager.Instance.ActiveWindow.GetComponentInChildren<NotepadApp>() != null)
+            {
+                return;
+            }
+
+            if (e.type == EventType.ValidateCommand || e.type == EventType.ExecuteCommand)
+            {
+                string cmd = e.commandName;
+                if (cmd == "Copy" || cmd == "Cut" || cmd == "Paste")
+                {
+                    if (e.type == EventType.ValidateCommand)
+                    {
+                        e.Use();
+                        return;
+                    }
+
+                    if (cmd == "Copy" && DraggableIcon.SelectedIcon != null && !DraggableIcon.SelectedIcon.IsProtected)
+                    {
+                        if (FileExplorerApp.TryConsumeClipboardShortcutFrame())
+                        {
+                            DraggableIcon.SelectedIcon.CopyDesktopIcon();
+                            e.Use();
+                        }
+                    }
+                    else if (cmd == "Cut" && DraggableIcon.SelectedIcon != null && !DraggableIcon.SelectedIcon.IsProtected)
+                    {
+                        if (FileExplorerApp.TryConsumeClipboardShortcutFrame())
+                        {
+                            DraggableIcon.SelectedIcon.CutDesktopIcon();
+                            e.Use();
+                        }
+                    }
+                    else if (cmd == "Paste")
+                    {
+                        bool shouldPasteOnDesktop = FileExplorerApp.IsDesktopFocused || !FileExplorerApp.HasActiveFocusedExplorer();
+                        if (shouldPasteOnDesktop && FileExplorerApp.SharedClipboardItem != null &&
+                            FileExplorerApp.TryConsumeClipboardShortcutFrame())
+                        {
+                            FileExplorerApp.PasteClipboardIntoFolder(FileExplorerApp.GetDesktopFolder());
+                            FeedbackManager.PlaySuccess();
+                            e.Use();
+                        }
+                    }
+                }
+            }
+        }
+
+        private void OnApplicationQuit()
+        {
+            FileExplorerApp.SaveFileSystemSnapshot();
+        }
+
+        private Sprite defaultWallpaperSprite;
+        public UnityEngine.UI.Image WallpaperImage { get; private set; }
+        public static Sprite CustomWallpaperSprite { get; set; }
+
+        private void EnsureWallpaperImage()
+        {
+            if (WallpaperImage == null)
+            {
+                Transform bg = transform.Find("Background");
+                if (bg == null)
+                {
+                    Canvas c = GetComponentInParent<Canvas>();
+                    if (c == null && desktopIconContainer != null)
+                    {
+                        c = desktopIconContainer.GetComponentInParent<Canvas>();
+                    }
+                    if (c == null)
+                    {
+                        c = UnityEngine.Object.FindAnyObjectByType<Canvas>();
+                    }
+                    if (c != null)
+                    {
+                        bg = c.transform.Find("Background");
+                    }
+                }
+                if (bg != null)
+                {
+                    WallpaperImage = bg.GetComponent<UnityEngine.UI.Image>();
+                    RectTransform rt = bg as RectTransform;
+                    if (rt != null)
+                    {
+                        rt.anchorMin = Vector2.zero;
+                        rt.anchorMax = Vector2.one;
+                        rt.anchoredPosition = Vector2.zero;
+                        rt.sizeDelta = Vector2.zero;
+                    }
+                }
+            }
+
+            if (WallpaperImage != null && defaultWallpaperSprite == null && WallpaperImage.sprite != null)
+            {
+                defaultWallpaperSprite = WallpaperImage.sprite;
+            }
+        }
+
+        public void SetDesktopWallpaperTheme(string theme)
+        {
+            CustomWallpaperSprite = null;
+            PlayerPrefs.SetString("DesktopWallpaperTheme", theme);
+            PlayerPrefs.DeleteKey("DesktopCustomWallpaperBase64");
+            PlayerPrefs.Save();
+            RestoreSavedWallpaper();
+            FeedbackManager.PlaySuccess();
+        }
+
+        public void SetDesktopWallpaperSprite(Sprite sprite)
+        {
+            EnsureWallpaperImage();
+            CustomWallpaperSprite = sprite;
+            PlayerPrefs.SetString("DesktopWallpaperTheme", "custom");
+            if (sprite != null)
+            {
+                string base64 = FileExplorerApp.EncodeSpriteToPngBase64(sprite);
+                if (!string.IsNullOrEmpty(base64))
+                {
+                    PlayerPrefs.SetString("DesktopCustomWallpaperBase64", base64);
+                }
+            }
+            PlayerPrefs.Save();
+            if (WallpaperImage != null && sprite != null)
+            {
+                WallpaperImage.sprite = sprite;
+                WallpaperImage.color = Color.white;
+            }
+        }
+
+        public void RestoreSavedWallpaper()
+        {
+            EnsureWallpaperImage();
+
+            if (CustomWallpaperSprite != null)
+            {
+                if (WallpaperImage != null)
+                {
+                    WallpaperImage.sprite = CustomWallpaperSprite;
+                    WallpaperImage.color = Color.white;
+                }
+                return;
+            }
+
+            string theme = PlayerPrefs.GetString("DesktopWallpaperTheme", "default");
+            switch (theme.ToLowerInvariant())
+            {
+                case "custom":
+                    string savedBase64 = PlayerPrefs.GetString("DesktopCustomWallpaperBase64", string.Empty);
+                    Sprite restoredCustom = FileExplorerApp.DecodeSpriteFromPngBase64(savedBase64);
+                    if (restoredCustom != null)
+                    {
+                        CustomWallpaperSprite = restoredCustom;
+                        if (WallpaperImage != null)
+                        {
+                            WallpaperImage.sprite = restoredCustom;
+                            WallpaperImage.color = Color.white;
+                        }
+                    }
+                    else if (WallpaperImage != null)
+                    {
+                        if (defaultWallpaperSprite != null) WallpaperImage.sprite = defaultWallpaperSprite;
+                        WallpaperImage.color = Color.white;
+                    }
+                    break;
+                case "blue":
+                    if (WallpaperImage != null) { WallpaperImage.sprite = null; WallpaperImage.color = new Color(0.12f, 0.25f, 0.48f, 1f); }
+                    break;
+                case "teal":
+                    if (WallpaperImage != null) { WallpaperImage.sprite = null; WallpaperImage.color = new Color(0.08f, 0.38f, 0.40f, 1f); }
+                    break;
+                case "purple":
+                    if (WallpaperImage != null) { WallpaperImage.sprite = null; WallpaperImage.color = new Color(0.28f, 0.18f, 0.44f, 1f); }
+                    break;
+                default:
+                    if (WallpaperImage != null)
+                    {
+                        if (defaultWallpaperSprite != null)
+                        {
+                            WallpaperImage.sprite = defaultWallpaperSprite;
+                        }
+                        WallpaperImage.color = Color.white;
+                    }
+                    break;
+            }
+        }
 
         #region Private Methods
         private void InitializeDesktop()
@@ -294,7 +605,7 @@ namespace ComputerLearning
                 else container = transform;
             }
 
-            GameObject mascotInstance = Instantiate(mascotPrefab, container);
+            GameObject mascotInstance = Instantiate(mascotPrefab, container, false);
             mascotInstance.name = "VirtualMascot";
 
             VirtualMascot mascot = mascotInstance.GetComponent<VirtualMascot>();
@@ -393,13 +704,26 @@ namespace ComputerLearning
             ExplorerItemData desktopFolder = FileExplorerApp.GetDesktopFolder();
             if (desktopFolder == null) return;
 
-            foreach (var icon in activeIcons)
+            for (int i = activeIcons.Count - 1; i >= 0; i--)
             {
-                if (icon == null) continue;
+                var icon = activeIcons[i];
+                if (icon == null)
+                {
+                    activeIcons.RemoveAt(i);
+                    continue;
+                }
                 if (icon.GetComponent<RecycleBinIcon>() != null) continue;
 
                 TMPro.TextMeshProUGUI label = icon.GetComponentInChildren<TMPro.TextMeshProUGUI>();
                 string iconTitle = label != null && !string.IsNullOrWhiteSpace(label.text) ? label.text.Trim() : icon.gameObject.name;
+
+                if (iconTitle.Equals("Minigames", StringComparison.OrdinalIgnoreCase) ||
+                    icon.gameObject.name.Equals("Minigames", StringComparison.OrdinalIgnoreCase))
+                {
+                    activeIcons.RemoveAt(i);
+                    Destroy(icon.gameObject);
+                    continue;
+                }
 
                 if (IsDesktopOnlyApplication(iconTitle))
                 {
@@ -502,7 +826,11 @@ namespace ComputerLearning
                             // Sync name & sprite in case it was renamed or edited in Paint/Notepad
                             icon.gameObject.name = icon.LinkedExplorerItem.name;
                             var tmp = icon.GetComponentInChildren<TMPro.TextMeshProUGUI>();
-                            if (tmp != null) tmp.text = icon.LinkedExplorerItem.name;
+                            if (tmp != null)
+                            {
+                                tmp.text = icon.LinkedExplorerItem.name;
+                                DraggableIcon.ApplyLabelOutline(tmp);
+                            }
 
                             var img = icon.GetComponent<UnityEngine.UI.Image>();
                             if (img != null)
@@ -629,7 +957,7 @@ namespace ComputerLearning
                 return null;
             }
 
-            GameObject iconInstance = Instantiate(defaultIconPrefab, desktopIconContainer);
+            GameObject iconInstance = Instantiate(defaultIconPrefab, desktopIconContainer, false);
             iconInstance.name = iconData.iconName;
 
             CanvasGroup canvasGroup = iconInstance.GetComponent<CanvasGroup>() ?? iconInstance.AddComponent<CanvasGroup>();
@@ -683,6 +1011,7 @@ namespace ComputerLearning
             if (textComponent != null)
             {
                 textComponent.text = iconData.iconName;
+                DraggableIcon.ApplyLabelOutline(textComponent);
             }
 
             if (draggable != null)
@@ -803,6 +1132,7 @@ namespace ComputerLearning
             foreach (var iconData in initialDesktopIcons)
             {
                 if (iconData == null || string.IsNullOrWhiteSpace(iconData.iconName)) continue;
+                if (iconData.iconName.Trim().Equals("Minigames", StringComparison.OrdinalIgnoreCase)) continue;
 
                 // Check if already present on desktop container
                 bool alreadyExists = false;

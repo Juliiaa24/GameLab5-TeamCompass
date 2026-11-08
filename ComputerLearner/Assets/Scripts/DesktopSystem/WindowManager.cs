@@ -74,7 +74,7 @@ namespace ComputerLearning
 
             if (prefab == null || prefab.GetComponent<Window>() == null) return null;
 
-            Window window = Instantiate(prefab, windowsContainer != null ? windowsContainer : transform)
+            Window window = Instantiate(prefab, windowsContainer != null ? windowsContainer : transform, false)
                 .GetComponent<Window>();
             if (title != null) window.setTitle(title);
 

@@ -138,18 +138,18 @@ namespace ComputerLearning
 
             // STEP 1 — Welcome
             VirtualMascot.Show(dialogs.step1_welcome, iconRect, new Vector2(250, -50));
-            yield return new WaitForSeconds(3.0f);
+            yield return VirtualMascot.WaitForDialogue(3.0f);
             
             VirtualMascot.Show(dialogs.step1_lookAround, iconRect, new Vector2(250, -50));
-            yield return new WaitForSeconds(3.0f);
+            yield return VirtualMascot.WaitForDialogue(3.0f);
 
             // STEP 2 — Desktop
             RectTransform desktopRect = (iconRect.parent as RectTransform) ?? iconRect;
             VirtualMascot.Show(dialogs.step2_desktop, desktopRect, new Vector2(0, 150));
-            yield return new WaitForSeconds(3.0f);
+            yield return VirtualMascot.WaitForDialogue(3.0f);
 
             VirtualMascot.Show(dialogs.step2_apps, iconRect, new Vector2(160, -80));
-            yield return new WaitForSeconds(3.0f);
+            yield return VirtualMascot.WaitForDialogue(3.0f);
 
             // STEP 3 — Open Levels Folder (Double Click)
             VirtualMascot.Show(dialogs.step3_openApp, iconRect, new Vector2(160, -80));
@@ -163,12 +163,12 @@ namespace ComputerLearning
 
             RectTransform windowRect = targetWindow.GetComponent<RectTransform>();
             VirtualMascot.Show(dialogs.step4_opened, windowRect, new Vector2(250, 0));
-            yield return new WaitForSeconds(2.0f);
+            yield return VirtualMascot.WaitForDialogue(2.0f);
 
             // STEP 5 — What is a window
             if (IsWindowClosedEarly(targetWindow)) yield break;
             VirtualMascot.Show(dialogs.step5_window, windowRect, new Vector2(250, 0));
-            yield return new WaitForSeconds(3.0f);
+            yield return VirtualMascot.WaitForDialogue(3.0f);
 
             RectTransform titleBarRect = targetWindow.TitleBar != null ? targetWindow.TitleBar : windowRect;
 
@@ -189,7 +189,7 @@ namespace ComputerLearning
             if (IsWindowClosedEarly(targetWindow)) yield break;
             
             VirtualMascot.Show(dialogs.step7_wow, windowRect, new Vector2(0, -200));
-            yield return new WaitForSeconds(2.5f);
+            yield return VirtualMascot.WaitForDialogue(2.5f);
 
             // STEP 8 — Restore
             VirtualMascot.Show(dialogs.step8_restore, maxBtnRect, new Vector2(-250, 50));
@@ -206,7 +206,7 @@ namespace ComputerLearning
             if (IsWindowClosedEarly(targetWindow)) yield break;
 
             VirtualMascot.Show(dialogs.step8_perfect, windowRect, new Vector2(250, 0));
-            yield return new WaitForSeconds(2.0f);
+            yield return VirtualMascot.WaitForDialogue(2.0f);
 
             // STEP 9 — Minimize
             RectTransform minBtnRect = targetWindow.MinimizeButton != null ? targetWindow.MinimizeButton : titleBarRect;
@@ -233,7 +233,7 @@ namespace ComputerLearning
             {
                 RectTransform targetBtnRect = targetBtn.GetComponent<RectTransform>();
                 VirtualMascot.Show(dialogs.step10_lookTaskbar, targetBtnRect, new Vector2(100, 200));
-                yield return new WaitForSeconds(3.0f);
+                yield return VirtualMascot.WaitForDialogue(3.0f);
                 
                 VirtualMascot.Show(dialogs.step10_clickTaskbar, targetBtnRect, new Vector2(100, 200));
                 
@@ -249,7 +249,7 @@ namespace ComputerLearning
                 if (IsWindowClosedEarly(targetWindow)) yield break;
 
                 VirtualMascot.Show(dialogs.step10_found, windowRect, new Vector2(250, 0));
-                yield return new WaitForSeconds(2.5f);
+                yield return VirtualMascot.WaitForDialogue(2.5f);
             }
 
             // STEP 11 — Close Window
@@ -268,10 +268,10 @@ namespace ComputerLearning
             tutorialBlocker?.SetAllowedTarget(null);
             
             VirtualMascot.Show(dialogs.step12_great, iconRect, new Vector2(160, -80));
-            yield return new WaitForSeconds(3.0f);
+            yield return VirtualMascot.WaitForDialogue(3.0f);
 
             VirtualMascot.Show(dialogs.step12_ready, iconRect, new Vector2(160, -80));
-            yield return new WaitForSeconds(3.0f);
+            yield return VirtualMascot.WaitForDialogue(3.0f);
             
             if (tutorialBlocker != null)
             {

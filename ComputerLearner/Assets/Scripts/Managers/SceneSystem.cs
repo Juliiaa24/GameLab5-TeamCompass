@@ -1,15 +1,19 @@
-﻿/**
+/**
  * Author: Julia Vera & TeamCompass
  * Date: 11/09
  * Description: Controls changes between scenes with DontDestroyOnLoad persistence,
  *              preserves Inspector button bindings when reloading scenes, and handles
  *              Playtest Student ID progression and full reset (Assessment + Skills + Levels).
+ *              Enhanced with Space to Start and localized visual space hint.
 */
 
 using System;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.Events;
+using UnityEngine.EventSystems;
 using UnityEngine.SceneManagement;
+using TMPro;
 
 namespace ComputerLearning
 {
@@ -39,19 +43,9 @@ namespace ComputerLearning
         {
             PlaytestDataManager.EnsureInitialized();
 
-            // If a previous session was aborted mid-onboarding before reaching VirtualDesktop,
-            // clear intermediate tutorial flags so pressing Play in Menu starts cleanly at Desktop1.
             // Preserve saved progression flags across sessions; do not wipe intermediate progress.
             // Progression flags are preserved across sessions and only cleared via ResetProgress().
-            /*if (PlayerPrefs.GetInt("AdvancedDesktopTourCompleted", 0) == 0)
-            {
-                PlayerPrefs.SetInt("AutoSequenceCompleted", 0);
-                PlayerPrefs.SetInt("DesktopTourCompleted", 0);
-                PlayerPrefs.SetInt("SemiGuidedSequenceCompleted", 0);
-                PlayerPrefs.SetInt("VirtualDesktopIntroCompleted", 0);*/
-            {
-                PlayerPrefs.Save();
-            }
+            PlayerPrefs.Save();
         }
 
         private void Awake()
@@ -76,20 +70,24 @@ namespace ComputerLearning
         private void OnEnable()
         {
             SceneManager.sceneLoaded += OnSceneLoaded;
+            LocalizationManager.OnLanguageChanged += HandleLanguageChangedForMenu;
         }
 
         private void OnDisable()
         {
             SceneManager.sceneLoaded -= OnSceneLoaded;
+            LocalizationManager.OnLanguageChanged -= HandleLanguageChangedForMenu;
         }
 
         private void Start()
         {
             EnsureMenuButtonsBound();
+            EnsurePlaySpaceHint();
         }
 
         private void OnDestroy()
         {
+            LocalizationManager.OnLanguageChanged -= HandleLanguageChangedForMenu;
             if (Instance == this) Instance = null;
         }
 
@@ -98,15 +96,39 @@ namespace ComputerLearning
             if (scene.name == "Menu")
             {
                 EnsureMenuButtonsBound();
+                EnsurePlaySpaceHint();
+            }
+        }
+
+        private void HandleLanguageChangedForMenu()
+        {
+            if (SceneManager.GetActiveScene().name == "Menu")
+            {
+                EnsurePlaySpaceHint();
             }
         }
 
         private void Update()
         {
-            if (UnityEngine.InputSystem.Keyboard.current != null && UnityEngine.InputSystem.Keyboard.current.escapeKey.wasPressedThisFrame)
+            if (UnityEngine.InputSystem.Keyboard.current != null)
             {
-                if (SceneManager.GetActiveScene().name == "Menu") Application.Quit();
-                else ChangeToMenu();
+                if (UnityEngine.InputSystem.Keyboard.current.escapeKey.wasPressedThisFrame)
+                {
+                    if (SceneManager.GetActiveScene().name == "Menu") Application.Quit();
+                    else ChangeToMenu();
+                }
+                else if (SceneManager.GetActiveScene().name == "Menu" && UnityEngine.InputSystem.Keyboard.current.spaceKey.wasPressedThisFrame)
+                {
+                    // Ensure the player is not currently typing into a student ID / text input field
+                    bool isInputFocused = EventSystem.current != null &&
+                                          EventSystem.current.currentSelectedGameObject != null &&
+                                          (EventSystem.current.currentSelectedGameObject.GetComponent<TMP_InputField>() != null ||
+                                           EventSystem.current.currentSelectedGameObject.GetComponent<InputField>() != null);
+                    if (!isInputFocused)
+                    {
+                        ChangeToMain();
+                    }
+                }
             }
         }
         #endregion
@@ -141,6 +163,8 @@ namespace ComputerLearning
         { 
             ProgressData.Instance?.Save();
             PlayerPrefs.Save();
+            Cursor.visible = true;
+            Cursor.lockState = CursorLockMode.None;
             ChangeScene(SceneNames.Menu); 
         }
 
@@ -229,9 +253,29 @@ namespace ComputerLearning
         #endregion
 
         #region Private Methods
+        private static void BindMenuButton(Button btn, UnityAction action)
+        {
+            if (btn == null) return;
+            int count = btn.onClick.GetPersistentEventCount();
+            for (int i = 0; i < count; i++)
+            {
+                btn.onClick.SetPersistentListenerState(i, UnityEventCallState.Off);
+            }
+            btn.onClick.RemoveAllListeners();
+            btn.onClick.AddListener(action);
+        }
+
         private void EnsureMenuButtonsBound()
         {
             if (SceneManager.GetActiveScene().name != "Menu") return;
+
+            // Ensure cursor and event system are clean and responsive (especially in WebGL)
+            Cursor.visible = true;
+            Cursor.lockState = CursorLockMode.None;
+            if (EventSystem.current != null)
+            {
+                EventSystem.current.SetSelectedGameObject(null);
+            }
 
             GameObject menuRootObj = GameObject.Find("Menu");
             Canvas menuCanvas = menuRootObj != null ? menuRootObj.GetComponent<Canvas>() : null;
@@ -245,44 +289,93 @@ namespace ComputerLearning
             {
                 if (btn == null) continue;
 
-                // Only add runtime listener if the Inspector persistent listener is missing/broken
-                bool hasValidPersistentListener = false;
-                int count = btn.onClick.GetPersistentEventCount();
-                for (int i = 0; i < count; i++)
-                {
-                    if (btn.onClick.GetPersistentTarget(i) != null && !string.IsNullOrEmpty(btn.onClick.GetPersistentMethodName(i)))
-                    {
-                        hasValidPersistentListener = true;
-                        break;
-                    }
-                }
-
-                if (hasValidPersistentListener) continue;
-
                 // Only bind the 5 main menu buttons; do NOT remove listeners from other UI widgets
                 switch (btn.gameObject.name)
                 {
                     case "Btn-Play":
-                        btn.onClick.RemoveAllListeners();
-                        btn.onClick.AddListener(ChangeToMain);
+                        BindMenuButton(btn, ChangeToMain);
                         break;
                     case "Btn-VirtualDesktop":
-                        btn.onClick.RemoveAllListeners();
-                        btn.onClick.AddListener(ChangeToVirtualDesktop);
+                        BindMenuButton(btn, ChangeToVirtualDesktop);
                         break;
                     case "Btn-Stats":
-                        btn.onClick.RemoveAllListeners();
-                        btn.onClick.AddListener(ChangeToStats);
+                        BindMenuButton(btn, ChangeToStats);
                         break;
                     case "Btn-1":
-                        btn.onClick.RemoveAllListeners();
-                        btn.onClick.AddListener(ResetProgress);
+                        BindMenuButton(btn, ResetProgress);
                         break;
                     case "Btn-2":
-                        btn.onClick.RemoveAllListeners();
-                        btn.onClick.AddListener(Exit);
+                        BindMenuButton(btn, Exit);
                         break;
                 }
+            }
+        }
+
+        private void EnsurePlaySpaceHint()
+        {
+            if (SceneManager.GetActiveScene().name != "Menu") return;
+
+            GameObject playBtnObj = GameObject.Find("Btn-Play");
+            if (playBtnObj == null) return;
+
+            Transform parent = playBtnObj.transform.parent;
+            if (parent != null)
+            {
+                Transform oldSiblingHint = parent.Find("PlaySpaceHint");
+                if (oldSiblingHint != null)
+                {
+                    Destroy(oldSiblingHint.gameObject);
+                }
+            }
+
+            Transform existing = playBtnObj.transform.Find("PlaySpaceHint");
+            TextMeshProUGUI hintText = null;
+
+            if (existing == null)
+            {
+                GameObject hintObj = new GameObject("PlaySpaceHint", typeof(RectTransform), typeof(TextMeshProUGUI), typeof(LayoutElement));
+                hintObj.transform.SetParent(playBtnObj.transform, false);
+
+                LayoutElement le = hintObj.GetComponent<LayoutElement>();
+                le.ignoreLayout = true;
+
+                RectTransform hintRt = hintObj.GetComponent<RectTransform>();
+                hintRt.anchorMin = new Vector2(0.5f, 1f);
+                hintRt.anchorMax = new Vector2(0.5f, 1f);
+                hintRt.pivot = new Vector2(0.5f, 0f);
+                hintRt.anchoredPosition = new Vector2(0f, 10f);
+                hintRt.sizeDelta = new Vector2(480f, 32f);
+
+                hintText = hintObj.GetComponent<TextMeshProUGUI>();
+                TMP_Text btnText = playBtnObj.GetComponentInChildren<TMP_Text>(true);
+                if (btnText != null && btnText.font != null)
+                {
+                    hintText.font = btnText.font;
+                }
+                hintText.fontSize = 18f;
+                hintText.fontStyle = FontStyles.Bold;
+                hintText.textWrappingMode = TextWrappingModes.NoWrap;
+                hintText.alignment = TextAlignmentOptions.Center;
+                hintText.color = new Color(0.10f, 0.14f, 0.20f, 1f);
+                hintText.raycastTarget = false;
+            }
+            else
+            {
+                RectTransform hintRt = existing.GetComponent<RectTransform>();
+                if (hintRt != null)
+                {
+                    hintRt.anchorMin = new Vector2(0.5f, 1f);
+                    hintRt.anchorMax = new Vector2(0.5f, 1f);
+                    hintRt.pivot = new Vector2(0.5f, 0f);
+                    hintRt.anchoredPosition = new Vector2(0f, 10f);
+                    hintRt.sizeDelta = new Vector2(480f, 32f);
+                }
+                hintText = existing.GetComponent<TextMeshProUGUI>();
+            }
+
+            if (hintText != null)
+            {
+                hintText.text = UIDialogs.Current.menu_press_space_to_start;
             }
         }
 

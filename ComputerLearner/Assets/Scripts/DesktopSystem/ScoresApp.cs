@@ -724,7 +724,10 @@ namespace ComputerLearning
             string categoryText = levelNumber <= 9 ? ui.scores_cat_mouse : ui.scores_cat_desktop;
             string statusText = isCompleted ? ui.scores_status_completed : (isUnlocked ? ui.scores_status_unlocked : ui.scores_status_locked);
 
-            string accText = (record != null && record.bestScore > 0f) ? $"{record.bestScore:F0}%" : "-";
+            int bestPts = record != null ? (record.bestPoints > 0 ? record.bestPoints : Mathf.RoundToInt(record.bestScore * 5f)) : 0;
+            string accText = (record != null && (record.bestPoints > 0 || record.bestScore > 0f))
+                ? $"{bestPts} PTS\n<size=11><color=#64748B>({record.bestScore:F0}%)</color></size>"
+                : "-";
             string timeText = "-";
             if (record != null && record.bestTimeSeconds > 0f)
             {

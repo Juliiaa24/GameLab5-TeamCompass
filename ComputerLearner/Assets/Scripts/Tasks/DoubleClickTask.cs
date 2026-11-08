@@ -141,8 +141,14 @@ namespace ComputerLearning
                         pendingSingleClickErrorCoroutine = null;
                     }
                     lastClickTime = -10f;
+                    RectTransform rt = transform as RectTransform;
+                    int scorePoints = BaseTask.CalculatePrecisionAndSizeScore(rt, eventData.position, eventData.pressEventCamera, out bool isOuterRing);
+                    if (isOuterRing && rt != null)
+                    {
+                        VirtualMascot.ShowAlmostOutFeedback(rt);
+                    }
                     Debug.Log("[DoubleClickTask] Double click detected!");
-                    Complete(true);
+                    Complete(true, transform, scorePoints);
                 }
                 else
                 {

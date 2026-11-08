@@ -65,6 +65,10 @@ namespace ComputerLearning
                 startButton.onClick.RemoveListener(ToggleMenu);
                 startButton.onClick.AddListener(ToggleMenu);
             }
+            if (btnMinigamesHub != null)
+            {
+                btnMinigamesHub.gameObject.SetActive(false);
+            }
         }
 
         private void OnEnable()
@@ -110,7 +114,7 @@ namespace ComputerLearning
             }
             if (btnMinigamesHub != null)
             {
-                btnMinigamesHub.onClick.AddListener(OpenMinigamesHub);
+                btnMinigamesHub.gameObject.SetActive(false);
             }
             if (btnStats != null)
             {

@@ -13,6 +13,8 @@ namespace ComputerLearning
         #region Public Methods
         public void OnPointerDown(PointerEventData eventData)
         {
+            DraggableIcon.ClearSelection();
+            FileExplorerApp.IsDesktopFocused = false;
             GetComponentInParent<Window>()?.BringToFront();
         }
         #endregion

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using UnityEngine;
 
 namespace ComputerLearning
@@ -12,6 +12,12 @@ namespace ComputerLearning
         public string menu_btn_stats = "Stats";
         public string menu_btn_reset_progress = "Reset Progress";
         public string menu_btn_exit = "Exit";
+        public string menu_press_space_to_start = "Press SPACE or click Play to start";
+
+        // Assessment Intro Modal
+        public string assessment_intro_title = "Welcome to the Skills Test!";
+        public string assessment_intro_description = "Before starting, we will do a few quick tests to see how you use the mouse (moving, clicking, dragging...). Don't worry about making mistakes or rushing, take all the time you need!";
+        public string assessment_intro_prompt = "Press SPACE or click to start";
 
         // Desktop Start Menu (StartMenuController)
         public string start_menu_btn_start = "Start";
@@ -78,6 +84,7 @@ namespace ComputerLearning
         public string celebration_title = "<b>LEVEL COMPLETED!</b>";
         public string celebration_subtitle_default = "Great Job!";
         public string celebration_stats_format = "Accuracy: <b>{0:F0}%</b>   |   Time: <b>{1:F1}s</b>   |   Mistakes: <color={2}><b>{3}</b></color>";
+        public string celebration_points_format = "Score: <b>{0} PTS</b>";
         public string celebration_continue_button = "<b>CONTINUE</b>";
         public string celebration_continuing_format = "<b>CONTINUING ({0}s)...</b>";
         public string celebration_medal_badge_format = "<b>{0} MEDAL</b>";

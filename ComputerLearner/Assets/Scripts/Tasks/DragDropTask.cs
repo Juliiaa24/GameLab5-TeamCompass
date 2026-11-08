@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -9,6 +10,19 @@ namespace ComputerLearning
         public RectTransform dropTarget;
         private int piecesRemaining = 1;
         private int totalPiecesInitial = 1;
+        private readonly List<DraggablePiece> activePieces = new List<DraggablePiece>();
+
+        protected override RectTransform GetActiveFeedbackTarget()
+        {
+            for (int i = 0; i < activePieces.Count; i++)
+            {
+                if (activePieces[i] != null && activePieces[i].gameObject.activeInHierarchy)
+                {
+                    return activePieces[i].transform as RectTransform;
+                }
+            }
+            return dropTarget != null ? dropTarget : (transform as RectTransform);
+        }
 
         protected override void SetupTask(TaskDefinition definition)
         {
@@ -17,11 +31,10 @@ namespace ComputerLearning
             // Use config for required distance, drop target size, drag size, and count
             float requiredDistance = Mathf.Max(20f, definition.config.targetSize * 0.5f);
 
+            float dropSize = (definition.config.targetSize > 0 ? definition.config.targetSize : 200f) + 50f;
             if (dropTarget != null)
             {
-                // We'll use targetSize for the drop zone, and a bit smaller for the drag pieces
-                float size = definition.config.targetSize > 0 ? definition.config.targetSize : 200f;
-                dropTarget.sizeDelta = new Vector2(size + 50f, size + 50f);
+                dropTarget.sizeDelta = new Vector2(dropSize, dropSize);
             }
 
             float dragSize = definition.config.targetSize > 0 ? definition.config.targetSize : 150f;
@@ -29,17 +42,27 @@ namespace ComputerLearning
             int pieceCount = Mathf.Max(1, definition.config.targetCount);
             piecesRemaining = pieceCount;
             totalPiecesInitial = pieceCount;
+            activePieces.Clear();
 
             RectTransform parentRect = transform.parent as RectTransform;
             if (parentRect == null) return;
+            if (parentRect.rect.width <= 0f || parentRect.rect.height <= 0f)
+            {
+                LayoutRebuilder.ForceRebuildLayoutImmediate(parentRect);
+            }
             Rect bounds = parentRect.rect;
 
-            // Position Drop Target randomly
+            // Position Drop Target randomly within safe interior margins
             if (dropTarget != null)
             {
+                float dropPad = (dropSize * 0.5f) + 28f;
+                float minX = bounds.xMin + dropPad;
+                float maxX = bounds.xMax - dropPad;
+                float minY = bounds.yMin + dropPad;
+                float maxY = bounds.yMax - dropPad - 24f;
                 dropTarget.anchoredPosition = new Vector2(
-                    Random.Range(bounds.xMin + 200, bounds.xMax - 200),
-                    Random.Range(bounds.yMin + 200, bounds.yMax - 200)
+                    maxX > minX ? Random.Range(minX, maxX) : bounds.center.x,
+                    maxY > minY ? Random.Range(minY, maxY) : bounds.center.y
                 );
             }
 
@@ -49,7 +72,7 @@ namespace ComputerLearning
             // Clone extra pieces
             for (int i = 1; i < pieceCount; i++)
             {
-                GameObject clone = Instantiate(gameObject, transform.parent);
+                GameObject clone = Instantiate(gameObject, transform.parent, false);
                 // Remove the main task script from clone so it doesn't trigger Complete() itself
                 Destroy(clone.GetComponent<DragDropTask>());
                 SetupPiece(clone, dragSize, requiredDistance, bounds);
@@ -63,11 +86,23 @@ namespace ComputerLearning
             RectTransform rt = go.GetComponent<RectTransform>();
             rt.sizeDelta = new Vector2(size, size);
 
-            // Random position away from center
-            rt.anchoredPosition = new Vector2(
-                Random.value > 0.5f ? Random.Range(bounds.xMin + 50, -100) : Random.Range(100, bounds.xMax - 50),
-                Random.Range(bounds.yMin + 50, bounds.yMax - 50)
-            );
+            // Safe interior bounds away from dropTarget
+            float piecePad = (size * 0.5f) + 24f;
+            float minX = bounds.xMin + piecePad;
+            float maxX = bounds.xMax - piecePad;
+            float minY = bounds.yMin + piecePad;
+            float maxY = bounds.yMax - piecePad - 24f;
+
+            Vector2 chosenPos = new Vector2(bounds.center.x, bounds.center.y);
+            Vector2 dropPos = dropTarget != null ? dropTarget.anchoredPosition : Vector2.zero;
+            for (int attempt = 0; attempt < 8; attempt++)
+            {
+                float rx = maxX > minX ? Random.Range(minX, maxX) : bounds.center.x;
+                float ry = maxY > minY ? Random.Range(minY, maxY) : bounds.center.y;
+                chosenPos = new Vector2(rx, ry);
+                if (Vector2.Distance(chosenPos, dropPos) >= size * 1.1f) break;
+            }
+            rt.anchoredPosition = chosenPos;
 
             // Ensure it has CanvasGroup
             if (go.GetComponent<CanvasGroup>() == null) go.AddComponent<CanvasGroup>();
@@ -80,19 +115,20 @@ namespace ComputerLearning
             piece.dropTarget = dropTarget;
             piece.requiredDistanceToSnap = snapDist;
             piece.SetStartPosition(rt.anchoredPosition);
+            activePieces.Add(piece);
 
             piece.OnPieceDropped += HandlePieceDropped;
             piece.OnPieceMissed += HandlePieceMissed;
             piece.OnPieceRightClicked += (p) =>
             {
                 if (IsFinished) return;
-                RegisterAttempt(true);
+                RegisterAttempt(true, p.transform);
                 VirtualMascot.ShowWrongClickFeedback(p.transform as RectTransform, false);
             };
             piece.OnPieceTapWithoutDrag += (p) =>
             {
                 if (IsFinished) return;
-                RegisterAttempt(false);
+                RegisterAttempt(false, p.transform);
                 VirtualMascot.ShowContextualFeedback(VirtualMascot.FeedbackDialogs.dragTapWithoutDrag, p.transform as RectTransform, 3.0f);
             };
             piece.OnPieceDragDwell += (p) =>
@@ -110,28 +146,30 @@ namespace ComputerLearning
             if (!hasShownInactivityReminder && (Time.time - lastInteractionTime) >= 6.0f)
             {
                 hasShownInactivityReminder = true;
-                VirtualMascot.ShowContextualFeedback(VirtualMascot.FeedbackDialogs.dragInactivityReminder, dropTarget, 3.0f);
+                VirtualMascot.ShowContextualFeedback(VirtualMascot.FeedbackDialogs.dragInactivityReminder, GetActiveFeedbackTarget(), 3.0f);
             }
         }
 
         public void OnBackgroundClicked(PointerEventData eventData)
         {
             if (IsFinished) return;
-            RegisterAttempt(true);
+            RectTransform targetAnchor = GetActiveFeedbackTarget();
+            RegisterAttempt(true, targetAnchor);
 
             if (eventData != null && eventData.button == PointerEventData.InputButton.Right)
             {
-                VirtualMascot.ShowWrongClickFeedback(dropTarget, false);
+                VirtualMascot.ShowWrongClickFeedback(targetAnchor, false);
             }
             else
             {
-                VirtualMascot.ShowContextualFeedback(VirtualMascot.FeedbackDialogs.dragMissedBackground, dropTarget, 3.0f);
+                VirtualMascot.ShowContextualFeedback(VirtualMascot.FeedbackDialogs.dragMissedBackground, targetAnchor, 3.0f);
             }
         }
 
         private void HandlePieceMissed()
         {
-            RegisterAttempt();
+            RegisterAttempt(true, dropTarget);
+            TriggerMistakeScoreFeedback(dropTarget, 50);
             var fb = VirtualMascot.FeedbackDialogs;
             string msg = MascotFeedbackDialogs.PickRandom(fb.dragMissedDropMessages, fb.dragAlmost);
             VirtualMascot.ShowContextualFeedback(msg, dropTarget, 3.0f);
@@ -141,13 +179,18 @@ namespace ComputerLearning
         {
             if (IsFinished) return;
 
-            RecordIntermediateResult(true);
+            activePieces.Remove(piece);
             piecesRemaining--;
             NotifySubTaskProgress((float)(totalPiecesInitial - piecesRemaining) / Mathf.Max(1, totalPiecesInitial));
 
+            Transform scoreAnchor = dropTarget != null ? dropTarget : (piece != null ? piece.transform : transform);
             if (piecesRemaining <= 0)
             {
-                Complete(true);
+                Complete(true, scoreAnchor);
+            }
+            else
+            {
+                RecordIntermediateResult(true, scoreAnchor);
             }
         }
     }

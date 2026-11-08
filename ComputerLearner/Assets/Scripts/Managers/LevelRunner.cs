@@ -22,17 +22,24 @@ namespace ComputerLearning
         [SerializeField] private int currentTaskIndex = 0;
         public bool IsCompleted { get; private set; } = false;
         
+        public static LevelRunner ActiveRunner { get; private set; }
+
         private BaseTask activeTask;
         private Window appWindow;
         private TutorialDialogs dialogs;
 
-        // Session performance tracking for medal evaluation
+        // Session performance tracking & additive scoring (starts at 0 points)
         private float levelStartTime = 0f;
         private bool hasRecordedLevelStartTime = false;
         private int tasksAttempted = 0;
         private int tasksSucceeded = 0;
         private int tasksFailed = 0;
         private int extraTaskMistakes = 0;
+        private int currentLevelScore = 0;
+        private int maxPossibleScore = 0;
+
+        public int CurrentLevelScore => currentLevelScore;
+        public int MaxPossibleScore => maxPossibleScore;
 
         // Discreet progress bar UI for target levels (no numbers, slightly larger bar)
         private GameObject progressBarContainer;
@@ -42,8 +49,24 @@ namespace ComputerLearning
 
         private void Awake()
         {
+            ActiveRunner = this;
             ReloadDialogs();
             appWindow = GetComponentInParent<Window>();
+        }
+
+        public int AwardHitPoints(int exactPoints = 100)
+        {
+            int pts = Mathf.Max(1, exactPoints);
+            currentLevelScore += pts;
+            maxPossibleScore += pts;
+            return pts;
+        }
+
+        public int ApplyMistakePenalty(int penalty = 50)
+        {
+            int absPenalty = Mathf.Abs(penalty);
+            currentLevelScore = Mathf.Max(0, currentLevelScore - absPenalty);
+            return -absPenalty;
         }
 
         private void ReloadDialogs()
@@ -77,11 +100,14 @@ namespace ComputerLearning
             currentTaskIndex = 0;
             IsCompleted = false;
 
-            // Reset run metrics
+            // Reset run metrics (additive scoring starts at 0 points)
+            ActiveRunner = this;
             tasksAttempted = 0;
             tasksSucceeded = 0;
             tasksFailed = 0;
             extraTaskMistakes = 0;
+            currentLevelScore = 0;
+            maxPossibleScore = 0;
             hasRecordedLevelStartTime = false;
             displayedProgress = 0f;
             targetProgress = 0f;
@@ -211,7 +237,7 @@ namespace ComputerLearning
 
         private System.Collections.IEnumerator AutoStartLevelAfterDelay(float delay, GameObject panel)
         {
-            yield return new WaitForSeconds(delay);
+            yield return VirtualMascot.WaitForDialogue(delay);
             VirtualMascot.HideMascot();
             if (panel != null) Destroy(panel);
             SpawnNextTask();
@@ -245,7 +271,14 @@ namespace ComputerLearning
                 int totalActions = Mathf.Max(1, tasksSucceeded + totalMistakes);
                 float accuracy = ((float)tasksSucceeded / totalActions) * 100f;
 
-                LevelMedal medal = ProgressData.CalculateMedal(accuracy, totalMistakes);
+                if (maxPossibleScore <= 0)
+                {
+                    int fallbackTasks = Mathf.Max(1, tasksSucceeded);
+                    maxPossibleScore = fallbackTasks * 100;
+                    currentLevelScore = Mathf.Max(0, fallbackTasks * 100 - (totalMistakes * 50));
+                }
+
+                LevelMedal medal = ProgressData.CalculateMedalFromPoints(currentLevelScore, maxPossibleScore);
 
                 bool improvedMedal = false;
                 LevelMedal previousBestMedal = LevelMedal.None;
@@ -256,7 +289,7 @@ namespace ComputerLearning
                     previousBestMedal = prevRecord != null ? prevRecord.bestMedal : LevelMedal.None;
                     improvedMedal = hadPreviousAttempt && (int)medal > (int)previousBestMedal;
 
-                    ProgressData.Instance.RecordLevelAttempt(currentLevel.levelId, medal, accuracy, totalDuration, totalMistakes);
+                    ProgressData.Instance.RecordLevelAttempt(currentLevel.levelId, medal, accuracy, totalDuration, totalMistakes, currentLevelScore);
                     ProgressData.Instance.MarkLevelCompleted(currentLevel.levelId);
                 }
 
@@ -268,25 +301,21 @@ namespace ComputerLearning
                     VirtualMascot.HideMascot();
                     if (currentLevel != null && string.Equals(currentLevel.levelId, "level9", System.StringComparison.OrdinalIgnoreCase))
                     {
-                        DesktopManager.Instance?.TriggerAdvancedDesktopTourAfterLevel9();
+                        if (PlayerPrefs.GetInt("AdvancedDesktopTourCompleted", 0) == 0 && !VirtualDesktopGuidedLevels.IsLevelRunning)
+                        {
+                            DesktopManager.Instance?.TriggerAdvancedDesktopTourAfterLevel9();
+                        }
                     }
                     if (appWindow != null) appWindow.CloseWindow();
-                });
+                }, null, currentLevelScore);
 
-                if (improvedMedal)
-                {
-                    VirtualMascot.ShowMedalImprovementFeedback(
-                        previousBestMedal,
-                        medal,
-                        accuracy,
-                        totalDuration,
-                        null,
-                        5.5f);
-                }
-                else
-                {
-                    VirtualMascot.HideMascot();
-                }
+                VirtualMascot.ShowMedalImprovementFeedback(
+                    improvedMedal ? previousBestMedal : LevelMedal.None,
+                    medal,
+                    accuracy,
+                    totalDuration,
+                    null,
+                    6.5f);
 
                 return;
             }
@@ -346,14 +375,6 @@ namespace ComputerLearning
         private bool ShouldShowProgressBar()
         {
             if (currentLevel == null || IsCompleted) return false;
-
-            int totalTasks = GetTotalTasksCount();
-            // Avoid duplicating MoveMouseTask's built-in "Cleaning Progress..." bar in single-task Level 1
-            if (totalTasks == 1 && activeTask is MoveMouseTask)
-            {
-                return false;
-            }
-
             return true;
         }
 
@@ -485,6 +506,10 @@ namespace ComputerLearning
                 activeTask = null;
             }
 
+            if (VirtualMascot.Instance != null && !VirtualMascot.Instance.IsPinnedAtWorldPos)
+            {
+                VirtualMascot.HideMascot();
+            }
             tasksAttempted++;
 
             if (result != null)
@@ -529,18 +554,13 @@ namespace ComputerLearning
         
         private void OnDestroy()
         {
+            if (ActiveRunner == this) ActiveRunner = null;
             if (activeTask != null)
             {
                 activeTask.OnTaskCompleted -= HandleTaskCompleted;
                 activeTask.OnSubTaskProgressChanged -= HandleSubTaskProgressChanged;
             }
-            if (gameObject.scene.isLoaded && IsCompleted && currentLevel != null && string.Equals(currentLevel.levelId, "level9", System.StringComparison.OrdinalIgnoreCase))
-            {
-                if (DesktopManager.HasInstance)
-                {
-                    DesktopManager.Instance.TriggerAdvancedDesktopTourAfterLevel9();
-                }
-            }
+            // Level 9 tour trigger handled in celebration modal onClosed
         }
     }
 }

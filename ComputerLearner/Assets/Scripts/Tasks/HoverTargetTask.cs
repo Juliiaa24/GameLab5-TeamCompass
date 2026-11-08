@@ -58,19 +58,25 @@ namespace ComputerLearning
             if (!hasShownStartReminder && spawnedTarget != null && !spawnedTarget.HasEverHovered && (Time.time - startTime) >= 5.0f)
             {
                 hasShownStartReminder = true;
-                RectTransform feedbackAnchor = (!isTargetMoving && spawnedTarget != null)
-                    ? spawnedTarget.GetComponent<RectTransform>()
-                    : (spawnArea != null ? spawnArea : GetComponent<RectTransform>());
-                VirtualMascot.ShowContextualFeedback(VirtualMascot.FeedbackDialogs.hoverStartReminder, feedbackAnchor, 3.0f);
+                VirtualMascot.ShowContextualFeedback(VirtualMascot.FeedbackDialogs.hoverStartReminder, GetActiveFeedbackTarget(), 3.0f);
             }
 
             if (!timeLimitActive) return;
             elapsed += Time.deltaTime;
-            if (elapsed >= timeLimit) Complete(false); // Time ran out → failure
+            if (elapsed >= timeLimit) Complete(false, GetActiveFeedbackTarget()); // Time ran out → failure
         }
         #endregion
 
         #region Protected Methods
+        protected override RectTransform GetActiveFeedbackTarget()
+        {
+            if (spawnedTarget != null && spawnedTarget.gameObject.activeInHierarchy)
+            {
+                return spawnedTarget.GetComponent<RectTransform>();
+            }
+            return spawnArea != null ? spawnArea : GetComponent<RectTransform>();
+        }
+
         protected override void SetupTask(TaskDefinition definition)
         {
             TaskConfig cfg = definition.config;
@@ -97,36 +103,38 @@ namespace ComputerLearning
             target.SetParentRect(spawnArea);
             target.Configure(cfg.targetSize, cfg.requiredHoverDuration, cfg.isMoving, cfg.moveSpeed);
 
-            // Random position within spawn area
-            Rect  area     = spawnArea.rect;
-            float halfSize = cfg.targetSize * 0.5f;
+            // Random position within spawn area with safe bounds padding
+            if (spawnArea.rect.width <= 0f || spawnArea.rect.height <= 0f)
+            {
+                UnityEngine.UI.LayoutRebuilder.ForceRebuildLayoutImmediate(spawnArea);
+            }
+            Rect area = spawnArea.rect;
+            float padding = (cfg.targetSize * 0.5f) + 24f;
 
-            float maxX = area.xMax - halfSize;
-            float minX = area.xMin + halfSize;
-            float maxY = area.yMax - halfSize;
-            float minY = area.yMin + halfSize;
+            float minX = area.xMin + padding;
+            float maxX = area.xMax - padding;
+            float minY = area.yMin + padding;
+            float maxY = area.yMax - padding - 22f;
 
-            float x = (maxX > minX) ? Random.Range(minX, maxX) : 0f;
-            float y = (maxY > minY) ? Random.Range(minY, maxY) : 0f;
+            float x = (maxX > minX) ? Random.Range(minX, maxX) : area.center.x;
+            float y = (maxY > minY) ? Random.Range(minY, maxY) : area.center.y;
 
             RectTransform targetRect = target.GetComponent<RectTransform>();
             targetRect.anchoredPosition = new Vector2(x, y);
 
-            RectTransform feedbackAnchor = cfg.isMoving ? spawnArea : targetRect;
-
             target.OnHoverActive += NotifyUserInteraction;
-            target.OnHoverComplete += () => Complete(true);
+            target.OnHoverCompleteWithScore += (score) => Complete(true, targetRect, score);
             target.OnFailedAttempt += () =>
             {
                 if (IsFinished) return;
-                RegisterAttempt(false);
-                VirtualMascot.ShowContextualFeedback(VirtualMascot.FeedbackDialogs.hoverKeepSteady, feedbackAnchor, 3.0f);
+                RegisterAttempt(false, targetRect);
+                VirtualMascot.ShowContextualFeedback(VirtualMascot.FeedbackDialogs.hoverKeepSteady, targetRect, 3.0f);
             };
             target.OnTargetClicked += () =>
             {
                 if (IsFinished) return;
-                RegisterAttempt(false);
-                VirtualMascot.ShowContextualFeedback(VirtualMascot.FeedbackDialogs.hoverNoClick, feedbackAnchor, 3.0f);
+                RegisterAttempt(false, targetRect);
+                VirtualMascot.ShowContextualFeedback(VirtualMascot.FeedbackDialogs.hoverNoClick, targetRect, 3.0f);
             };
         }
         #endregion
@@ -135,12 +143,8 @@ namespace ComputerLearning
         public void OnPointerClick(PointerEventData eventData)
         {
             if (IsFinished) return;
-            RegisterAttempt(true);
-
-            RectTransform feedbackAnchor = (!isTargetMoving && spawnedTarget != null)
-                ? spawnedTarget.GetComponent<RectTransform>()
-                : (spawnArea != null ? spawnArea : GetComponent<RectTransform>());
-
+            RectTransform feedbackAnchor = GetActiveFeedbackTarget();
+            RegisterAttempt(true, feedbackAnchor);
             VirtualMascot.ShowContextualFeedback(VirtualMascot.FeedbackDialogs.hoverDontClickOutside, feedbackAnchor, 3.0f);
         }
         #endregion

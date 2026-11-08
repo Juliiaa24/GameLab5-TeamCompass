@@ -22,6 +22,7 @@ namespace ComputerLearning
         public string levelId;
         public LevelMedal bestMedal;
         public float bestScore;        // Accuracy percentage (0 - 100%)
+        public int bestPoints;         // Total points accumulated (0 - N)
         public float bestTimeSeconds;  // Best completion time in seconds
         public int attemptsCount;      // Total attempts made on this level
         public int bestMistakes;       // Mistakes recorded on best attempt

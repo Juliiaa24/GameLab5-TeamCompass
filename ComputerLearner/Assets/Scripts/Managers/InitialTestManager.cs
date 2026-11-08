@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Author: Julia & AI (TeamCompass)
  * Date: 09/10/26
  * Description: Clean, geometric Initial Assessment Test for ComputerLearner in Light Mode.
@@ -90,6 +90,8 @@ namespace ComputerLearning
 
         // UI references
         private GameObject rootContainer;
+        private GameObject introModalObject;
+        private bool isShowingIntro = false;
         private TextMeshProUGUI stepText;
         private TextMeshProUGUI titleText;
         private TextMeshProUGUI instructionText;
@@ -137,6 +139,7 @@ namespace ComputerLearning
         private void OnDestroy()
         {
             IsTestActive = false;
+            isShowingIntro = false;
             if (Instance == this) Instance = null;
         }
 
@@ -151,6 +154,19 @@ namespace ComputerLearning
 
         private void Update()
         {
+            if (isShowingIntro)
+            {
+                bool spacePressed = UnityEngine.InputSystem.Keyboard.current != null &&
+                                    UnityEngine.InputSystem.Keyboard.current.spaceKey.wasPressedThisFrame;
+                bool mouseClicked = UnityEngine.InputSystem.Mouse.current != null &&
+                                    UnityEngine.InputSystem.Mouse.current.leftButton.wasPressedThisFrame;
+                if (spacePressed || mouseClicked)
+                {
+                    DismissIntroAndStart();
+                }
+                return;
+            }
+
             if (!IsTestActive || isTaskResolving || currentTaskIndex >= config.tasks.Count) return;
 
             // Handle timeout countdown
@@ -198,6 +214,116 @@ namespace ComputerLearning
             LoadConfiguration();
 
             BuildCleanUI();
+            ShowAssessmentIntroModal();
+        }
+
+        private void ShowAssessmentIntroModal()
+        {
+            if (introModalObject != null) Destroy(introModalObject);
+
+            Canvas canvas = FindAssessmentCanvas();
+            Transform parentTransform = rootContainer != null ? rootContainer.transform : (canvas != null ? canvas.transform : transform);
+
+            introModalObject = new GameObject("AssessmentIntroModal", typeof(RectTransform), typeof(Image));
+            introModalObject.transform.SetParent(parentTransform, false);
+            introModalObject.transform.SetAsLastSibling();
+
+            RectTransform backdropRt = introModalObject.GetComponent<RectTransform>();
+            backdropRt.anchorMin = Vector2.zero;
+            backdropRt.anchorMax = Vector2.one;
+            backdropRt.offsetMin = Vector2.zero;
+            backdropRt.offsetMax = Vector2.zero;
+
+            Image backdropImg = introModalObject.GetComponent<Image>();
+            backdropImg.color = new Color(0.08f, 0.12f, 0.20f, 0.65f); // Soft dark glass backdrop
+            backdropImg.raycastTarget = true;
+
+            // Centered Card
+            GameObject cardObj = new GameObject("IntroCard", typeof(RectTransform), typeof(Image), typeof(VerticalLayoutGroup));
+            cardObj.transform.SetParent(introModalObject.transform, false);
+            RectTransform cardRt = cardObj.GetComponent<RectTransform>();
+            cardRt.anchorMin = new Vector2(0.5f, 0.5f);
+            cardRt.anchorMax = new Vector2(0.5f, 0.5f);
+            cardRt.pivot = new Vector2(0.5f, 0.5f);
+            cardRt.sizeDelta = new Vector2(580f, 340f);
+
+            Image cardImg = cardObj.GetComponent<Image>();
+            cardImg.color = Color.white;
+
+            VerticalLayoutGroup vlg = cardObj.GetComponent<VerticalLayoutGroup>();
+            vlg.padding = new RectOffset(36, 36, 32, 32);
+            vlg.spacing = 18f;
+            vlg.childAlignment = TextAnchor.MiddleCenter;
+            vlg.childControlWidth = false;
+            vlg.childControlHeight = false;
+            vlg.childForceExpandWidth = false;
+            vlg.childForceExpandHeight = false;
+
+            // Title
+            GameObject titleObj = new GameObject("Title", typeof(RectTransform), typeof(TextMeshProUGUI));
+            titleObj.transform.SetParent(cardObj.transform, false);
+            titleObj.GetComponent<RectTransform>().sizeDelta = new Vector2(500f, 40f);
+            TextMeshProUGUI titleTmp = titleObj.GetComponent<TextMeshProUGUI>();
+            titleTmp.text = UIDialogs.Current.assessment_intro_title;
+            titleTmp.fontSize = 24f;
+            titleTmp.fontStyle = FontStyles.Bold;
+            titleTmp.alignment = TextAlignmentOptions.Center;
+            titleTmp.color = new Color(0.12f, 0.16f, 0.24f);
+
+            // Description
+            GameObject descObj = new GameObject("Description", typeof(RectTransform), typeof(TextMeshProUGUI));
+            descObj.transform.SetParent(cardObj.transform, false);
+            descObj.GetComponent<RectTransform>().sizeDelta = new Vector2(500f, 130f);
+            TextMeshProUGUI descTmp = descObj.GetComponent<TextMeshProUGUI>();
+            descTmp.text = UIDialogs.Current.assessment_intro_description;
+            descTmp.fontSize = 17f;
+            descTmp.lineSpacing = 12f;
+            descTmp.alignment = TextAlignmentOptions.Center;
+            descTmp.color = new Color(0.28f, 0.33f, 0.42f);
+
+            // Space Prompt Pill (pure visual indicator, advances exclusively via Spacebar)
+            GameObject btnObj = new GameObject("SpacePromptPill", typeof(RectTransform), typeof(Image), typeof(HorizontalLayoutGroup));
+            btnObj.transform.SetParent(cardObj.transform, false);
+            RectTransform btnRt = btnObj.GetComponent<RectTransform>();
+            btnRt.sizeDelta = new Vector2(380f, 50f);
+
+            Image btnImg = btnObj.GetComponent<Image>();
+            btnImg.color = new Color(0.15f, 0.45f, 0.95f);
+            btnImg.raycastTarget = false;
+
+            HorizontalLayoutGroup btnHlg = btnObj.GetComponent<HorizontalLayoutGroup>();
+            btnHlg.childAlignment = TextAnchor.MiddleCenter;
+            btnHlg.padding = new RectOffset(20, 20, 8, 8);
+            btnHlg.childControlWidth = true;
+            btnHlg.childControlHeight = true;
+            btnHlg.childForceExpandWidth = true;
+            btnHlg.childForceExpandHeight = true;
+
+            Button badgeBtn = btnObj.AddComponent<Button>();
+            badgeBtn.onClick.AddListener(DismissIntroAndStart);
+
+            GameObject btnLabelObj = new GameObject("BtnLabel", typeof(RectTransform), typeof(TextMeshProUGUI));
+            btnLabelObj.transform.SetParent(btnObj.transform, false);
+            TextMeshProUGUI btnLabelTmp = btnLabelObj.GetComponent<TextMeshProUGUI>();
+            btnLabelTmp.text = UIDialogs.Current.assessment_intro_prompt;
+            btnLabelTmp.fontSize = 17f;
+            btnLabelTmp.fontStyle = FontStyles.Bold;
+            btnLabelTmp.alignment = TextAlignmentOptions.Center;
+            btnLabelTmp.color = Color.white;
+            btnLabelTmp.raycastTarget = false;
+
+            isShowingIntro = true;
+        }
+
+        private void DismissIntroAndStart()
+        {
+            if (!isShowingIntro) return;
+            isShowingIntro = false;
+            if (introModalObject != null)
+            {
+                Destroy(introModalObject);
+                introModalObject = null;
+            }
             SpawnCurrentTask();
         }
 
@@ -317,7 +443,7 @@ namespace ComputerLearning
             headerRect.anchorMin = new Vector2(0f, 1f);
             headerRect.anchorMax = new Vector2(1f, 1f);
             headerRect.pivot = new Vector2(0.5f, 1f);
-            headerRect.sizeDelta = new Vector2(0f, 110f);
+            headerRect.sizeDelta = new Vector2(0f, 138f);
             headerObj.GetComponent<Image>().color = Color.white;
 
             // Subtle divider under header
@@ -351,17 +477,17 @@ namespace ComputerLearning
             timerBarFill.offsetMax = Vector2.zero;
             timerFill.GetComponent<Image>().color = new Color(0.15f, 0.55f, 0.95f, 1f);
 
-            // Step Indicator Text (Slate gray #64748B)
-            stepText = CreateText(headerObj.transform, "Step 1 of 7", 13, new Color(0.39f, 0.45f, 0.55f), TextAlignmentOptions.Left);
+            // Step Indicator Text (Slate gray #64748B) - Increased size for clarity
+            stepText = CreateText(headerObj.transform, "Step 1 of 7", 16, new Color(0.39f, 0.45f, 0.55f), TextAlignmentOptions.Left);
             RectTransform stepRect = stepText.GetComponent<RectTransform>();
             stepRect.anchorMin = new Vector2(0f, 1f);
             stepRect.anchorMax = new Vector2(0.5f, 1f);
             stepRect.pivot = new Vector2(0f, 1f);
-            stepRect.anchoredPosition = new Vector2(25f, -12f);
-            stepRect.sizeDelta = new Vector2(300f, 20f);
+            stepRect.anchoredPosition = new Vector2(25f, -14f);
+            stepRect.sizeDelta = new Vector2(300f, 22f);
 
-            // Exit Button (Light button #F1F5F9 with dark slate text)
-            CreateSimpleButton(headerObj.transform, config.ui.exitButton, new Vector2(20f, -10f), new Vector2(70f, 26f),
+            // Exit Button (Comfortable 105x38px tactile button)
+            CreateSimpleButton(headerObj.transform, config.ui.exitButton, new Vector2(20f, -12f), new Vector2(105f, 38f),
                 new Vector2(1f, 1f), new Vector2(1f, 1f), new Color(0.93f, 0.94f, 0.96f), new Color(0.28f, 0.34f, 0.44f), () => {
                     IsTestActive = false;
                     StopAllCoroutines();
@@ -374,41 +500,42 @@ namespace ComputerLearning
                     {
                         if (appWindow != null) appWindow.CloseWindow();
                     }
-                });
+                }, 15);
 
-            // Skip Button (Light button #E2E8F0 with slate text)
-            CreateSimpleButton(headerObj.transform, config.ui.skipButton, new Vector2(100f, -10f), new Vector2(70f, 26f),
+            // Skip Button (Comfortable 105x38px tactile button)
+            CreateSimpleButton(headerObj.transform, config.ui.skipButton, new Vector2(135f, -12f), new Vector2(105f, 38f),
                 new Vector2(1f, 1f), new Vector2(1f, 1f), new Color(0.89f, 0.91f, 0.94f), new Color(0.20f, 0.25f, 0.33f), () => {
                     if (!isTaskResolving) HandleTaskSkip();
-                });
+                }, 15);
 
-            // Title Text (Deep dark slate #0F172A)
-            titleText = CreateText(headerObj.transform, "Task Title", 22, new Color(0.06f, 0.09f, 0.16f), TextAlignmentOptions.Left);
+            // Title Text (Deep dark slate #0F172A) - Increased size
+            titleText = CreateText(headerObj.transform, "Task Title", 25, new Color(0.06f, 0.09f, 0.16f), TextAlignmentOptions.Left);
             titleText.fontStyle = FontStyles.Bold;
             RectTransform titleRect = titleText.GetComponent<RectTransform>();
             titleRect.anchorMin = new Vector2(0f, 1f);
             titleRect.anchorMax = new Vector2(1f, 1f);
             titleRect.pivot = new Vector2(0f, 1f);
-            titleRect.anchoredPosition = new Vector2(25f, -36f);
-            titleRect.sizeDelta = new Vector2(600f, 30f);
+            titleRect.anchoredPosition = new Vector2(25f, -42f);
+            titleRect.sizeDelta = new Vector2(700f, 32f);
 
-            // Instruction Text (Dark slate #334155)
-            instructionText = CreateText(headerObj.transform, "Task Instruction description goes here.", 15, new Color(0.20f, 0.25f, 0.33f), TextAlignmentOptions.Left);
+            // Instruction Text (Dark slate #334155) - Increased to 22pt for high accessibility
+            instructionText = CreateText(headerObj.transform, "Task Instruction description goes here.", 22, new Color(0.18f, 0.23f, 0.30f), TextAlignmentOptions.Left);
+            instructionText.fontStyle = FontStyles.Normal;
             RectTransform instRect = instructionText.GetComponent<RectTransform>();
             instRect.anchorMin = new Vector2(0f, 1f);
             instRect.anchorMax = new Vector2(1f, 1f);
             instRect.pivot = new Vector2(0f, 1f);
-            instRect.anchoredPosition = new Vector2(25f, -68f);
-            instRect.sizeDelta = new Vector2(700f, 30f);
+            instRect.anchoredPosition = new Vector2(25f, -80f);
+            instRect.sizeDelta = new Vector2(920f, 48f);
 
-            // Stage Area (Center Canvas for Shapes)
+            // Stage Area (Center Canvas for Shapes, offset under expanded header)
             GameObject stageObj = new GameObject("TaskStage", typeof(RectTransform));
             stageObj.transform.SetParent(rootContainer.transform, false);
             stageArea = stageObj.GetComponent<RectTransform>();
             stageArea.anchorMin = new Vector2(0f, 0f);
             stageArea.anchorMax = new Vector2(1f, 1f);
             stageArea.offsetMin = new Vector2(20f, 40f);
-            stageArea.offsetMax = new Vector2(-20f, -120f);
+            stageArea.offsetMax = new Vector2(-20f, -145f);
 
             // Footer Status Text (Subtle Orange #EA580C)
             statusText = CreateText(rootContainer.transform, "", 14, new Color(0.92f, 0.35f, 0.05f), TextAlignmentOptions.Center);
@@ -434,7 +561,7 @@ namespace ComputerLearning
             return txt;
         }
 
-        private GameObject CreateSimpleButton(Transform parent, string label, Vector2 offsetFromAnchor, Vector2 size, Vector2 anchor, Vector2 pivot, Color bgCol, Color txtCol, Action onClick)
+        private GameObject CreateSimpleButton(Transform parent, string label, Vector2 offsetFromAnchor, Vector2 size, Vector2 anchor, Vector2 pivot, Color bgCol, Color txtCol, Action onClick, int fontSize = 14)
         {
             GameObject btnObj = new GameObject("Btn_" + label, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button));
             btnObj.transform.SetParent(parent, false);
@@ -449,7 +576,7 @@ namespace ComputerLearning
             Button btn = btnObj.GetComponent<Button>();
             btn.onClick.AddListener(() => onClick?.Invoke());
 
-            TextMeshProUGUI txt = CreateText(btnObj.transform, label, 12, txtCol, TextAlignmentOptions.Center);
+            TextMeshProUGUI txt = CreateText(btnObj.transform, label, fontSize, txtCol, TextAlignmentOptions.Center);
             txt.fontStyle = FontStyles.Bold;
             RectTransform txtRt = txt.GetComponent<RectTransform>();
             txtRt.anchorMin = Vector2.zero;
