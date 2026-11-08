@@ -188,6 +188,9 @@ namespace ComputerLearning
 
         private RectTransform targetRect;
         private bool hasAssignedTarget;
+        private bool isPinnedAtWorldPos;
+        private Vector3 pinnedWorldPos;
+        public bool IsPinnedAtWorldPos => isPinnedAtWorldPos;
         private Vector2 currentTargetOffset = Vector2.zero;
         private float floatTimer;
         private Coroutine bounceCoroutine;
@@ -358,12 +361,20 @@ namespace ComputerLearning
                 return;
             }
 
-            if (targetRect != null && targetRect.gameObject.activeInHierarchy)
+            if ((targetRect != null && targetRect.gameObject.activeInHierarchy) || isPinnedAtWorldPos)
             {
-                // Get the true visual center of the target, regardless of where its pivot is set
-                Vector3[] corners = new Vector3[4];
-                targetRect.GetWorldCorners(corners);
-                Vector3 basePos = (corners[0] + corners[2]) / 2f;
+                Vector3 basePos;
+                if (isPinnedAtWorldPos)
+                {
+                    basePos = pinnedWorldPos;
+                }
+                else
+                {
+                    // Get the true visual center of the target, regardless of where its pivot is set
+                    Vector3[] corners = new Vector3[4];
+                    targetRect.GetWorldCorners(corners);
+                    basePos = (corners[0] + corners[2]) / 2f;
+                }
 
                 // Float animation isolated to mascotVisualRect so speechBubble does not bob
                 floatTimer += Time.deltaTime;
@@ -431,9 +442,10 @@ namespace ComputerLearning
         {
             if (mascotRect == null) return;
 
+            bool isCelebrationTarget = targetRect != null && targetRect.GetComponentInParent<LevelCelebrationModal>() != null;
             bool isOnRightSide = false;
             Camera cam = canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay ? canvas.worldCamera : null;
-            if (autoFlipMascot)
+            if (autoFlipMascot && !isCelebrationTarget)
             {
                 Vector3 screenPoint = RectTransformUtility.WorldToScreenPoint(cam, mascotRect.position);
                 isOnRightSide = screenPoint.x > Screen.width * 0.5f;
@@ -448,16 +460,9 @@ namespace ComputerLearning
                 speechBubble.transform.localScale = new Vector3(flipScale, 1f, 1f);
 
                 RectTransform bubbleRect = speechBubble.GetComponent<RectTransform>();
-                bool isCelebrationTarget = targetRect != null && targetRect.GetComponentInParent<LevelCelebrationModal>() != null;
                 Vector2 finalBubblePos = new Vector2(speechBubbleOffset.x, speechBubbleOffset.y);
 
-                if (isCelebrationTarget)
-                {
-                    // Place speech bubble directly above the mascot outside the celebration card so it never overlaps the Continue button
-                    bubbleRect.pivot = new Vector2(0.5f, 0f);
-                    finalBubblePos = new Vector2(-35f, 85f);
-                }
-                else if (isOnRightSide)
+                if (isOnRightSide)
                 {
                     bubbleRect.pivot = new Vector2(1f, 1f);
                 }
@@ -549,7 +554,37 @@ namespace ComputerLearning
 
         public static void ShowAlmostOutFeedback(RectTransform target)
         {
-            ShowContextualFeedback(FeedbackDialogs.almostOut, target, -1f);
+            Vector3? worldCenter = null;
+            if (target != null)
+            {
+                Vector3[] corners = new Vector3[4];
+                target.GetWorldCorners(corners);
+                worldCenter = (corners[0] + corners[2]) / 2f;
+            }
+            ShowContextualFeedback(FeedbackDialogs.almostOut, target, 1.8f);
+            if (Instance != null && worldCenter.HasValue)
+            {
+                Instance.PinAtWorldPosition(worldCenter.Value);
+            }
+        }
+
+        public void PinAtWorldPosition(Vector3 worldPos)
+        {
+            hasAssignedTarget = false;
+            isPinnedAtWorldPos = false;
+            targetRect = null;
+            isPinnedAtWorldPos = true;
+            pinnedWorldPos = worldPos;
+            if (mascotRect != null)
+            {
+                Canvas canvas = GetComponentInParent<Canvas>();
+                float scale = canvas != null ? canvas.scaleFactor : 1f;
+                float margin = 5f * scale;
+                Vector3 clampedPos = worldPos + new Vector3(currentTargetOffset.x * scale, currentTargetOffset.y * scale, 0f);
+                clampedPos.x = Mathf.Clamp(clampedPos.x, margin, Screen.width - margin);
+                clampedPos.y = Mathf.Clamp(clampedPos.y, margin, Screen.height - margin);
+                mascotRect.position = clampedPos;
+            }
         }
 
         public static void ShowSingleClickFeedback(RectTransform target)
@@ -586,32 +621,13 @@ namespace ComputerLearning
 
         public static void ShowMedalImprovementFeedback(LevelMedal previousMedal, LevelMedal newMedal, float accuracy, float durationSeconds, RectTransform target = null, float displayDuration = 5.5f)
         {
-            MascotFeedbackDialogs fb = FeedbackDialogs;
-            string praise = GetRandomMedalImprovementMessage();
-            string newMedalName = LevelScoreRecord.GetMedalName(newMedal).ToUpper();
-            string prevMedalName = LevelScoreRecord.GetMedalName(previousMedal);
-
-            string msg;
-            if (previousMedal != LevelMedal.None)
-            {
-                string fmt = !string.IsNullOrEmpty(fb.medalImprovementUpgradeFormat)
-                    ? fb.medalImprovementUpgradeFormat
-                    : "{0}\nUpgraded from {1} to {2} Medal! ({3:F0}%)";
-                msg = string.Format(fmt, praise, prevMedalName, newMedalName, accuracy);
-            }
-            else
-            {
-                string fmt = !string.IsNullOrEmpty(fb.medalImprovementEarnedFormat)
-                    ? fb.medalImprovementEarnedFormat
-                    : "{0}\nYou earned the {1} Medal! ({2:F0}%)";
-                msg = string.Format(fmt, praise, newMedalName, accuracy);
-            }
+            string msg = GetRandomMedalImprovementMessage();
             LevelCelebrationModal modal = Object.FindFirstObjectByType<LevelCelebrationModal>();
             if (modal != null && modal.CardRect != null)
             {
                 target = modal.CardRect;
             }
-            Vector2 sideOffset = new Vector2(380f, -20f);
+            Vector2 sideOffset = new Vector2(330f, -20f);
             ShowContextualFeedback(msg, target, displayDuration, sideOffset);
         }
 
@@ -648,8 +664,9 @@ namespace ComputerLearning
             gameObject.SetActive(true);
             targetRect = target;
             hasAssignedTarget = (target != null);
+            isPinnedAtWorldPos = false;
             bool isCelebrationTarget = target != null && target.GetComponentInParent<LevelCelebrationModal>() != null;
-            currentTargetOffset = isCelebrationTarget ? (offset ?? new Vector2(380f, -20f)) : Vector2.zero;
+            currentTargetOffset = isCelebrationTarget ? (offset ?? new Vector2(330f, -20f)) : Vector2.zero;
 
             Canvas canvas = GetComponentInParent<Canvas>();
             float scale = canvas != null ? canvas.scaleFactor : 1f;
@@ -702,6 +719,7 @@ namespace ComputerLearning
             isDesktopCompanion = false;
             AllowSpaceToSkipDialogue = false;
             hasAssignedTarget = false;
+            isPinnedAtWorldPos = false;
             targetRect = null;
             currentTargetOffset = Vector2.zero;
             gameObject.SetActive(false);
@@ -715,6 +733,7 @@ namespace ComputerLearning
         {
             isDesktopCompanion = true;
             hasAssignedTarget = false;
+            isPinnedAtWorldPos = false;
             targetRect = null;
             gameObject.SetActive(true);
 

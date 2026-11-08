@@ -86,7 +86,7 @@ namespace ComputerLearning
             if (RectTransformUtility.ScreenPointToLocalPointInRectangle(targetRect, screenPos, eventCamera, out Vector2 localPoint))
             {
                 float radius = Mathf.Max(targetRect.rect.width, targetRect.rect.height) * 0.5f;
-                float distFromCenter = localPoint.magnitude;
+                float distFromCenter = (localPoint - targetRect.rect.center).magnitude;
                 ratio = radius > 1f ? (distFromCenter / radius) : 0f;
             }
 

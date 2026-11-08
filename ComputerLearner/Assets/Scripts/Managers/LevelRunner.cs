@@ -506,7 +506,10 @@ namespace ComputerLearning
                 activeTask = null;
             }
 
-            VirtualMascot.HideMascot();
+            if (VirtualMascot.Instance != null && !VirtualMascot.Instance.IsPinnedAtWorldPos)
+            {
+                VirtualMascot.HideMascot();
+            }
             tasksAttempted++;
 
             if (result != null)

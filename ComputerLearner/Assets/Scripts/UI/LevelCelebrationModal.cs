@@ -299,7 +299,7 @@ namespace ComputerLearning
             if (VirtualMascot.Instance != null && VirtualMascot.Instance.gameObject.activeSelf)
             {
                 string mascotMsg = VirtualMascot.Instance.speechText != null ? VirtualMascot.Instance.speechText.text : string.Empty;
-                VirtualMascot.Show(mascotMsg, cardRectTransform, new Vector2(380f, -20f));
+                VirtualMascot.Show(mascotMsg, cardRectTransform, new Vector2(330f, -20f));
             }
         }
 

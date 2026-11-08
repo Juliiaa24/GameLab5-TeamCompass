@@ -77,7 +77,11 @@ namespace ComputerLearning
                 {
                     isHolding = false;
                     RectTransform rt = transform as RectTransform;
-                    int scorePoints = BaseTask.CalculatePrecisionAndSizeScore(rt, lastPointerScreenPos, lastEventCamera, out _);
+                    int scorePoints = BaseTask.CalculatePrecisionAndSizeScore(rt, lastPointerScreenPos, lastEventCamera, out bool isOuterRing);
+                    if (isOuterRing && rt != null)
+                    {
+                        VirtualMascot.ShowAlmostOutFeedback(rt);
+                    }
                     Debug.Log("[ClickHoldTask] Hold complete!");
                     Complete(true, transform, scorePoints);
                 }

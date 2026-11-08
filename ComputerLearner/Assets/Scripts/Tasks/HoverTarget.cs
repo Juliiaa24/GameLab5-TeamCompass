@@ -178,7 +178,11 @@ namespace ComputerLearning
             {
                 completed = true;
                 float avgRatio = hoverRatioSamples > 0 ? (hoverRatioSum / hoverRatioSamples) : 0f;
-                int scorePoints = BaseTask.CalculateRatioAndSizeScore(rectTransform, avgRatio, out _);
+                int scorePoints = BaseTask.CalculateRatioAndSizeScore(rectTransform, avgRatio, out bool isOuterRing);
+                if (isOuterRing && rectTransform != null)
+                {
+                    VirtualMascot.ShowAlmostOutFeedback(rectTransform);
+                }
                 OnHoverCompleteWithScore?.Invoke(scorePoints);
                 OnHoverComplete?.Invoke();
             }
