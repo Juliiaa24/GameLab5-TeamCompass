@@ -77,6 +77,8 @@ namespace ComputerLearning
                 PlayerPrefs.SetInt("SemiGuidedSequenceCompleted", 1);
                 PlayerPrefs.Save();
                 if (blockerObj != null) Destroy(blockerObj);
+
+                UnityEngine.SceneManagement.SceneManager.LoadScene("VirtualDesktop");
                 return;
             }
 

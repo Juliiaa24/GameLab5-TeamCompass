@@ -81,6 +81,7 @@ namespace ComputerLearning
     public class StudentFullPlaytestReport
     {
         public string studentId;
+        public string learningPath;
         public string sessionStartTime;
         public string lastExportTime;
         public string exportTrigger;
@@ -256,20 +257,20 @@ namespace ComputerLearning
 
         public static bool HasAnyRecordedActivityForCurrentStudent()
         {
-            if (PlayerPrefs.GetInt("InitialAssessmentCompleted", 0) == 1) return true;
             if (!string.IsNullOrEmpty(PlayerPrefs.GetString(CurrentAssessmentJsonKey, string.Empty))) return true;
-            if (ProgressData.ExistingInstance != null)
-            {
-                if (ProgressData.ExistingInstance.TotalResultCount > 0) return true;
-                if (ProgressData.ExistingInstance.LevelRecords != null && ProgressData.ExistingInstance.LevelRecords.Count > 0) return true;
-            }
-            else if (PlayerPrefs.HasKey("ComputerLearner_ProgressData_v1"))
-            {
-                return true;
-            }
+
+            ProgressData.GetSavedDataSnapshot(
+                out IReadOnlyList<TaskResult> savedTasks,
+                out _,
+                out List<LevelScoreRecord> savedRecords,
+                out IReadOnlyList<LevelAttemptLogEntry> savedAttempts);
+
+            if (savedTasks != null && savedTasks.Count > 0) return true;
+            if (savedRecords != null && savedRecords.Count > 0) return true;
+            if (savedAttempts != null && savedAttempts.Count > 0) return true;
+
             foreach (string skillId in AllSkillIds)
             {
-                if (PlayerPrefs.GetFloat($"SkillScore_{skillId}", 0f) > 0f) return true;
                 if (PlayerPrefs.GetInt($"SkillTasks_{skillId}", 0) > 0) return true;
             }
             return false;
@@ -344,12 +345,13 @@ namespace ComputerLearning
         {
             PlayerPrefs.DeleteKey(CurrentAssessmentJsonKey);
             PlayerPrefs.DeleteKey(LastExportedFolderKey);
-            foreach (string skillId in AllSkillIds)
+            foreach (string skillId in SkillProfilePreset.AllKnownSkillIds)
             {
                 PlayerPrefs.DeleteKey($"InitialAssessmentScore_{skillId}");
                 PlayerPrefs.DeleteKey($"InitialAssessmentTime_{skillId}");
                 PlayerPrefs.DeleteKey($"InitialAssessmentAttempts_{skillId}");
                 PlayerPrefs.DeleteKey($"InitialAssessmentTested_{skillId}");
+                PlayerPrefs.DeleteKey($"SeededSkillScore_{skillId}");
                 PlayerPrefs.DeleteKey($"SkillScore_{skillId}");
                 PlayerPrefs.DeleteKey($"SkillTasks_{skillId}");
                 PlayerPrefs.DeleteKey($"SkillSuccess_{skillId}");
@@ -477,6 +479,7 @@ namespace ComputerLearning
             StudentFullPlaytestReport report = new StudentFullPlaytestReport
             {
                 studentId = CurrentStudentId,
+                learningPath = SessionManager.GetCurrentLearningPathLabel(),
                 sessionStartTime = SessionStartTime,
                 lastExportTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
                 exportTrigger = triggerReason,
@@ -494,7 +497,9 @@ namespace ComputerLearning
             foreach (string skillId in AllSkillIds)
             {
                 bool tested = PlayerPrefs.GetInt($"InitialAssessmentTested_{skillId}", 0) == 1;
-                float initScore = PlayerPrefs.GetFloat($"InitialAssessmentScore_{skillId}", 0f);
+                float initScore = tested
+                    ? PlayerPrefs.GetFloat($"InitialAssessmentScore_{skillId}", 0f)
+                    : PlayerPrefs.GetFloat($"SeededSkillScore_{skillId}", 0f);
                 float initTime = PlayerPrefs.GetFloat($"InitialAssessmentTime_{skillId}", 0f);
                 int initAttempts = PlayerPrefs.GetInt($"InitialAssessmentAttempts_{skillId}", 0);
 
@@ -683,6 +688,7 @@ namespace ComputerLearning
             sb.AppendLine($"  STUDENT PLAYTEST EVALUATION & PROGRESS REPORT: {r.studentId}");
             sb.AppendLine(sepDouble);
             sb.AppendLine($"  Student ID / Name        : {r.studentId}");
+            sb.AppendLine($"  Learning Path            : {r.learningPath}");
             sb.AppendLine($"  Session Start Time       : {r.sessionStartTime}");
             sb.AppendLine($"  Last Saved Time          : {r.lastExportTime}");
             sb.AppendLine($"  In-Game Language         : {r.language}");
@@ -804,7 +810,7 @@ namespace ComputerLearning
             // Header Card
             sb.AppendLine("<div class='card'>");
             sb.AppendLine($"<h1>Student Playtest Report: {r.studentId}</h1>");
-            sb.AppendLine($"<div style='color:#64748b; font-size:13px;'>Session Start: {r.sessionStartTime} &nbsp;|&nbsp; Last Saved: {r.lastExportTime} &nbsp;|&nbsp; Game Language: {r.language}</div>");
+            sb.AppendLine($"<div style='color:#64748b; font-size:13px;'>Learning Path: <b>{r.learningPath}</b> &nbsp;|&nbsp; Session Start: {r.sessionStartTime} &nbsp;|&nbsp; Last Saved: {r.lastExportTime} &nbsp;|&nbsp; Game Language: {r.language}</div>");
             sb.AppendLine("<div class='kpi-grid'>");
             sb.AppendLine($"<div class='kpi'><div class='val'>{(r.initialAssessmentCompleted ? $"{r.initialAssessmentAverageScore:0.#}%" : "N/A")}</div><div class='lbl'>Initial Assessment Average</div></div>");
             sb.AppendLine($"<div class='kpi'><div class='val'>{r.finalSkillsAverageScore:0.#}%</div><div class='lbl'>Final Skills Average</div></div>");
@@ -871,7 +877,7 @@ namespace ComputerLearning
         {
             StringBuilder sb = new StringBuilder();
             sb.AppendLine("sep=;");
-            sb.AppendLine($"STUDENT REPORT;{EscapeSemi(r.studentId)};Session Start;{EscapeSemi(r.sessionStartTime)};Last Saved;{EscapeSemi(r.lastExportTime)};Game Language;{EscapeSemi(r.language)}");
+            sb.AppendLine($"STUDENT REPORT;{EscapeSemi(r.studentId)};Learning Path;{EscapeSemi(r.learningPath)};Session Start;{EscapeSemi(r.sessionStartTime)};Last Saved;{EscapeSemi(r.lastExportTime)};Game Language;{EscapeSemi(r.language)}");
             sb.AppendLine();
 
             sb.AppendLine("1. SKILL PROGRESSION (INITIAL ASSESSMENT VS FINAL)");

@@ -99,6 +99,8 @@ namespace ComputerLearning
         public static readonly string[] LevelOrder = { "level1", "level2", "level3", "level4", "level5", "level6", "level7", "level8", "level9", "level10", "level11", "level12", "level13", "level14", "level15", "level16" };
 
         public bool HasSeenDesktopTour { get; private set; }
+        public bool UnlockAllLevels => unlockAllLevels;
+        private bool unlockAllLevels = false;
         private List<string> unlockedLevels = new List<string> { "level1" }; // Level 1 always unlocked
         private List<string> completedLevels = new List<string>();
         private List<LevelScoreRecord> levelRecords = new List<LevelScoreRecord>();
@@ -115,6 +117,7 @@ namespace ComputerLearning
         public bool IsLevelUnlocked(string levelId)
         {
             if (string.IsNullOrEmpty(levelId)) return true;
+            if (unlockAllLevels) return true;
             if (levelId == "level1") return true;
             if (completedLevels != null && completedLevels.Contains(levelId)) return true;
             if (unlockedLevels != null && unlockedLevels.Contains(levelId)) return true;
@@ -150,14 +153,19 @@ namespace ComputerLearning
 
         public void SyncProgressionFlagsToPlayerPrefs()
         {
-            if (completedLevels != null && completedLevels.Count > 0)
+            bool pendingAssessment = PlayerPrefs.GetInt("Session_PendingAssessment", 0) == 1;
+
+            if (!pendingAssessment && completedLevels != null && completedLevels.Count > 0)
             {
                 PlayerPrefs.SetInt("InitialAssessmentCompleted", 1);
             }
             if (AreAllLevelsCompletedUpTo(5))
             {
                 PlayerPrefs.SetInt("AutoSequenceCompleted", 1);
-                PlayerPrefs.SetInt("InitialAssessmentCompleted", 1);
+                if (!pendingAssessment)
+                {
+                    PlayerPrefs.SetInt("InitialAssessmentCompleted", 1);
+                }
                 if (!unlockedLevels.Contains("level6")) unlockedLevels.Add("level6");
             }
             if (AreAllLevelsCompletedUpTo(9))
@@ -173,6 +181,91 @@ namespace ComputerLearning
             {
                 HasSeenDesktopTour = true;
             }
+        }
+
+        /// <summary>
+        /// Seeds unlocked/completed levels and tutorial progression flags from a StudentConfiguration.
+        /// Persists immediately to PlayerPrefs so scene-loaded Managers.prefab instances read the exact state.
+        /// </summary>
+        public void ApplyStudentConfiguration(StudentConfiguration config, bool preserveExistingResults = false, bool assessmentJustCompleted = false)
+        {
+            if (config == null) return;
+
+            if (!preserveExistingResults)
+            {
+                taskHistory.Clear();
+                levelRecords.Clear();
+                levelAttemptsHistory.Clear();
+                completedLevels.Clear();
+                unlockedLevels = new List<string> { "level1" };
+            }
+
+            unlockAllLevels = config.unlockAllLevels;
+
+            int maxPreComplete = Mathf.Clamp(config.preCompleteUpToLevel, 0, LevelOrder.Length);
+            for (int i = 1; i <= maxPreComplete; i++)
+            {
+                string id = "level" + i;
+                if (!completedLevels.Contains(id)) completedLevels.Add(id);
+                if (!unlockedLevels.Contains(id)) unlockedLevels.Add(id);
+            }
+
+            if (maxPreComplete > 0 && maxPreComplete < LevelOrder.Length)
+            {
+                string nextAfterPreComplete = "level" + (maxPreComplete + 1);
+                if (!unlockedLevels.Contains(nextAfterPreComplete))
+                {
+                    unlockedLevels.Add(nextAfterPreComplete);
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(config.startingLevelId))
+            {
+                string startLvl = config.startingLevelId.Trim();
+                if (!unlockedLevels.Contains(startLvl))
+                {
+                    unlockedLevels.Add(startLvl);
+                }
+            }
+
+            if (unlockAllLevels)
+            {
+                for (int i = 0; i < LevelOrder.Length; i++)
+                {
+                    string id = LevelOrder[i];
+                    if (!unlockedLevels.Contains(id))
+                    {
+                        unlockedLevels.Add(id);
+                    }
+                }
+            }
+
+            HasSeenDesktopTour = config.skipBasicDesktopTours;
+
+            bool needsAssessment = config.runAssessment && !assessmentJustCompleted;
+            string effectiveFirstGameplayScene = config.runAssessment ? config.postAssessmentScene : config.startingScene;
+
+            bool autoSeqDone = maxPreComplete >= 5 ||
+                               unlockAllLevels ||
+                               string.Equals(effectiveFirstGameplayScene, "Desktop2", StringComparison.OrdinalIgnoreCase) ||
+                               string.Equals(effectiveFirstGameplayScene, "VirtualDesktop", StringComparison.OrdinalIgnoreCase);
+
+            bool semiGuidedDone = maxPreComplete >= 9 ||
+                                  unlockAllLevels ||
+                                  string.Equals(effectiveFirstGameplayScene, "VirtualDesktop", StringComparison.OrdinalIgnoreCase);
+
+            PlayerPrefs.SetInt("Session_PendingAssessment", needsAssessment ? 1 : 0);
+            PlayerPrefs.SetInt("InitialAssessmentCompleted", needsAssessment ? 0 : 1);
+            PlayerPrefs.SetInt("AutoSequenceCompleted", autoSeqDone ? 1 : 0);
+            PlayerPrefs.SetInt("SemiGuidedSequenceCompleted", semiGuidedDone ? 1 : 0);
+            PlayerPrefs.SetInt("DesktopTourCompleted", config.skipBasicDesktopTours ? 1 : 0);
+            PlayerPrefs.SetInt("VirtualDesktopIntroCompleted", config.skipBasicDesktopTours ? 1 : 0);
+            PlayerPrefs.SetInt("AdvancedDesktopTourCompleted", config.skipAdvancedDesktopTour ? 1 : 0);
+
+            Save();
+            OnProgressChanged?.Invoke();
+
+            Debug.Log($"[ProgressData] Applied StudentConfiguration '{config.learningPath}' (unlockAll={unlockAllLevels}, preComplete={maxPreComplete}, needsAssessment={needsAssessment}).");
         }
 
         /// <summary>
@@ -430,6 +523,7 @@ namespace ComputerLearning
                     unlockedLevels = this.unlockedLevels,
                     completedLevels = this.completedLevels,
                     hasSeenDesktopTour = this.HasSeenDesktopTour,
+                    unlockAllLevels = this.unlockAllLevels,
                     levelRecords = this.levelRecords,
                     levelAttemptsHistory = this.levelAttemptsHistory
                 };
@@ -452,6 +546,7 @@ namespace ComputerLearning
             levelRecords.Clear();
             levelAttemptsHistory.Clear();
             HasSeenDesktopTour = false;
+            unlockAllLevels = false;
 
             if (!PlayerPrefs.HasKey(SaveKey)) return;
 
@@ -459,12 +554,13 @@ namespace ComputerLearning
             {
                 string json = PlayerPrefs.GetString(SaveKey);
                 var wrapper = JsonUtility.FromJson<ProgressDataWrapper>(json);
+                if (wrapper != null) unlockAllLevels = wrapper.unlockAllLevels;
                 if (wrapper?.results != null) taskHistory = wrapper.results;
                 if (wrapper?.unlockedLevels != null && wrapper.unlockedLevels.Count > 0)
                     unlockedLevels = wrapper.unlockedLevels;
                 if (wrapper?.completedLevels != null && wrapper.completedLevels.Count > 0)
                     completedLevels = wrapper.completedLevels;
-                else
+                else if (!unlockAllLevels)
                 {
                     // Backward compatibility: infer completed levels from completed tutorial sequences
                     if (PlayerPrefs.GetInt("SemiGuidedSequenceCompleted", 0) == 1)
@@ -492,26 +588,38 @@ namespace ComputerLearning
                 if (wrapper?.levelRecords != null) levelRecords = wrapper.levelRecords;
                 if (wrapper?.levelAttemptsHistory != null) levelAttemptsHistory = wrapper.levelAttemptsHistory;
 
-                if (PlayerPrefs.GetInt("AutoSequenceCompleted", 0) == 1)
+                if (!unlockAllLevels)
                 {
-                    for (int i = 1; i <= 5; i++)
+                    if (PlayerPrefs.GetInt("AutoSequenceCompleted", 0) == 1)
                     {
-                        string id = "level" + i;
-                        if (!completedLevels.Contains(id)) completedLevels.Add(id);
+                        for (int i = 1; i <= 5; i++)
+                        {
+                            string id = "level" + i;
+                            if (!completedLevels.Contains(id)) completedLevels.Add(id);
+                            if (!unlockedLevels.Contains(id)) unlockedLevels.Add(id);
+                        }
+                        if (!unlockedLevels.Contains("level6")) unlockedLevels.Add("level6");
+                    }
+                    if (PlayerPrefs.GetInt("SemiGuidedSequenceCompleted", 0) == 1)
+                    {
+                        for (int i = 1; i <= 9; i++)
+                        {
+                            string id = "level" + i;
+                            if (!completedLevels.Contains(id)) completedLevels.Add(id);
+                            if (!unlockedLevels.Contains(id)) unlockedLevels.Add(id);
+                        }
+                        if (!unlockedLevels.Contains("level10")) unlockedLevels.Add("level10");
+                    }
+                }
+                else
+                {
+                    for (int i = 0; i < LevelOrder.Length; i++)
+                    {
+                        string id = LevelOrder[i];
                         if (!unlockedLevels.Contains(id)) unlockedLevels.Add(id);
                     }
-                    if (!unlockedLevels.Contains("level6")) unlockedLevels.Add("level6");
                 }
-                if (PlayerPrefs.GetInt("SemiGuidedSequenceCompleted", 0) == 1)
-                {
-                    for (int i = 1; i <= 9; i++)
-                    {
-                        string id = "level" + i;
-                        if (!completedLevels.Contains(id)) completedLevels.Add(id);
-                        if (!unlockedLevels.Contains(id)) unlockedLevels.Add(id);
-                    }
-                    if (!unlockedLevels.Contains("level10")) unlockedLevels.Add("level10");
-                }
+
                 SyncProgressionFlagsToPlayerPrefs();
                 PlayerPrefs.Save();
 
@@ -576,6 +684,8 @@ namespace ComputerLearning
             levelRecords.Clear();
             levelAttemptsHistory.Clear();
             HasSeenDesktopTour = false;
+            unlockAllLevels = false;
+            PlayerPrefs.DeleteKey("Session_PendingAssessment");
             PlayerPrefs.DeleteKey(SaveKey);
             PlayerPrefs.Save();
             OnProgressChanged?.Invoke();
@@ -592,6 +702,7 @@ namespace ComputerLearning
             public List<string> unlockedLevels;
             public List<string> completedLevels;
             public bool hasSeenDesktopTour;
+            public bool unlockAllLevels;
             public List<LevelScoreRecord> levelRecords;
             public List<LevelAttemptLogEntry> levelAttemptsHistory;
         }

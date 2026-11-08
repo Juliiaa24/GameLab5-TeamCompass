@@ -1141,14 +1141,7 @@ namespace ComputerLearning
 
             if (UnityEngine.SceneManagement.SceneManager.GetActiveScene().name == "AssessmentScene")
             {
-                PlayerPrefs.SetInt("AutoSequenceCompleted", 0);
-                PlayerPrefs.SetInt("DesktopTourCompleted", 0);
-                PlayerPrefs.SetInt("SemiGuidedSequenceCompleted", 0);
-                PlayerPrefs.SetInt("AdvancedDesktopTourCompleted", 0);
-                PlayerPrefs.SetInt("VirtualDesktopIntroCompleted", 0);
-                PlayerPrefs.Save();
-
-                UnityEngine.SceneManagement.SceneManager.LoadScene("Desktop1");
+                SessionManager.Instance.HandleAssessmentCompleted();
             }
         }
         #endregion

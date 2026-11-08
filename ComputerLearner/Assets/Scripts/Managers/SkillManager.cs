@@ -199,6 +199,56 @@ namespace ComputerLearning
         public bool HasSkill(string skillId) => skillStates.ContainsKey(skillId);
 
         /// <summary>
+        /// Applies a predefined skill profile to this live SkillManager instance and persists to PlayerPrefs.
+        /// </summary>
+        public void ApplySkillProfile(IEnumerable<SkillScoreEntry> entries, bool resetTaskCounts = true)
+        {
+            ApplySkillProfileToPrefs(entries, resetTaskCounts);
+        }
+
+        /// <summary>
+        /// Writes a predefined skill profile to PlayerPrefs (and updates SkillManager.Instance if loaded).
+        /// Safe to call from scenes like Menu before Managers.prefab is instantiated.
+        /// </summary>
+        public static void ApplySkillProfileToPrefs(IEnumerable<SkillScoreEntry> entries, bool resetTaskCounts = true)
+        {
+            if (entries == null) return;
+
+            foreach (SkillScoreEntry entry in entries)
+            {
+                if (entry == null || string.IsNullOrWhiteSpace(entry.skillId)) continue;
+
+                string id = entry.skillId.Trim();
+                float clamped = Mathf.Clamp(entry.score, 0f, 100f);
+
+                PlayerPrefs.SetFloat($"SkillScore_{id}", clamped);
+                PlayerPrefs.SetFloat($"SeededSkillScore_{id}", clamped);
+
+                if (resetTaskCounts)
+                {
+                    PlayerPrefs.DeleteKey($"SkillTasks_{id}");
+                    PlayerPrefs.DeleteKey($"SkillSuccess_{id}");
+                    PlayerPrefs.DeleteKey($"SkillFail_{id}");
+                }
+
+                if (Instance != null && Instance.skillStates.TryGetValue(id, out SkillState state))
+                {
+                    state.score = clamped;
+                    if (resetTaskCounts)
+                    {
+                        state.tasksCompleted = 0;
+                        state.successCount = 0;
+                        state.failureCount = 0;
+                        state.lastPracticedTicks = 0;
+                    }
+                }
+            }
+
+            PlayerPrefs.Save();
+            Debug.Log("[SkillManager] Applied predefined skill profile.");
+        }
+
+        /// <summary>
         /// Resets all skill scores to 0.
         /// Call when starting a fresh player profile.
         /// </summary>
@@ -212,13 +262,15 @@ namespace ComputerLearning
                 pair.Value.failureCount = 0;
                 pair.Value.lastPracticedTicks = 0;
                 PlayerPrefs.DeleteKey($"SkillScore_{pair.Key}");
+                PlayerPrefs.DeleteKey($"SeededSkillScore_{pair.Key}");
                 PlayerPrefs.DeleteKey($"SkillTasks_{pair.Key}");
                 PlayerPrefs.DeleteKey($"SkillSuccess_{pair.Key}");
                 PlayerPrefs.DeleteKey($"SkillFail_{pair.Key}");
             }
-            foreach (string skillId in PlaytestDataManager.AllSkillIds)
+            foreach (string skillId in SkillProfilePreset.AllKnownSkillIds)
             {
                 PlayerPrefs.DeleteKey($"SkillScore_{skillId}");
+                PlayerPrefs.DeleteKey($"SeededSkillScore_{skillId}");
                 PlayerPrefs.DeleteKey($"SkillTasks_{skillId}");
                 PlayerPrefs.DeleteKey($"SkillSuccess_{skillId}");
                 PlayerPrefs.DeleteKey($"SkillFail_{skillId}");

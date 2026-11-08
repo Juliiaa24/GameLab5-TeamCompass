@@ -33,6 +33,7 @@ namespace ComputerLearning
             AssessmentScene,
             StatsScene,
             Desktop1,
+            Desktop2,
             VirtualDesktop
         }
         #endregion
@@ -136,27 +137,7 @@ namespace ComputerLearning
         #region Public Methods
         public void ChangeToMain() 
         { 
-            // If the initial assessment has not been completed, it serves as the first screen!
-            if (ProgressData.Instance != null)
-            {
-                ProgressData.Instance.SyncProgressionFlagsToPlayerPrefs();
-            }
-
-            if (PlayerPrefs.GetInt("InitialAssessmentCompleted", 0) == 0)
-            {
-                SceneManager.LoadScene("AssessmentScene");
-                return;
-            }
-
-            if (PlayerPrefs.GetInt("AutoSequenceCompleted", 0) == 1 ||
-                (ProgressData.Instance != null && ProgressData.Instance.AreAllLevelsCompletedUpTo(5)))
-            {
-                SceneManager.LoadScene("VirtualDesktop");
-            }
-            else
-            {
-                SceneManager.LoadScene("Desktop1");
-            }
+            SessionManager.Instance.StartOrContinueSession();
         }
 
         public void ChangeToMenu() 
@@ -168,8 +149,14 @@ namespace ComputerLearning
             ChangeScene(SceneNames.Menu); 
         }
 
+        public void ChangeToDesktop2()
+        {
+            ChangeScene(SceneNames.Desktop2);
+        }
+
         public void ChangeToVirtualDesktop() 
         { 
+            SessionManager.Instance.PrepareForDirectVirtualDesktopEntry();
             SceneManager.LoadScene("VirtualDesktop"); 
         }
 
@@ -200,10 +187,11 @@ namespace ComputerLearning
                 PlaytestDataManager.ExportCurrentStudentData("auto_before_reset");
             }
 
-            // 2. Preserve current language, student counter and auto-download setting across the wipe
+            // 2. Preserve current language, student counter, auto-download setting, and selected LearningPath across the wipe
             string activeLanguage = LocalizationManager.CurrentLanguage;
             int currentStudentCounter = Mathf.Max(1, PlayerPrefs.GetInt("Playtest_StudentCounter", 1));
-            int autoDownloadSetting = PlayerPrefs.GetInt("Playtest_AutoDownloadEnabled", 1);
+            int autoDownloadSetting = PlayerPrefs.GetInt("Playtest_AutoDownloadEnabled", 0);
+            LearningPath selectedPath = SessionManager.Instance.ActiveLearningPath;
 
             // 3. Clear all runtime managers
             if (ProgressData.ExistingInstance != null)
@@ -228,6 +216,7 @@ namespace ComputerLearning
             PlayerPrefs.SetString("SelectedLanguage", activeLanguage);
             PlayerPrefs.SetInt("Playtest_StudentCounter", currentStudentCounter);
             PlayerPrefs.SetInt("Playtest_AutoDownloadEnabled", autoDownloadSetting);
+            PlayerPrefs.SetInt("Playtest_AutoDownloadDefaultOff_v2", 1);
             PlayerPrefs.SetInt("InitialAssessmentCompleted", 0);
             PlayerPrefs.SetInt("AutoSequenceCompleted", 0);
             PlayerPrefs.SetInt("DesktopTourCompleted", 0);
@@ -236,10 +225,16 @@ namespace ComputerLearning
             PlayerPrefs.SetInt("VirtualDesktopIntroCompleted", 0);
             PlayerPrefs.Save();
 
-            // 5. Advance to the next sequential Student ID (e.g. S01 -> S02)
+            // 5. Advance to the next sequential Student ID (e.g. S01 -> S02) and re-arm selected LearningPath
             string nextStudentId = PlaytestDataManager.AdvanceToNextStudent();
+            SessionManager.Instance.ResetForNextStudent(nextStudentId, selectedPath);
 
             LocalizationManager.SetLanguage(activeLanguage);
+
+            if (LearningPathSelectorWidget.Instance != null)
+            {
+                LearningPathSelectorWidget.Instance.RefreshUI();
+            }
 
             if (PlaytestStudentWidget.Instance != null)
             {
@@ -282,6 +277,7 @@ namespace ComputerLearning
             if (menuCanvas != null && menuCanvas.gameObject.scene.name == "Menu")
             {
                 PlaytestStudentWidget.EnsureOnCanvas(menuCanvas.transform);
+                LearningPathSelectorWidget.EnsureOnCanvas(menuCanvas.transform);
             }
 
             Button[] buttons = FindObjectsByType<Button>(FindObjectsInactive.Include, FindObjectsSortMode.None);
@@ -389,6 +385,9 @@ namespace ComputerLearning
                 case SceneNames.Main:
                 case SceneNames.Desktop1:
                     SceneManager.LoadScene("Desktop1");
+                    break;
+                case SceneNames.Desktop2:
+                    SceneManager.LoadScene("Desktop2");
                     break;
                 case SceneNames.VirtualDesktop:
                     SceneManager.LoadScene("VirtualDesktop");

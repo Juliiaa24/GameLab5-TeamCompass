@@ -80,14 +80,8 @@ namespace ComputerLearning
 
                 if (blockerObj != null) Destroy(blockerObj);
 
-                if (SceneSystem.Instance != null)
-                {
-                    SceneSystem.Instance.ChangeToVirtualDesktop();
-                }
-                else
-                {
-                    UnityEngine.SceneManagement.SceneManager.LoadScene("VirtualDesktop");
-                }
+                string targetScene = SessionManager.Instance.GetPostDesktop1Scene();
+                UnityEngine.SceneManagement.SceneManager.LoadScene(targetScene);
                 return;
             }
 
@@ -217,15 +211,9 @@ namespace ComputerLearning
             }
             PlayerPrefs.Save();
 
-            // Transition directly to VirtualDesktop
-            if (SceneSystem.Instance != null)
-            {
-                SceneSystem.Instance.ChangeToVirtualDesktop();
-            }
-            else
-            {
-                UnityEngine.SceneManagement.SceneManager.LoadScene("VirtualDesktop");
-            }
+            // Transition to configured post-Desktop1 scene (Desktop2 for BeginnerFoundations, VirtualDesktop for DiagnosticFull)
+            string nextScene = SessionManager.Instance.GetPostDesktop1Scene();
+            UnityEngine.SceneManagement.SceneManager.LoadScene(nextScene);
         }
 
         private void OnDestroy()
