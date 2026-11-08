@@ -123,7 +123,7 @@ namespace ComputerLearning
             targetRect.anchoredPosition = new Vector2(x, y);
 
             target.OnHoverActive += NotifyUserInteraction;
-            target.OnHoverComplete += () => Complete(true, targetRect);
+            target.OnHoverCompleteWithScore += (score) => Complete(true, targetRect, score);
             target.OnFailedAttempt += () =>
             {
                 if (IsFinished) return;

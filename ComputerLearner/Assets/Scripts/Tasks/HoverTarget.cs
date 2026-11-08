@@ -23,6 +23,8 @@ namespace ComputerLearning
         #region Public Variables
         /// <summary>Fired when the player hovers for the full required duration.</summary>
         public event Action OnHoverComplete;
+        /// <summary>Fired when the player hovers for the full required duration, reporting adaptive precision + size score.</summary>
+        public event Action<int> OnHoverCompleteWithScore;
         
         /// <summary>Fired when the player exits the target before completion.</summary>
         public event Action OnFailedAttempt;
@@ -42,6 +44,8 @@ namespace ComputerLearning
         private float hoverTime;
         private bool  isHovering;
         private bool  completed;
+        private float hoverRatioSum;
+        private int   hoverRatioSamples;
 
         private bool isMoving;
         private bool isSwayingOnly;
@@ -144,6 +148,21 @@ namespace ComputerLearning
             if (isHovering)
             {
                 hoverTime += Time.deltaTime;
+                if (rectTransform != null && UnityEngine.InputSystem.Mouse.current != null)
+                {
+                    Vector2 mousePos = UnityEngine.InputSystem.Mouse.current.position.ReadValue();
+                    Canvas c = GetComponentInParent<Canvas>();
+                    Camera cam = (c != null && c.renderMode != RenderMode.ScreenSpaceOverlay) ? c.worldCamera : null;
+                    if (RectTransformUtility.ScreenPointToLocalPointInRectangle(rectTransform, mousePos, cam, out Vector2 localPt))
+                    {
+                        float radius = Mathf.Max(rectTransform.rect.width, rectTransform.rect.height) * 0.5f;
+                        if (radius > 1f)
+                        {
+                            hoverRatioSum += localPt.magnitude / radius;
+                            hoverRatioSamples++;
+                        }
+                    }
+                }
                 OnHoverActive?.Invoke();
             }
             else
@@ -158,6 +177,9 @@ namespace ComputerLearning
             if (hoverTime >= requiredDuration)
             {
                 completed = true;
+                float avgRatio = hoverRatioSamples > 0 ? (hoverRatioSum / hoverRatioSamples) : 0f;
+                int scorePoints = BaseTask.CalculateRatioAndSizeScore(rectTransform, avgRatio, out _);
+                OnHoverCompleteWithScore?.Invoke(scorePoints);
                 OnHoverComplete?.Invoke();
             }
         }
@@ -173,6 +195,8 @@ namespace ComputerLearning
             isMoving  = moving;
             isSwayingOnly = !moving;
             moveSpeed = moving ? ((speed > 0f ? speed : 100f) * 1.2f) : speed;
+            hoverRatioSum = 0f;
+            hoverRatioSamples = 0;
         }
 
         /// <summary>Sets the parent rect used as movement boundary.</summary>

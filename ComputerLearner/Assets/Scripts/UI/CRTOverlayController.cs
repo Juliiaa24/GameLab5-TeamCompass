@@ -24,27 +24,27 @@ namespace ComputerLearning
 
         [Header("General Settings")]
         [SerializeField] private bool showOverlay = true;
-        [Range(0f, 1f)] [SerializeField] private float overlayAlpha = 1f;
+        [Range(0f, 1f)] [SerializeField] private float overlayAlpha = 0.35f;
 
         [Header("Curvature")]
         [Tooltip("Horizontal scanline curvature intensity.")]
-        [Range(0f, 0.25f)] [SerializeField] private float curvatureX = 0.08f;
+        [Range(0f, 0.25f)] [SerializeField] private float curvatureX = 0.035f;
         [Tooltip("Vertical scanline curvature intensity.")]
-        [Range(0f, 0.25f)] [SerializeField] private float curvatureY = 0.06f;
+        [Range(0f, 0.25f)] [SerializeField] private float curvatureY = 0.025f;
 
         [Header("Rolling Scan Beam (Line)")]
         [Tooltip("Speed of the upward-moving scan beam (lower is slower/smoother).")]
-        [Range(0.005f, 0.2f)] [SerializeField] private float scanBeamSpeed = 0.035f;
+        [Range(0.005f, 0.2f)] [SerializeField] private float scanBeamSpeed = 0.025f;
         [Tooltip("Thickness of the rolling beam.")]
-        [Range(0.005f, 0.08f)] [SerializeField] private float scanBeamWidth = 0.018f;
+        [Range(0.005f, 0.08f)] [SerializeField] private float scanBeamWidth = 0.015f;
         [Tooltip("Brightness glow of the beam.")]
-        [Range(0f, 1f)] [SerializeField] private float scanBeamIntensity = 0.12f;
+        [Range(0f, 1f)] [SerializeField] private float scanBeamIntensity = 0.025f;
 
         [Header("Scanlines & Atmosphere")]
         [SerializeField] private float scanlineCount = 540f;
-        [Range(0f, 1f)] [SerializeField] private float scanlineIntensity = 0.18f;
-        [Range(0f, 1f)] [SerializeField] private float vignetteStrength = 0.05f;
-        [Range(0f, 0.05f)] [SerializeField] private float flickerIntensity = 0.003f;
+        [Range(0f, 1f)] [SerializeField] private float scanlineIntensity = 0.04f;
+        [Range(0f, 1f)] [SerializeField] private float vignetteStrength = 0.015f;
+        [Range(0f, 0.05f)] [SerializeField] private float flickerIntensity = 0.0006f;
 
         private Material runtimeMaterial;
 
@@ -184,21 +184,21 @@ namespace ComputerLearning
             Material mat = runtimeMaterial != null ? runtimeMaterial : (overlayImage != null ? overlayImage.material : crtMaterial);
             if (mat == null) return;
 
-            mat.SetFloat("_CurvatureX", curvatureX);
-            mat.SetFloat("_CurvatureY", curvatureY);
+            mat.SetFloat("_CurvatureX", curvatureX * 0.45f);
+            mat.SetFloat("_CurvatureY", curvatureY * 0.45f);
 
             mat.SetFloat("_ScanBeamSpeed", scanBeamSpeed);
             mat.SetFloat("_ScanBeamWidth", scanBeamWidth);
-            mat.SetFloat("_ScanBeamIntensity", scanBeamIntensity);
+            mat.SetFloat("_ScanBeamIntensity", Mathf.Min(scanBeamIntensity * 0.25f, 0.028f));
 
             mat.SetFloat("_ScanlineCount", scanlineCount);
-            mat.SetFloat("_ScanlineIntensity", scanlineIntensity);
-            mat.SetFloat("_VignetteStrength", vignetteStrength);
-            mat.SetFloat("_FlickerIntensity", flickerIntensity);
+            mat.SetFloat("_ScanlineIntensity", Mathf.Min(scanlineIntensity * 0.25f, 0.042f));
+            mat.SetFloat("_VignetteStrength", Mathf.Min(vignetteStrength * 0.35f, 0.018f));
+            mat.SetFloat("_FlickerIntensity", Mathf.Min(flickerIntensity * 0.25f, 0.0008f));
 
             if (overlayImage != null)
             {
-                overlayImage.color = new Color(1f, 1f, 1f, overlayAlpha);
+                overlayImage.color = new Color(1f, 1f, 1f, Mathf.Min(overlayAlpha, 0.36f));
                 overlayImage.gameObject.SetActive(showOverlay);
             }
         }

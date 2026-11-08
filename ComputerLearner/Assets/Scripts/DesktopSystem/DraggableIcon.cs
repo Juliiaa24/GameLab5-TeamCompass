@@ -809,6 +809,7 @@ namespace ComputerLearning
 
                 bool canModify = !IsProtected;
                 items.Add(new ContextMenuItem("Copy", CopyDesktopIcon, canModify));
+                items.Add(new ContextMenuItem("Cut", CutDesktopIcon, canModify));
                 items.Add(new ContextMenuItem("Rename", PromptRenameDesktopIcon, canModify));
                 items.Add(new ContextMenuItem("Delete", DeleteDesktopIconToRecycleBin, canModify));
             }
@@ -823,6 +824,18 @@ namespace ComputerLearning
             if (LinkedExplorerItem != null && !LinkedExplorerItem.isProtected)
             {
                 FileExplorerApp.SharedClipboardItem = LinkedExplorerItem;
+                FileExplorerApp.IsClipboardCut = false;
+            }
+        }
+
+        public void CutDesktopIcon()
+        {
+            if (IsProtected) return;
+            EnsureLinkedExplorerItem();
+            if (LinkedExplorerItem != null && !LinkedExplorerItem.isProtected)
+            {
+                FileExplorerApp.SharedClipboardItem = LinkedExplorerItem;
+                FileExplorerApp.IsClipboardCut = true;
             }
         }
 

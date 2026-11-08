@@ -78,21 +78,14 @@ namespace ComputerLearning
             if (eventData.button == PointerEventData.InputButton.Right)
             {
                 RectTransform rectTransform = transform as RectTransform;
-                if (rectTransform != null)
+                int scorePoints = BaseTask.CalculatePrecisionAndSizeScore(rectTransform, eventData.position, eventData.pressEventCamera, out bool isOuterRing);
+                if (isOuterRing && rectTransform != null)
                 {
-                    Camera eventCamera = eventData.pressEventCamera;
-                    if (RectTransformUtility.ScreenPointToLocalPointInRectangle(rectTransform, eventData.position, eventCamera, out Vector2 localPoint))
-                    {
-                        float radius = Mathf.Max(rectTransform.rect.width, rectTransform.rect.height) * 0.5f;
-                        if (radius > 1f && (localPoint.magnitude / radius) >= 0.75f)
-                        {
-                            VirtualMascot.ShowAlmostOutFeedback(rectTransform);
-                        }
-                    }
+                    VirtualMascot.ShowAlmostOutFeedback(rectTransform);
                 }
 
                 Debug.Log("[RightClickTask] Right click detected!");
-                Complete(true);
+                Complete(true, transform, scorePoints);
             }
             else if (eventData.button == PointerEventData.InputButton.Left)
             {

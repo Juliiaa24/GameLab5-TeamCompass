@@ -213,34 +213,10 @@ namespace ComputerLearning
 
             hasBeenClicked = true;
 
-            // Concentric precision scoring:
-            // Center (Bullseye, <= 35% radius): +100
-            // Mid ring (35% - 70% radius): +70
-            // Outer ring (> 70% radius): +40
-            int scorePoints = 100;
-            if (rectTransform != null)
+            int scorePoints = BaseTask.CalculatePrecisionAndSizeScore(rectTransform, eventData.position, eventData.pressEventCamera, out bool isOuterRing);
+            if (isOuterRing && rectTransform != null)
             {
-                Camera eventCamera = eventData.pressEventCamera;
-                if (RectTransformUtility.ScreenPointToLocalPointInRectangle(rectTransform, eventData.position, eventCamera, out Vector2 localPoint))
-                {
-                    float radius = Mathf.Max(rectTransform.rect.width, rectTransform.rect.height) * 0.5f;
-                    float distFromCenter = localPoint.magnitude;
-                    float ratio = radius > 1f ? (distFromCenter / radius) : 0f;
-
-                    if (ratio <= 0.35f)
-                    {
-                        scorePoints = 100; // Center (Bullseye)
-                    }
-                    else if (ratio <= 0.70f)
-                    {
-                        scorePoints = 70; // Mid ring
-                    }
-                    else
-                    {
-                        scorePoints = 40; // Outer ring
-                        VirtualMascot.ShowAlmostOutFeedback(rectTransform);
-                    }
-                }
+                VirtualMascot.ShowAlmostOutFeedback(rectTransform);
             }
 
             OnClickedWithScore?.Invoke(scorePoints);

@@ -74,6 +74,58 @@ namespace ComputerLearning
         }
 
         /// <summary>
+        /// Calculates adaptive points based on concentric aim precision (distance from target center)
+        /// plus a bonus for smaller target sizes.
+        /// </summary>
+        public static int CalculatePrecisionAndSizeScore(RectTransform targetRect, Vector2 screenPos, Camera eventCamera, out bool isOuterRing)
+        {
+            isOuterRing = false;
+            if (targetRect == null) return 100;
+
+            float ratio = 0f;
+            if (RectTransformUtility.ScreenPointToLocalPointInRectangle(targetRect, screenPos, eventCamera, out Vector2 localPoint))
+            {
+                float radius = Mathf.Max(targetRect.rect.width, targetRect.rect.height) * 0.5f;
+                float distFromCenter = localPoint.magnitude;
+                ratio = radius > 1f ? (distFromCenter / radius) : 0f;
+            }
+
+            return CalculateRatioAndSizeScore(targetRect, ratio, out isOuterRing);
+        }
+
+        public static int CalculateRatioAndSizeScore(RectTransform targetRect, float ratio, out bool isOuterRing)
+        {
+            isOuterRing = false;
+            int baseScore;
+            if (ratio <= 0.35f)
+            {
+                baseScore = 100; // Center (Bullseye)
+            }
+            else if (ratio <= 0.70f)
+            {
+                baseScore = 75; // Mid ring
+            }
+            else
+            {
+                baseScore = 45; // Outer ring
+                isOuterRing = true;
+            }
+
+            int sizeBonus = 0;
+            if (targetRect != null)
+            {
+                float diameter = Mathf.Max(targetRect.rect.width, targetRect.rect.height);
+                if (diameter > 0f && diameter < 130f)
+                {
+                    int rawBonus = Mathf.RoundToInt(Mathf.Clamp01((130f - diameter) / 80f) * 50f);
+                    sizeBonus = Mathf.RoundToInt(rawBonus / 5f) * 5;
+                }
+            }
+
+            return baseScore + sizeBonus;
+        }
+
+        /// <summary>
         /// Resets the 7-second inactivity timer when the user hovers, moves, or interacts.
         /// </summary>
         public void NotifyUserInteraction()

@@ -187,6 +187,7 @@ namespace ComputerLearning
         public bool IsDesktopCompanion => isDesktopCompanion;
 
         private RectTransform targetRect;
+        private bool hasAssignedTarget;
         private Vector2 currentTargetOffset = Vector2.zero;
         private float floatTimer;
         private Coroutine bounceCoroutine;
@@ -304,9 +305,11 @@ namespace ComputerLearning
                 layoutElement.preferredHeight = -1;
 
                 float rawWidth = speechText.preferredWidth;
-                if (rawWidth > 380f)
+                bool isCelebration = targetRect != null && targetRect.GetComponentInParent<LevelCelebrationModal>() != null;
+                float maxBubbleTextWidth = isCelebration ? 240f : 380f;
+                if (rawWidth > maxBubbleTextWidth)
                 {
-                    layoutElement.preferredWidth = 380f;
+                    layoutElement.preferredWidth = maxBubbleTextWidth;
                 }
 
                 // Force the layout to rebuild immediately so it resizes vertically before the next frame
@@ -320,8 +323,8 @@ namespace ComputerLearning
             Canvas canvas = GetComponentInParent<Canvas>();
             float scale = canvas != null ? canvas.scaleFactor : 1f;
 
-            // Early dismissal of speech bubble via Space or clicking on the bubble
-            if (speechBubble != null && speechBubble.activeSelf)
+            // Early dismissal of speech bubble via Space or clicking on the bubble (only during sequential tutorial dialogues)
+            if (AllowSpaceToSkipDialogue && speechBubble != null && speechBubble.activeSelf)
             {
                 bool spacePressed = UnityEngine.InputSystem.Keyboard.current != null &&
                                     UnityEngine.InputSystem.Keyboard.current.spaceKey.wasPressedThisFrame;
@@ -348,7 +351,7 @@ namespace ComputerLearning
                 return;
             }
 
-            if (targetRect != null && !targetRect.gameObject.activeInHierarchy)
+            if (hasAssignedTarget && (targetRect == null || !targetRect.gameObject.activeInHierarchy))
             {
                 // If target was destroyed or hidden, hide mascot
                 Hide();
@@ -382,20 +385,29 @@ namespace ComputerLearning
         }
 
         public static int DialogueSkipVersion { get; private set; }
+        public static bool AllowSpaceToSkipDialogue { get; private set; }
 
         public static IEnumerator WaitForDialogue(float duration)
         {
-            int initialVersion = DialogueSkipVersion;
-            float elapsed = 0f;
-            while (elapsed < duration)
+            AllowSpaceToSkipDialogue = true;
+            try
             {
-                if (DialogueSkipVersion != initialVersion)
+                int initialVersion = DialogueSkipVersion;
+                float elapsed = 0f;
+                while (elapsed < duration)
                 {
+                    if (DialogueSkipVersion != initialVersion)
+                    {
+                        yield return null;
+                        yield break;
+                    }
+                    elapsed += Time.deltaTime;
                     yield return null;
-                    yield break;
                 }
-                elapsed += Time.deltaTime;
-                yield return null;
+            }
+            finally
+            {
+                AllowSpaceToSkipDialogue = false;
             }
         }
 
@@ -436,9 +448,16 @@ namespace ComputerLearning
                 speechBubble.transform.localScale = new Vector3(flipScale, 1f, 1f);
 
                 RectTransform bubbleRect = speechBubble.GetComponent<RectTransform>();
+                bool isCelebrationTarget = targetRect != null && targetRect.GetComponentInParent<LevelCelebrationModal>() != null;
                 Vector2 finalBubblePos = new Vector2(speechBubbleOffset.x, speechBubbleOffset.y);
 
-                if (isOnRightSide)
+                if (isCelebrationTarget)
+                {
+                    // Place speech bubble directly above the mascot outside the celebration card so it never overlaps the Continue button
+                    bubbleRect.pivot = new Vector2(0.5f, 0f);
+                    finalBubblePos = new Vector2(-35f, 20f);
+                }
+                else if (isOnRightSide)
                 {
                     bubbleRect.pivot = new Vector2(1f, 1f);
                 }
@@ -593,7 +612,7 @@ namespace ComputerLearning
             {
                 target = modal.CardRect;
             }
-            Vector2 sideOffset = new Vector2(330f, 0f);
+            Vector2 sideOffset = new Vector2(380f, -20f);
             ShowContextualFeedback(msg, target, displayDuration, sideOffset);
         }
 
@@ -629,8 +648,9 @@ namespace ComputerLearning
 
             gameObject.SetActive(true);
             targetRect = target;
+            hasAssignedTarget = (target != null);
             bool isCelebrationTarget = target != null && target.GetComponentInParent<LevelCelebrationModal>() != null;
-            currentTargetOffset = isCelebrationTarget ? (offset ?? new Vector2(330f, 0f)) : Vector2.zero;
+            currentTargetOffset = isCelebrationTarget ? (offset ?? new Vector2(380f, -20f)) : Vector2.zero;
 
             Canvas canvas = GetComponentInParent<Canvas>();
             float scale = canvas != null ? canvas.scaleFactor : 1f;
@@ -681,6 +701,8 @@ namespace ComputerLearning
             RectTransform vis = GetMascotVisualRect();
             if (vis != null) vis.localScale = Vector3.one;
             isDesktopCompanion = false;
+            AllowSpaceToSkipDialogue = false;
+            hasAssignedTarget = false;
             targetRect = null;
             currentTargetOffset = Vector2.zero;
             gameObject.SetActive(false);
@@ -693,6 +715,7 @@ namespace ComputerLearning
         public void InitAsDesktopCompanion()
         {
             isDesktopCompanion = true;
+            hasAssignedTarget = false;
             targetRect = null;
             gameObject.SetActive(true);
 

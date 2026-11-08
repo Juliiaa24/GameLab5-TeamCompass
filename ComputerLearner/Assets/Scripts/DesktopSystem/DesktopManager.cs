@@ -347,6 +347,13 @@ namespace ComputerLearning
                     DraggableIcon.SelectedIcon.CopyDesktopIcon();
                 }
             }
+            else if (isCtrl && kb.xKey.wasPressedThisFrame)
+            {
+                if (DraggableIcon.SelectedIcon != null && !DraggableIcon.SelectedIcon.IsProtected)
+                {
+                    DraggableIcon.SelectedIcon.CutDesktopIcon();
+                }
+            }
             else if (isCtrl && kb.vKey.wasPressedThisFrame)
             {
                 FileExplorerApp activeExplorer = UnityEngine.Object.FindAnyObjectByType<FileExplorerApp>();
@@ -356,6 +363,11 @@ namespace ComputerLearning
                     FileExplorerApp.PasteClipboardIntoFolder(FileExplorerApp.GetDesktopFolder());
                 }
             }
+        }
+
+        private void OnApplicationQuit()
+        {
+            FileExplorerApp.SaveFileSystemSnapshot();
         }
 
         private Sprite defaultWallpaperSprite;
@@ -407,6 +419,7 @@ namespace ComputerLearning
         {
             CustomWallpaperSprite = null;
             PlayerPrefs.SetString("DesktopWallpaperTheme", theme);
+            PlayerPrefs.DeleteKey("DesktopCustomWallpaperBase64");
             PlayerPrefs.Save();
             RestoreSavedWallpaper();
             FeedbackManager.PlaySuccess();
@@ -417,6 +430,14 @@ namespace ComputerLearning
             EnsureWallpaperImage();
             CustomWallpaperSprite = sprite;
             PlayerPrefs.SetString("DesktopWallpaperTheme", "custom");
+            if (sprite != null)
+            {
+                string base64 = FileExplorerApp.EncodeSpriteToPngBase64(sprite);
+                if (!string.IsNullOrEmpty(base64))
+                {
+                    PlayerPrefs.SetString("DesktopCustomWallpaperBase64", base64);
+                }
+            }
             PlayerPrefs.Save();
             if (WallpaperImage != null && sprite != null)
             {
@@ -431,13 +452,35 @@ namespace ComputerLearning
 
             if (CustomWallpaperSprite != null)
             {
-                SetDesktopWallpaperSprite(CustomWallpaperSprite);
+                if (WallpaperImage != null)
+                {
+                    WallpaperImage.sprite = CustomWallpaperSprite;
+                    WallpaperImage.color = Color.white;
+                }
                 return;
             }
 
             string theme = PlayerPrefs.GetString("DesktopWallpaperTheme", "default");
             switch (theme.ToLowerInvariant())
             {
+                case "custom":
+                    string savedBase64 = PlayerPrefs.GetString("DesktopCustomWallpaperBase64", string.Empty);
+                    Sprite restoredCustom = FileExplorerApp.DecodeSpriteFromPngBase64(savedBase64);
+                    if (restoredCustom != null)
+                    {
+                        CustomWallpaperSprite = restoredCustom;
+                        if (WallpaperImage != null)
+                        {
+                            WallpaperImage.sprite = restoredCustom;
+                            WallpaperImage.color = Color.white;
+                        }
+                    }
+                    else if (WallpaperImage != null)
+                    {
+                        if (defaultWallpaperSprite != null) WallpaperImage.sprite = defaultWallpaperSprite;
+                        WallpaperImage.color = Color.white;
+                    }
+                    break;
                 case "blue":
                     if (WallpaperImage != null) { WallpaperImage.sprite = null; WallpaperImage.color = new Color(0.12f, 0.25f, 0.48f, 1f); }
                     break;
