@@ -367,6 +367,7 @@ namespace ComputerLearning
                 return currentReport;
             }
 
+#if UNITY_EDITOR
             try
             {
                 string folder = Path.Combine(Application.dataPath, "Assessment");
@@ -388,6 +389,9 @@ namespace ComputerLearning
                 Debug.LogWarning($"[StatsSceneController] Error reading assessment report: {ex.Message}");
                 return null;
             }
+#else
+            return null;
+#endif
         }
     }
 }

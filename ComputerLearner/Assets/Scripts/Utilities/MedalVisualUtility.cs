@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Author: TeamCompass (Diego & AI)
  * Date: 23/10/2026
  * Description: Procedural and cached visual assets (Sprites, Colors, Badges) for Medals & Trophy UI.
@@ -77,11 +77,22 @@ namespace ComputerLearning
 
         private static Sprite LoadMedalSprite(string fileNameNoExt, Color fallbackMain, Color fallbackShadow, string label)
         {
-            // 1. Try Resources.Load
+            // 1. Try Resources.Load<Sprite>
             Sprite loaded = Resources.Load<Sprite>("Medals/" + fileNameNoExt);
             if (loaded != null) return loaded;
 
-            // 2. Try loading from Application.dataPath/Art/UI/Medals/
+            // 2. Build-safe fallback: Resources.Load<Texture2D> -> Sprite.Create
+            Texture2D resTex = Resources.Load<Texture2D>("Medals/" + fileNameNoExt);
+            if (resTex != null)
+            {
+                resTex.filterMode = FilterMode.Point;
+                Sprite fromTex = Sprite.Create(resTex, new Rect(0, 0, resTex.width, resTex.height), new Vector2(0.5f, 0.5f), 32f);
+                fromTex.name = fileNameNoExt;
+                return fromTex;
+            }
+
+#if UNITY_EDITOR
+            // 3. Editor-only fallback: loading from Application.dataPath/Art/UI/Medals/
             try
             {
                 string diskPath = Path.Combine(Application.dataPath, "Art", "UI", "Medals", fileNameNoExt + ".png");
@@ -102,8 +113,9 @@ namespace ComputerLearning
             {
                 Debug.LogWarning($"[MedalVisualUtility] Could not load medal from disk: {ex.Message}");
             }
+#endif
 
-            // 3. Procedural Fallback
+            // 4. Procedural Fallback
             return CreateCircularMedalSprite(fallbackMain, fallbackShadow, label);
         }
 

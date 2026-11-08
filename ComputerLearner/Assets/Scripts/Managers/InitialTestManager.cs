@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Author: Julia & AI (TeamCompass)
  * Date: 09/10/26
  * Description: Clean, geometric Initial Assessment Test for ComputerLearner in Light Mode.
@@ -981,12 +981,15 @@ namespace ComputerLearning
                     report.averageScore = (float)Math.Round(totalScore / report.totalTasksTested, 1);
                 }
 
-                // Save for current student and export to Desktop PlaytestData folder
+                // Save for current student and export to Desktop PlaytestData folder (or WebGL persistent storage)
                 PlaytestDataManager.SaveCurrentAssessmentReport(report);
 
                 string json = JsonUtility.ToJson(report, true);
+                PlayerPrefs.SetString(PlaytestDataManager.CurrentAssessmentJsonKey, json);
+                WebGLBridge.SyncFileSystem();
 
-                // Target folder: Assets/Assessment
+#if UNITY_EDITOR
+                // Target folder: Assets/Assessment (Editor only)
                 string folderPath = Path.Combine(Application.dataPath, "Assessment");
                 if (!Directory.Exists(folderPath))
                 {
@@ -1001,14 +1004,13 @@ namespace ComputerLearning
                 {
                     File.WriteAllText(fullPath, json);
                     Debug.Log($"[InitialTestManager] Successfully exported assessment JSON to: {fullPath}");
-#if UNITY_EDITOR
                     UnityEditor.AssetDatabase.Refresh();
-#endif
                 }
                 else
                 {
                     Debug.Log($"[InitialTestManager] Assessment report saved in-memory/prefs. Auto-download is disabled, skipping JSON file write ({fileName}).");
                 }
+#endif
             }
             catch (Exception ex)
             {

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Author: Diego
  * Date: 16/10/2026
  * Description: Educational Notepad application for typing practice, opening .txt files,
@@ -173,7 +173,7 @@ namespace ComputerLearning
             if (UnityEngine.InputSystem.Keyboard.current != null)
             {
                 var kb = UnityEngine.InputSystem.Keyboard.current;
-                isCtrl = kb.ctrlKey.isPressed;
+                isCtrl = kb.ctrlKey.isPressed || kb.leftCommandKey.isPressed || kb.rightCommandKey.isPressed;
                 isC = kb.cKey.wasPressedThisFrame;
                 isX = kb.xKey.wasPressedThisFrame;
                 isV = kb.vKey.wasPressedThisFrame;
@@ -183,7 +183,7 @@ namespace ComputerLearning
             else
             {
 #if ENABLE_LEGACY_INPUT_MANAGER
-                isCtrl = Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl);
+                isCtrl = Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl) || Input.GetKey(KeyCode.LeftCommand) || Input.GetKey(KeyCode.RightCommand);
                 isC = Input.GetKeyDown(KeyCode.C);
                 isX = Input.GetKeyDown(KeyCode.X);
                 isV = Input.GetKeyDown(KeyCode.V);
@@ -251,7 +251,7 @@ namespace ComputerLearning
             if (!string.IsNullOrEmpty(selected))
             {
                 VirtualClipboard = selected;
-                GUIUtility.systemCopyBuffer = selected;
+                TrySetSystemClipboard(selected);
                 OnTextCopied?.Invoke(selected);
                 ShowFeedbackMessage($"Copied: \"{TruncateString(selected, 20)}\"");
                 FeedbackManager.PlayClick();
@@ -259,7 +259,7 @@ namespace ComputerLearning
             else if (!string.IsNullOrEmpty(inputField.text))
             {
                 VirtualClipboard = inputField.text;
-                GUIUtility.systemCopyBuffer = inputField.text;
+                TrySetSystemClipboard(inputField.text);
                 OnTextCopied?.Invoke(inputField.text);
                 ShowFeedbackMessage("Copied all text!");
                 FeedbackManager.PlayClick();
@@ -278,7 +278,7 @@ namespace ComputerLearning
                 PushUndoState();
                 string selected = inputField.text.Substring(start, end - start);
                 VirtualClipboard = selected;
-                GUIUtility.systemCopyBuffer = selected;
+                TrySetSystemClipboard(selected);
 
                 isUndoing = true;
                 inputField.text = inputField.text.Remove(start, end - start);
@@ -296,14 +296,14 @@ namespace ComputerLearning
             else if (lastNativeEditFrame == Time.frameCount)
             {
                 // TMP_InputField already processed the cut earlier in the same frame via EventSystem
-                string cutText = !string.IsNullOrEmpty(GUIUtility.systemCopyBuffer)
-                    ? GUIUtility.systemCopyBuffer
-                    : lastNonEmptySelection;
+                string cutText = !string.IsNullOrEmpty(lastNonEmptySelection)
+                    ? lastNonEmptySelection
+                    : TryGetSystemClipboard();
 
                 if (!string.IsNullOrEmpty(cutText))
                 {
                     VirtualClipboard = cutText;
-                    GUIUtility.systemCopyBuffer = cutText;
+                    TrySetSystemClipboard(cutText);
                     lastNonEmptySelection = string.Empty;
                     OnTextCut?.Invoke(cutText);
                     ShowFeedbackMessage($"Cut: \"{TruncateString(cutText, 20)}\"");
@@ -316,7 +316,7 @@ namespace ComputerLearning
         {
             if (inputField == null) return;
 
-            string toPaste = !string.IsNullOrEmpty(VirtualClipboard) ? VirtualClipboard : GUIUtility.systemCopyBuffer;
+            string toPaste = !string.IsNullOrEmpty(VirtualClipboard) ? VirtualClipboard : TryGetSystemClipboard();
             if (string.IsNullOrEmpty(toPaste)) return;
 
             // Block any delayed native TMP_InputField paste event in this or the next frame
@@ -393,6 +393,22 @@ namespace ComputerLearning
                 return inputField.text.Substring(start, end - start);
             }
             return string.Empty;
+        }
+
+        private static void TrySetSystemClipboard(string text)
+        {
+#if !UNITY_WEBGL || UNITY_EDITOR
+            try { GUIUtility.systemCopyBuffer = text ?? string.Empty; } catch { }
+#endif
+        }
+
+        private static string TryGetSystemClipboard()
+        {
+#if !UNITY_WEBGL || UNITY_EDITOR
+            try { return GUIUtility.systemCopyBuffer ?? string.Empty; } catch { return string.Empty; }
+#else
+            return string.Empty;
+#endif
         }
 
         private string TruncateString(string s, int maxLen)

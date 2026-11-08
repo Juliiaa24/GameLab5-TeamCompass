@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Author: Julia Vera & TeamCompass
  * Date: 11/09
  * Description: Controls changes between scenes with DontDestroyOnLoad persistence,
@@ -114,7 +114,14 @@ namespace ComputerLearning
             {
                 if (UnityEngine.InputSystem.Keyboard.current.escapeKey.wasPressedThisFrame)
                 {
-                    if (SceneManager.GetActiveScene().name == "Menu") Application.Quit();
+                    if (SceneManager.GetActiveScene().name == "Menu")
+                    {
+#if UNITY_WEBGL && !UNITY_EDITOR
+                        if (Screen.fullScreen) Screen.fullScreen = false;
+#else
+                        Application.Quit();
+#endif
+                    }
                     else ChangeToMenu();
                 }
                 else if (SceneManager.GetActiveScene().name == "Menu" && UnityEngine.InputSystem.Keyboard.current.spaceKey.wasPressedThisFrame)
@@ -189,7 +196,19 @@ namespace ComputerLearning
             {
                 PlaytestDataManager.ExportCurrentStudentData("exit_button");
             }
+            WebGLBridge.SyncFileSystem();
+#if UNITY_WEBGL && !UNITY_EDITOR
+            if (Screen.fullScreen) Screen.fullScreen = false;
+            if (PlaytestStudentWidget.Instance != null)
+            {
+                string msg = LocalizationManager.CurrentLanguage == "es"
+                    ? "Datos guardados. Ya puedes cerrar la pestaña del navegador."
+                    : "Data saved. You can now safely close the browser tab.";
+                PlaytestStudentWidget.Instance.ShowToast(msg, 4.5f);
+            }
+#else
             Application.Quit(); 
+#endif
         }
 
         public void ResetProgress()
@@ -234,7 +253,7 @@ namespace ComputerLearning
             PlayerPrefs.SetInt("SemiGuidedSequenceCompleted", 0);
             PlayerPrefs.SetInt("AdvancedDesktopTourCompleted", 0);
             PlayerPrefs.SetInt("VirtualDesktopIntroCompleted", 0);
-            PlayerPrefs.Save();
+            WebGLBridge.SyncFileSystem();
 
             // 5. Advance to the next sequential Student ID (e.g. S01 -> S02)
             string nextStudentId = PlaytestDataManager.AdvanceToNextStudent();

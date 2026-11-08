@@ -488,7 +488,14 @@ namespace ComputerLearning
             if (!string.IsNullOrEmpty(folderPath))
             {
                 UIDialogs ui = UIDialogs.Current;
-                string msg = string.Format(ui.playtest_export_success, PlaytestDataManager.CurrentStudentId);
+                string safeId = PlaytestDataManager.CurrentStudentId;
+#if UNITY_WEBGL && !UNITY_EDITOR
+                string msg = LocalizationManager.CurrentLanguage == "es"
+                    ? $"Descargando ComputerLearner_Playtest_{safeId}.zip en el navegador..."
+                    : $"Downloading ComputerLearner_Playtest_{safeId}.zip in browser...";
+#else
+                string msg = string.Format(ui.playtest_export_success, safeId);
+#endif
                 ShowToast(msg, 3.5f);
             }
         }

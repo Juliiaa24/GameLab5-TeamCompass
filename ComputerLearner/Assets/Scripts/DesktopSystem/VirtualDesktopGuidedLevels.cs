@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Author: TeamCompass & Senior Unity Dev
  * Date: 23/10/2026
  * Description: Interactive guided tutorial system for Levels 10 to 16 executed directly
@@ -184,9 +184,9 @@ namespace ComputerLearning
         {
 #if ENABLE_INPUT_SYSTEM
             var kb = UnityEngine.InputSystem.Keyboard.current;
-            if (kb != null) return kb.ctrlKey.isPressed;
+            if (kb != null) return kb.ctrlKey.isPressed || kb.leftCommandKey.isPressed || kb.rightCommandKey.isPressed;
 #elif ENABLE_LEGACY_INPUT_MANAGER
-            return Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl);
+            return Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl) || Input.GetKey(KeyCode.LeftCommand) || Input.GetKey(KeyCode.RightCommand);
 #endif
             return false;
         }

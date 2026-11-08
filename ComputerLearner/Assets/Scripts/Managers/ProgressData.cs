@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Author: Diego
  * Date: 30/09/26
  * Description: Persists and provides access to the full task history and level attempts for reporting.
@@ -435,7 +435,7 @@ namespace ComputerLearning
                 };
                 string json = JsonUtility.ToJson(wrapper);
                 PlayerPrefs.SetString(SaveKey, json);
-                PlayerPrefs.Save();
+                WebGLBridge.SyncFileSystem();
             }
             catch (Exception e)
             {
@@ -577,7 +577,7 @@ namespace ComputerLearning
             levelAttemptsHistory.Clear();
             HasSeenDesktopTour = false;
             PlayerPrefs.DeleteKey(SaveKey);
-            PlayerPrefs.Save();
+            WebGLBridge.SyncFileSystem();
             OnProgressChanged?.Invoke();
             Debug.Log("[ProgressData] History cleared.");
         }

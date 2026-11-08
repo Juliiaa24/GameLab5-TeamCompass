@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Author: Julia & AI (TeamCompass)
  * Date: 01/11/2026
  * Description: Manages Playtesting Student IDs (auto-incremental S01, S02... + custom override)
@@ -105,7 +105,7 @@ namespace ComputerLearning
         private const string CurrentStudentIdKey = "Playtest_CurrentStudentId";
         private const string SessionStartKey = "Playtest_SessionStartTime";
         private const string LastExportedFolderKey = "Playtest_LastExportedStudentFolder";
-        private const string CurrentAssessmentJsonKey = "Playtest_CurrentAssessmentJson";
+        public const string CurrentAssessmentJsonKey = "Playtest_CurrentAssessmentJson";
         private const string AutoDownloadKey = "Playtest_AutoDownloadEnabled";
         private const string MainDesktopFolderName = "ComputerLearner_PlaytestData";
 
@@ -318,6 +318,7 @@ namespace ComputerLearning
                 }
             }
 
+#if UNITY_EDITOR
             try
             {
                 string folder = Path.Combine(Application.dataPath, "Assessment");
@@ -336,6 +337,7 @@ namespace ComputerLearning
                 }
             }
             catch (Exception) { }
+#endif
 
             return null;
         }
@@ -355,11 +357,12 @@ namespace ComputerLearning
                 PlayerPrefs.DeleteKey($"SkillSuccess_{skillId}");
                 PlayerPrefs.DeleteKey($"SkillFail_{skillId}");
             }
-            PlayerPrefs.Save();
+            WebGLBridge.SyncFileSystem();
         }
 
         public static string GetDesktopExportRootPath()
         {
+#if !UNITY_WEBGL || UNITY_EDITOR
             try
             {
                 string desktop = Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory);
@@ -376,6 +379,7 @@ namespace ComputerLearning
             {
                 Debug.LogWarning($"[PlaytestDataManager] Could not resolve Desktop path: {e.Message}");
             }
+#endif
 
             return Path.Combine(Application.persistentDataPath, MainDesktopFolderName);
         }
@@ -390,16 +394,21 @@ namespace ComputerLearning
 
         /// <summary>
         /// Builds and exports the current student's English reports to Desktop/ComputerLearner_PlaytestData/{StudentId}/
-        /// and updates the Master All_Students_Summary.csv file.
+        /// (or persistentDataPath + browser ZIP download in WebGL) and updates the Master All_Students_Summary.csv file.
         /// </summary>
         public static string ExportCurrentStudentData(string triggerReason = "manual")
         {
             EnsureInitialized();
-            if (!AutoDownloadEnabled && !triggerReason.StartsWith("manual", StringComparison.OrdinalIgnoreCase))
+            bool isManualTrigger = !string.IsNullOrEmpty(triggerReason) &&
+                                   triggerReason.StartsWith("manual", StringComparison.OrdinalIgnoreCase);
+
+#if !UNITY_WEBGL || UNITY_EDITOR
+            if (!AutoDownloadEnabled && !isManualTrigger)
             {
                 Debug.Log($"[PlaytestDataManager] Auto-download is disabled. Skipping automatic export trigger: {triggerReason}");
                 return string.Empty;
             }
+#endif
 
             try
             {
@@ -458,6 +467,34 @@ namespace ComputerLearning
                 string masterCsvPath = Path.Combine(rootDir, "All_Students_Summary.csv");
                 UpdateMasterStudentsCsv(masterCsvPath, fullReport, utf8WithBom);
 
+                WebGLBridge.SyncFileSystem();
+
+#if UNITY_WEBGL && !UNITY_EDITOR
+                bool shouldTriggerBrowserDownload = isManualTrigger ||
+                    (AutoDownloadEnabled && (
+                        string.Equals(triggerReason, "auto_before_reset", StringComparison.OrdinalIgnoreCase) ||
+                        string.Equals(triggerReason, "exit_button", StringComparison.OrdinalIgnoreCase) ||
+                        string.Equals(triggerReason, "initial_assessment_completed", StringComparison.OrdinalIgnoreCase) ||
+                        string.Equals(triggerReason, "assessment_completed", StringComparison.OrdinalIgnoreCase) ||
+                        string.Equals(triggerReason, "all_levels_completed", StringComparison.OrdinalIgnoreCase) ||
+                        string.Equals(triggerReason, "level_16_completed", StringComparison.OrdinalIgnoreCase)
+                    ));
+
+                if (shouldTriggerBrowserDownload)
+                {
+                    byte[] zipBytes = BuildStudentZipArchiveBytes(studentDir, masterCsvPath, safeId);
+                    if (zipBytes != null && zipBytes.Length > 0)
+                    {
+                        string zipFileName = $"ComputerLearner_Playtest_{safeId}.zip";
+                        WebGLBridge.DownloadFile(zipFileName, "application/zip", zipBytes);
+                    }
+                }
+                else if (!AutoDownloadEnabled)
+                {
+                    return string.Empty;
+                }
+#endif
+
                 Debug.Log($"[PlaytestDataManager] Exported English playtest data for '{fullReport.studentId}' ({triggerReason}) to: {studentDir}");
                 OnDataExported?.Invoke(studentDir);
                 return studentDir;
@@ -467,6 +504,38 @@ namespace ComputerLearning
                 Debug.LogError($"[PlaytestDataManager] Export failed: {ex.Message}");
                 return string.Empty;
             }
+        }
+
+        /// <summary>
+        /// Packages the student's 4 exported report files plus the cumulative All_Students_Summary.csv into a single ZIP byte array.
+        /// </summary>
+        public static byte[] BuildStudentZipArchiveBytes(string studentDir, string masterCsvPath, string safeId)
+        {
+            var zipEntries = new Dictionary<string, byte[]>(StringComparer.OrdinalIgnoreCase);
+
+            string[] studentFiles = new[]
+            {
+                $"1_{safeId}_Readable_Report.txt",
+                $"2_{safeId}_Visual_Report.html",
+                $"3_{safeId}_Excel_Data.csv",
+                $"4_{safeId}_Raw_Data.json"
+            };
+
+            foreach (string fileName in studentFiles)
+            {
+                string fullPath = Path.Combine(studentDir, fileName);
+                if (File.Exists(fullPath))
+                {
+                    zipEntries[$"{safeId}/{fileName}"] = File.ReadAllBytes(fullPath);
+                }
+            }
+
+            if (!string.IsNullOrEmpty(masterCsvPath) && File.Exists(masterCsvPath))
+            {
+                zipEntries["All_Students_Summary.csv"] = File.ReadAllBytes(masterCsvPath);
+            }
+
+            return WebGLBridge.CreateZipArchive(zipEntries);
         }
 
         public static StudentFullPlaytestReport BuildFullReport(string triggerReason)

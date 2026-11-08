@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Author: Diego
  * Date: 16/10/2026
  * Description: MS Paint-style drawing application for creating, editing, viewing, and saving .png images
@@ -133,14 +133,14 @@ namespace ComputerLearning
             if (UnityEngine.InputSystem.Keyboard.current != null)
             {
                 var kb = UnityEngine.InputSystem.Keyboard.current;
-                isCtrl = kb.ctrlKey.isPressed;
+                isCtrl = kb.ctrlKey.isPressed || kb.leftCommandKey.isPressed || kb.rightCommandKey.isPressed;
                 isZ = kb.zKey.wasPressedThisFrame;
                 isS = kb.sKey.wasPressedThisFrame;
             }
             else
             {
 #if ENABLE_LEGACY_INPUT_MANAGER
-                isCtrl = Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl);
+                isCtrl = Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl) || Input.GetKey(KeyCode.LeftCommand) || Input.GetKey(KeyCode.RightCommand);
                 isZ = Input.GetKeyDown(KeyCode.Z);
                 isS = Input.GetKeyDown(KeyCode.S);
 #endif

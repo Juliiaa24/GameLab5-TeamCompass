@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Author: Diego
  * Date: 16/10/2026
  * Description: Deep interactive File Explorer system with persistent hierarchical file system ('This PC' + 'Desktop'),
@@ -204,6 +204,8 @@ namespace ComputerLearning
                     }
                 }
             }
+            Sprite fromRes = Resources.Load<Sprite>(spriteName);
+            if (fromRes != null) return fromRes;
 #if UNITY_EDITOR
             string[] guids = UnityEditor.AssetDatabase.FindAssets($"{spriteName} t:Sprite");
             foreach (string guid in guids)
@@ -417,6 +419,7 @@ namespace ComputerLearning
             if (SharedFolderIcon != null) return SharedFolderIcon;
 #endif
             SharedFolderIcon = Resources.Load<Sprite>("Folder_Icon01");
+            if (SharedFolderIcon == null) SharedFolderIcon = Resources.Load<Sprite>("FolderIcons/Folder_Icon01");
             return SharedFolderIcon;
         }
         #endregion
