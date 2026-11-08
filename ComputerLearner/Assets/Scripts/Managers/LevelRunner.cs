@@ -237,7 +237,7 @@ namespace ComputerLearning
 
         private System.Collections.IEnumerator AutoStartLevelAfterDelay(float delay, GameObject panel)
         {
-            yield return new WaitForSeconds(delay);
+            yield return VirtualMascot.WaitForDialogue(delay);
             VirtualMascot.HideMascot();
             if (panel != null) Destroy(panel);
             SpawnNextTask();
@@ -309,20 +309,13 @@ namespace ComputerLearning
                     if (appWindow != null) appWindow.CloseWindow();
                 }, null, currentLevelScore);
 
-                if (improvedMedal)
-                {
-                    VirtualMascot.ShowMedalImprovementFeedback(
-                        previousBestMedal,
-                        medal,
-                        accuracy,
-                        totalDuration,
-                        null,
-                        5.5f);
-                }
-                else
-                {
-                    VirtualMascot.HideMascot();
-                }
+                VirtualMascot.ShowMedalImprovementFeedback(
+                    improvedMedal ? previousBestMedal : LevelMedal.None,
+                    medal,
+                    accuracy,
+                    totalDuration,
+                    null,
+                    6.5f);
 
                 return;
             }
@@ -382,14 +375,6 @@ namespace ComputerLearning
         private bool ShouldShowProgressBar()
         {
             if (currentLevel == null || IsCompleted) return false;
-
-            int totalTasks = GetTotalTasksCount();
-            // Avoid duplicating MoveMouseTask's built-in "Cleaning Progress..." bar in single-task Level 1
-            if (totalTasks == 1 && activeTask is MoveMouseTask)
-            {
-                return false;
-            }
-
             return true;
         }
 

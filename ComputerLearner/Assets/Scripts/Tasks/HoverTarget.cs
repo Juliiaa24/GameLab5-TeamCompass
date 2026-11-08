@@ -44,6 +44,10 @@ namespace ComputerLearning
         private bool  completed;
 
         private bool isMoving;
+        private bool isSwayingOnly;
+        private Vector2 baseAnchoredPosition;
+        private bool hasRecordedBasePos;
+        private float swayTimer;
         private float moveSpeed;
         private RectTransform rectTransform;
         private RectTransform parentRect;
@@ -61,6 +65,7 @@ namespace ComputerLearning
             if (parentRect == null) parentRect = transform.parent as RectTransform;
             moveDirection = UnityEngine.Random.insideUnitCircle.normalized;
             if (moveDirection == Vector2.zero) moveDirection = Vector2.right;
+            swayTimer = UnityEngine.Random.Range(0f, Mathf.PI * 2f);
 
             if (fillProgressImage != null) fillProgressImage.fillAmount = 0f;
         }
@@ -72,12 +77,6 @@ namespace ComputerLearning
             // ── Movement & Bounds Clamping ────────────────────────────────
             if (parentRect != null && parentRect.rect.width > 0f && parentRect.rect.height > 0f)
             {
-                Vector2 pos = rectTransform.anchoredPosition;
-                if (isMoving)
-                {
-                    pos += moveDirection * (moveSpeed * Time.deltaTime);
-                }
-
                 Rect bounds = parentRect.rect;
                 float marginW = (rectTransform.rect.width  * 0.5f) + 18f;
                 float marginH = (rectTransform.rect.height * 0.5f) + 18f;
@@ -87,33 +86,58 @@ namespace ComputerLearning
                 float minY = bounds.yMin + marginH;
                 float maxY = bounds.yMax - marginH - 22f;
 
-                if (maxX > minX)
+                if (isSwayingOnly)
                 {
-                    if (pos.x < minX || pos.x > maxX)
+                    if (!hasRecordedBasePos && rectTransform.anchoredPosition != Vector2.zero)
                     {
-                        if (isMoving) moveDirection.x = -moveDirection.x;
-                        pos.x = Mathf.Clamp(pos.x, minX, maxX);
+                        baseAnchoredPosition = rectTransform.anchoredPosition;
+                        hasRecordedBasePos = true;
                     }
+
+                    swayTimer += Time.deltaTime * 1.4f;
+                    Vector2 swayOffset = new Vector2(Mathf.Sin(swayTimer) * 28f, Mathf.Cos(swayTimer * 0.85f) * 20f);
+                    Vector2 targetPos = (hasRecordedBasePos ? baseAnchoredPosition : rectTransform.anchoredPosition) + swayOffset;
+
+                    targetPos.x = (maxX > minX) ? Mathf.Clamp(targetPos.x, minX, maxX) : bounds.center.x;
+                    targetPos.y = (maxY > minY) ? Mathf.Clamp(targetPos.y, minY, maxY) : bounds.center.y;
+                    rectTransform.anchoredPosition = targetPos;
                 }
                 else
                 {
-                    pos.x = bounds.center.x;
-                }
-
-                if (maxY > minY)
-                {
-                    if (pos.y < minY || pos.y > maxY)
+                    Vector2 pos = rectTransform.anchoredPosition;
+                    if (isMoving)
                     {
-                        if (isMoving) moveDirection.y = -moveDirection.y;
-                        pos.y = Mathf.Clamp(pos.y, minY, maxY);
+                        pos += moveDirection * (moveSpeed * Time.deltaTime);
                     }
-                }
-                else
-                {
-                    pos.y = bounds.center.y;
-                }
 
-                rectTransform.anchoredPosition = pos;
+                    if (maxX > minX)
+                    {
+                        if (pos.x < minX || pos.x > maxX)
+                        {
+                            if (isMoving) moveDirection.x = -moveDirection.x;
+                            pos.x = Mathf.Clamp(pos.x, minX, maxX);
+                        }
+                    }
+                    else
+                    {
+                        pos.x = bounds.center.x;
+                    }
+
+                    if (maxY > minY)
+                    {
+                        if (pos.y < minY || pos.y > maxY)
+                        {
+                            if (isMoving) moveDirection.y = -moveDirection.y;
+                            pos.y = Mathf.Clamp(pos.y, minY, maxY);
+                        }
+                    }
+                    else
+                    {
+                        pos.y = bounds.center.y;
+                    }
+
+                    rectTransform.anchoredPosition = pos;
+                }
             }
 
             // ── Hover tracking ────────────────────────────────────────────
@@ -147,6 +171,7 @@ namespace ComputerLearning
             rectTransform.sizeDelta = new Vector2(size, size);
             requiredDuration = Mathf.Max(0.1f, duration);
             isMoving  = moving;
+            isSwayingOnly = !moving;
             moveSpeed = moving ? ((speed > 0f ? speed : 100f) * 1.2f) : speed;
         }
 

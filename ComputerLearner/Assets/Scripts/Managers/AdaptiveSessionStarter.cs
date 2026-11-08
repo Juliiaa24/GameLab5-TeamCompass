@@ -40,12 +40,12 @@ namespace ComputerLearning
             // Mini tutorial message
             VirtualMascot.Show(dialogs.adaptive_welcome, target, new Vector2(250, -100));
             
-            yield return new WaitForSeconds(4.0f);
+            yield return VirtualMascot.WaitForDialogue(4.0f);
             if (window != null && window.IsClosed) { VirtualMascot.HideMascot(); yield break; }
             
             VirtualMascot.Show(dialogs.adaptive_explanation, target, new Vector2(250, -100));
             
-            yield return new WaitForSeconds(4.0f);
+            yield return VirtualMascot.WaitForDialogue(4.0f);
             if (window != null && window.IsClosed) { VirtualMascot.HideMascot(); yield break; }
             
             VirtualMascot.HideMascot();

@@ -239,15 +239,22 @@ namespace ComputerLearning
         public static void ApplyLabelOutline(TMPro.TextMeshProUGUI label)
         {
             if (label == null) return;
-            label.outlineColor = new Color32(15, 23, 42, 230);
-            label.outlineWidth = 0.28f;
-            var outline = label.gameObject.GetComponent<UnityEngine.UI.Outline>();
-            if (outline == null)
+
+            Material baseMat = label.fontSharedMaterial != null ? label.fontSharedMaterial : (label.font != null ? label.font.material : null);
+            if (baseMat != null)
             {
-                outline = label.gameObject.AddComponent<UnityEngine.UI.Outline>();
+                Material instMat = new Material(baseMat);
+                instMat.EnableKeyword("OUTLINE_ON");
+                instMat.SetColor(TMPro.ShaderUtilities.ID_OutlineColor, new Color32(0, 0, 0, 255));
+                instMat.SetFloat(TMPro.ShaderUtilities.ID_OutlineWidth, 0.28f);
+                instMat.SetFloat(TMPro.ShaderUtilities.ID_FaceDilate, 0.08f);
+                label.fontMaterial = instMat;
             }
-            outline.effectColor = new Color(0.06f, 0.09f, 0.16f, 0.95f);
-            outline.effectDistance = new Vector2(1.5f, -1.5f);
+
+            label.outlineColor = new Color32(0, 0, 0, 255);
+            label.outlineWidth = 0.28f;
+            label.UpdateMeshPadding();
+            label.ForceMeshUpdate();
         }
 
         private void Start()
@@ -265,11 +272,16 @@ namespace ComputerLearning
             UnityEngine.UI.Image iconImg = GetComponent<UnityEngine.UI.Image>();
             if (iconImg != null) originalColor = iconImg.color;
 
+            TMPro.TextMeshProUGUI startLabel = GetComponentInChildren<TMPro.TextMeshProUGUI>();
+            if (startLabel != null)
+            {
+                ApplyLabelOutline(startLabel);
+            }
+
             bool actuallyLocked = isLocked;
             if (levelDefinition != null)
             {
-                TMPro.TextMeshProUGUI lvlLabel = GetComponentInChildren<TMPro.TextMeshProUGUI>();
-                if (lvlLabel != null) lvlLabel.text = levelDefinition.GetLocalizedDisplayName();
+                if (startLabel != null) startLabel.text = levelDefinition.GetLocalizedDisplayName();
                 if (ProgressData.Instance != null)
                     actuallyLocked = !ProgressData.Instance.IsLevelUnlocked(levelDefinition.levelId);
             }
@@ -278,8 +290,7 @@ namespace ComputerLearning
             {
                 if (iconImg != null) iconImg.color = new Color(0.28f, 0.28f, 0.28f, 0.7f);
                 if (canvasGroup != null) canvasGroup.alpha = 0.6f;
-                TMPro.TextMeshProUGUI label = GetComponentInChildren<TMPro.TextMeshProUGUI>();
-                if (label != null) label.color = new Color(0.5f, 0.5f, 0.5f, 0.7f);
+                if (startLabel != null) startLabel.color = new Color(0.5f, 0.5f, 0.5f, 0.7f);
             }
         }
 
@@ -303,7 +314,11 @@ namespace ComputerLearning
             TMPro.TextMeshProUGUI textLabel = GetComponentInChildren<TMPro.TextMeshProUGUI>();
             if (textLabel != null)
             {
-                textLabel.color = actuallyLocked ? new Color(0.5f, 0.5f, 0.5f, 0.7f) : Color.white;
+                Color targetLabelColor = actuallyLocked ? new Color(0.5f, 0.5f, 0.5f, 0.7f) : Color.white;
+                if (textLabel.color != targetLabelColor)
+                {
+                    textLabel.color = targetLabelColor;
+                }
             }
 
             bool shouldPulse = false;
@@ -731,9 +746,13 @@ namespace ComputerLearning
             {
                 items.Add(new ContextMenuItem("Open", OpenApplication, true));
 
-                bool isImage = (LinkedExplorerItem != null && LinkedExplorerItem.fileType == ExplorerFileType.ImageFile) ||
-                               ItemType == DesktopItemType.ImageDocument ||
-                               gameObject.name.EndsWith(".png", StringComparison.OrdinalIgnoreCase);
+                TMPro.TextMeshProUGUI lbl = GetComponentInChildren<TMPro.TextMeshProUGUI>();
+                string lblText = lbl != null ? lbl.text.Trim() : gameObject.name;
+                bool isImage = !lblText.Equals("Paint", StringComparison.OrdinalIgnoreCase) &&
+                               ((LinkedExplorerItem != null && LinkedExplorerItem.fileType == ExplorerFileType.ImageFile) ||
+                                ItemType == DesktopItemType.ImageDocument ||
+                                gameObject.name.EndsWith(".png", StringComparison.OrdinalIgnoreCase) ||
+                                lblText.EndsWith(".png", StringComparison.OrdinalIgnoreCase));
 
                 if (isImage)
                 {
@@ -742,6 +761,21 @@ namespace ComputerLearning
                         EnsureLinkedExplorerItem();
                         StartMenuController c = StartMenuController.Instance ?? FindAnyObjectByType<StartMenuController>(FindObjectsInactive.Include);
                         if (c != null) c.OpenPaintWithFile(LinkedExplorerItem, FileExplorerApp.GetDesktopFolder());
+                    }, true));
+
+                    items.Add(new ContextMenuItem("Set as Desktop Background", () =>
+                    {
+                        EnsureLinkedExplorerItem();
+                        Sprite s = (LinkedExplorerItem != null && LinkedExplorerItem.imageContent != null)
+                            ? LinkedExplorerItem.imageContent
+                            : (LinkedExplorerItem != null && LinkedExplorerItem.icon != null
+                                ? LinkedExplorerItem.icon
+                                : GetComponent<UnityEngine.UI.Image>()?.sprite);
+                        if (s != null && DesktopManager.Instance != null)
+                        {
+                            DesktopManager.Instance.SetDesktopWallpaperSprite(s);
+                            FeedbackManager.PlaySuccess();
+                        }
                     }, true));
                 }
 
@@ -774,11 +808,22 @@ namespace ComputerLearning
                 }
 
                 bool canModify = !IsProtected;
+                items.Add(new ContextMenuItem("Copy", CopyDesktopIcon, canModify));
                 items.Add(new ContextMenuItem("Rename", PromptRenameDesktopIcon, canModify));
                 items.Add(new ContextMenuItem("Delete", DeleteDesktopIconToRecycleBin, canModify));
             }
 
             ContextMenuController.Instance.Show(screenPosition, items);
+        }
+
+        public void CopyDesktopIcon()
+        {
+            if (IsProtected) return;
+            EnsureLinkedExplorerItem();
+            if (LinkedExplorerItem != null && !LinkedExplorerItem.isProtected)
+            {
+                FileExplorerApp.SharedClipboardItem = LinkedExplorerItem;
+            }
         }
 
         public void PromptRenameDesktopIcon()

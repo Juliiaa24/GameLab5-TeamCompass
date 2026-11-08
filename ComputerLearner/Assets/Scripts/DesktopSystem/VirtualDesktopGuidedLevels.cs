@@ -470,7 +470,7 @@ namespace ComputerLearning
 
             SoundManager.PlaySuccess();
             VirtualMascot.Show(dialogs.l10_done, bgRect, new Vector2(0, 50));
-            yield return new WaitForSeconds(2.8f);
+            yield return VirtualMascot.WaitForDialogue(2.8f);
 
             CompleteLevel(levelDef);
         }
@@ -562,7 +562,7 @@ namespace ComputerLearning
 
             SoundManager.PlaySuccess();
             VirtualMascot.Show(dialogs.l11_done, winRect, new Vector2(0, 180));
-            yield return new WaitForSeconds(2.5f);
+            yield return VirtualMascot.WaitForDialogue(2.5f);
 
             CompleteLevel(levelDef);
         }
@@ -667,7 +667,7 @@ namespace ComputerLearning
 
             SoundManager.PlaySuccess();
             VirtualMascot.Show(dialogs.l12_copyDone, winRect, new Vector2(0, 180));
-            yield return new WaitForSeconds(2.0f);
+            yield return VirtualMascot.WaitForDialogue(2.0f);
 
             // Step 2: Paste
             VirtualMascot.Show(dialogs.l12_pastePrompt, winRect, new Vector2(0, 180));
@@ -738,7 +738,7 @@ namespace ComputerLearning
 
             SoundManager.PlaySuccess();
             VirtualMascot.Show(dialogs.l12_pasteDone, winRect, new Vector2(0, 180));
-            yield return new WaitForSeconds(2.0f);
+            yield return VirtualMascot.WaitForDialogue(2.0f);
 
             // Step 3: Cut
             VirtualMascot.Show(dialogs.l12_cutPrompt, winRect, new Vector2(0, 180));
@@ -816,7 +816,7 @@ namespace ComputerLearning
 
             SoundManager.PlaySuccess();
             VirtualMascot.Show(dialogs.l12_done, winRect, new Vector2(0, 180));
-            yield return new WaitForSeconds(2.5f);
+            yield return VirtualMascot.WaitForDialogue(2.5f);
 
             CompleteLevel(levelDef);
         }
@@ -846,7 +846,7 @@ namespace ComputerLearning
             tutorialBlocker?.SetAllowedTarget(winRect);
 
             VirtualMascot.Show(dialogs.l13_welcome, winRect, new Vector2(0, 180));
-            yield return new WaitForSeconds(3.0f);
+            yield return VirtualMascot.WaitForDialogue(3.0f);
 
             if (notepad == null || !notepad.gameObject.activeInHierarchy)
             {
@@ -933,7 +933,7 @@ namespace ComputerLearning
 
             SoundManager.PlaySuccess();
             VirtualMascot.Show(dialogs.l13_done, winRect, new Vector2(0, 180));
-            yield return new WaitForSeconds(2.8f);
+            yield return VirtualMascot.WaitForDialogue(2.8f);
 
             CompleteLevel(levelDef);
         }
@@ -1019,7 +1019,7 @@ namespace ComputerLearning
 
             SoundManager.PlaySuccess();
             VirtualMascot.Show(dialogs.l14_done, winRect, new Vector2(0, 180));
-            yield return new WaitForSeconds(2.8f);
+            yield return VirtualMascot.WaitForDialogue(2.8f);
 
             CompleteLevel(levelDef);
         }
@@ -1031,7 +1031,7 @@ namespace ComputerLearning
             yield return new WaitForSeconds(0.6f);
 
             VirtualMascot.Show(dialogs.l15_welcome, null, new Vector2(0, 80));
-            yield return new WaitForSeconds(3.0f);
+            yield return VirtualMascot.WaitForDialogue(3.0f);
 
             NotepadApp notepad = EnsureNotepadOpen();
             while (notepad == null || !notepad.gameObject.activeInHierarchy)
@@ -1335,7 +1335,7 @@ namespace ComputerLearning
 
             SoundManager.PlaySuccess();
             VirtualMascot.Show(dialogs.l15_done, winRect, new Vector2(0, 180));
-            yield return new WaitForSeconds(2.8f);
+            yield return VirtualMascot.WaitForDialogue(2.8f);
 
             CompleteLevel(levelDef);
         }
@@ -1408,7 +1408,7 @@ namespace ComputerLearning
 
             SoundManager.PlaySuccess();
             VirtualMascot.Show(dialogs.l16_drawDone, winRect, new Vector2(0, 180));
-            yield return new WaitForSeconds(2.0f);
+            yield return VirtualMascot.WaitForDialogue(2.0f);
 
             // Step 2: Undo
             VirtualMascot.Show(dialogs.l16_undoPrompt, winRect, new Vector2(0, 180));
@@ -1436,7 +1436,7 @@ namespace ComputerLearning
 
             SoundManager.PlaySuccess();
             VirtualMascot.Show(dialogs.l16_undoDone, winRect, new Vector2(0, 180));
-            yield return new WaitForSeconds(2.0f);
+            yield return VirtualMascot.WaitForDialogue(2.0f);
 
             // Step 3: Save
             VirtualMascot.Show(dialogs.l16_savePrompt, winRect, new Vector2(0, 180));
@@ -1459,7 +1459,7 @@ namespace ComputerLearning
 
             SoundManager.PlaySuccess();
             VirtualMascot.Show(dialogs.l16_done, winRect, new Vector2(0, 180));
-            yield return new WaitForSeconds(3.0f);
+            yield return VirtualMascot.WaitForDialogue(3.0f);
 
             CompleteLevel(levelDef);
         }
@@ -1702,14 +1702,13 @@ namespace ComputerLearning
                 VirtualMascot.HideMascot();
             }, null, finalScore);
 
-            if (improvedMedal)
-            {
-                VirtualMascot.ShowMedalImprovementFeedback(previousBestMedal, medal, accuracy, duration, null, 5.5f);
-            }
-            else
-            {
-                VirtualMascot.HideMascot();
-            }
+            VirtualMascot.ShowMedalImprovementFeedback(
+                improvedMedal ? previousBestMedal : LevelMedal.None,
+                medal,
+                accuracy,
+                duration,
+                null,
+                6.5f);
         }
 
         public static LevelDefinition GetOrCreateLevelDefinition(string levelId)

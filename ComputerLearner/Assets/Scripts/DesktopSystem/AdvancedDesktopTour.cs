@@ -217,7 +217,7 @@ namespace ComputerLearning
             // 1. Welcome
             tutorialBlocker?.SetAllowedTarget(null);
             VirtualMascot.Show(dialogs.step1_welcome, iconRect, new Vector2(250, 0));
-            yield return new WaitForSeconds(4.0f);
+            yield return VirtualMascot.WaitForDialogue(4.0f);
 
             // 2. Move Icon
             appIcon.AllowDoubleClick = false; // Block opening it by accident
@@ -230,7 +230,7 @@ namespace ComputerLearning
 
             tutorialBlocker?.SetAllowedTarget(null);
             VirtualMascot.Show(dialogs.step2_perfect, iconRect, new Vector2(250, 0));
-            yield return new WaitForSeconds(2.0f);
+            yield return VirtualMascot.WaitForDialogue(2.0f);
 
             // 3. Open Window
             appIcon.AllowDoubleClick = true;
@@ -279,7 +279,7 @@ namespace ComputerLearning
 
                 tutorialBlocker?.SetAllowedTarget(null);
                 VirtualMascot.Show(dialogs.step4_veryGood, windowRect, new Vector2(0, 200));
-                yield return new WaitForSeconds(2.0f);
+                yield return VirtualMascot.WaitForDialogue(2.0f);
 
                 // 5. Resize Window
                 VirtualMascot.Show(dialogs.step5_resizeWindow, windowRect, new Vector2(250, 0));
@@ -297,7 +297,7 @@ namespace ComputerLearning
                 tutorialBlocker?.SetAllowedTarget(null);
 
                 VirtualMascot.Show(dialogs.step5_awesome, windowRect, new Vector2(250, 0));
-                yield return new WaitForSeconds(2.5f);
+                yield return VirtualMascot.WaitForDialogue(2.5f);
 
                 // 6. Close Window (Minimize and Maximize steps omitted as they are already taught in DesktopTour)
                 RectTransform closeBtnRect = btnClose as RectTransform ?? windowRect;
@@ -344,7 +344,7 @@ namespace ComputerLearning
             }
 
             VirtualMascot.Show(dialogs.step9_congrats, binRect, new Vector2(250, 0));
-            yield return new WaitForSeconds(4.0f);
+            yield return VirtualMascot.WaitForDialogue(4.0f);
 
             CompleteTutorial();
         }

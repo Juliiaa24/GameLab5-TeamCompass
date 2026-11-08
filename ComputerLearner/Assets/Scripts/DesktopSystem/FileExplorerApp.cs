@@ -101,6 +101,11 @@ namespace ComputerLearning
         [SerializeField] private Button btnNewImageToolbar;
         [SerializeField] private Button btnNewTextToolbar;
         private static ExplorerItemData clipboardItem;
+        public static ExplorerItemData SharedClipboardItem
+        {
+            get => clipboardItem;
+            set => clipboardItem = value;
+        }
         [SerializeField] private TextMeshProUGUI statusFooterText;
 
         [Header("Items Grid & Container")]
@@ -281,11 +286,11 @@ namespace ComputerLearning
             }
 
             bool isCtrl = kb.leftCtrlKey.isPressed || kb.rightCtrlKey.isPressed;
-            if (isCtrl && kb.cKey.wasPressedThisFrame && selectedItemData != null)
+            if (isCtrl && kb.cKey.wasPressedThisFrame && selectedItemData != null && DraggableIcon.SelectedIcon == null)
             {
                 CopySelectedItem();
             }
-            else if (isCtrl && kb.vKey.wasPressedThisFrame && currentFolder != null)
+            else if (isCtrl && kb.vKey.wasPressedThisFrame && currentFolder != null && DraggableIcon.SelectedIcon == null)
             {
                 PasteClipboardItem();
             }
@@ -308,6 +313,11 @@ namespace ComputerLearning
         public void CopySelectedItem()
         {
             if (selectedItemData == null) return;
+            if (selectedItemData.isProtected || IsReadOnlySystemFolderStatic(selectedItemData))
+            {
+                SetStatusMessage("<color=#D9534F>System item is protected and cannot be copied.</color>");
+                return;
+            }
             clipboardItem = selectedItemData;
             SetStatusMessage($"Copied '{selectedItemData.name}' to clipboard.");
         }
@@ -315,12 +325,29 @@ namespace ComputerLearning
         public void PasteClipboardItem()
         {
             if (clipboardItem == null || currentFolder == null) return;
-            if (currentFolder.name.Equals("Recycle Bin", StringComparison.OrdinalIgnoreCase)) return;
+            if (IsReadOnlySystemFolderStatic(currentFolder))
+            {
+                SetStatusMessage("<color=#D9534F>Cannot paste items into this system folder.</color>");
+                return;
+            }
+
+            ExplorerItemData duplicate = PasteClipboardIntoFolder(currentFolder);
+            if (duplicate != null)
+            {
+                SetStatusMessage($"Pasted '{duplicate.name}'");
+            }
+        }
+
+        public static ExplorerItemData PasteClipboardIntoFolder(ExplorerItemData targetFolder)
+        {
+            if (clipboardItem == null || targetFolder == null) return null;
+            if (IsReadOnlySystemFolderStatic(targetFolder)) return null;
+            if (clipboardItem.isProtected || IsReadOnlySystemFolderStatic(clipboardItem)) return null;
 
             string baseName = clipboardItem.name;
             string ext = System.IO.Path.GetExtension(baseName);
             string nameWithoutExt = System.IO.Path.GetFileNameWithoutExtension(baseName);
-            string copyName = GetUniqueItemName(currentFolder, $"Copy of {nameWithoutExt}", ext);
+            string copyName = GetUniqueItemNameStatic(targetFolder, $"Copy of {nameWithoutExt}", ext);
 
             ExplorerItemData duplicate = new ExplorerItemData
             {
@@ -333,10 +360,10 @@ namespace ComputerLearning
                 children = new List<ExplorerItemData>()
             };
 
-            if (currentFolder.children == null) currentFolder.children = new List<ExplorerItemData>();
-            currentFolder.children.Add(duplicate);
+            if (targetFolder.children == null) targetFolder.children = new List<ExplorerItemData>();
+            targetFolder.children.Add(duplicate);
             NotifyFileSystemChanged();
-            SetStatusMessage($"Pasted '{copyName}'");
+            return duplicate;
         }
         #endregion
 
@@ -684,7 +711,11 @@ namespace ComputerLearning
 
         public ExplorerItemData CreateNewFolder(string customBaseName = "New Folder")
         {
-            if (currentFolder == null) return null;
+            if (currentFolder == null || IsReadOnlySystemFolderStatic(currentFolder))
+            {
+                SetStatusMessage("<color=#D9534F>Cannot create items in this system folder.</color>");
+                return null;
+            }
 
             ExplorerItemData target = currentFolder;
 
@@ -710,7 +741,11 @@ namespace ComputerLearning
 
         public ExplorerItemData CreateNewTextDocument(string customBaseName = "New Document")
         {
-            if (currentFolder == null) return null;
+            if (currentFolder == null || IsReadOnlySystemFolderStatic(currentFolder))
+            {
+                SetStatusMessage("<color=#D9534F>Cannot create items in this system folder.</color>");
+                return null;
+            }
 
             ExplorerItemData target = currentFolder;
 
@@ -736,7 +771,11 @@ namespace ComputerLearning
 
         public ExplorerItemData CreateNewImageDocument(string customBaseName = "New Drawing")
         {
-            if (currentFolder == null) return null;
+            if (currentFolder == null || IsReadOnlySystemFolderStatic(currentFolder))
+            {
+                SetStatusMessage("<color=#D9534F>Cannot create items in this system folder.</color>");
+                return null;
+            }
 
             ExplorerItemData target = currentFolder;
 
@@ -763,10 +802,10 @@ namespace ComputerLearning
             ActiveExplorerFolder = currentFolder;
             ClearSelection();
 
-            bool inRecycleBin = currentFolder != null && currentFolder.name.Equals("Recycle Bin", StringComparison.OrdinalIgnoreCase);
-            if (btnNewFolderToolbar != null) btnNewFolderToolbar.gameObject.SetActive(!inRecycleBin);
-            if (btnNewImageToolbar != null) btnNewImageToolbar.gameObject.SetActive(!inRecycleBin);
-            if (btnNewTextToolbar != null) btnNewTextToolbar.gameObject.SetActive(!inRecycleBin);
+            bool isReadOnly = IsReadOnlySystemFolderStatic(currentFolder);
+            if (btnNewFolderToolbar != null) btnNewFolderToolbar.gameObject.SetActive(!isReadOnly);
+            if (btnNewImageToolbar != null) btnNewImageToolbar.gameObject.SetActive(!isReadOnly && !isSaveDialogMode);
+            if (btnNewTextToolbar != null) btnNewTextToolbar.gameObject.SetActive(!isReadOnly);
 
             UpdatePathDisplay();
             RefreshItemsView();
@@ -889,8 +928,8 @@ namespace ComputerLearning
                     }, true));
                 }
 
-                bool canModify = !item.isProtected;
-                menuItems.Add(new ContextMenuItem("Copy", CopySelectedItem, true));
+                bool canModify = !item.isProtected && !IsReadOnlySystemFolderStatic(item);
+                menuItems.Add(new ContextMenuItem("Copy", CopySelectedItem, canModify));
                 menuItems.Add(new ContextMenuItem("Rename", () => PromptRenameItem(item), canModify));
                 menuItems.Add(new ContextMenuItem("Delete", () => DeleteItemToRecycleBin(item), canModify));
 
@@ -984,10 +1023,7 @@ namespace ComputerLearning
 
             var menuItems = new List<ContextMenuItem>();
             bool isRecycleBin = currentFolder.name.Equals("Recycle Bin", StringComparison.OrdinalIgnoreCase);
-            bool isSystemReadOnlyFolder =
-                currentFolder.name.Equals("Levels", StringComparison.OrdinalIgnoreCase) ||
-                currentFolder.name.Equals("Mouse Levels", StringComparison.OrdinalIgnoreCase) ||
-                currentFolder.name.Equals("Minigames", StringComparison.OrdinalIgnoreCase);
+            bool isSystemReadOnlyFolder = IsReadOnlySystemFolderStatic(currentFolder);
 
             if (isRecycleBin)
             {
@@ -1179,33 +1215,16 @@ namespace ComputerLearning
                     desktop.children.Add(levels);
                 }
 
-                // Ensure Minigames is inside Desktop
+                // Remove any legacy Minigames folder if present
                 ExplorerItemData games = FindFolderRecursiveStatic(sharedRootFolder, "Minigames");
-                if (games == null)
+                if (games != null)
                 {
-                    games = new ExplorerItemData
-                    {
-                        name = "Minigames",
-                        fileType = ExplorerFileType.Folder,
-                        icon = GetFolderSprite(),
-                        isProtected = true,
-                        children = new List<ExplorerItemData>()
-                    };
-                    desktop.children.Add(games);
-                }
-                else if (!desktop.children.Contains(games))
-                {
-                    sharedRootFolder.children.Remove(games);
-                    desktop.children.Add(games);
+                    RemoveItemRecursive(sharedRootFolder, games);
                 }
 
                 if (levels.children == null || levels.children.Count == 0)
                 {
                     PopulateLevelsFolder(levels);
-                }
-                if (games.children == null || games.children.Count == 0)
-                {
-                    PopulateGamesFolder(games);
                 }
 
                 sharedRootFolder.name = "This PC";
@@ -1672,6 +1691,11 @@ namespace ComputerLearning
 
         private string GetUniqueItemName(ExplorerItemData folder, string baseName, string extension)
         {
+            return GetUniqueItemNameStatic(folder, baseName, extension);
+        }
+
+        private static string GetUniqueItemNameStatic(ExplorerItemData folder, string baseName, string extension)
+        {
             if (folder == null || folder.children == null) return baseName + extension;
 
             string candidate = baseName + extension;
@@ -1988,17 +2012,7 @@ namespace ComputerLearning
                 isProtected = false
             });
 
-            // 3. Folder Minigames inside Desktop!
-            ExplorerItemData gamesFolder = new ExplorerItemData
-            {
-                name = "Minigames",
-                fileType = ExplorerFileType.Folder,
-                icon = folderSprite,
-                isProtected = true
-            };
-            PopulateGamesFolder(gamesFolder);
-
-            // 4. Folder Levels inside Desktop!
+            // 3. Folder Levels inside Desktop!
             ExplorerItemData levelsFolder = new ExplorerItemData
             {
                 name = "Levels",
@@ -2145,14 +2159,6 @@ namespace ComputerLearning
                 isProtected = true
             };
 
-            ExplorerItemData gamesFolder = new ExplorerItemData
-            {
-                name = "Minigames",
-                fileType = ExplorerFileType.Folder,
-                icon = folderSprite,
-                isProtected = true
-            };
-
             LevelDefinition[] levels = Resources.FindObjectsOfTypeAll<LevelDefinition>();
             if (levels != null && levels.Length > 0)
             {
@@ -2163,17 +2169,6 @@ namespace ComputerLearning
                     if (lvl.name.StartsWith("L_Level", StringComparison.OrdinalIgnoreCase))
                     {
                         levelsFolder.children.Add(new ExplorerItemData
-                        {
-                            name = lvl.GetLocalizedDisplayName(),
-                            fileType = ExplorerFileType.Minigame,
-                            icon = SharedGameIcon,
-                            levelToLaunch = lvl,
-                            isProtected = true
-                        });
-                    }
-                    else if (lvl.name.IndexOf("Assessment", StringComparison.OrdinalIgnoreCase) < 0)
-                    {
-                        gamesFolder.children.Add(new ExplorerItemData
                         {
                             name = lvl.GetLocalizedDisplayName(),
                             fileType = ExplorerFileType.Minigame,

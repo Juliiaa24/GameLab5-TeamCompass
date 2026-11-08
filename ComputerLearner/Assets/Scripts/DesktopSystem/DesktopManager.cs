@@ -127,26 +127,7 @@ namespace ComputerLearning
         {
             Instance = this;
             InitializeDesktop();
-
-            // Self-healing: ensure desktop wallpaper stretches across full screen regardless of aspect ratio (16:10, 21:9, etc.)
-            Transform bg = transform.Find("Background");
-            if (bg == null)
-            {
-                Canvas canvas = GetComponentInParent<Canvas>();
-                if (canvas != null) bg = canvas.transform.Find("Background");
-            }
-            if (bg != null)
-            {
-                WallpaperImage = bg.GetComponent<UnityEngine.UI.Image>();
-                RectTransform rt = bg as RectTransform;
-                if (rt != null)
-                {
-                    rt.anchorMin = Vector2.zero;
-                    rt.anchorMax = Vector2.one;
-                    rt.anchoredPosition = Vector2.zero;
-                    rt.sizeDelta = Vector2.zero;
-                }
-            }
+            EnsureWallpaperImage();
         }
 
         private void OnDestroy()
@@ -357,10 +338,70 @@ namespace ComputerLearning
                     DraggableIcon.SelectedIcon.DeleteDesktopIconToRecycleBin();
                 }
             }
+
+            bool isCtrl = kb.leftCtrlKey.isPressed || kb.rightCtrlKey.isPressed;
+            if (isCtrl && kb.cKey.wasPressedThisFrame)
+            {
+                if (DraggableIcon.SelectedIcon != null && !DraggableIcon.SelectedIcon.IsProtected)
+                {
+                    DraggableIcon.SelectedIcon.CopyDesktopIcon();
+                }
+            }
+            else if (isCtrl && kb.vKey.wasPressedThisFrame)
+            {
+                FileExplorerApp activeExplorer = UnityEngine.Object.FindAnyObjectByType<FileExplorerApp>();
+                bool explorerHasFocus = activeExplorer != null && activeExplorer.gameObject.activeInHierarchy && DraggableIcon.SelectedIcon == null;
+                if (!explorerHasFocus && FileExplorerApp.SharedClipboardItem != null)
+                {
+                    FileExplorerApp.PasteClipboardIntoFolder(FileExplorerApp.GetDesktopFolder());
+                }
+            }
         }
 
+        private Sprite defaultWallpaperSprite;
         public UnityEngine.UI.Image WallpaperImage { get; private set; }
         public static Sprite CustomWallpaperSprite { get; set; }
+
+        private void EnsureWallpaperImage()
+        {
+            if (WallpaperImage == null)
+            {
+                Transform bg = transform.Find("Background");
+                if (bg == null)
+                {
+                    Canvas c = GetComponentInParent<Canvas>();
+                    if (c == null && desktopIconContainer != null)
+                    {
+                        c = desktopIconContainer.GetComponentInParent<Canvas>();
+                    }
+                    if (c == null)
+                    {
+                        c = UnityEngine.Object.FindAnyObjectByType<Canvas>();
+                    }
+                    if (c != null)
+                    {
+                        bg = c.transform.Find("Background");
+                    }
+                }
+                if (bg != null)
+                {
+                    WallpaperImage = bg.GetComponent<UnityEngine.UI.Image>();
+                    RectTransform rt = bg as RectTransform;
+                    if (rt != null)
+                    {
+                        rt.anchorMin = Vector2.zero;
+                        rt.anchorMax = Vector2.one;
+                        rt.anchoredPosition = Vector2.zero;
+                        rt.sizeDelta = Vector2.zero;
+                    }
+                }
+            }
+
+            if (WallpaperImage != null && defaultWallpaperSprite == null && WallpaperImage.sprite != null)
+            {
+                defaultWallpaperSprite = WallpaperImage.sprite;
+            }
+        }
 
         public void SetDesktopWallpaperTheme(string theme)
         {
@@ -373,6 +414,7 @@ namespace ComputerLearning
 
         public void SetDesktopWallpaperSprite(Sprite sprite)
         {
+            EnsureWallpaperImage();
             CustomWallpaperSprite = sprite;
             PlayerPrefs.SetString("DesktopWallpaperTheme", "custom");
             PlayerPrefs.Save();
@@ -385,16 +427,7 @@ namespace ComputerLearning
 
         public void RestoreSavedWallpaper()
         {
-            if (WallpaperImage == null)
-            {
-                Transform bg = transform.Find("Background");
-                if (bg == null)
-                {
-                    Canvas c = GetComponentInParent<Canvas>();
-                    if (c != null) bg = c.transform.Find("Background");
-                }
-                if (bg != null) WallpaperImage = bg.GetComponent<UnityEngine.UI.Image>();
-            }
+            EnsureWallpaperImage();
 
             if (CustomWallpaperSprite != null)
             {
@@ -415,7 +448,14 @@ namespace ComputerLearning
                     if (WallpaperImage != null) { WallpaperImage.sprite = null; WallpaperImage.color = new Color(0.28f, 0.18f, 0.44f, 1f); }
                     break;
                 default:
-                    if (WallpaperImage != null) { WallpaperImage.color = Color.white; }
+                    if (WallpaperImage != null)
+                    {
+                        if (defaultWallpaperSprite != null)
+                        {
+                            WallpaperImage.sprite = defaultWallpaperSprite;
+                        }
+                        WallpaperImage.color = Color.white;
+                    }
                     break;
             }
         }
@@ -540,13 +580,26 @@ namespace ComputerLearning
             ExplorerItemData desktopFolder = FileExplorerApp.GetDesktopFolder();
             if (desktopFolder == null) return;
 
-            foreach (var icon in activeIcons)
+            for (int i = activeIcons.Count - 1; i >= 0; i--)
             {
-                if (icon == null) continue;
+                var icon = activeIcons[i];
+                if (icon == null)
+                {
+                    activeIcons.RemoveAt(i);
+                    continue;
+                }
                 if (icon.GetComponent<RecycleBinIcon>() != null) continue;
 
                 TMPro.TextMeshProUGUI label = icon.GetComponentInChildren<TMPro.TextMeshProUGUI>();
                 string iconTitle = label != null && !string.IsNullOrWhiteSpace(label.text) ? label.text.Trim() : icon.gameObject.name;
+
+                if (iconTitle.Equals("Minigames", StringComparison.OrdinalIgnoreCase) ||
+                    icon.gameObject.name.Equals("Minigames", StringComparison.OrdinalIgnoreCase))
+                {
+                    activeIcons.RemoveAt(i);
+                    Destroy(icon.gameObject);
+                    continue;
+                }
 
                 if (IsDesktopOnlyApplication(iconTitle))
                 {
@@ -955,6 +1008,7 @@ namespace ComputerLearning
             foreach (var iconData in initialDesktopIcons)
             {
                 if (iconData == null || string.IsNullOrWhiteSpace(iconData.iconName)) continue;
+                if (iconData.iconName.Trim().Equals("Minigames", StringComparison.OrdinalIgnoreCase)) continue;
 
                 // Check if already present on desktop container
                 bool alreadyExists = false;

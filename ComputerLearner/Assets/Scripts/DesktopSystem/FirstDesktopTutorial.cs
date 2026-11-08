@@ -124,7 +124,7 @@ namespace ComputerLearning
             if (!anyPriorProgress && desktopManager != null)
             {
                 VirtualMascot.Show(dialogs.first_welcome, desktopManager.DesktopIconContainer, new Vector2(0, 0));
-                yield return new WaitForSeconds(4f);
+                yield return VirtualMascot.WaitForDialogue(4f);
             }
 
             // Expected sequence of LevelDefinitions
@@ -175,7 +175,7 @@ namespace ComputerLearning
                     else if (targetLevelId == "level5") mascotMsg = dialogs.first_double_click;
 
                     VirtualMascot.Show(mascotMsg, targetIcon.GetComponent<RectTransform>(), new Vector2(150, -50));
-                    yield return new WaitForSeconds(3f);
+                    yield return VirtualMascot.WaitForDialogue(3f);
 
                     // 2. Auto-open the application
                     targetIcon.OnPointerDown(new UnityEngine.EventSystems.PointerEventData(UnityEngine.EventSystems.EventSystem.current) { button = UnityEngine.EventSystems.PointerEventData.InputButton.Left });

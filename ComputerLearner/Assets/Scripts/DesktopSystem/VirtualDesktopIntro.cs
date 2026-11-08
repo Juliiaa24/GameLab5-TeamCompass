@@ -88,14 +88,14 @@ namespace ComputerLearning
                 ? dialogs.virtual_welcome
                 : "Welcome to your full Virtual Desktop! Here you can explore and practice freely.";
             VirtualMascot.Show(welcomeMsg, centerTarget != null ? centerTarget : levelsTarget, Vector2.zero);
-            yield return new WaitForSeconds(4.5f);
+            yield return VirtualMascot.WaitForDialogue(4.5f);
 
             // 2. Highlight the Levels folder
             string levelsMsg = (dialogs != null && !string.IsNullOrEmpty(dialogs.virtual_levels))
                 ? dialogs.virtual_levels
                 : "Double-click the Levels folder anytime to challenge yourself with more tasks.";
             VirtualMascot.Show(levelsMsg, levelsTarget, Vector2.zero);
-            yield return new WaitForSeconds(4.5f);
+            yield return VirtualMascot.WaitForDialogue(4.5f);
 
             // 3. Highlight Creative Apps & Minigames
             if (appsTarget != null && appsTarget != levelsTarget)
@@ -104,7 +104,7 @@ namespace ComputerLearning
                     ? dialogs.virtual_apps
                     : "You can also draw in Paint, type in Notepad, or play fun Minigames!";
                 VirtualMascot.Show(appsMsg, appsTarget, Vector2.zero);
-                yield return new WaitForSeconds(4.5f);
+                yield return VirtualMascot.WaitForDialogue(4.5f);
             }
 
             // 4. Highlight Start Button & Companion Pet
@@ -112,7 +112,7 @@ namespace ComputerLearning
                 ? dialogs.virtual_start_and_pet
                 : "Click the Start button on the bottom-left for more options. I'll be in the top-right corner whenever you need tips. Have fun!";
             VirtualMascot.Show(startAndPetMsg, startButtonTarget, Vector2.zero);
-            yield return new WaitForSeconds(5.0f);
+            yield return VirtualMascot.WaitForDialogue(5.0f);
 
             CompleteIntro();
         }

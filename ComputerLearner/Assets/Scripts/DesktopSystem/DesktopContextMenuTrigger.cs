@@ -77,6 +77,10 @@ namespace ComputerLearning
                         menuItems.Add(new ContextMenuItem("+ New Folder", CreateFolderOnDesktop, true));
                         menuItems.Add(new ContextMenuItem("+ New Text Document (.txt)", CreateTextDocumentOnDesktop, true));
                         menuItems.Add(new ContextMenuItem("+ New Image (.png)", CreateImageDocumentOnDesktop, true));
+                        menuItems.Add(new ContextMenuItem("Paste", () =>
+                        {
+                            FileExplorerApp.PasteClipboardIntoFolder(FileExplorerApp.GetDesktopFolder());
+                        }, FileExplorerApp.SharedClipboardItem != null));
                         menuItems.Add(new ContextMenuItem("Open File Explorer", () =>
                         {
                             if (StartMenuController.Instance != null) StartMenuController.Instance.OpenFileExplorer();

@@ -381,8 +381,27 @@ namespace ComputerLearning
             UpdateSpeechBubblePlacement(canvas);
         }
 
+        public static int DialogueSkipVersion { get; private set; }
+
+        public static IEnumerator WaitForDialogue(float duration)
+        {
+            int initialVersion = DialogueSkipVersion;
+            float elapsed = 0f;
+            while (elapsed < duration)
+            {
+                if (DialogueSkipVersion != initialVersion)
+                {
+                    yield return null;
+                    yield break;
+                }
+                elapsed += Time.deltaTime;
+                yield return null;
+            }
+        }
+
         public void DismissActiveFeedback()
         {
+            DialogueSkipVersion++;
             bool wasTemporary = hideBubbleCoroutine != null;
             if (hideBubbleCoroutine != null)
             {
