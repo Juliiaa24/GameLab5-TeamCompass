@@ -455,7 +455,7 @@ namespace ComputerLearning
                 {
                     // Place speech bubble directly above the mascot outside the celebration card so it never overlaps the Continue button
                     bubbleRect.pivot = new Vector2(0.5f, 0f);
-                    finalBubblePos = new Vector2(-35f, 20f);
+                    finalBubblePos = new Vector2(-35f, 85f);
                 }
                 else if (isOnRightSide)
                 {
