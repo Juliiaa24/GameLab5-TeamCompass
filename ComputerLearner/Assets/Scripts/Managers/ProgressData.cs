@@ -117,12 +117,22 @@ namespace ComputerLearning
             if (string.IsNullOrEmpty(levelId)) return true;
             if (levelId == "level1") return true;
             if (completedLevels != null && completedLevels.Contains(levelId)) return true;
-            if (unlockedLevels != null && unlockedLevels.Contains(levelId)) return true;
 
             int orderIdx = Array.IndexOf(LevelOrder, levelId);
+
+            // Levels 7+ (orderIdx >= 6) must unlock strictly progressively after completing the previous level
+            if (orderIdx >= 6)
+            {
+                string prevLevelId = LevelOrder[orderIdx - 1];
+                bool prevCompleted = completedLevels != null && completedLevels.Contains(prevLevelId);
+                if (!prevCompleted) return false;
+            }
+
+            if (unlockedLevels != null && unlockedLevels.Contains(levelId)) return true;
+
             if (UnityEngine.SceneManagement.SceneManager.GetActiveScene().name == "VirtualDesktop")
             {
-                if (orderIdx >= 0 && orderIdx <= 8) return true; // levels 1-9 available for free practice
+                if (orderIdx >= 0 && orderIdx <= 5) return true; // levels 1-5 completed in first tutorial + level 6 unlocked first
             }
 
             string nextLvl = GetCurrentNextLevelId();
@@ -154,8 +164,14 @@ namespace ComputerLearning
             {
                 PlayerPrefs.SetInt("InitialAssessmentCompleted", 1);
             }
-            if (AreAllLevelsCompletedUpTo(5))
+            if (AreAllLevelsCompletedUpTo(5) || PlayerPrefs.GetInt("AutoSequenceCompleted", 0) == 1)
             {
+                for (int i = 1; i <= 5; i++)
+                {
+                    string id = "level" + i;
+                    if (completedLevels != null && !completedLevels.Contains(id)) completedLevels.Add(id);
+                    if (unlockedLevels != null && !unlockedLevels.Contains(id)) unlockedLevels.Add(id);
+                }
                 PlayerPrefs.SetInt("AutoSequenceCompleted", 1);
                 PlayerPrefs.SetInt("InitialAssessmentCompleted", 1);
                 if (!unlockedLevels.Contains("level6")) unlockedLevels.Add("level6");
