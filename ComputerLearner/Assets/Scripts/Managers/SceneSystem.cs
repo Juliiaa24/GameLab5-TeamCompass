@@ -114,11 +114,21 @@ namespace ComputerLearning
             {
                 if (UnityEngine.InputSystem.Keyboard.current.escapeKey.wasPressedThisFrame)
                 {
+                    if (TeacherDashboardController.IsDashboardOpen)
+                    {
+                        TeacherDashboardController.CloseDashboard();
+                        return;
+                    }
                     if (SceneManager.GetActiveScene().name == "Menu") Application.Quit();
                     else ChangeToMenu();
                 }
                 else if (SceneManager.GetActiveScene().name == "Menu" && UnityEngine.InputSystem.Keyboard.current.spaceKey.wasPressedThisFrame)
                 {
+                    if (TeacherDashboardController.IsDashboardOpen || ClassroomNetworkWidget.IsManualInputFocused)
+                    {
+                        return;
+                    }
+
                     // Ensure the player is not currently typing into a student ID / text input field
                     bool isInputFocused = EventSystem.current != null &&
                                           EventSystem.current.currentSelectedGameObject != null &&
@@ -231,6 +241,11 @@ namespace ComputerLearning
                 LearningPathSelectorWidget.Instance.RefreshUI();
             }
 
+            if (ClassroomNetworkWidget.Instance != null)
+            {
+                ClassroomNetworkWidget.Instance.RefreshUI();
+            }
+
             if (PlaytestStudentWidget.Instance != null)
             {
                 PlaytestStudentWidget.Instance.RefreshUI();
@@ -273,6 +288,7 @@ namespace ComputerLearning
             {
                 PlaytestStudentWidget.EnsureOnCanvas(menuCanvas.transform);
                 LearningPathSelectorWidget.EnsureOnCanvas(menuCanvas.transform);
+                ClassroomNetworkWidget.EnsureOnCanvas(menuCanvas.transform);
             }
 
             Button[] buttons = FindObjectsByType<Button>(FindObjectsInactive.Include, FindObjectsSortMode.None);
