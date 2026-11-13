@@ -126,6 +126,14 @@ namespace ComputerLearning
         }
 
         /// <summary>
+        /// Returns the maximum possible precision score (bullseye center + target size bonus) for a given target RectTransform.
+        /// </summary>
+        public static int CalculateMaxPossiblePrecisionScore(RectTransform targetRect)
+        {
+            return CalculateRatioAndSizeScore(targetRect, 0f, out _);
+        }
+
+        /// <summary>
         /// Resets the 7-second inactivity timer when the user hovers, moves, or interacts.
         /// </summary>
         public void NotifyUserInteraction()
@@ -193,13 +201,17 @@ namespace ComputerLearning
             return pts;
         }
 
-        protected void TriggerHitScoreFeedback(Transform targetTransform = null, int overrideFixedPoints = -1)
+        protected void TriggerHitScoreFeedback(Transform targetTransform = null, int overrideFixedPoints = -1, int overrideMaxPoints = -1)
         {
             int fixedPts = overrideFixedPoints > 0 ? overrideFixedPoints : GetStandardizedTargetPoints();
-            LevelRunner runner = GetComponentInParent<LevelRunner>() ?? LevelRunner.ActiveRunner;
-            int pts = runner != null ? runner.AwardHitPoints(fixedPts) : fixedPts;
-
             Transform anchor = targetTransform != null ? targetTransform : GetActiveFeedbackTarget();
+            int maxPts = overrideMaxPoints > 0
+                ? Mathf.Max(fixedPts, overrideMaxPoints)
+                : fixedPts;
+
+            LevelRunner runner = GetComponentInParent<LevelRunner>() ?? LevelRunner.ActiveRunner;
+            int pts = runner != null ? runner.AwardHitPoints(fixedPts, maxPts) : fixedPts;
+
             Vector3 worldPos = anchor != null ? anchor.position : transform.position;
             FloatingScoreText.Spawn(transform, worldPos, pts);
         }
@@ -217,7 +229,7 @@ namespace ComputerLearning
         /// Generates and records an intermediate result without ending the task.
         /// Useful for tasks with multiple distinct sub-goals (e.g. clicking multiple targets).
         /// </summary>
-        protected void RecordIntermediateResult(bool success, Transform feedbackTarget = null, int overrideFixedPoints = -1)
+        protected void RecordIntermediateResult(bool success, Transform feedbackTarget = null, int overrideFixedPoints = -1, int overrideMaxPoints = -1)
         {
             if (IsFinished) return;
 
@@ -226,7 +238,7 @@ namespace ComputerLearning
             if (success)
             {
                 FeedbackManager.PlaySuccess();
-                TriggerHitScoreFeedback(feedbackTarget, overrideFixedPoints);
+                TriggerHitScoreFeedback(feedbackTarget, overrideFixedPoints, overrideMaxPoints);
             }
             else
             {
@@ -268,7 +280,7 @@ namespace ComputerLearning
             startTime = Time.time;
         }
 
-        protected void Complete(bool success, Transform feedbackTarget = null, int overrideFixedPoints = -1)
+        protected void Complete(bool success, Transform feedbackTarget = null, int overrideFixedPoints = -1, int overrideMaxPoints = -1)
         {
             if (IsFinished) return;
             IsFinished = true;
@@ -281,13 +293,19 @@ namespace ComputerLearning
                 if (!hasSpawnedCompletionScorePopup)
                 {
                     hasSpawnedCompletionScorePopup = true;
-                    TriggerHitScoreFeedback(feedbackTarget, overrideFixedPoints);
+                    TriggerHitScoreFeedback(feedbackTarget, overrideFixedPoints, overrideMaxPoints);
                 }
             }
             else
             {
                 FeedbackManager.PlayError(true);
                 TriggerMistakeScoreFeedback(feedbackTarget);
+                LevelRunner failRunner = GetComponentInParent<LevelRunner>() ?? LevelRunner.ActiveRunner;
+                if (failRunner != null)
+                {
+                    int missedMax = overrideMaxPoints > 0 ? overrideMaxPoints : GetStandardizedTargetPoints();
+                    failRunner.RegisterMissedMaxPoints(missedMax);
+                }
             }
 
             float elapsed  = Time.time - startTime;

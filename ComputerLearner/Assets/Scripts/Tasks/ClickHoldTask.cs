@@ -14,6 +14,8 @@ namespace ComputerLearning
         private bool hasWarnedHoverStagnant = false;
         private Vector2 lastPointerScreenPos;
         private Camera lastEventCamera;
+        private Color fillImageBaseColor = new Color(0.8f, 0.2f, 0.8f, 1f);
+        private bool hasCachedFillColor = false;
 
         protected override void SetupTask(TaskDefinition definition)
         {
@@ -31,7 +33,16 @@ namespace ComputerLearning
             isHovering = false;
             hoverDwellTime = 0f;
             hasWarnedHoverStagnant = false;
-            if (fillImage != null) fillImage.fillAmount = 0f;
+            if (fillImage != null)
+            {
+                if (!hasCachedFillColor)
+                {
+                    fillImageBaseColor = fillImage.color;
+                    hasCachedFillColor = true;
+                }
+                fillImage.fillAmount = 0f;
+                fillImage.color = fillImageBaseColor;
+            }
             SetupBackgroundClickInterceptor(OnBackgroundClicked);
         }
 
@@ -70,6 +81,7 @@ namespace ComputerLearning
                 if (fillImage != null)
                 {
                     fillImage.fillAmount = progress;
+                    fillImage.color = Color.Lerp(fillImageBaseColor, new Color(0.16f, 0.80f, 0.38f, 1f), progress);
                 }
                 NotifySubTaskProgress(progress);
 
@@ -78,12 +90,13 @@ namespace ComputerLearning
                     isHolding = false;
                     RectTransform rt = transform as RectTransform;
                     int scorePoints = BaseTask.CalculatePrecisionAndSizeScore(rt, lastPointerScreenPos, lastEventCamera, out bool isOuterRing);
+                    int maxScorePoints = BaseTask.CalculateMaxPossiblePrecisionScore(rt);
                     if (isOuterRing && rt != null)
                     {
                         VirtualMascot.ShowAlmostOutFeedback(rt);
                     }
                     Debug.Log("[ClickHoldTask] Hold complete!");
-                    Complete(true, transform, scorePoints);
+                    Complete(true, transform, scorePoints, maxScorePoints);
                 }
             }
             else
@@ -91,6 +104,7 @@ namespace ComputerLearning
                 if (fillImage != null && fillImage.fillAmount > 0f)
                 {
                     fillImage.fillAmount = 0f;
+                    fillImage.color = fillImageBaseColor;
                 }
             }
         }

@@ -1,9 +1,9 @@
 {
   "l10_welcome": "¡Bienvenido al Nivel 10: Menú contextual!\nHaz clic derecho en cualquier hueco libre del escritorio para abrir el menú de opciones.",
   "l10_wallpaperRightClickReminder": "¡Haz clic con el botón derecho sobre el fondo del escritorio para abrir el menú!",
-  "l10_clickMenu": "¡Muy bien! Este es el menú contextual.\n¡Elige '+ New Text Document (.txt)' o '+ New Folder' para crear un archivo o una carpeta nueva!",
+  "l10_clickMenu": "¡Muy bien! Este es el menú contextual.\n¡Elige '+ New Text Document (.txt)' para crear un archivo de texto nuevo!",
   "l10_menuClosedError": "¡Se ha cerrado el menú! Haz clic derecho otra vez en el escritorio y elige una opción.",
-  "l10_menuSelectReminder": "¡Haz clic en '+ New Text Document (.txt)' o '+ New Folder' dentro del menú!",
+  "l10_menuSelectReminder": "¡Haz clic en '+ New Text Document (.txt)' dentro del menú!",
   "l10_done": "¡Fantástico! ¡Ya sabes cómo usar el clic derecho en el escritorio para crear cosas nuevas!",
 
   "l11_openNotepad": "¡Nivel 11: Escribir en el ordenador!\nHaz doble clic en el icono de Notepad para abrir el bloc de notas.",
@@ -74,13 +74,19 @@
 
   "l16_openPaint": "¡Nivel 16: Creatividad en Paint!\nHaz doble clic en el icono de Paint para abrir el programa de dibujo.",
   "l16_openReminder": "¡Haz doble clic rápido en el icono de Paint para abrirlo!",
+  "l16_colorPrompt": "Paso 1: ¡Elige cualquier color de la paleta y haz un trazo sobre el lienzo blanco!",
+  "l16_colorReminder": "¡Haz clic primero en un color de la paleta superior y luego arrastra por el lienzo blanco!",
+  "l16_colorDone": "¡Qué color tan chulo! Ahora vamos a probar distintos tamaños de pincel.",
+  "l16_sizePrompt": "Paso 2: ¡Elige otro tamaño de pincel (S, M o L) en la barra superior y haz otro trazo!",
+  "l16_sizeReminder": "¡Haz clic en S, M o L en la barra superior y dibuja sobre el lienzo con el nuevo grosor!",
+  "l16_sizeDone": "¡Qué buen control del pincel! Ahora vamos a probar cómo borrar el último trazo.",
   "l16_drawPrompt": "¡Elige el color que más te guste de la paleta y haz un dibujo sobre el lienzo arrastrando el ratón!",
   "l16_drawReminder": "¡Haz clic y arrastra el ratón dentro del lienzo blanco para dibujar!",
   "l16_drawDone": "¡Qué buen trazo! Ahora vamos a probar cómo borrar el último paso si nos equivocamos.",
-  "l16_undoPrompt": "¡Pulsa Ctrl + Z para deshacer el último trazo que has dibujado!",
+  "l16_undoPrompt": "Paso 3: ¡Pulsa Ctrl + Z para deshacer el último trazo que has dibujado!",
   "l16_holdCtrlZ": "¡Mantén pulsado Ctrl y pulsa Z para deshacer tu trazo!",
   "l16_undoDone": "¡Trazo deshecho! Recuerda que en Paint también puedes usar Ctrl + Z siempre que te equivoques.",
-  "l16_savePrompt": "¡Ahora pulsa Ctrl + S y confirma en la ventana para guardar tu dibujo en la carpeta Pictures!",
+  "l16_savePrompt": "Paso 4: ¡Pulsa Ctrl + S y confirma en la ventana para guardar tu dibujo en la carpeta Pictures!",
   "l16_holdCtrlS": "¡Pulsa Ctrl y S a la vez para guardar tu dibujo!",
   "l16_done": "¡Magnífico! ¡Ya dominas el ratón, el teclado y los programas creativos de tu Escritorio Virtual!",
 
@@ -97,6 +103,6 @@
   "def_l15_name": "Nivel 15: Reto del Bloc de notas",
   "def_l15_desc": "Reto completo: ¡escribe, copia, corta, deshaz y guarda tu documento en el Bloc de notas!",
   "def_l16_name": "Nivel 16: Dibujo en Paint",
-  "def_l16_desc": "¡Abre Paint, haz un dibujo, usa Ctrl + Z para deshacer y guárdalo con Ctrl + S!",
+  "def_l16_desc": "¡Abre Paint, elige colores y tamaños de pincel, dibuja, deshaz con Ctrl + Z y guarda con Ctrl + S!",
   "def_default_desc": "Sigue los pasos que te indica la mascota virtual."
 }

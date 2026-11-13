@@ -52,6 +52,9 @@ namespace ComputerLearning
         };
         public string medalImprovementUpgradeFormat = "{0}\nUpgraded from {1} to {2} Medal! ({3:F0}%)";
         public string medalImprovementEarnedFormat = "{0}\nYou earned the {1} Medal! ({2:F0}%)";
+        public string levelCompletedGoldMessage = "Fantastic job!";
+        public string levelCompletedMedalMessage = "Well done! Replay anytime to beat your medal!";
+        public string levelCompletedNoMedalMessage = "Level completed! Keep practicing to earn a medal!";
 
         // ClickHoldTask Feedback
         public string holdKeepPressing = "Keep pressing! Hold the button down a bit longer!";
@@ -382,26 +385,11 @@ namespace ComputerLearning
 
                 RectTransform vis = GetMascotVisualRect();
                 if (vis != null) vis.anchoredPosition = new Vector2(0f, floatOffset);
-                Vector3 finalTargetPos = basePos + new Vector3(currentTargetOffset.x * scale, currentTargetOffset.y * scale, 0f);
+                Vector3 finalTargetPos = basePos + CanvasOffsetToWorldDelta(currentTargetOffset, canvas);
 
-                // Clamp to screen bounds to prevent going completely off-screen
-                float margin = 5f * scale;
-                Camera cam = canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay ? canvas.worldCamera : null;
-                if (cam != null)
-                {
-                    Vector3 sp = cam.WorldToScreenPoint(finalTargetPos);
-                    sp.x = Mathf.Clamp(sp.x, cam.pixelRect.xMin + margin, cam.pixelRect.xMax - margin);
-                    sp.y = Mathf.Clamp(sp.y, cam.pixelRect.yMin + margin, cam.pixelRect.yMax - margin);
-                    if (RectTransformUtility.ScreenPointToWorldPointInRectangle(canvas.transform as RectTransform, sp, cam, out Vector3 worldPt))
-                    {
-                        finalTargetPos = worldPt;
-                    }
-                }
-                else
-                {
-                    finalTargetPos.x = Mathf.Clamp(finalTargetPos.x, margin, Screen.width - margin);
-                    finalTargetPos.y = Mathf.Clamp(finalTargetPos.y, margin, Screen.height - margin);
-                }
+                bool isCelebrationTarget = targetRect != null && targetRect.GetComponentInParent<LevelCelebrationModal>() != null;
+                float predictedFlipScale = ShouldFaceLeft(finalTargetPos, canvas, isCelebrationTarget) ? -1f : 1f;
+                finalTargetPos = ClampMascotWorldPositionToScreen(finalTargetPos, canvas, predictedFlipScale);
 
                 mascotRect.position = Vector3.Lerp(mascotRect.position, finalTargetPos, Time.deltaTime * followSpeed);
             }
@@ -452,19 +440,145 @@ namespace ComputerLearning
             }
         }
 
+        private float GetPixelsPerCanvasUnit(Canvas canvas)
+        {
+            if (canvas == null) return 1f;
+            if (canvas.renderMode == RenderMode.ScreenSpaceOverlay)
+            {
+                return Mathf.Max(0.001f, canvas.scaleFactor);
+            }
+
+            Camera cam = canvas.worldCamera != null ? canvas.worldCamera : Camera.main;
+            Vector3 originWorld = canvas.transform.position;
+            Vector3 oneCanvasUnitWorld = originWorld + canvas.transform.TransformVector(Vector3.right);
+            Vector2 p0 = RectTransformUtility.WorldToScreenPoint(cam, originWorld);
+            Vector2 p1 = RectTransformUtility.WorldToScreenPoint(cam, oneCanvasUnitWorld);
+            float dist = Vector2.Distance(p0, p1);
+            return dist > 0.001f ? dist : Mathf.Max(0.001f, canvas.scaleFactor);
+        }
+
+        private Vector3 CanvasOffsetToWorldDelta(Vector2 canvasOffset, Canvas canvas)
+        {
+            if (canvasOffset == Vector2.zero) return Vector3.zero;
+            if (canvas != null)
+            {
+                // TransformVector converts Canvas-local units directly into world space
+                // for both ScreenSpaceOverlay (pixels) and ScreenSpaceCamera (world units).
+                return canvas.transform.TransformVector(new Vector3(canvasOffset.x, canvasOffset.y, 0f));
+            }
+            return new Vector3(canvasOffset.x, canvasOffset.y, 0f);
+        }
+
+        private bool ShouldFaceLeft(Vector3 mascotWorldPos, Canvas canvas, bool isCelebrationTarget)
+        {
+            if (isCelebrationTarget)
+            {
+                // On celebration cards, open the speech bubble outward away from the card.
+                return currentTargetOffset.x < 0f;
+            }
+
+            if (!autoFlipMascot) return false;
+
+            Camera cam = canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay ? canvas.worldCamera : null;
+            Vector3 screenPoint = RectTransformUtility.WorldToScreenPoint(cam, mascotWorldPos);
+            float centerX = cam != null ? cam.pixelRect.center.x : Screen.width * 0.5f;
+            return screenPoint.x > centerX;
+        }
+
+        private Vector3 ClampMascotWorldPositionToScreen(Vector3 worldPos, Canvas canvas, float flipScale)
+        {
+            float pxPerUnit = GetPixelsPerCanvasUnit(canvas);
+            float margin = 12f * pxPerUnit;
+            float rectWidth = mascotRect != null && mascotRect.rect.width > 1f ? mascotRect.rect.width : 100f;
+            float rectHeight = mascotRect != null && mascotRect.rect.height > 1f ? mascotRect.rect.height : 100f;
+            Vector2 pivot = mascotRect != null ? mascotRect.pivot : new Vector2(0.125f, 1.13f);
+
+            // Account for pivot + horizontal flip so the full mascot sprite remains on-screen
+            float leftExtent = (flipScale >= 0f ? pivot.x : (1f - pivot.x)) * rectWidth * pxPerUnit;
+            float rightExtent = (flipScale >= 0f ? (1f - pivot.x) : pivot.x) * rectWidth * pxPerUnit;
+            float bottomExtent = (pivot.y * rectHeight + 15f) * pxPerUnit;
+            float topExtent = ((1f - pivot.y) * rectHeight + 15f) * pxPerUnit;
+
+            Camera cam = canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay ? canvas.worldCamera : null;
+            float minScreenX = cam != null ? cam.pixelRect.xMin : 0f;
+            float maxScreenX = cam != null ? cam.pixelRect.xMax : Screen.width;
+            float minScreenY = cam != null ? cam.pixelRect.yMin : 0f;
+            float maxScreenY = cam != null ? cam.pixelRect.yMax : Screen.height;
+
+            float clampMinX = minScreenX + margin + leftExtent;
+            float clampMaxX = maxScreenX - margin - rightExtent;
+            if (clampMinX > clampMaxX)
+            {
+                float midX = (minScreenX + maxScreenX) * 0.5f;
+                clampMinX = midX;
+                clampMaxX = midX;
+            }
+
+            float clampMinY = minScreenY + margin + Mathf.Max(0f, bottomExtent);
+            float clampMaxY = maxScreenY - margin - Mathf.Max(0f, topExtent);
+            if (clampMinY > clampMaxY)
+            {
+                float midY = (minScreenY + maxScreenY) * 0.5f;
+                clampMinY = midY;
+                clampMaxY = midY;
+            }
+
+            if (cam != null)
+            {
+                Vector3 sp = cam.WorldToScreenPoint(worldPos);
+                sp.x = Mathf.Clamp(sp.x, clampMinX, clampMaxX);
+                sp.y = Mathf.Clamp(sp.y, clampMinY, clampMaxY);
+                if (RectTransformUtility.ScreenPointToWorldPointInRectangle(canvas.transform as RectTransform, sp, cam, out Vector3 worldPt))
+                {
+                    return worldPt;
+                }
+                return worldPos;
+            }
+
+            worldPos.x = Mathf.Clamp(worldPos.x, clampMinX, clampMaxX);
+            worldPos.y = Mathf.Clamp(worldPos.y, clampMinY, clampMaxY);
+            return worldPos;
+        }
+
+        private Vector2 GetCelebrationOffsetForTarget(RectTransform cardRect)
+        {
+            const float fallbackHalfWidth = 240f;
+            const float sideGap = 55f;
+            const float verticalOffset = 30f;
+
+            if (cardRect == null) return new Vector2(fallbackHalfWidth + sideGap, verticalOffset);
+
+            Canvas.ForceUpdateCanvases();
+            Canvas canvas = GetComponentInParent<Canvas>();
+            float pxPerUnit = GetPixelsPerCanvasUnit(canvas);
+            Camera cam = canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay ? canvas.worldCamera : null;
+
+            Vector3[] corners = new Vector3[4];
+            cardRect.GetWorldCorners(corners);
+            Vector3 bottomLeft = RectTransformUtility.WorldToScreenPoint(cam, corners[0]);
+            Vector3 topRight = RectTransformUtility.WorldToScreenPoint(cam, corners[2]);
+
+            float minX = cam != null ? cam.pixelRect.xMin : 0f;
+            float maxX = cam != null ? cam.pixelRect.xMax : Screen.width;
+            float cardHalfWidth = cardRect.rect.width > 1f
+                ? cardRect.rect.width * 0.5f
+                : ((topRight.x - bottomLeft.x) > 1f ? ((topRight.x - bottomLeft.x) / pxPerUnit) * 0.5f : fallbackHalfWidth);
+
+            float spaceRight = maxX - topRight.x;
+            float spaceLeft = bottomLeft.x - minX;
+            bool useLeftSide = spaceRight < 440f * pxPerUnit && spaceLeft > spaceRight;
+
+            float xOffset = (cardHalfWidth + sideGap) * (useLeftSide ? -1f : 1f);
+            return new Vector2(xOffset, verticalOffset);
+        }
+
         private void UpdateSpeechBubblePlacement(Canvas canvas)
         {
             if (mascotRect == null) return;
 
             bool isCelebrationTarget = targetRect != null && targetRect.GetComponentInParent<LevelCelebrationModal>() != null;
-            bool isOnRightSide = false;
             Camera cam = canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay ? canvas.worldCamera : null;
-            if (autoFlipMascot && !isCelebrationTarget)
-            {
-                Vector3 screenPoint = RectTransformUtility.WorldToScreenPoint(cam, mascotRect.position);
-                float centerX = cam != null ? cam.pixelRect.center.x : Screen.width * 0.5f;
-                isOnRightSide = screenPoint.x > centerX;
-            }
+            bool isOnRightSide = ShouldFaceLeft(mascotRect.position, canvas, isCelebrationTarget);
 
             float flipScale = isOnRightSide ? -1f : 1f;
             mascotRect.localScale = new Vector3(flipScale, 1f, 1f);
@@ -493,23 +607,39 @@ namespace ComputerLearning
                 Vector3[] bubbleCorners = new Vector3[4];
                 bubbleRect.GetWorldCorners(bubbleCorners);
 
-                Vector3 bottomEdge = RectTransformUtility.WorldToScreenPoint(cam, bubbleCorners[0]);
-                Vector3 topEdge = RectTransformUtility.WorldToScreenPoint(cam, bubbleCorners[1]);
+                Vector3 bottomLeft = RectTransformUtility.WorldToScreenPoint(cam, bubbleCorners[0]);
+                Vector3 topRight = RectTransformUtility.WorldToScreenPoint(cam, bubbleCorners[2]);
 
-                float marginY = 14f;
-                float currentScale = canvas != null ? canvas.scaleFactor : 1f;
+                float pxPerUnit = GetPixelsPerCanvasUnit(canvas);
+                float marginX = 14f * pxPerUnit;
+                float marginY = 14f * pxPerUnit;
 
+                float minX = cam != null ? cam.pixelRect.xMin : 0f;
+                float maxX = cam != null ? cam.pixelRect.xMax : Screen.width;
                 float minY = cam != null ? cam.pixelRect.yMin : 0f;
                 float maxY = cam != null ? cam.pixelRect.yMax : Screen.height;
 
-                if (bottomEdge.y < minY + marginY)
+                // Account for mascotRect.localScale.x (flipScale) so horizontal adjustment moves toward screen interior on both sides
+                float denomX = pxPerUnit * flipScale;
+                if (bottomLeft.x < minX + marginX)
                 {
-                    float difference = ((minY + marginY) - bottomEdge.y) / currentScale;
+                    float shiftScreenX = (minX + marginX) - bottomLeft.x;
+                    finalBubblePos.x += shiftScreenX / denomX;
+                }
+                else if (topRight.x > maxX - marginX)
+                {
+                    float shiftScreenX = (maxX - marginX) - topRight.x;
+                    finalBubblePos.x += shiftScreenX / denomX;
+                }
+
+                if (bottomLeft.y < minY + marginY)
+                {
+                    float difference = ((minY + marginY) - bottomLeft.y) / pxPerUnit;
                     finalBubblePos.y += difference;
                 }
-                else if (topEdge.y > maxY - marginY)
+                else if (topRight.y > maxY - marginY)
                 {
-                    float difference = (topEdge.y - (maxY - marginY)) / currentScale;
+                    float difference = (topRight.y - (maxY - marginY)) / pxPerUnit;
                     finalBubblePos.y -= difference;
                 }
 
@@ -596,26 +726,9 @@ namespace ComputerLearning
             if (mascotRect != null)
             {
                 Canvas canvas = GetComponentInParent<Canvas>();
-                float scale = canvas != null ? canvas.scaleFactor : 1f;
-                float margin = 5f * scale;
-                Vector3 clampedPos = worldPos + new Vector3(currentTargetOffset.x * scale, currentTargetOffset.y * scale, 0f);
-                Camera cam = canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay ? canvas.worldCamera : null;
-                if (cam != null)
-                {
-                    Vector3 sp = cam.WorldToScreenPoint(clampedPos);
-                    sp.x = Mathf.Clamp(sp.x, cam.pixelRect.xMin + margin, cam.pixelRect.xMax - margin);
-                    sp.y = Mathf.Clamp(sp.y, cam.pixelRect.yMin + margin, cam.pixelRect.yMax - margin);
-                    if (RectTransformUtility.ScreenPointToWorldPointInRectangle(canvas.transform as RectTransform, sp, cam, out Vector3 worldPt))
-                    {
-                        clampedPos = worldPt;
-                    }
-                }
-                else
-                {
-                    clampedPos.x = Mathf.Clamp(clampedPos.x, margin, Screen.width - margin);
-                    clampedPos.y = Mathf.Clamp(clampedPos.y, margin, Screen.height - margin);
-                }
-                mascotRect.position = clampedPos;
+                Vector3 desiredPos = worldPos + CanvasOffsetToWorldDelta(currentTargetOffset, canvas);
+                float flipScale = ShouldFaceLeft(desiredPos, canvas, false) ? -1f : 1f;
+                mascotRect.position = ClampMascotWorldPositionToScreen(desiredPos, canvas, flipScale);
             }
         }
 
@@ -653,14 +766,54 @@ namespace ComputerLearning
 
         public static void ShowMedalImprovementFeedback(LevelMedal previousMedal, LevelMedal newMedal, float accuracy, float durationSeconds, RectTransform target = null, float displayDuration = 5.5f)
         {
-            string msg = GetRandomMedalImprovementMessage();
-            LevelCelebrationModal modal = Object.FindFirstObjectByType<LevelCelebrationModal>();
-            if (modal != null && modal.CardRect != null)
+            if (Instance == null)
             {
-                target = modal.CardRect;
+                Instance = Object.FindFirstObjectByType<VirtualMascot>(FindObjectsInactive.Include);
             }
-            Vector2 sideOffset = new Vector2(330f, -20f);
-            ShowContextualFeedback(msg, target, displayDuration, sideOffset);
+
+            MascotFeedbackDialogs fb = FeedbackDialogs;
+            string msg;
+            bool isUpgrade = previousMedal != LevelMedal.None && (int)newMedal > (int)previousMedal;
+            if (isUpgrade)
+            {
+                string header = GetRandomMedalImprovementMessage();
+                string prevName = LevelScoreRecord.GetMedalName(previousMedal);
+                string newName = LevelScoreRecord.GetMedalName(newMedal);
+                string fmt = !string.IsNullOrEmpty(fb.medalImprovementUpgradeFormat)
+                    ? fb.medalImprovementUpgradeFormat
+                    : "{0}\n({1} -> {2})";
+                msg = string.Format(fmt, header, prevName, newName, accuracy);
+            }
+            else if (newMedal != LevelMedal.None)
+            {
+                string header = newMedal == LevelMedal.Gold
+                    ? (!string.IsNullOrEmpty(fb.levelCompletedGoldMessage) ? fb.levelCompletedGoldMessage : "Fantastic job!")
+                    : (!string.IsNullOrEmpty(fb.levelCompletedMedalMessage) ? fb.levelCompletedMedalMessage : "Well done! Replay anytime to beat your medal!");
+                string newName = LevelScoreRecord.GetMedalName(newMedal);
+                msg = !string.IsNullOrEmpty(fb.medalImprovementEarnedFormat)
+                    ? string.Format(fb.medalImprovementEarnedFormat, header, newName, accuracy)
+                    : $"{header}\n({newName})";
+            }
+            else
+            {
+                msg = !string.IsNullOrEmpty(fb.levelCompletedNoMedalMessage)
+                    ? fb.levelCompletedNoMedalMessage
+                    : "Level completed! Keep practicing to earn a medal!";
+            }
+
+            LevelCelebrationModal modal = Object.FindFirstObjectByType<LevelCelebrationModal>();
+            if (modal != null && modal.CardRect != null && Instance != null)
+            {
+                RectTransform cardTarget = modal.CardRect;
+                Vector2 sideOffset = Instance.GetCelebrationOffsetForTarget(cardTarget);
+                // Keep level-end feedback visible alongside the modal until the modal closes (Update hides when target deactivates)
+                Instance.ShowMessage(msg, cardTarget, sideOffset);
+                if (Instance.bounceCoroutine != null) Instance.StopCoroutine(Instance.bounceCoroutine);
+                Instance.bounceCoroutine = Instance.StartCoroutine(Instance.BounceAnimation());
+                return;
+            }
+
+            ShowContextualFeedback(msg, target, displayDuration, new Vector2(310f, -20f));
         }
 
         public void ShowTemporaryFeedback(string message, RectTransform target, float duration, Vector2? offset = null)
@@ -698,7 +851,7 @@ namespace ComputerLearning
             hasAssignedTarget = (target != null);
             isPinnedAtWorldPos = false;
             bool isCelebrationTarget = target != null && target.GetComponentInParent<LevelCelebrationModal>() != null;
-            currentTargetOffset = isCelebrationTarget ? (offset ?? new Vector2(330f, -20f)) : Vector2.zero;
+            currentTargetOffset = isCelebrationTarget ? (offset ?? GetCelebrationOffsetForTarget(target)) : Vector2.zero;
 
             Canvas canvas = GetComponentInParent<Canvas>();
             float scale = canvas != null ? canvas.scaleFactor : 1f;
@@ -712,11 +865,14 @@ namespace ComputerLearning
                 {
                     mascotRect.anchoredPosition = offset ?? new Vector2(-120f, 60f);
                 }
-                else if (!wasActive && targetRect.gameObject.activeInHierarchy)
+                else if ((!wasActive || isCelebrationTarget) && targetRect.gameObject.activeInHierarchy)
                 {
+                    Canvas.ForceUpdateCanvases();
                     Vector3[] corners = new Vector3[4];
                     targetRect.GetWorldCorners(corners);
-                    mascotRect.position = ((corners[0] + corners[2]) / 2f) + new Vector3(currentTargetOffset.x * scale, currentTargetOffset.y * scale, 0f);
+                    Vector3 desiredPos = ((corners[0] + corners[2]) / 2f) + CanvasOffsetToWorldDelta(currentTargetOffset, canvas);
+                    float flipScale = ShouldFaceLeft(desiredPos, canvas, isCelebrationTarget) ? -1f : 1f;
+                    mascotRect.position = ClampMascotWorldPositionToScreen(desiredPos, canvas, flipScale);
                 }
             }
 

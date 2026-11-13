@@ -164,17 +164,18 @@ namespace ComputerLearning
             hasShownDelayReminder = false;
 
             Transform hitTransform = target != null ? target.transform : null;
+            int maxTargetPoints = BaseTask.CalculateMaxPossiblePrecisionScore(hitTransform as RectTransform);
             activeTargets.Remove(target);
             targetsRemaining--;
             NotifySubTaskProgress((float)(totalTargetsInitial - targetsRemaining) / Mathf.Max(1, totalTargetsInitial));
 
             if (targetsRemaining <= 0)
             {
-                Complete(true, hitTransform, scorePoints);
+                Complete(true, hitTransform, scorePoints, maxTargetPoints);
             }
             else
             {
-                RecordIntermediateResult(true, hitTransform, scorePoints);
+                RecordIntermediateResult(true, hitTransform, scorePoints, maxTargetPoints);
             }
 
             if (target != null) Destroy(target.gameObject);

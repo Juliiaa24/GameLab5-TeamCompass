@@ -2699,3 +2699,93 @@ To enrich the educational operating system simulation, the Virtual Desktop neede
 **9. Enriched Mid-Level Task Feedback (`ClickHoldTask.cs`, `RightClickTask.cs`, `DoubleClickTask.cs`, `DragDropTask.cs`):**
 * Upgraded `ClickHoldTask` to report smooth `NotifySubTaskProgress`, detect hover hesitation (`> 2.5s`), right-click mistakes on target/background, and distinguish quick taps (`< 0.25s`), mid-releases, and near-completions (`>= 70%`) with varied, encouraging messages.
 * Added hover-stagnant reminders, edge-hit detection, and button-specific background-click feedback to `RightClickTask`, `DoubleClickTask`, and `DragDropTask`.
+
+
+---
+
+### 99. PLAYTEST WEEK 3 POLISH: 3X DIALOGUE READING DURATION, MAX SCORE DISPLAY (`X/Y`), EXPLORER MEDAL LABEL SEPARATION & STRICT DRAG-AND-DROP - 13/11/2026
+
+**Context & Motivation:**
+* Weekly playtesting highlighted that mascot dialogues disappeared too quickly before players could finish reading them, while praising the dialogue skip shortcut.
+* `LevelCelebrationModal` only showed earned points (`Score: 300 PTS`) without the maximum possible score (`300/400 points`), and `LevelRunner.AwardHitPoints` had a hidden bug where `maxPossibleScore` added the *earned* hit points (e.g. `45` on outer-ring hits) instead of the true target maximum (`100 + sizeBonus`).
+* In the Desktop `Levels` folder (`FileExplorerApp` + `ExplorerItemPrefab`), 2-line level names shared a `32px`-tall `Label` with `[{medalName}]`, causing the medal label to clip or shift out of view.
+* `DragDropTask` / `DraggablePiece` accepted edge-grazing drops because `dropSize` was oversized (`targetSize + 50f`), `requiredDistance` was `targetSize * 0.5f`, and `DraggablePiece` compared world-space `position` against local-space `requiredDistanceToSnap`.
+* Per user instruction, replacing the double-click / right-click / click-&-hold icons, adding new minigames, and radical UI redesigns were intentionally excluded from this pass (reserved for Norwegian Game Awards).
+
+**Architectural Solutions & Implementation:**
+
+**1. Mascot Dialogue Timing (Reverted per playtest):**
+* Initially scaled `VirtualMascot.WaitForDialogue` and `ShowContextualFeedback` to 3x reading duration (`6s`–`24s`), then reverted `VirtualMascot.cs` back to its original timing per user feedback that it felt too slow.
+
+**2. Maximum Possible Score Calculation & Display (`BaseTask.cs`, `LevelRunner.cs`, `VirtualDesktopGuidedLevels.cs`, `LevelCelebrationModal.cs`, `LevelScoreRecord.cs`, `ProgressData.cs`, `ScoresApp.cs`, `UIDialogs.cs` & `*UIDialogs.json`):**
+* Added `BaseTask.CalculateMaxPossiblePrecisionScore(RectTransform)` (`CalculateRatioAndSizeScore(..., 0f, out _)`) and updated `ClickTargetTask`, `DoubleClickTask`, `RightClickTask`, `ClickHoldTask`, and `HoverTargetTask` to pass each target's true maximum alongside earned precision points; also added `LevelRunner.RegisterMissedMaxPoints(int)` for failed tasks.
+* Fixed `LevelRunner.AwardHitPoints(int exactPoints, int maxTargetPoints)` to accumulate `maxTargetPoints` separately into `maxPossibleScore`.
+* Computed `maxPossibleScore = baseScore + maxSpeedBonus` in `VirtualDesktopGuidedLevels.CompleteLevel()`.
+* Extended `LevelCelebrationModal.Show` / `Initialize` with `int maxPoints = -1`, updated `UIDialogs.celebration_points_format` across `EN`, `ES`, and `NO` (`"You got <b>{0}/{1}</b> points"` / `"Conseguiste <b>{0}/{1}</b> puntos"` / `"Du fikk <b>{0}/{1}</b> poeng"`), and added `bestMaxPoints` to `LevelScoreRecord` / `ProgressData` / `ScoresApp`.
+
+**3. Separated Level Name & Medal Label in File Explorer (`FileExplorerApp.cs`, `ExplorerItemPrefab.prefab`, `LevelsFolderContent.prefab`, `FileExplorerContent.prefab`, `MinigamesFolderContent.prefab`, `RecycleBinContent.prefab`):**
+* Increased explorer item and `GridLayoutGroup` cell dimensions to `112 x 136`, reserving a fixed `36px` top-aligned `Label` (`y = -70`, 2 lines max) and a separate fixed `20px` `MedalLabel` (`y = -108`) created/configured in `FileExplorerApp.CreateItemUI`, plus anchored `MedalBadge` to the icon's bottom-right corner (`y = -54`) so 2-line titles never block or push down medal text.
+
+**4. Strict Local-Space Drag & Drop & Micro-Feedback (`DragDropTask.cs`, `DraggablePiece.cs`, `ClickHoldTask.cs`):**
+* Replaced world-space `Vector2.Distance` in `DraggablePiece` with `GetLocalDistanceToDropTarget()` (`dropTarget.InverseTransformPoint(dragRect.TransformPoint(dragRect.rect.center))`), tightened `DragDropTask` to `dropSize = dragSize + 20f` and `requiredDistance = Mathf.Max(14f, dragSize * 0.25f)`.
+* Added valid-center `dropTarget` highlight during drag, a gentle miss-shake on `DraggablePiece`, a drop-zone scale pulse in `DragDropTask`, and a smooth `fillImage.color` transition toward emerald green in `ClickHoldTask` as hold progress nears completion.
+
+
+---
+
+### 100. PLAYTEST WEEK 3 ROUND 2 FIXES: TUTORIAL 2 WINDOW DRAG, L10 TXT/FOLDER MENU, L1 MAX SCORE (`360`), GUIDED EVALUATION CLARITY, TYPO, PAINT RECOVERY & COLOR/SIZE STEPS - 13/11/2026
+
+**Context & Motivation:**
+* Follow-up playtest feedback surfaced 7 concrete usability and logic bugs:
+  1. `AdvancedDesktopTour` (Tutorial 2) took too long to detect window dragging (`windowRect.position > 50f` in world coordinates without scaling compensation, plus mascot bubble hovering near the title bar).
+  2. Level 10 English dialog instructed clicking `'+ New Text Document (.txt)'`, while `DesktopContextMenuTrigger` restricted `RestrictToFolderCreationOnly` to only `'+ New Folder'`.
+  3. Level 1 (`MoveMouseTask`) reported `3600` max points (`24 spots * 150`) instead of `360` (`24 * 15`), because `BaseTask.TriggerHitScoreFeedback` inferred precision scoring whenever `overrideFixedPoints > 0` on a `RectTransform`.
+  4. Players could not understand how guided levels (Levels 10–16) were evaluated, and `maxPossibleScore` assumed `0.0s` completion (`parTime * 15`), making 100% unreachable.
+  5. Typo `"Click abd drag"` in `EN-GuidedLevelsDialogs.json` (`l12_copyPrompt`).
+  6. Closing Paint (or Notepad) mid-level triggered `Window.CloseWindow()` -> `VirtualMascot.HideMascotIfTargeting(transform)`, so `RecoverPaintWindow` / `RecoverNotepadWindow` reopened the window without restoring `VirtualMascot`.
+  7. Level 16 (`Paint Usage`, referred to as level 15 in notes) only tested drawing one stroke, Undo, and Save without explicitly practicing color selection or brush sizes (`S`/`M`/`L`).
+
+**Architectural Solutions & Implementation:**
+
+**1. Instant Window Drag Detection in Tutorial 2 (`WindowDrag.cs`, `AdvancedDesktopTour.cs`):**
+* Added `WindowDrag.OnWindowDragMoved` (`Action<Window>`) fired once dragged `>= 15f` local canvas units.
+* Updated `AdvancedDesktopTour` Step 4 to anchor `VirtualMascot` on `dragBarRect` with offset `(0, 110)` (clear of `WindowTop`), detect movement immediately via `OnWindowDragMoved` or `Vector2.Distance(startWinAnchoredPos, windowRect.anchoredPosition) > 25f`, and unsubscribe cleanly on completion, `StopTour()`, and `OnDestroy()`.
+
+**2. Level 10 Context Menu & Localization Alignment (`DesktopContextMenuTrigger.cs`, `EN-GuidedLevelsDialogs.json`):**
+* Exposed both `"+ New Text Document (.txt)"` (`CreateTextDocumentOnDesktop`) and `"+ New Folder"` (`CreateFolderOnDesktop`) as top-level items when `RestrictToFolderCreationOnly` is active during Level 10.
+* Synced `l10_clickMenu` and `l10_menuSelectReminder` in `EN-GuidedLevelsDialogs.json` with `GuidedLevelsDialogs.json`, `ES`, and `NO`.
+* Fixed `"Click abd drag"` -> `"Click and drag"` in `EN-GuidedLevelsDialogs.json` (`l12_copyPrompt`).
+
+**3. Fixed Level 1 Max Score Calculation (`BaseTask.cs`):**
+* Updated `BaseTask.TriggerHitScoreFeedback` so `maxPts` uses `overrideMaxPoints` only when explicitly provided (`> 0`), otherwise matching `fixedPts`. `MoveMouseTask` (`24 × 15`) now correctly totals `360/360`, while precision tasks (`ClickTargetTask`, `DoubleClickTask`, `RightClickTask`, `ClickHoldTask`, `HoverTargetTask`) continue passing `CalculateMaxPossiblePrecisionScore`.
+
+**4. Guided Levels Evaluation Fairness & Clarity (`VirtualDesktopGuidedLevels.cs`, `LevelCelebrationModal.cs`, `UIDialogs.cs` & `*UIDialogs.json`):**
+* Added `VirtualDesktopGuidedLevels.GetGoldTimeForLevel(string)` aligned with `CalculateGuidedLevelMedal` thresholds and updated `CompleteLevel()` so hitting Gold time with `0` mistakes awards full `1000/1000` points (`600` base + `400` speed bonus scaled between Gold target time and max window, `-50` per mistake).
+* Added localized `celebration_guided_criteria_format` across `EN`, `ES`, `NO`, and base `UIDialogs`, displayed cleanly on `LevelCelebrationModal` for guided levels (`level10`–`level16`).
+
+**5. Window Recovery with Mascot Restoration & Expanded Paint Level (`PaintApp.cs`, `VirtualDesktopGuidedLevels.cs`, `*GuidedLevelsDialogs.json`):**
+* Added `PaintApp.OnColorSelected` (`Action<Color>`) and `PaintApp.OnBrushSizeChanged` (`Action<int>`).
+* Added `ShowStepPrompt`, `IsAppWindowUsable` (detects `Window.IsClosed` immediately before the 0.2s close animation ends), `FindUsablePaintApp`, and `FindUsableNotepadApp` in `VirtualDesktopGuidedLevels.cs`.
+* Updated `RecoverPaintWindow` and `RecoverNotepadWindow` to re-show `VirtualMascot` with the active step prompt and respect `lockToWindow: false` on Save steps so `TutorialBlocker` never blocks the Save dialog.
+* Expanded `RunLevel16PaintUsage` into explicit guided steps: Open Paint -> Pick Color & Draw -> Change Brush Size (`S`/`M`/`L`) & Draw -> Undo (`Ctrl + Z`) -> Save (`Ctrl + S`), updating localized dialogs (`l16_colorPrompt`/`Reminder`/`Done`, `l16_sizePrompt`/`Reminder`/`Done`, `def_l16_desc`) and adjusting `level16` Gold/Silver targets (`<= 55s` Gold, `<= 90s` Silver).
+
+
+---
+
+### 101. LEVEL-END MASCOT FEEDBACK & SCREEN-EDGE CLAMPING + L10 CONTEXT MENU (`+ NEW FOLDER` REMOVED) - 13/11/2026
+
+**Context & Motivation:**
+* Follow-up playtest visual review reported two remaining issues:
+  1. At level completion (`LevelCelebrationModal`), `VirtualMascot` could end up clipped at the right edge of the screen with no readable speech bubble, and `ShowMedalImprovementFeedback` ignored medal outcomes (always saying the player beat their previous record and auto-hiding after `6.5s` while the modal remained open).
+  2. Level 10's restricted desktop Context Menu still showed `+ New Folder` alongside `+ New Text Document (.txt)`.
+
+**Changes Applied:**
+1. **Level-End Mascot Feedback & Screen Bounds (`VirtualMascot.cs`, `LevelCelebrationModal.cs`, `*MascotFeedbackDialogs.json`):**
+   * Replaced `VirtualMascot.Update()` / `PinAtWorldPosition()` pivot-only `5px` screen clamp with `ClampMascotWorldPositionToScreen()` using actual `pivot`, `rect` dimensions, and horizontal flip direction so the entire mascot sprite stays inside screen margins.
+   * Added `CanvasOffsetToWorldDelta()` and `GetPixelsPerCanvasUnit()` (via `canvas.transform.TransformVector` + `RectTransformUtility.WorldToScreenPoint`) so target offsets and screen-space bounding checks stay accurate when `AspectRatioController.ConfigureCanvases()` switches canvases to `RenderMode.ScreenSpaceCamera` at runtime (preventing ~200 world-unit offset blowups that pushed the mascot to the right screen edge).
+   * Added horizontal (`X`) screen clamping (accounting for `flipScale` & `GetPixelsPerCanvasUnit()`) alongside vertical (`Y`) clamping inside `UpdateSpeechBubblePlacement()`, plus `ShouldFaceLeft()` and `GetCelebrationOffsetForTarget()` so celebration feedback opens outward beside `CardRect` (choosing left vs. right side dynamically if space on the right is tight) and calls `Canvas.ForceUpdateCanvases()` before reading `targetRect` world corners.
+   * Updated `ShowMedalImprovementFeedback` to use localized messages accurately across upgrades (`medalImprovementUpgradeFormat`), first/non-upgrade medals (`levelCompletedGoldMessage` / `levelCompletedMedalMessage` + `medalImprovementEarnedFormat`), and no-medal completions (`levelCompletedNoMedalMessage`), keeping the feedback visible alongside `LevelCelebrationModal` until the modal closes.
+   * Guarded `LevelCelebrationModal.BuildVisuals()` against repositioning inactive/companion text over the modal before `ShowMedalImprovementFeedback` runs.
+2. **Removed `+ New Folder` from Level 10 Context Menu (`DesktopContextMenuTrigger.cs`, `VirtualDesktopGuidedLevels.cs`, `*GuidedLevelsDialogs.json`):**
+   * Removed `+ New Folder` from the `RestrictToFolderCreationOnly` menu branch so Level 10 displays only `+ New Text Document (.txt)`.
+   * Synced `l10_clickMenu` and `l10_menuSelectReminder` across `VirtualDesktopGuidedLevels.cs`, `GuidedLevelsDialogs.json`, `EN`, `ES`, and `NO` to refer solely to `+ New Text Document (.txt)`.

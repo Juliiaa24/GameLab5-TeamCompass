@@ -3,6 +3,7 @@
  * Date: 11/09/26
  * Description: Drag windows in their parent's Canvas coordinates.
 */
+using System;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
@@ -10,11 +11,14 @@ namespace ComputerLearning
 {
     public class WindowDrag : MonoBehaviour, IBeginDragHandler, IDragHandler
     {
+        public static event Action<Window> OnWindowDragMoved;
+
         #region Private Variables
         [SerializeField] private RectTransform window;
         private Window controller;
         private RectTransform parentRect;
         private Vector2 pointerOffset;
+        private Vector2 dragStartLocalPos;
         private bool dragging;
         #endregion
 
@@ -29,6 +33,7 @@ namespace ComputerLearning
             parentRect = window.parent as RectTransform;
             if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(parentRect,
                 eventData.pressPosition, eventData.pressEventCamera, out Vector2 pointer)) return;
+            dragStartLocalPos = window.localPosition;
             pointerOffset = (Vector2)window.localPosition - pointer;
             dragging = true;
         }
@@ -43,6 +48,11 @@ namespace ComputerLearning
             position.y = pointer.y + pointerOffset.y;
             window.localPosition = position;
             controller?.KeepTitleVisible();
+
+            if (Vector2.Distance(dragStartLocalPos, window.localPosition) >= 15f)
+            {
+                OnWindowDragMoved?.Invoke(controller);
+            }
         }
         #endregion
     }

@@ -79,13 +79,14 @@ namespace ComputerLearning
             {
                 RectTransform rectTransform = transform as RectTransform;
                 int scorePoints = BaseTask.CalculatePrecisionAndSizeScore(rectTransform, eventData.position, eventData.pressEventCamera, out bool isOuterRing);
+                int maxScorePoints = BaseTask.CalculateMaxPossiblePrecisionScore(rectTransform);
                 if (isOuterRing && rectTransform != null)
                 {
                     VirtualMascot.ShowAlmostOutFeedback(rectTransform);
                 }
 
                 Debug.Log("[RightClickTask] Right click detected!");
-                Complete(true, transform, scorePoints);
+                Complete(true, transform, scorePoints, maxScorePoints);
             }
             else if (eventData.button == PointerEventData.InputButton.Left)
             {

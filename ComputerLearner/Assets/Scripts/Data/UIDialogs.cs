@@ -84,7 +84,8 @@ namespace ComputerLearning
         public string celebration_title = "<b>LEVEL COMPLETED!</b>";
         public string celebration_subtitle_default = "Great Job!";
         public string celebration_stats_format = "Accuracy: <b>{0:F0}%</b>   |   Time: <b>{1:F1}s</b>   |   Mistakes: <color={2}><b>{3}</b></color>";
-        public string celebration_points_format = "Score: <b>{0} PTS</b>";
+        public string celebration_points_format = "You got <b>{0}/{1}</b> points";
+        public string celebration_guided_criteria_format = "Gold Target: <= {0:F0}s & 0 mistakes (-50 pts/mistake)";
         public string celebration_continue_button = "<b>CONTINUE</b>";
         public string celebration_continuing_format = "<b>CONTINUING ({0}s)...</b>";
         public string celebration_medal_badge_format = "<b>{0} MEDAL</b>";

@@ -364,16 +364,16 @@ namespace ComputerLearning
         /// <summary>
         /// Records a level attempt, updating the stored record only if this attempt is superior.
         /// </summary>
-        public LevelScoreRecord RecordLevelAttempt(string levelId, float accuracyScore, float timeSeconds, int mistakesCount = 0, int pointsEarned = 0)
+        public LevelScoreRecord RecordLevelAttempt(string levelId, float accuracyScore, float timeSeconds, int mistakesCount = 0, int pointsEarned = 0, int maxPossiblePoints = 0)
         {
             LevelMedal earnedMedal = CalculateMedal(accuracyScore, mistakesCount);
-            return RecordLevelAttempt(levelId, earnedMedal, accuracyScore, timeSeconds, mistakesCount, pointsEarned);
+            return RecordLevelAttempt(levelId, earnedMedal, accuracyScore, timeSeconds, mistakesCount, pointsEarned, maxPossiblePoints);
         }
 
         /// <summary>
         /// Records a level attempt with an explicit medal, preserving the best attempt and logging the individual attempt.
         /// </summary>
-        public LevelScoreRecord RecordLevelAttempt(string levelId, LevelMedal earnedMedal, float accuracyScore, float timeSeconds, int mistakesCount = 0, int pointsEarned = 0)
+        public LevelScoreRecord RecordLevelAttempt(string levelId, LevelMedal earnedMedal, float accuracyScore, float timeSeconds, int mistakesCount = 0, int pointsEarned = 0, int maxPossiblePoints = 0)
         {
             if (string.IsNullOrEmpty(levelId)) return null;
 
@@ -397,6 +397,7 @@ namespace ComputerLearning
             {
                 record = new LevelScoreRecord(levelId, earnedMedal, accuracyScore, timeSeconds, mistakesCount);
                 record.bestPoints = Mathf.Max(0, pointsEarned);
+                record.bestMaxPoints = Mathf.Max(0, maxPossiblePoints);
                 levelRecords.Add(record);
                 isBetter = true;
             }
@@ -428,6 +429,11 @@ namespace ComputerLearning
                 if (pointsEarned > record.bestPoints)
                 {
                     record.bestPoints = pointsEarned;
+                    if (maxPossiblePoints > 0) record.bestMaxPoints = maxPossiblePoints;
+                }
+                else if (record.bestMaxPoints <= 0 && maxPossiblePoints > 0)
+                {
+                    record.bestMaxPoints = maxPossiblePoints;
                 }
 
                 if (isBetter)

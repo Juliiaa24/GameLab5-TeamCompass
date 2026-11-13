@@ -51,6 +51,7 @@ namespace ComputerLearning
         private RecycleBinIcon cachedRecycleBin;
         private DraggableIcon cachedTourAppIcon;
         private Action<DraggableIcon> activeRecycledListener;
+        private Action<Window> activeWindowDragListener;
 
         private void LoadDialogs()
         {
@@ -93,6 +94,11 @@ namespace ComputerLearning
                 RecycleBinIcon.OnIconRecycled -= activeRecycledListener;
                 activeRecycledListener = null;
             }
+            if (activeWindowDragListener != null)
+            {
+                WindowDrag.OnWindowDragMoved -= activeWindowDragListener;
+                activeWindowDragListener = null;
+            }
             if (cachedRecycleBin != null)
             {
                 cachedRecycleBin.enabled = true;
@@ -119,6 +125,11 @@ namespace ComputerLearning
             {
                 RecycleBinIcon.OnIconRecycled -= activeRecycledListener;
                 activeRecycledListener = null;
+            }
+            if (activeWindowDragListener != null)
+            {
+                WindowDrag.OnWindowDragMoved -= activeWindowDragListener;
+                activeWindowDragListener = null;
             }
             if (cachedRecycleBin != null)
             {
@@ -264,7 +275,7 @@ namespace ComputerLearning
                     : (windowRect.Find("WindowTop/Buttons/Maximize") ?? windowRect.Find("TopBar/Buttons/MaximizeButton"));
 
                 // 4. Move Window
-                VirtualMascot.Show(dialogs.step4_moveWindow, windowRect, new Vector2(0, 200));
+                VirtualMascot.Show(dialogs.step4_moveWindow, dragBarRect, new Vector2(0, 110));
                 tutorialBlocker?.SetAllowedTarget(dragBarRect);
 
                 tutorialBlocker?.SetExcludedTarget(null);
@@ -272,13 +283,30 @@ namespace ComputerLearning
                 if (btnMin != null) tutorialBlocker?.AddExcludedTarget(btnMin as RectTransform);
                 if (btnMax != null) tutorialBlocker?.AddExcludedTarget(btnMax as RectTransform);
 
-                Vector3 startWinPos = windowRect.position;
+                bool windowDragged = false;
+                activeWindowDragListener = (w) =>
+                {
+                    if (w == null || w == targetWindow)
+                    {
+                        windowDragged = true;
+                    }
+                };
+                WindowDrag.OnWindowDragMoved += activeWindowDragListener;
+
+                Vector2 startWinAnchoredPos = windowRect.anchoredPosition;
                 yield return StartCoroutine(WaitWithReminder(() => {
-                    return windowRect == null || targetWindow.IsClosed || Vector3.Distance(startWinPos, windowRect.position) > 50f;
-                }, dialogs.step4_reminder, dragBarRect, new Vector2(0, 200)));
+                    return windowRect == null || targetWindow.IsClosed || windowDragged ||
+                           Vector2.Distance(startWinAnchoredPos, windowRect.anchoredPosition) > 25f;
+                }, dialogs.step4_reminder, dragBarRect, new Vector2(0, 110)));
+
+                if (activeWindowDragListener != null)
+                {
+                    WindowDrag.OnWindowDragMoved -= activeWindowDragListener;
+                    activeWindowDragListener = null;
+                }
 
                 tutorialBlocker?.SetAllowedTarget(null);
-                VirtualMascot.Show(dialogs.step4_veryGood, windowRect, new Vector2(0, 200));
+                VirtualMascot.Show(dialogs.step4_veryGood, dragBarRect, new Vector2(0, 110));
                 yield return VirtualMascot.WaitForDialogue(2.0f);
 
                 // 5. Resize Window
@@ -334,6 +362,11 @@ namespace ComputerLearning
             {
                 RecycleBinIcon.OnIconRecycled -= activeRecycledListener;
                 activeRecycledListener = null;
+            }
+            if (activeWindowDragListener != null)
+            {
+                WindowDrag.OnWindowDragMoved -= activeWindowDragListener;
+                activeWindowDragListener = null;
             }
 
             // Block input during final congratulations

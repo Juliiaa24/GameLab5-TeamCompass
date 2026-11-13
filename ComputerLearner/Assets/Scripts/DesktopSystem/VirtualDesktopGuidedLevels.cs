@@ -17,9 +17,9 @@ namespace ComputerLearning
     {
         public string l10_welcome = "Welcome to Level 10: Context Menu!\nRight-click anywhere on the desktop wallpaper to open the options menu.";
         public string l10_wallpaperRightClickReminder = "Click the right mouse button on the desktop wallpaper to open the menu!";
-        public string l10_clickMenu = "Awesome! This is the Context Menu.\nClick on '+ New Text Document (.txt)' or '+ New Folder' to create an item!";
+        public string l10_clickMenu = "Awesome! This is the Context Menu.\nClick on '+ New Text Document (.txt)' to create a text file!";
         public string l10_menuClosedError = "The menu closed! Right-click again on the desktop and select an option!";
-        public string l10_menuSelectReminder = "Click on '+ New Text Document (.txt)' or '+ New Folder' inside the menu!";
+        public string l10_menuSelectReminder = "Click on '+ New Text Document (.txt)' inside the menu!";
         public string l10_done = "Fantastic! You've learned how to use the desktop context menu to create and customize files!";
 
         public string l11_openNotepad = "Level 11: Word Processing!\nDouble-click the Notepad icon to open the text editor.";
@@ -90,13 +90,19 @@ namespace ComputerLearning
 
         public string l16_openPaint = "Level 16: Digital Artist in Paint!\nDouble-click the Paint icon to open the drawing studio.";
         public string l16_openReminder = "Double-click quickly on the Paint icon to open it!";
+        public string l16_colorPrompt = "Step 1: Pick any color from the palette and draw a shape or line on the white canvas!";
+        public string l16_colorReminder = "Click a color square in the top palette first, then drag on the white canvas to draw!";
+        public string l16_colorDone = "Awesome color! Now let's try changing the brush size.";
+        public string l16_sizePrompt = "Step 2: Choose a different brush size (S, M, or L) in the toolbar and draw another stroke!";
+        public string l16_sizeReminder = "Click S, M, or L near the top toolbar, then draw on the canvas with your new brush size!";
+        public string l16_sizeDone = "Nice brush control! Now let's test undoing a brush stroke.";
         public string l16_drawPrompt = "Pick any color from the palette and draw a shape or smile on the canvas using your mouse!";
         public string l16_drawReminder = "Click and drag your mouse inside the white canvas to draw!";
         public string l16_drawDone = "Nice drawing! Now let's test undoing a brush stroke.";
-        public string l16_undoPrompt = "Press Ctrl + Z to Undo your last stroke!";
+        public string l16_undoPrompt = "Step 3: Press Ctrl + Z to Undo your last stroke!";
         public string l16_holdCtrlZ = "Hold down Ctrl and press Z to undo your brush stroke!";
         public string l16_undoDone = "Stroke undone! You can undo any drawing mistake with Ctrl + Z.";
-        public string l16_savePrompt = "Now press Ctrl + S and confirm in the Save dialog to store your artwork in Pictures!";
+        public string l16_savePrompt = "Step 4: Press Ctrl + S and confirm in the Save dialog to store your artwork in Pictures!";
         public string l16_holdCtrlS = "Press Ctrl and S together to save your artwork!";
         public string l16_done = "Magnificent! You have mastered all mouse, keyboard, and creative tools on the Virtual Desktop!";
 
@@ -113,7 +119,7 @@ namespace ComputerLearning
         public string def_l15_name = "Level 15: Notepad Evaluation";
         public string def_l15_desc = "Complete test: type, copy, cut, undo, and save your document in Notepad!";
         public string def_l16_name = "Level 16: Paint Usage";
-        public string def_l16_desc = "Open Paint, draw artwork, undo with Ctrl + Z, and save with Ctrl + S!";
+        public string def_l16_desc = "Open Paint, pick colors and brush sizes, draw, undo with Ctrl + Z, and save with Ctrl + S!";
         public string def_default_desc = "Follow the virtual mascot instructions.";
     }
 
@@ -128,7 +134,23 @@ namespace ComputerLearning
         private Coroutine activeLevelCoroutine;
         private float levelStartTime;
         private int currentLevelMistakes = 0;
+        private string activeStepPrompt;
+        private Vector2 activeStepOffset = new Vector2(0, 180);
         private readonly List<Action> activeEventCleanupActions = new List<Action>();
+
+        private void ShowStepPrompt(string message, RectTransform target, Vector2? offset = null)
+        {
+            activeStepPrompt = message;
+            activeStepOffset = offset ?? new Vector2(0, 180);
+            VirtualMascot.Show(message, target, activeStepOffset);
+        }
+
+        private static bool IsAppWindowUsable(Component app)
+        {
+            if (app == null || !app.gameObject.activeInHierarchy) return false;
+            Window w = app.GetComponentInParent<Window>();
+            return w == null || !w.IsClosed;
+        }
 
         public static GuidedLevelsDialogs LoadDialogsStatic()
         {
@@ -250,6 +272,8 @@ namespace ComputerLearning
         private void Awake()
         {
             Instance = this;
+            activeStepPrompt = null;
+            activeStepOffset = new Vector2(0, 180);
             LoadDialogs();
         }
 
@@ -334,6 +358,8 @@ namespace ComputerLearning
             }
             VirtualMascot.HideMascot();
 
+            activeStepPrompt = null;
+            activeStepOffset = new Vector2(0, 180);
             LoadDialogs();
             CleanupActiveSubscriptions();
             if (activeLevelCoroutine != null)
@@ -518,13 +544,13 @@ namespace ComputerLearning
             notepad.ClearUndoHistory();
             tutorialBlocker?.SetAllowedTarget(winRect);
 
-            VirtualMascot.Show(dialogs.l11_typePrompt, winRect, new Vector2(0, 180));
+            ShowStepPrompt(dialogs.l11_typePrompt, winRect, new Vector2(0, 180));
 
             float timer = 0f;
-            while (notepad == null || !notepad.gameObject.activeInHierarchy ||
+            while (!IsAppWindowUsable(notepad) ||
                    notepad.CurrentText.IndexOf("Hello Computer", StringComparison.OrdinalIgnoreCase) < 0)
             {
-                if (notepad == null || !notepad.gameObject.activeInHierarchy)
+                if (!IsAppWindowUsable(notepad))
                 {
                     notepad = RecoverNotepadWindow(ref winRect, "");
                     if (notepad != null) notepad.ClearUndoHistory();
@@ -591,7 +617,7 @@ namespace ComputerLearning
             tutorialBlocker?.SetAllowedTarget(winRect);
 
             // Step 1: Copy
-            VirtualMascot.Show(dialogs.l12_copyPrompt, winRect, new Vector2(0, 180));
+            ShowStepPrompt(dialogs.l12_copyPrompt, winRect, new Vector2(0, 180));
 
             bool copied = false;
             Action<string> onCopy = (text) =>
@@ -605,7 +631,7 @@ namespace ComputerLearning
             float copyTimer = 0f;
             while (!copied && (NotepadApp.VirtualClipboard == null || NotepadApp.VirtualClipboard.IndexOf("Cat", StringComparison.OrdinalIgnoreCase) < 0))
             {
-                if (notepad == null || !notepad.gameObject.activeInHierarchy)
+                if (!IsAppWindowUsable(notepad))
                 {
                     notepad = RecoverNotepadWindow(ref winRect, initialWords);
                     if (notepad != null) notepad.ClearUndoHistory();
@@ -670,7 +696,7 @@ namespace ComputerLearning
             yield return VirtualMascot.WaitForDialogue(2.0f);
 
             // Step 2: Paste
-            VirtualMascot.Show(dialogs.l12_pastePrompt, winRect, new Vector2(0, 180));
+            ShowStepPrompt(dialogs.l12_pastePrompt, winRect, new Vector2(0, 180));
 
             bool pasted = false;
             Action<string> onPaste = (text) => { pasted = true; };
@@ -680,7 +706,7 @@ namespace ComputerLearning
             float pasteTimer = 0f;
             while (!pasted && (notepad == null || CountWordOccurrences(notepad.CurrentText, "Cat") < 2))
             {
-                if (notepad == null || !notepad.gameObject.activeInHierarchy)
+                if (!IsAppWindowUsable(notepad))
                 {
                     notepad = RecoverNotepadWindow(ref winRect, "Cat Dog ");
                     if (notepad != null) notepad.ClearUndoHistory();
@@ -741,7 +767,7 @@ namespace ComputerLearning
             yield return VirtualMascot.WaitForDialogue(2.0f);
 
             // Step 3: Cut
-            VirtualMascot.Show(dialogs.l12_cutPrompt, winRect, new Vector2(0, 180));
+            ShowStepPrompt(dialogs.l12_cutPrompt, winRect, new Vector2(0, 180));
 
             bool cut = false;
             Action<string> onCut = (text) =>
@@ -755,7 +781,7 @@ namespace ComputerLearning
             float cutTimer = 0f;
             while (!cut)
             {
-                if (notepad == null || !notepad.gameObject.activeInHierarchy)
+                if (!IsAppWindowUsable(notepad))
                 {
                     notepad = RecoverNotepadWindow(ref winRect, step3Text);
                     if (notepad != null) notepad.ClearUndoHistory();
@@ -848,7 +874,7 @@ namespace ComputerLearning
             VirtualMascot.Show(dialogs.l13_welcome, winRect, new Vector2(0, 180));
             yield return VirtualMascot.WaitForDialogue(3.0f);
 
-            if (notepad == null || !notepad.gameObject.activeInHierarchy)
+            if (!IsAppWindowUsable(notepad))
             {
                 notepad = RecoverNotepadWindow(ref winRect, goodText);
             }
@@ -863,7 +889,7 @@ namespace ComputerLearning
             }
             SoundManager.PlayError();
 
-            VirtualMascot.Show(dialogs.l13_undoPrompt, winRect, new Vector2(0, 180));
+            ShowStepPrompt(dialogs.l13_undoPrompt, winRect, new Vector2(0, 180));
 
             bool undone = false;
             Action onUndo = () => { undone = true; };
@@ -873,7 +899,7 @@ namespace ComputerLearning
             float undoTimer = 0f;
             while (!undone)
             {
-                if (notepad == null || !notepad.gameObject.activeInHierarchy)
+                if (!IsAppWindowUsable(notepad))
                 {
                     notepad = RecoverNotepadWindow(ref winRect, goodText);
                     if (notepad != null)
@@ -959,7 +985,7 @@ namespace ComputerLearning
             notepad.ClearUndoHistory();
             tutorialBlocker?.SetAllowedTarget(winRect);
 
-            VirtualMascot.Show(dialogs.l14_saveShortcutPrompt, winRect, new Vector2(0, 180));
+            ShowStepPrompt(dialogs.l14_saveShortcutPrompt, winRect, new Vector2(0, 180));
 
             bool saveOpened = false;
             Action onSaveKey = () => { saveOpened = true; };
@@ -969,7 +995,7 @@ namespace ComputerLearning
             float saveShortcutTimer = 0f;
             while (!saveOpened && !FileExplorerApp.IsSaveDialogOpen)
             {
-                if (notepad == null || !notepad.gameObject.activeInHierarchy)
+                if (!IsAppWindowUsable(notepad))
                 {
                     notepad = RecoverNotepadWindow(ref winRect, noteToSave);
                 }
@@ -1050,14 +1076,14 @@ namespace ComputerLearning
             tutorialBlocker?.SetAllowedTarget(winRect);
 
             // Step 1: Type "Red Blue Green"
-            VirtualMascot.Show(dialogs.l15_step1, winRect, new Vector2(0, 180));
+            ShowStepPrompt(dialogs.l15_step1, winRect, new Vector2(0, 180));
             float step1Timer = 0f;
-            while (notepad == null || !notepad.gameObject.activeInHierarchy ||
+            while (!IsAppWindowUsable(notepad) ||
                    notepad.CurrentText.IndexOf("Red", StringComparison.OrdinalIgnoreCase) < 0 ||
                    notepad.CurrentText.IndexOf("Blue", StringComparison.OrdinalIgnoreCase) < 0 ||
                    notepad.CurrentText.IndexOf("Green", StringComparison.OrdinalIgnoreCase) < 0)
             {
-                if (notepad == null || !notepad.gameObject.activeInHierarchy)
+                if (!IsAppWindowUsable(notepad))
                 {
                     notepad = RecoverNotepadWindow(ref winRect, "");
                     if (notepad != null) notepad.ClearUndoHistory();
@@ -1089,7 +1115,7 @@ namespace ComputerLearning
             yield return new WaitForSeconds(1.2f);
 
             // Step 2: Copy & Paste 'Blue'
-            VirtualMascot.Show(dialogs.l15_step2, winRect, new Vector2(0, 180));
+            ShowStepPrompt(dialogs.l15_step2, winRect, new Vector2(0, 180));
             bool pasteDone = false;
             Action<string> onPaste = (t) =>
             {
@@ -1102,7 +1128,7 @@ namespace ComputerLearning
             float step2Timer = 0f;
             while (!pasteDone && (notepad == null || CountWordOccurrences(notepad.CurrentText, "Blue") < 2))
             {
-                if (notepad == null || !notepad.gameObject.activeInHierarchy)
+                if (!IsAppWindowUsable(notepad))
                 {
                     notepad = RecoverNotepadWindow(ref winRect, baseColors + " ");
                     if (notepad != null) notepad.ClearUndoHistory();
@@ -1153,7 +1179,7 @@ namespace ComputerLearning
             yield return new WaitForSeconds(1.2f);
 
             // Step 3: Cut 'Red'
-            VirtualMascot.Show(dialogs.l15_step3, winRect, new Vector2(0, 180));
+            ShowStepPrompt(dialogs.l15_step3, winRect, new Vector2(0, 180));
             bool cutDone = false;
             Action<string> onCut = (t) =>
             {
@@ -1166,7 +1192,7 @@ namespace ComputerLearning
             float step3Timer = 0f;
             while (!cutDone)
             {
-                if (notepad == null || !notepad.gameObject.activeInHierarchy)
+                if (!IsAppWindowUsable(notepad))
                 {
                     notepad = RecoverNotepadWindow(ref winRect, step3Colors);
                     if (notepad != null) notepad.ClearUndoHistory();
@@ -1238,7 +1264,7 @@ namespace ComputerLearning
             yield return new WaitForSeconds(1.2f);
 
             // Step 4: Undo
-            VirtualMascot.Show(dialogs.l15_step4, winRect, new Vector2(0, 180));
+            ShowStepPrompt(dialogs.l15_step4, winRect, new Vector2(0, 180));
             bool undoDone = false;
             Action onUndo = () => { undoDone = true; };
             NotepadApp.OnTextUndo += onUndo;
@@ -1247,7 +1273,7 @@ namespace ComputerLearning
             float step4Timer = 0f;
             while (!undoDone)
             {
-                if (notepad == null || !notepad.gameObject.activeInHierarchy)
+                if (!IsAppWindowUsable(notepad))
                 {
                     notepad = RecoverNotepadWindow(ref winRect, step3Colors);
                     if (notepad != null)
@@ -1309,7 +1335,7 @@ namespace ComputerLearning
             yield return new WaitForSeconds(1.2f);
 
             // Step 5: Save
-            VirtualMascot.Show(dialogs.l15_step5, winRect, new Vector2(0, 180));
+            ShowStepPrompt(dialogs.l15_step5, winRect, new Vector2(0, 180));
             tutorialBlocker?.ClearTarget();
 
             bool saved = false;
@@ -1319,6 +1345,11 @@ namespace ComputerLearning
 
             while (!saved)
             {
+                if (!FileExplorerApp.IsSaveDialogOpen && !IsAppWindowUsable(notepad))
+                {
+                    notepad = RecoverNotepadWindow(ref winRect, step3Colors, dialogs.l15_step5, false);
+                }
+
                 if (notepad != null && string.IsNullOrWhiteSpace(notepad.CurrentText) && !FileExplorerApp.IsSaveDialogOpen)
                 {
                     notepad.SetText(step3Colors);
@@ -1354,11 +1385,11 @@ namespace ComputerLearning
 
             PaintApp paint = null;
             float openTimer = 0f;
-            while (paint == null || !paint.gameObject.activeInHierarchy)
+            while (!IsAppWindowUsable(paint))
             {
-                paint = FindAnyObjectByType<PaintApp>();
+                paint = FindUsablePaintApp();
 
-                if (paint == null || !paint.gameObject.activeInHierarchy)
+                if (!IsAppWindowUsable(paint))
                 {
                     if (IsRightMouseButtonDown())
                     {
@@ -1380,38 +1411,116 @@ namespace ComputerLearning
             RectTransform winRect = win != null ? win.GetComponent<RectTransform>() : paint.GetComponent<RectTransform>();
             tutorialBlocker?.SetAllowedTarget(winRect);
 
-            // Step 1: Draw
-            VirtualMascot.Show(dialogs.l16_drawPrompt, winRect, new Vector2(0, 180));
+            // Step 1: Pick a color from the palette and draw a stroke
+            ShowStepPrompt(dialogs.l16_colorPrompt, winRect, new Vector2(0, 180));
 
-            bool strokeDrawn = false;
-            Action onStroke = () => { strokeDrawn = true; };
-            PaintApp.OnStrokeDrawn += onStroke;
-            RegisterCleanup(() => PaintApp.OnStrokeDrawn -= onStroke);
-
-            float drawTimer = 0f;
-            while (!strokeDrawn)
+            bool colorSelected = false;
+            bool strokeDrawnWithColor = false;
+            bool remindedColorFirst = false;
+            Action<Color> onColor = (_) => { colorSelected = true; };
+            Action onColorStroke = () =>
             {
-                if (paint == null || !paint.gameObject.activeInHierarchy)
+                if (colorSelected)
                 {
-                    paint = RecoverPaintWindow(ref winRect);
+                    strokeDrawnWithColor = true;
+                }
+                else if (!remindedColorFirst)
+                {
+                    remindedColorFirst = true;
+                    VirtualMascot.ShowContextualFeedback(dialogs.l16_colorReminder, winRect, 3.2f);
+                }
+            };
+            PaintApp.OnColorSelected += onColor;
+            PaintApp.OnStrokeDrawn += onColorStroke;
+            RegisterCleanup(() =>
+            {
+                PaintApp.OnColorSelected -= onColor;
+                PaintApp.OnStrokeDrawn -= onColorStroke;
+            });
+
+            float colorTimer = 0f;
+            while (!strokeDrawnWithColor)
+            {
+                if (!IsAppWindowUsable(paint))
+                {
+                    paint = RecoverPaintWindow(ref winRect, dialogs.l16_colorPrompt);
                 }
 
-                drawTimer += Time.deltaTime;
-                if (drawTimer >= 8.0f)
+                colorTimer += Time.deltaTime;
+                if (colorTimer >= 8.0f)
                 {
-                    VirtualMascot.ShowContextualFeedback(dialogs.l16_drawReminder, winRect, 3.2f);
-                    drawTimer = 0f;
+                    VirtualMascot.ShowContextualFeedback(dialogs.l16_colorReminder, winRect, 3.2f);
+                    colorTimer = 0f;
                 }
                 yield return null;
             }
             CleanupActiveSubscriptions();
 
             SoundManager.PlaySuccess();
-            VirtualMascot.Show(dialogs.l16_drawDone, winRect, new Vector2(0, 180));
+            VirtualMascot.Show(dialogs.l16_colorDone, winRect, new Vector2(0, 180));
             yield return VirtualMascot.WaitForDialogue(2.0f);
 
-            // Step 2: Undo
-            VirtualMascot.Show(dialogs.l16_undoPrompt, winRect, new Vector2(0, 180));
+            if (!IsAppWindowUsable(paint))
+            {
+                paint = RecoverPaintWindow(ref winRect);
+            }
+
+            // Step 2: Change brush size (S, M, or L) and draw a stroke
+            ShowStepPrompt(dialogs.l16_sizePrompt, winRect, new Vector2(0, 180));
+
+            bool brushSizeChanged = false;
+            bool strokeDrawnWithNewSize = false;
+            bool remindedSizeFirst = false;
+            Action<int> onSize = (_) => { brushSizeChanged = true; };
+            Action onSizeStroke = () =>
+            {
+                if (brushSizeChanged)
+                {
+                    strokeDrawnWithNewSize = true;
+                }
+                else if (!remindedSizeFirst)
+                {
+                    remindedSizeFirst = true;
+                    VirtualMascot.ShowContextualFeedback(dialogs.l16_sizeReminder, winRect, 3.2f);
+                }
+            };
+            PaintApp.OnBrushSizeChanged += onSize;
+            PaintApp.OnStrokeDrawn += onSizeStroke;
+            RegisterCleanup(() =>
+            {
+                PaintApp.OnBrushSizeChanged -= onSize;
+                PaintApp.OnStrokeDrawn -= onSizeStroke;
+            });
+
+            float sizeTimer = 0f;
+            while (!strokeDrawnWithNewSize)
+            {
+                if (!IsAppWindowUsable(paint))
+                {
+                    paint = RecoverPaintWindow(ref winRect, dialogs.l16_sizePrompt);
+                }
+
+                sizeTimer += Time.deltaTime;
+                if (sizeTimer >= 8.0f)
+                {
+                    VirtualMascot.ShowContextualFeedback(dialogs.l16_sizeReminder, winRect, 3.2f);
+                    sizeTimer = 0f;
+                }
+                yield return null;
+            }
+            CleanupActiveSubscriptions();
+
+            SoundManager.PlaySuccess();
+            VirtualMascot.Show(dialogs.l16_sizeDone, winRect, new Vector2(0, 180));
+            yield return VirtualMascot.WaitForDialogue(2.0f);
+
+            if (!IsAppWindowUsable(paint))
+            {
+                paint = RecoverPaintWindow(ref winRect);
+            }
+
+            // Step 3: Undo
+            ShowStepPrompt(dialogs.l16_undoPrompt, winRect, new Vector2(0, 180));
 
             bool undone = false;
             Action onUndo = () => { undone = true; };
@@ -1420,9 +1529,9 @@ namespace ComputerLearning
 
             while (!undone)
             {
-                if (paint == null || !paint.gameObject.activeInHierarchy)
+                if (!IsAppWindowUsable(paint))
                 {
-                    paint = RecoverPaintWindow(ref winRect);
+                    paint = RecoverPaintWindow(ref winRect, dialogs.l16_undoPrompt);
                 }
 
                 if (IsKeyWithoutCtrl(UnityEngine.InputSystem.Key.Z, KeyCode.Z))
@@ -1438,8 +1547,13 @@ namespace ComputerLearning
             VirtualMascot.Show(dialogs.l16_undoDone, winRect, new Vector2(0, 180));
             yield return VirtualMascot.WaitForDialogue(2.0f);
 
-            // Step 3: Save
-            VirtualMascot.Show(dialogs.l16_savePrompt, winRect, new Vector2(0, 180));
+            if (!IsAppWindowUsable(paint))
+            {
+                paint = RecoverPaintWindow(ref winRect);
+            }
+
+            // Step 4: Save
+            ShowStepPrompt(dialogs.l16_savePrompt, winRect, new Vector2(0, 180));
             tutorialBlocker?.ClearTarget();
 
             bool saved = false;
@@ -1449,6 +1563,11 @@ namespace ComputerLearning
 
             while (!saved)
             {
+                if (!FileExplorerApp.IsSaveDialogOpen && !IsAppWindowUsable(paint))
+                {
+                    paint = RecoverPaintWindow(ref winRect, dialogs.l16_savePrompt, false);
+                }
+
                 if (IsKeyWithoutCtrl(UnityEngine.InputSystem.Key.S, KeyCode.S) && !FileExplorerApp.IsSaveDialogOpen)
                 {
                     RecordMistake(dialogs.l16_holdCtrlS, winRect);
@@ -1479,7 +1598,27 @@ namespace ComputerLearning
             return count;
         }
 
-        private NotepadApp RecoverNotepadWindow(ref RectTransform winRect, string restoreText = null)
+        private static PaintApp FindUsablePaintApp()
+        {
+            PaintApp[] paints = FindObjectsByType<PaintApp>(FindObjectsInactive.Exclude);
+            for (int i = 0; i < paints.Length; i++)
+            {
+                if (IsAppWindowUsable(paints[i])) return paints[i];
+            }
+            return null;
+        }
+
+        private static NotepadApp FindUsableNotepadApp()
+        {
+            NotepadApp[] notes = FindObjectsByType<NotepadApp>(FindObjectsInactive.Exclude);
+            for (int i = 0; i < notes.Length; i++)
+            {
+                if (IsAppWindowUsable(notes[i])) return notes[i];
+            }
+            return null;
+        }
+
+        private NotepadApp RecoverNotepadWindow(ref RectTransform winRect, string restoreText = null, string promptOverride = null, bool lockToWindow = true)
         {
             NotepadApp notepad = EnsureNotepadOpen();
             if (notepad != null)
@@ -1490,15 +1629,24 @@ namespace ComputerLearning
                 {
                     notepad.SetText(restoreText);
                 }
-                tutorialBlocker?.SetAllowedTarget(winRect);
+                if (lockToWindow)
+                {
+                    tutorialBlocker?.SetAllowedTarget(winRect);
+                }
+
+                string promptToRestore = !string.IsNullOrEmpty(promptOverride) ? promptOverride : activeStepPrompt;
+                if (!string.IsNullOrEmpty(promptToRestore))
+                {
+                    VirtualMascot.Show(promptToRestore, winRect, activeStepOffset);
+                }
             }
             return notepad;
         }
 
-        private PaintApp RecoverPaintWindow(ref RectTransform winRect)
+        private PaintApp RecoverPaintWindow(ref RectTransform winRect, string promptOverride = null, bool lockToWindow = true)
         {
-            PaintApp paint = FindAnyObjectByType<PaintApp>();
-            if (paint == null || !paint.gameObject.activeInHierarchy)
+            PaintApp paint = FindUsablePaintApp();
+            if (paint == null)
             {
                 if (StartMenuController.Instance != null)
                 {
@@ -1516,22 +1664,31 @@ namespace ComputerLearning
                         });
                     }
                 }
-                paint = FindAnyObjectByType<PaintApp>();
+                paint = FindUsablePaintApp();
             }
 
             if (paint != null)
             {
                 Window w = paint.GetComponentInParent<Window>();
                 winRect = w != null ? w.GetComponent<RectTransform>() : paint.GetComponent<RectTransform>();
-                tutorialBlocker?.SetAllowedTarget(winRect);
+                if (lockToWindow)
+                {
+                    tutorialBlocker?.SetAllowedTarget(winRect);
+                }
+
+                string promptToRestore = !string.IsNullOrEmpty(promptOverride) ? promptOverride : activeStepPrompt;
+                if (!string.IsNullOrEmpty(promptToRestore))
+                {
+                    VirtualMascot.Show(promptToRestore, winRect, activeStepOffset);
+                }
             }
             return paint;
         }
 
         private NotepadApp EnsureNotepadOpen()
         {
-            NotepadApp notepad = FindAnyObjectByType<NotepadApp>();
-            if (notepad != null && notepad.gameObject.activeInHierarchy)
+            NotepadApp notepad = FindUsableNotepadApp();
+            if (notepad != null)
             {
                 Window w = notepad.GetComponentInParent<Window>();
                 if (w != null)
@@ -1559,7 +1716,7 @@ namespace ComputerLearning
                 }
             }
 
-            return FindAnyObjectByType<NotepadApp>();
+            return FindUsableNotepadApp();
         }
 
         public static LevelMedal CalculateGuidedLevelMedal(string levelId, float durationSeconds, int mistakesCount)
@@ -1597,9 +1754,9 @@ namespace ComputerLearning
                     if (durationSeconds <= 60.0f && mistakesCount <= 2) return LevelMedal.Silver;
                     return LevelMedal.Bronze;
 
-                case "level16": // Paint Usage (Open, Brush, Draw, Eraser, Erase, Save)
-                    if (durationSeconds <= 40.0f && mistakesCount == 0) return LevelMedal.Gold;
-                    if (durationSeconds <= 75.0f && mistakesCount <= 2) return LevelMedal.Silver;
+                case "level16": // Paint Usage (Open, Color+Draw, BrushSize+Draw, Undo, Save)
+                    if (durationSeconds <= 55.0f && mistakesCount == 0) return LevelMedal.Gold;
+                    if (durationSeconds <= 90.0f && mistakesCount <= 2) return LevelMedal.Silver;
                     return LevelMedal.Bronze;
 
                 default:
@@ -1609,18 +1766,34 @@ namespace ComputerLearning
             }
         }
 
+        public static float GetGoldTimeForLevel(string levelId)
+        {
+            string clean = string.IsNullOrEmpty(levelId) ? "" : levelId.ToLower().Trim();
+            switch (clean)
+            {
+                case "level10": return 12f;
+                case "level11": return 20f;
+                case "level12": return 25f;
+                case "level13": return 18f;
+                case "level14": return 20f;
+                case "level15": return 35f;
+                case "level16": return 55f;
+                default: return 25f;
+            }
+        }
+
         private static float GetParTimeForLevel(string levelId)
         {
             switch (levelId.ToLower().Trim())
             {
-                case "level10": return 15f;
-                case "level11": return 25f;
-                case "level12": return 30f;
-                case "level13": return 20f;
-                case "level14": return 25f;
-                case "level15": return 45f;
-                case "level16": return 50f;
-                default: return 30f;
+                case "level10": return 25f;
+                case "level11": return 35f;
+                case "level12": return 45f;
+                case "level13": return 35f;
+                case "level14": return 38f;
+                case "level15": return 60f;
+                case "level16": return 90f;
+                default: return 50f;
             }
         }
 
@@ -1634,7 +1807,7 @@ namespace ComputerLearning
                 case "level13": return 5;
                 case "level14": return 5;
                 case "level15": return 8;
-                case "level16": return 8;
+                case "level16": return 10;
                 default: return 5;
             }
         }
@@ -1642,6 +1815,7 @@ namespace ComputerLearning
         private void CompleteLevel(LevelDefinition levelDef)
         {
             CleanupActiveSubscriptions();
+            activeStepPrompt = null;
 
             if (tutorialBlocker != null)
             {
@@ -1656,12 +1830,18 @@ namespace ComputerLearning
 
             LevelMedal medal = CalculateGuidedLevelMedal(cleanId, duration, mistakes);
 
-            // Compute additive score with speed bonus and mistake penalty
-            float parTime = GetParTimeForLevel(cleanId);
+            // Compute achievable score: hitting Gold time with 0 mistakes awards 100% (1000/1000)
+            float goldTime = GetGoldTimeForLevel(cleanId);
+            float maxSpeedWindow = Mathf.Max(goldTime + 10f, GetParTimeForLevel(cleanId));
             int baseScore = 600;
-            int speedBonus = Mathf.Max(0, Mathf.RoundToInt(Mathf.Max(0f, parTime - duration) * 15f));
+            int maxSpeedBonus = 400;
+            float speedRatio = maxSpeedWindow > goldTime
+                ? Mathf.Clamp01((maxSpeedWindow - duration) / (maxSpeedWindow - goldTime))
+                : (duration <= goldTime ? 1f : 0f);
+            int speedBonus = Mathf.RoundToInt(speedRatio * maxSpeedBonus);
             int mistakePenalty = mistakes * 50;
             int finalScore = Mathf.Max(100, baseScore + speedBonus - mistakePenalty);
+            int maxPossibleScore = baseScore + maxSpeedBonus;
 
             int expectedActions = GetExpectedActionsForLevel(cleanId);
             float accuracy = Mathf.Clamp(((float)expectedActions / (expectedActions + mistakes)) * 100f, 10f, 100f);
@@ -1677,7 +1857,7 @@ namespace ComputerLearning
             }
             if (ProgressData.Instance != null && levelDef != null && !string.IsNullOrEmpty(levelDef.levelId))
             {
-                ProgressData.Instance.RecordLevelAttempt(levelDef.levelId, medal, accuracy, duration, mistakes, finalScore);
+                ProgressData.Instance.RecordLevelAttempt(levelDef.levelId, medal, accuracy, duration, mistakes, finalScore, maxPossibleScore);
                 ProgressData.Instance.MarkLevelCompleted(levelDef.levelId);
             }
 
@@ -1700,7 +1880,7 @@ namespace ComputerLearning
             LevelCelebrationModal.Show(modalParent, levelDef, medal, accuracy, duration, mistakes, () =>
             {
                 VirtualMascot.HideMascot();
-            }, null, finalScore);
+            }, null, finalScore, maxPossibleScore);
 
             VirtualMascot.ShowMedalImprovementFeedback(
                 improvedMedal ? previousBestMedal : LevelMedal.None,

@@ -2075,6 +2075,12 @@ namespace ComputerLearning
         {
             if (itemsContainer == null) return;
 
+            GridLayoutGroup grid = itemsContainer.GetComponent<GridLayoutGroup>();
+            if (grid != null && (grid.cellSize.x < 112f || grid.cellSize.y < 136f))
+            {
+                grid.cellSize = new Vector2(Mathf.Max(grid.cellSize.x, 112f), Mathf.Max(grid.cellSize.y, 136f));
+            }
+
             foreach (Transform child in itemsContainer)
             {
                 if (Application.isPlaying)
@@ -2131,7 +2137,7 @@ namespace ComputerLearning
                 iconImg.preserveAspect = true;
                 iconImg.raycastTarget = false;
 
-                // Display medal badge under/on the icon if level has an achieved medal
+                // Display medal badge on the bottom-right corner of the icon if level has an achieved medal
                 if (levelMedal != LevelMedal.None)
                 {
                     Transform existingBadge = go.transform.Find("MedalBadge");
@@ -2140,11 +2146,11 @@ namespace ComputerLearning
                         GameObject badgeObj = new GameObject("MedalBadge", typeof(RectTransform), typeof(Image));
                         badgeObj.transform.SetParent(go.transform, false);
                         RectTransform badgeRect = badgeObj.GetComponent<RectTransform>();
-                        badgeRect.anchorMin = new Vector2(0.5f, 0.5f);
-                        badgeRect.anchorMax = new Vector2(0.5f, 0.5f);
+                        badgeRect.anchorMin = new Vector2(0.5f, 1f);
+                        badgeRect.anchorMax = new Vector2(0.5f, 1f);
                         badgeRect.pivot = new Vector2(0.5f, 0.5f);
                         badgeRect.sizeDelta = new Vector2(22, 22);
-                        badgeRect.anchoredPosition = new Vector2(16, -6);
+                        badgeRect.anchoredPosition = new Vector2(20, -54);
 
                         Image badgeImg = badgeObj.GetComponent<Image>();
                         badgeImg.sprite = MedalVisualUtility.GetMedalSprite(levelMedal);
@@ -2162,22 +2168,65 @@ namespace ComputerLearning
 
             if (label != null)
             {
+                RectTransform labelRt = label.GetComponent<RectTransform>();
+                if (labelRt != null)
+                {
+                    labelRt.anchorMin = new Vector2(0f, 1f);
+                    labelRt.anchorMax = new Vector2(1f, 1f);
+                    labelRt.pivot = new Vector2(0.5f, 1f);
+                    labelRt.anchoredPosition = new Vector2(0f, -70f);
+                    labelRt.sizeDelta = new Vector2(-6f, 36f);
+                }
+
+                label.fontSize = 13f;
+                label.alignment = TextAlignmentOptions.Top;
+                label.textWrappingMode = TextWrappingModes.Normal;
+                label.overflowMode = TextOverflowModes.Ellipsis;
+                label.text = item.name;
+                label.raycastTarget = false;
+
+                // Dedicated fixed-position medal/status label below the 2-line level title
+                Transform existingMedalTr = go.transform.Find("MedalLabel");
+                TextMeshProUGUI medalLabel = existingMedalTr != null ? existingMedalTr.GetComponent<TextMeshProUGUI>() : null;
+                if (medalLabel == null)
+                {
+                    GameObject medalObj = new GameObject("MedalLabel", typeof(RectTransform), typeof(TextMeshProUGUI));
+                    medalObj.transform.SetParent(go.transform, false);
+                    medalLabel = medalObj.GetComponent<TextMeshProUGUI>();
+                    medalLabel.font = label.font;
+                }
+
+                RectTransform medalRt = medalLabel.GetComponent<RectTransform>();
+                medalRt.anchorMin = new Vector2(0f, 1f);
+                medalRt.anchorMax = new Vector2(1f, 1f);
+                medalRt.pivot = new Vector2(0.5f, 1f);
+                medalRt.anchoredPosition = new Vector2(0f, -108f);
+                medalRt.sizeDelta = new Vector2(-6f, 20f);
+
+                medalLabel.fontSize = 11f;
+                medalLabel.fontStyle = FontStyles.Bold;
+                medalLabel.alignment = TextAlignmentOptions.Top;
+                medalLabel.textWrappingMode = TextWrappingModes.NoWrap;
+                medalLabel.overflowMode = TextOverflowModes.Ellipsis;
+                medalLabel.raycastTarget = false;
+
                 if (!isUnlocked)
                 {
-                    label.text = $"{item.name} <color=#777777>[Locked]</color>";
+                    medalLabel.gameObject.SetActive(true);
+                    medalLabel.text = "<color=#777777>[Locked]</color>";
                 }
                 else if (levelMedal != LevelMedal.None)
                 {
-                    string emoji = LevelScoreRecord.GetMedalEmoji(levelMedal);
                     string hex = LevelScoreRecord.GetMedalColorHex(levelMedal);
                     string medalName = LevelScoreRecord.GetMedalName(levelMedal);
-                    label.text = $"{item.name}\n<size=11><color={hex}><b>[{medalName}]</b></color></size>";
+                    medalLabel.gameObject.SetActive(true);
+                    medalLabel.text = $"<color={hex}>[{medalName}]</color>";
                 }
                 else
                 {
-                    label.text = item.name;
+                    medalLabel.text = string.Empty;
+                    medalLabel.gameObject.SetActive(false);
                 }
-                label.raycastTarget = false;
             }
 
             Button btn = go.GetComponent<Button>();

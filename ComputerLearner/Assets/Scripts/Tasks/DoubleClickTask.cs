@@ -143,12 +143,13 @@ namespace ComputerLearning
                     lastClickTime = -10f;
                     RectTransform rt = transform as RectTransform;
                     int scorePoints = BaseTask.CalculatePrecisionAndSizeScore(rt, eventData.position, eventData.pressEventCamera, out bool isOuterRing);
+                    int maxScorePoints = BaseTask.CalculateMaxPossiblePrecisionScore(rt);
                     if (isOuterRing && rt != null)
                     {
                         VirtualMascot.ShowAlmostOutFeedback(rt);
                     }
                     Debug.Log("[DoubleClickTask] Double click detected!");
-                    Complete(true, transform, scorePoints);
+                    Complete(true, transform, scorePoints, maxScorePoints);
                 }
                 else
                 {

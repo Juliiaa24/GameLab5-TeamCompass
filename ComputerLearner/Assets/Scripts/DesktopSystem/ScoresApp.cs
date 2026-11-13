@@ -725,8 +725,10 @@ namespace ComputerLearning
             string statusText = isCompleted ? ui.scores_status_completed : (isUnlocked ? ui.scores_status_unlocked : ui.scores_status_locked);
 
             int bestPts = record != null ? (record.bestPoints > 0 ? record.bestPoints : Mathf.RoundToInt(record.bestScore * 5f)) : 0;
+            int maxPts = record != null ? record.bestMaxPoints : 0;
+            string ptsDisplay = maxPts > 0 && record != null && record.bestPoints > 0 ? $"{bestPts}/{maxPts} PTS" : $"{bestPts} PTS";
             string accText = (record != null && (record.bestPoints > 0 || record.bestScore > 0f))
-                ? $"{bestPts} PTS\n<size=11><color=#64748B>({record.bestScore:F0}%)</color></size>"
+                ? $"{ptsDisplay}\n<size=11><color=#64748B>({record.bestScore:F0}%)</color></size>"
                 : "-";
             string timeText = "-";
             if (record != null && record.bestTimeSeconds > 0f)

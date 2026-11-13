@@ -26,7 +26,8 @@ namespace ComputerLearning
             int mistakes, 
             Action onClosed,
             bool? autoAdvance = null,
-            int pointsEarned = -1)
+            int pointsEarned = -1,
+            int maxPoints = -1)
         {
             GameObject modalObj = new GameObject("LevelCelebrationModal", typeof(RectTransform), typeof(CanvasGroup), typeof(LevelCelebrationModal));
             modalObj.transform.SetParent(parent, false);
@@ -38,7 +39,7 @@ namespace ComputerLearning
             rt.offsetMax = Vector2.zero;
 
             LevelCelebrationModal modal = modalObj.GetComponent<LevelCelebrationModal>();
-            modal.Initialize(level, medal, accuracy, duration, mistakes, onClosed, autoAdvance, pointsEarned);
+            modal.Initialize(level, medal, accuracy, duration, mistakes, onClosed, autoAdvance, pointsEarned, maxPoints);
             return modal;
         }
 
@@ -57,6 +58,7 @@ namespace ComputerLearning
         private float durationVal;
         private int mistakesVal;
         private int pointsVal;
+        private int maxPointsVal;
         private Action onClosedCallback;
         private bool isAutoAdvancing;
         private bool isClosed = false;
@@ -80,7 +82,8 @@ namespace ComputerLearning
             int mistakes, 
             Action onClosed,
             bool? autoAdvance = null,
-            int pointsEarned = -1)
+            int pointsEarned = -1,
+            int maxPoints = -1)
         {
             levelDef = level;
             earnedMedal = medal;
@@ -98,6 +101,19 @@ namespace ComputerLearning
             else
             {
                 pointsVal = Mathf.Max(0, Mathf.RoundToInt(accuracy * 1.0f) - (mistakes * 50));
+            }
+
+            if (maxPoints > 0)
+            {
+                maxPointsVal = Mathf.Max(pointsVal, maxPoints);
+            }
+            else if (LevelRunner.ActiveRunner != null && LevelRunner.ActiveRunner.MaxPossibleScore > 0)
+            {
+                maxPointsVal = Mathf.Max(pointsVal, LevelRunner.ActiveRunner.MaxPossibleScore);
+            }
+            else
+            {
+                maxPointsVal = 0;
             }
             onClosedCallback = onClosed;
             isAutoAdvancing = autoAdvance.HasValue ? autoAdvance.Value : ShouldAutoAdvance(level);
@@ -122,12 +138,15 @@ namespace ComputerLearning
             backdrop.GetComponent<Image>().color = new Color(0.08f, 0.12f, 0.18f, 0.88f);
 
             // Subtle outer border frame for the card
+            bool isGuidedLevel = levelDef != null && VirtualDesktopGuidedLevels.IsGuidedDesktopLevel(levelDef.levelId);
+            float cardHeight = isGuidedLevel ? 470f : 444f;
+
             GameObject cardBorder = new GameObject("CardBorder", typeof(RectTransform), typeof(Image));
             cardBorder.transform.SetParent(transform, false);
             RectTransform borderRt = cardBorder.GetComponent<RectTransform>();
             borderRt.anchorMin = new Vector2(0.5f, 0.5f);
             borderRt.anchorMax = new Vector2(0.5f, 0.5f);
-            borderRt.sizeDelta = new Vector2(488f, 452f);
+            borderRt.sizeDelta = new Vector2(488f, cardHeight + 8f);
             borderRt.anchoredPosition = Vector2.zero;
             cardBorder.GetComponent<Image>().color = new Color(0.72f, 0.78f, 0.86f, 0.95f);
 
@@ -138,7 +157,7 @@ namespace ComputerLearning
             cardRectTransform = cardRt;
             cardRt.anchorMin = new Vector2(0.5f, 0.5f);
             cardRt.anchorMax = new Vector2(0.5f, 0.5f);
-            cardRt.sizeDelta = new Vector2(480f, 444f);
+            cardRt.sizeDelta = new Vector2(480f, cardHeight);
             cardRt.anchoredPosition = Vector2.zero;
 
             Image cardImg = card.GetComponent<Image>();
@@ -241,8 +260,17 @@ namespace ComputerLearning
             GameObject pointsObj = new GameObject("PointsText", typeof(RectTransform), typeof(TextMeshProUGUI));
             pointsObj.transform.SetParent(card.transform, false);
             TextMeshProUGUI pointsTxt = pointsObj.GetComponent<TextMeshProUGUI>();
-            string ptsFormat = !string.IsNullOrEmpty(ui.celebration_points_format) ? ui.celebration_points_format : "Score: <b>{0} PTS</b>";
-            pointsTxt.text = string.Format(ptsFormat, pointsVal);
+            string ptsFormat = !string.IsNullOrEmpty(ui.celebration_points_format) ? ui.celebration_points_format : "You got <b>{0}/{1}</b> points";
+            if (maxPointsVal > 0)
+            {
+                pointsTxt.text = ptsFormat.Contains("{1}")
+                    ? string.Format(ptsFormat, pointsVal, maxPointsVal)
+                    : $"You got <b>{pointsVal}/{maxPointsVal}</b> points";
+            }
+            else
+            {
+                pointsTxt.text = $"You got <b>{pointsVal}</b> points";
+            }
             pointsTxt.fontSize = 20;
             pointsTxt.alignment = TextAlignmentOptions.Center;
             pointsTxt.color = new Color(0.086f, 0.639f, 0.290f); // Emerald #16A34A
@@ -258,6 +286,23 @@ namespace ComputerLearning
             stats.alignment = TextAlignmentOptions.Center;
             stats.color = new Color(0.18f, 0.22f, 0.28f);
             stats.GetComponent<RectTransform>().sizeDelta = new Vector2(430f, 30f);
+
+            // Evaluation criteria hint for guided levels (Levels 10-16)
+            if (isGuidedLevel)
+            {
+                GameObject criteriaObj = new GameObject("CriteriaText", typeof(RectTransform), typeof(TextMeshProUGUI));
+                criteriaObj.transform.SetParent(card.transform, false);
+                TextMeshProUGUI criteriaTxt = criteriaObj.GetComponent<TextMeshProUGUI>();
+                float goldTime = VirtualDesktopGuidedLevels.GetGoldTimeForLevel(levelDef.levelId);
+                string criteriaFormat = !string.IsNullOrEmpty(ui.celebration_guided_criteria_format)
+                    ? ui.celebration_guided_criteria_format
+                    : "Gold Target: <= {0:F0}s & 0 mistakes (-50 pts/mistake)";
+                criteriaTxt.text = string.Format(criteriaFormat, goldTime);
+                criteriaTxt.fontSize = 13;
+                criteriaTxt.alignment = TextAlignmentOptions.Center;
+                criteriaTxt.color = new Color(0.36f, 0.42f, 0.50f);
+                criteriaTxt.GetComponent<RectTransform>().sizeDelta = new Vector2(430f, 22f);
+            }
 
             // Continue Button (Explicit RectTransform.sizeDelta so it fits cleanly inside the card)
             GameObject btnObj = new GameObject("BtnContinue", typeof(RectTransform), typeof(Image), typeof(Button), typeof(LayoutElement));
@@ -295,11 +340,16 @@ namespace ComputerLearning
             btnTxt.alignment = TextAlignmentOptions.Center;
             btnTxt.color = Color.white;
 
-            // Ensure mascot appears on the side of the card so it never blocks the Continue button
-            if (VirtualMascot.Instance != null && VirtualMascot.Instance.gameObject.activeSelf)
+            // Reposition non-companion active mascot feedback beside the card so it doesn't cover the Continue button
+            if (VirtualMascot.Instance != null &&
+                VirtualMascot.Instance.gameObject.activeSelf &&
+                !VirtualMascot.Instance.IsDesktopCompanion)
             {
                 string mascotMsg = VirtualMascot.Instance.speechText != null ? VirtualMascot.Instance.speechText.text : string.Empty;
-                VirtualMascot.Show(mascotMsg, cardRectTransform, new Vector2(330f, -20f));
+                if (!string.IsNullOrEmpty(mascotMsg))
+                {
+                    VirtualMascot.Show(mascotMsg, cardRectTransform, new Vector2(310f, -20f));
+                }
             }
         }
 

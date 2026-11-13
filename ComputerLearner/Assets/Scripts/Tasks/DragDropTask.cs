@@ -28,16 +28,15 @@ namespace ComputerLearning
         {
             if (definition == null || definition.config == null) return;
 
-            // Use config for required distance, drop target size, drag size, and count
-            float requiredDistance = Mathf.Max(20f, definition.config.targetSize * 0.5f);
+            // Strict snap tolerance: require the piece to be cleanly centered inside the drop zone (not just touching the edge)
+            float dragSize = definition.config.targetSize > 0 ? definition.config.targetSize : 150f;
+            float dropSize = dragSize + 20f;
+            float requiredDistance = Mathf.Max(14f, dragSize * 0.25f);
 
-            float dropSize = (definition.config.targetSize > 0 ? definition.config.targetSize : 200f) + 50f;
             if (dropTarget != null)
             {
                 dropTarget.sizeDelta = new Vector2(dropSize, dropSize);
             }
-
-            float dragSize = definition.config.targetSize > 0 ? definition.config.targetSize : 150f;
 
             int pieceCount = Mathf.Max(1, definition.config.targetCount);
             piecesRemaining = pieceCount;
@@ -183,6 +182,11 @@ namespace ComputerLearning
             piecesRemaining--;
             NotifySubTaskProgress((float)(totalPiecesInitial - piecesRemaining) / Mathf.Max(1, totalPiecesInitial));
 
+            if (dropTarget != null && gameObject.activeInHierarchy)
+            {
+                StartCoroutine(PulseDropTargetCoroutine());
+            }
+
             Transform scoreAnchor = dropTarget != null ? dropTarget : (piece != null ? piece.transform : transform);
             if (piecesRemaining <= 0)
             {
@@ -192,6 +196,29 @@ namespace ComputerLearning
             {
                 RecordIntermediateResult(true, scoreAnchor);
             }
+        }
+
+        private System.Collections.IEnumerator PulseDropTargetCoroutine()
+        {
+            if (dropTarget == null) yield break;
+            Vector3 baseScale = Vector3.one;
+            Vector3 peakScale = new Vector3(1.12f, 1.12f, 1f);
+            float elapsed = 0f;
+            const float halfDur = 0.08f;
+            while (elapsed < halfDur && dropTarget != null)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                dropTarget.localScale = Vector3.Lerp(baseScale, peakScale, elapsed / halfDur);
+                yield return null;
+            }
+            elapsed = 0f;
+            while (elapsed < halfDur && dropTarget != null)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                dropTarget.localScale = Vector3.Lerp(peakScale, baseScale, elapsed / halfDur);
+                yield return null;
+            }
+            if (dropTarget != null) dropTarget.localScale = baseScale;
         }
     }
 }

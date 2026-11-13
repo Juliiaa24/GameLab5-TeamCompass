@@ -70,7 +70,7 @@ namespace ComputerLearning
 
                     if (RestrictToFolderCreationOnly)
                     {
-                        menuItems.Add(new ContextMenuItem("+ New Folder", CreateFolderOnDesktop, true));
+                        menuItems.Add(new ContextMenuItem("+ New Text Document (.txt)", CreateTextDocumentOnDesktop, true));
                     }
                     else
                     {

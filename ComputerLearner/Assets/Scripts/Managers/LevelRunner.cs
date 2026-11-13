@@ -54,12 +54,18 @@ namespace ComputerLearning
             appWindow = GetComponentInParent<Window>();
         }
 
-        public int AwardHitPoints(int exactPoints = 100)
+        public int AwardHitPoints(int exactPoints = 100, int maxTargetPoints = -1)
         {
             int pts = Mathf.Max(1, exactPoints);
+            int maxPts = maxTargetPoints > 0 ? Mathf.Max(pts, maxTargetPoints) : pts;
             currentLevelScore += pts;
-            maxPossibleScore += pts;
+            maxPossibleScore += maxPts;
             return pts;
+        }
+
+        public void RegisterMissedMaxPoints(int maxTargetPoints = 100)
+        {
+            maxPossibleScore += Mathf.Max(1, maxTargetPoints);
         }
 
         public int ApplyMistakePenalty(int penalty = 50)
@@ -289,7 +295,7 @@ namespace ComputerLearning
                     previousBestMedal = prevRecord != null ? prevRecord.bestMedal : LevelMedal.None;
                     improvedMedal = hadPreviousAttempt && (int)medal > (int)previousBestMedal;
 
-                    ProgressData.Instance.RecordLevelAttempt(currentLevel.levelId, medal, accuracy, totalDuration, totalMistakes, currentLevelScore);
+                    ProgressData.Instance.RecordLevelAttempt(currentLevel.levelId, medal, accuracy, totalDuration, totalMistakes, currentLevelScore, maxPossibleScore);
                     ProgressData.Instance.MarkLevelCompleted(currentLevel.levelId);
                 }
 
@@ -307,7 +313,7 @@ namespace ComputerLearning
                         }
                     }
                     if (appWindow != null) appWindow.CloseWindow();
-                }, null, currentLevelScore);
+                }, null, currentLevelScore, maxPossibleScore);
 
                 VirtualMascot.ShowMedalImprovementFeedback(
                     improvedMedal ? previousBestMedal : LevelMedal.None,

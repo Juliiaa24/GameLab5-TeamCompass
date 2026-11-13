@@ -29,6 +29,8 @@ namespace ComputerLearning
         public static event Action OnPaintUndo;
         public static event Action OnPaintSaveShortcut;
         public static event Action OnStrokeDrawn;
+        public static event Action<Color> OnColorSelected;
+        public static event Action<int> OnBrushSizeChanged;
         #endregion
 
         #region Private Variables
@@ -778,6 +780,7 @@ namespace ComputerLearning
             brushRadius = radius;
             UpdateToolHighlight();
             UpdateStatusText();
+            OnBrushSizeChanged?.Invoke(radius);
         }
 
         public void SelectColor(Color c, int swatchIndex)
@@ -807,6 +810,7 @@ namespace ComputerLearning
 
             UpdateToolHighlight();
             UpdateStatusText();
+            OnColorSelected?.Invoke(c);
         }
 
         private void UpdateToolHighlight()
