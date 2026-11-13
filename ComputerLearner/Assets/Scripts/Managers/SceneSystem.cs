@@ -119,12 +119,22 @@ namespace ComputerLearning
                         TeacherDashboardController.CloseDashboard();
                         return;
                     }
+                    MenuSceneReferences menuRefs = FindAnyObjectByType<MenuSceneReferences>();
+                    if (menuRefs != null && menuRefs.IsAnyInputOrModalActive())
+                    {
+                        return;
+                    }
                     if (SceneManager.GetActiveScene().name == "Menu") Application.Quit();
                     else ChangeToMenu();
                 }
                 else if (SceneManager.GetActiveScene().name == "Menu" && UnityEngine.InputSystem.Keyboard.current.spaceKey.wasPressedThisFrame)
                 {
-                    if (TeacherDashboardController.IsDashboardOpen || ClassroomNetworkWidget.IsManualInputFocused)
+                    MenuSceneReferences menuRefs = FindAnyObjectByType<MenuSceneReferences>();
+                    if ((menuRefs != null && menuRefs.IsAnyInputOrModalActive()) ||
+                        TeacherDashboardController.IsDashboardOpen ||
+                        ClassroomNetworkWidget.IsManualInputFocused ||
+                        PlaytestStudentWidget.IsEditingStudentId ||
+                        (TeacherModeGate.Instance != null && TeacherModeGate.Instance.IsAnyBlockingModalOpen))
                     {
                         return;
                     }
@@ -282,34 +292,38 @@ namespace ComputerLearning
                 EventSystem.current.SetSelectedGameObject(null);
             }
 
-            GameObject menuRootObj = GameObject.Find("Menu");
-            Canvas menuCanvas = menuRootObj != null ? menuRootObj.GetComponent<Canvas>() : null;
-            if (menuCanvas != null && menuCanvas.gameObject.scene.name == "Menu")
+            MenuSceneReferences menuRefs = FindAnyObjectByType<MenuSceneReferences>();
+            if (menuRefs != null)
             {
-                PlaytestStudentWidget.EnsureOnCanvas(menuCanvas.transform);
-                LearningPathSelectorWidget.EnsureOnCanvas(menuCanvas.transform);
-                ClassroomNetworkWidget.EnsureOnCanvas(menuCanvas.transform);
+                BindMenuButton(menuRefs.btnPlay, ChangeToMain);
+                BindMenuButton(menuRefs.btnStats, ChangeToStats);
+                BindMenuButton(menuRefs.btnExit, Exit);
+
+                if (menuRefs.btnJoinClass != null && menuRefs.classroomNetworkWidget != null)
+                {
+                    BindMenuButton(menuRefs.btnJoinClass, menuRefs.classroomNetworkWidget.OpenStudentJoinModal);
+                }
+
+                menuRefs.teacherModeGate?.RefreshLocalization();
+                menuRefs.teacherModeGate?.RefreshVisualState();
+                menuRefs.playtestStudentWidget?.RefreshUI();
+                menuRefs.learningPathSelectorWidget?.RefreshUI();
+                menuRefs.classroomNetworkWidget?.RefreshUI();
+                return;
             }
 
+            // Fallback lookup only if MenuSceneReferences is absent
             Button[] buttons = FindObjectsByType<Button>(FindObjectsInactive.Include, FindObjectsSortMode.None);
             foreach (Button btn in buttons)
             {
                 if (btn == null) continue;
-
-                // Only bind the 5 main menu buttons; do NOT remove listeners from other UI widgets
                 switch (btn.gameObject.name)
                 {
                     case "Btn-Play":
                         BindMenuButton(btn, ChangeToMain);
                         break;
-                    case "Btn-VirtualDesktop":
-                        BindMenuButton(btn, ChangeToVirtualDesktop);
-                        break;
                     case "Btn-Stats":
                         BindMenuButton(btn, ChangeToStats);
-                        break;
-                    case "Btn-1":
-                        BindMenuButton(btn, ResetProgress);
                         break;
                     case "Btn-2":
                         BindMenuButton(btn, Exit);
@@ -322,67 +336,26 @@ namespace ComputerLearning
         {
             if (SceneManager.GetActiveScene().name != "Menu") return;
 
+            UIDialogs ui = UIDialogs.Current;
+            MenuSceneReferences menuRefs = FindAnyObjectByType<MenuSceneReferences>();
+            if (menuRefs != null)
+            {
+                if (menuRefs.playSpaceHintText != null)
+                    menuRefs.playSpaceHintText.text = ui.menu_press_space_to_start;
+                if (menuRefs.desktopTitleText != null)
+                    menuRefs.desktopTitleText.text = ui.menu_welcome_title;
+                if (menuRefs.languageLabelText != null)
+                    menuRefs.languageLabelText.text = ui.menu_language_label;
+                return;
+            }
+
             GameObject playBtnObj = GameObject.Find("Btn-Play");
             if (playBtnObj == null) return;
-
-            Transform parent = playBtnObj.transform.parent;
-            if (parent != null)
-            {
-                Transform oldSiblingHint = parent.Find("PlaySpaceHint");
-                if (oldSiblingHint != null)
-                {
-                    Destroy(oldSiblingHint.gameObject);
-                }
-            }
-
             Transform existing = playBtnObj.transform.Find("PlaySpaceHint");
-            TextMeshProUGUI hintText = null;
-
-            if (existing == null)
+            if (existing != null)
             {
-                GameObject hintObj = new GameObject("PlaySpaceHint", typeof(RectTransform), typeof(TextMeshProUGUI), typeof(LayoutElement));
-                hintObj.transform.SetParent(playBtnObj.transform, false);
-
-                LayoutElement le = hintObj.GetComponent<LayoutElement>();
-                le.ignoreLayout = true;
-
-                RectTransform hintRt = hintObj.GetComponent<RectTransform>();
-                hintRt.anchorMin = new Vector2(0.5f, 1f);
-                hintRt.anchorMax = new Vector2(0.5f, 1f);
-                hintRt.pivot = new Vector2(0.5f, 0f);
-                hintRt.anchoredPosition = new Vector2(0f, 10f);
-                hintRt.sizeDelta = new Vector2(480f, 32f);
-
-                hintText = hintObj.GetComponent<TextMeshProUGUI>();
-                TMP_Text btnText = playBtnObj.GetComponentInChildren<TMP_Text>(true);
-                if (btnText != null && btnText.font != null)
-                {
-                    hintText.font = btnText.font;
-                }
-                hintText.fontSize = 18f;
-                hintText.fontStyle = FontStyles.Bold;
-                hintText.textWrappingMode = TextWrappingModes.NoWrap;
-                hintText.alignment = TextAlignmentOptions.Center;
-                hintText.color = new Color(0.10f, 0.14f, 0.20f, 1f);
-                hintText.raycastTarget = false;
-            }
-            else
-            {
-                RectTransform hintRt = existing.GetComponent<RectTransform>();
-                if (hintRt != null)
-                {
-                    hintRt.anchorMin = new Vector2(0.5f, 1f);
-                    hintRt.anchorMax = new Vector2(0.5f, 1f);
-                    hintRt.pivot = new Vector2(0.5f, 0f);
-                    hintRt.anchoredPosition = new Vector2(0f, 10f);
-                    hintRt.sizeDelta = new Vector2(480f, 32f);
-                }
-                hintText = existing.GetComponent<TextMeshProUGUI>();
-            }
-
-            if (hintText != null)
-            {
-                hintText.text = UIDialogs.Current.menu_press_space_to_start;
+                TMP_Text hint = existing.GetComponent<TMP_Text>();
+                if (hint != null) hint.text = ui.menu_press_space_to_start;
             }
         }
 

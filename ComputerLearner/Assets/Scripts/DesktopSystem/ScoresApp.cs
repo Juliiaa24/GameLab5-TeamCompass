@@ -157,12 +157,14 @@ namespace ComputerLearning
             VerticalLayoutGroup oldVlg = GetComponent<VerticalLayoutGroup>();
             if (oldVlg != null) Destroy(oldVlg);
 
-            // 1. App Background (Soft Cool Slate)
+            // 1. App Background (Bright Retro Sky Cream)
+            RetroThemeAssets retro = RetroThemeAssets.Instance;
             Image bg = GetComponent<Image>();
             if (bg == null) bg = gameObject.AddComponent<Image>();
-            bg.color = new Color(0.91f, 0.93f, 0.96f, 1f);
+            bg.color = RetroUITheme.WindowSkySoft;
+            bg.raycastTarget = false;
 
-            // 2. Top Header Banner Card (Fixed 92px height at top)
+            // 2. Top Header Banner Card (Fixed 92px height at top, Retro Royal Blue)
             GameObject headerCard = new GameObject("HeaderCard", typeof(RectTransform), typeof(Image));
             headerCard.transform.SetParent(transform, false);
             RectTransform headerRt = headerCard.GetComponent<RectTransform>();
@@ -171,7 +173,8 @@ namespace ComputerLearning
             headerRt.pivot = new Vector2(0.5f, 1f);
             headerRt.offsetMin = new Vector2(16f, -104f);
             headerRt.offsetMax = new Vector2(-16f, -12f);
-            headerCard.GetComponent<Image>().color = new Color(0.14f, 0.22f, 0.34f, 1f);
+            RetroUITheme.ApplySlicedSprite(headerCard.GetComponent<Image>(), retro != null ? retro.windowTitleBar : null,
+                RetroUITheme.TitleBlue, false);
 
             // Left Title Area inside HeaderCard
             GameObject titleArea = new GameObject("TitleArea", typeof(RectTransform));
@@ -224,11 +227,11 @@ namespace ComputerLearning
             statsHlg.childForceExpandWidth = true;
             statsHlg.childForceExpandHeight = true;
 
-            goldCountText = CreateSummaryMedalStatCard(statsArea.transform, ui.scores_stat_gold, LevelMedal.Gold, new Color(0.22f, 0.30f, 0.44f, 1f), "#FFD700");
-            silverCountText = CreateSummaryMedalStatCard(statsArea.transform, ui.scores_stat_silver, LevelMedal.Silver, new Color(0.22f, 0.30f, 0.44f, 1f), "#E0E6ED");
-            bronzeCountText = CreateSummaryMedalStatCard(statsArea.transform, ui.scores_stat_bronze, LevelMedal.Bronze, new Color(0.22f, 0.30f, 0.44f, 1f), "#ECA060");
-            completedCountText = CreateSummaryTextStatCard(statsArea.transform, ui.scores_stat_completed, "0 / 16", new Color(0.18f, 0.36f, 0.34f, 1f), "#7CE8B2");
-            avgAccuracyText = CreateSummaryTextStatCard(statsArea.transform, ui.scores_col_accuracy, "0%", new Color(0.20f, 0.32f, 0.48f, 1f), "#7CC6FE");
+            goldCountText = CreateSummaryMedalStatCard(statsArea.transform, ui.scores_stat_gold, LevelMedal.Gold, RetroUITheme.CardPastelYellow, "#B45309");
+            silverCountText = CreateSummaryMedalStatCard(statsArea.transform, ui.scores_stat_silver, LevelMedal.Silver, RetroUITheme.CardWhite, "#475569");
+            bronzeCountText = CreateSummaryMedalStatCard(statsArea.transform, ui.scores_stat_bronze, LevelMedal.Bronze, RetroUITheme.CardPastelPeach, "#9A3412");
+            completedCountText = CreateSummaryTextStatCard(statsArea.transform, ui.scores_stat_completed, "0 / 16", RetroUITheme.CardPastelMint, "#047857");
+            avgAccuracyText = CreateSummaryTextStatCard(statsArea.transform, ui.scores_col_accuracy, "0%", RetroUITheme.CardPastelBlue, "#1D4ED8");
 
             // 3. Navigation & Category Filter Bar (Fixed 38px height below HeaderCard)
             GameObject filterBar = new GameObject("FilterBar", typeof(RectTransform));
@@ -291,7 +294,8 @@ namespace ComputerLearning
             colHeaderRt.pivot = new Vector2(0.5f, 1f);
             colHeaderRt.offsetMin = new Vector2(16f, -190f);
             colHeaderRt.offsetMax = new Vector2(-16f, -156f);
-            colHeader.GetComponent<Image>().color = new Color(0.24f, 0.32f, 0.44f, 1f);
+            RetroUITheme.ApplySlicedSprite(colHeader.GetComponent<Image>(), retro != null ? retro.windowTitleBar : null,
+                RetroUITheme.TitleTeal, false);
 
             BuildProportionalColumns(
                 colHeader.transform,
@@ -370,9 +374,10 @@ namespace ComputerLearning
 
         private TextMeshProUGUI CreateSummaryMedalStatCard(Transform parent, string label, LevelMedal medal, Color bgColor, string valueHex)
         {
+            RetroThemeAssets retro = RetroThemeAssets.Instance;
             GameObject card = new GameObject($"Stat_{label}", typeof(RectTransform), typeof(Image));
             card.transform.SetParent(parent, false);
-            card.GetComponent<Image>().color = bgColor;
+            RetroUITheme.ApplySlicedSprite(card.GetComponent<Image>(), retro != null ? retro.cardRounded : null, bgColor, false);
 
             GameObject iconObj = new GameObject("MedalIcon", typeof(RectTransform), typeof(Image));
             iconObj.transform.SetParent(card.transform, false);
@@ -385,6 +390,7 @@ namespace ComputerLearning
             Image iconImg = iconObj.GetComponent<Image>();
             iconImg.sprite = MedalVisualUtility.GetMedalSprite(medal);
             iconImg.preserveAspect = true;
+            iconImg.raycastTarget = false;
 
             GameObject txtObj = new GameObject("ValueText", typeof(RectTransform), typeof(TextMeshProUGUI));
             txtObj.transform.SetParent(card.transform, false);
@@ -395,7 +401,7 @@ namespace ComputerLearning
             txtRt.offsetMax = new Vector2(-6f, -4f);
 
             TextMeshProUGUI tmp = txtObj.GetComponent<TextMeshProUGUI>();
-            tmp.text = $"<size=11><color=#B8C7DC>{label}</color></size>\n<size=19><color={valueHex}><b>0</b></color></size>";
+            tmp.text = $"<size=11><color=#475569>{label}</color></size>\n<size=19><color={valueHex}><b>0</b></color></size>";
             tmp.alignment = TextAlignmentOptions.MidlineLeft;
             tmp.raycastTarget = false;
             return tmp;
@@ -403,9 +409,10 @@ namespace ComputerLearning
 
         private TextMeshProUGUI CreateSummaryTextStatCard(Transform parent, string label, string initialVal, Color bgColor, string valueHex)
         {
+            RetroThemeAssets retro = RetroThemeAssets.Instance;
             GameObject card = new GameObject($"Stat_{label}", typeof(RectTransform), typeof(Image));
             card.transform.SetParent(parent, false);
-            card.GetComponent<Image>().color = bgColor;
+            RetroUITheme.ApplySlicedSprite(card.GetComponent<Image>(), retro != null ? retro.cardRounded : null, bgColor, false);
 
             GameObject txtObj = new GameObject("ValueText", typeof(RectTransform), typeof(TextMeshProUGUI));
             txtObj.transform.SetParent(card.transform, false);
@@ -416,7 +423,7 @@ namespace ComputerLearning
             txtRt.offsetMax = new Vector2(-8f, -4f);
 
             TextMeshProUGUI tmp = txtObj.GetComponent<TextMeshProUGUI>();
-            tmp.text = $"<size=11><color=#CFE0F5>{label}</color></size>\n<size=18><color={valueHex}><b>{initialVal}</b></color></size>";
+            tmp.text = $"<size=11><color=#475569>{label}</color></size>\n<size=18><color={valueHex}><b>{initialVal}</b></color></size>";
             tmp.alignment = TextAlignmentOptions.Center;
             tmp.raycastTarget = false;
             return tmp;
@@ -424,6 +431,7 @@ namespace ComputerLearning
 
         private void CreateFilterTabButton(Transform parent, LevelFilter filter, string title, float width)
         {
+            RetroThemeAssets retro = RetroThemeAssets.Instance;
             GameObject btnObj = new GameObject($"Tab_{filter}", typeof(RectTransform), typeof(Image), typeof(Button), typeof(LayoutElement));
             btnObj.transform.SetParent(parent, false);
             RectTransform rt = btnObj.GetComponent<RectTransform>();
@@ -435,6 +443,7 @@ namespace ComputerLearning
             le.preferredHeight = 34f;
 
             Image img = btnObj.GetComponent<Image>();
+            RetroUITheme.ApplySlicedSprite(img, retro != null ? retro.button3D : null, RetroUITheme.BtnNeutralCream, true);
             filterTabImages[filter] = img;
 
             GameObject txtObj = new GameObject("Text", typeof(RectTransform), typeof(TextMeshProUGUI));
@@ -472,12 +481,12 @@ namespace ComputerLearning
                 if (kvp.Value != null)
                 {
                     kvp.Value.color = active
-                        ? new Color(0.18f, 0.52f, 0.86f, 1f)
-                        : new Color(0.80f, 0.84f, 0.90f, 1f);
+                        ? RetroUITheme.BtnSkyBlue
+                        : RetroUITheme.BtnNeutralCream;
                 }
                 if (filterTabTexts.TryGetValue(kvp.Key, out TextMeshProUGUI txt) && txt != null)
                 {
-                    txt.color = active ? Color.white : new Color(0.20f, 0.26f, 0.35f, 1f);
+                    txt.color = active ? RetroUITheme.InkWhite : RetroUITheme.InkDark;
                 }
             }
         }
@@ -627,15 +636,15 @@ namespace ComputerLearning
             float avgAcc = recordedScoresCount > 0 ? (totalAccuracySum / recordedScoresCount) : 0f;
 
             if (goldCountText != null)
-                goldCountText.text = $"<size=11><color=#B8C7DC>{ui.scores_stat_gold}</color></size>\n<size=19><color=#FFD700><b>{goldCount}</b></color></size>";
+                goldCountText.text = $"<size=11><color=#475569>{ui.scores_stat_gold}</color></size>\n<size=19><color=#B45309><b>{goldCount}</b></color></size>";
             if (silverCountText != null)
-                silverCountText.text = $"<size=11><color=#B8C7DC>{ui.scores_stat_silver}</color></size>\n<size=19><color=#E0E6ED><b>{silverCount}</b></color></size>";
+                silverCountText.text = $"<size=11><color=#475569>{ui.scores_stat_silver}</color></size>\n<size=19><color=#475569><b>{silverCount}</b></color></size>";
             if (bronzeCountText != null)
-                bronzeCountText.text = $"<size=11><color=#B8C7DC>{ui.scores_stat_bronze}</color></size>\n<size=19><color=#ECA060><b>{bronzeCount}</b></color></size>";
+                bronzeCountText.text = $"<size=11><color=#475569>{ui.scores_stat_bronze}</color></size>\n<size=19><color=#9A3412><b>{bronzeCount}</b></color></size>";
             if (completedCountText != null)
-                completedCountText.text = $"<size=11><color=#CFE0F5>{ui.scores_stat_completed}</color></size>\n<size=18><color=#7CE8B2><b>{completedCount} / {allLevels.Count}</b></color></size>";
+                completedCountText.text = $"<size=11><color=#475569>{ui.scores_stat_completed}</color></size>\n<size=18><color=#047857><b>{completedCount} / {allLevels.Count}</b></color></size>";
             if (avgAccuracyText != null)
-                avgAccuracyText.text = $"<size=11><color=#CFE0F5>{ui.scores_col_accuracy}</color></size>\n<size=18><color=#7CC6FE><b>{avgAcc:F0}%</b></color></size>";
+                avgAccuracyText.text = $"<size=11><color=#475569>{ui.scores_col_accuracy}</color></size>\n<size=18><color=#1D4ED8><b>{avgAcc:F0}%</b></color></size>";
         }
 
         private void CreateEmptyStateRow(Transform parent)
@@ -689,15 +698,12 @@ namespace ComputerLearning
             le.flexibleHeight = 0f;
 
             Image bgImg = row.GetComponent<Image>();
+            RetroThemeAssets retro = RetroThemeAssets.Instance;
             bool isAlt = (rowIndex % 2) == 1;
-            if (isCompleted)
-            {
-                bgImg.color = isAlt ? new Color(0.93f, 0.97f, 0.95f, 1f) : new Color(0.97f, 0.99f, 0.98f, 1f);
-            }
-            else
-            {
-                bgImg.color = isAlt ? new Color(0.92f, 0.94f, 0.97f, 1f) : Color.white;
-            }
+            Color cardTint = isCompleted
+                ? (isAlt ? RetroUITheme.CardPastelMint : RetroUITheme.CardWhite)
+                : (isAlt ? RetroUITheme.CardPastelBlue : RetroUITheme.CardWhite);
+            RetroUITheme.ApplySlicedSprite(bgImg, retro != null ? retro.cardRounded : null, cardTint, false);
 
             rowInstances.Add(row);
 

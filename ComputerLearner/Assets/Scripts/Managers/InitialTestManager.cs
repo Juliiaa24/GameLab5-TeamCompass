@@ -83,6 +83,24 @@ namespace ComputerLearning
         [Header("Scene Canvas References")]
         [SerializeField] private RectTransform taskContentArea;
         [SerializeField] private Canvas sceneCanvas;
+
+        [Header("Scene Serialized Retro UI")]
+        [SerializeField] private GameObject serializedRootContainer;
+        [SerializeField] private GameObject serializedIntroModal;
+        [SerializeField] private TextMeshProUGUI serializedIntroTitleText;
+        [SerializeField] private TextMeshProUGUI serializedIntroDescriptionText;
+        [SerializeField] private Button serializedIntroStartButton;
+        [SerializeField] private TextMeshProUGUI serializedIntroPromptText;
+        [SerializeField] private TextMeshProUGUI serializedStepText;
+        [SerializeField] private TextMeshProUGUI serializedTitleText;
+        [SerializeField] private TextMeshProUGUI serializedInstructionText;
+        [SerializeField] private TextMeshProUGUI serializedStatusText;
+        [SerializeField] private RectTransform serializedTimerBarFill;
+        [SerializeField] private RectTransform serializedStageArea;
+        [SerializeField] private Button serializedExitButton;
+        [SerializeField] private TextMeshProUGUI serializedExitButtonLabel;
+        [SerializeField] private Button serializedSkipButton;
+        [SerializeField] private TextMeshProUGUI serializedSkipButtonLabel;
         private LevelDefinition currentLevel;
 
         private AssessmentConfig config;
@@ -219,11 +237,35 @@ namespace ComputerLearning
 
         private void ShowAssessmentIntroModal()
         {
+            if (serializedIntroModal != null && appWindow == null)
+            {
+                if (stepText != null) stepText.text = UIDialogs.Current.assessment_intro_title;
+                if (titleText != null) titleText.text = string.Empty;
+                if (instructionText != null) instructionText.text = string.Empty;
+                introModalObject = serializedIntroModal;
+                if (serializedIntroTitleText != null)
+                    serializedIntroTitleText.text = UIDialogs.Current.assessment_intro_title;
+                if (serializedIntroDescriptionText != null)
+                    serializedIntroDescriptionText.text = UIDialogs.Current.assessment_intro_description;
+                if (serializedIntroPromptText != null)
+                    serializedIntroPromptText.text = UIDialogs.Current.assessment_intro_prompt;
+                if (serializedIntroStartButton != null)
+                {
+                    serializedIntroStartButton.onClick.RemoveAllListeners();
+                    serializedIntroStartButton.onClick.AddListener(DismissIntroAndStart);
+                }
+                serializedIntroModal.SetActive(true);
+                serializedIntroModal.transform.SetAsLastSibling();
+                isShowingIntro = true;
+                return;
+            }
+
             if (introModalObject != null) Destroy(introModalObject);
 
             Canvas canvas = FindAssessmentCanvas();
             Transform parentTransform = rootContainer != null ? rootContainer.transform : (canvas != null ? canvas.transform : transform);
 
+            RetroThemeAssets retro = RetroThemeAssets.Instance;
             introModalObject = new GameObject("AssessmentIntroModal", typeof(RectTransform), typeof(Image));
             introModalObject.transform.SetParent(parentTransform, false);
             introModalObject.transform.SetAsLastSibling();
@@ -235,7 +277,7 @@ namespace ComputerLearning
             backdropRt.offsetMax = Vector2.zero;
 
             Image backdropImg = introModalObject.GetComponent<Image>();
-            backdropImg.color = new Color(0.08f, 0.12f, 0.20f, 0.65f); // Soft dark glass backdrop
+            backdropImg.color = RetroUITheme.OverlayScrim;
             backdropImg.raycastTarget = true;
 
             // Centered Card
@@ -245,10 +287,10 @@ namespace ComputerLearning
             cardRt.anchorMin = new Vector2(0.5f, 0.5f);
             cardRt.anchorMax = new Vector2(0.5f, 0.5f);
             cardRt.pivot = new Vector2(0.5f, 0.5f);
-            cardRt.sizeDelta = new Vector2(580f, 340f);
+            cardRt.sizeDelta = new Vector2(600f, 360f);
 
             Image cardImg = cardObj.GetComponent<Image>();
-            cardImg.color = Color.white;
+            RetroUITheme.ApplySlicedSprite(cardImg, retro != null ? retro.windowBody : null, RetroUITheme.WindowCream, false);
 
             VerticalLayoutGroup vlg = cardObj.GetComponent<VerticalLayoutGroup>();
             vlg.padding = new RectOffset(36, 36, 32, 32);
@@ -321,7 +363,10 @@ namespace ComputerLearning
             isShowingIntro = false;
             if (introModalObject != null)
             {
-                Destroy(introModalObject);
+                if (introModalObject == serializedIntroModal)
+                    introModalObject.SetActive(false);
+                else
+                    Destroy(introModalObject);
                 introModalObject = null;
             }
             SpawnCurrentTask();
@@ -407,8 +452,56 @@ namespace ComputerLearning
             return null;
         }
 
+        private void HandleExitClicked()
+        {
+            IsTestActive = false;
+            StopAllCoroutines();
+            if (UnityEngine.SceneManagement.SceneManager.GetActiveScene().name == "AssessmentScene")
+            {
+                if (SceneSystem.Instance != null) SceneSystem.Instance.ChangeToMenu();
+                else UnityEngine.SceneManagement.SceneManager.LoadScene("Menu");
+            }
+            else
+            {
+                if (appWindow != null) appWindow.CloseWindow();
+            }
+        }
+
         private void BuildCleanUI()
         {
+            if (serializedRootContainer != null && appWindow == null)
+            {
+                rootContainer = serializedRootContainer;
+                rootContainer.SetActive(true);
+                stepText = serializedStepText;
+                titleText = serializedTitleText;
+                instructionText = serializedInstructionText;
+                statusText = serializedStatusText;
+                timerBarFill = serializedTimerBarFill;
+                stageArea = serializedStageArea;
+
+                UIDialogs ui = UIDialogs.Current;
+                if (serializedExitButtonLabel != null)
+                    serializedExitButtonLabel.text = !string.IsNullOrEmpty(config.ui.exitButton) ? config.ui.exitButton : ui.assessment_btn_menu;
+                if (serializedSkipButtonLabel != null)
+                    serializedSkipButtonLabel.text = !string.IsNullOrEmpty(config.ui.skipButton) ? config.ui.skipButton : ui.assessment_btn_skip;
+
+                if (serializedExitButton != null)
+                {
+                    serializedExitButton.onClick.RemoveAllListeners();
+                    serializedExitButton.onClick.AddListener(HandleExitClicked);
+                }
+                if (serializedSkipButton != null)
+                {
+                    serializedSkipButton.onClick.RemoveAllListeners();
+                    serializedSkipButton.onClick.AddListener(() =>
+                    {
+                        if (!isTaskResolving) HandleTaskSkip();
+                    });
+                }
+                return;
+            }
+
             if (taskContentArea == null)
             {
                 Canvas canvas = FindAssessmentCanvas();
@@ -422,9 +515,11 @@ namespace ComputerLearning
             }
 
             // Remove previous assessment instances if any
-            if (rootContainer != null) Destroy(rootContainer);
+            if (rootContainer != null && rootContainer != serializedRootContainer) Destroy(rootContainer);
 
-            // Root Container (Light Mode: soft light gray #F1F5F9)
+            RetroThemeAssets retro = RetroThemeAssets.Instance;
+
+            // Root Container (Bright Sky Retro)
             rootContainer = new GameObject("AssessmentCleanRoot", typeof(RectTransform), typeof(Image));
             rootContainer.transform.SetParent(taskContentArea, false);
             RectTransform rootRect = rootContainer.GetComponent<RectTransform>();
@@ -434,9 +529,9 @@ namespace ComputerLearning
             rootRect.offsetMax = Vector2.zero;
 
             Image rootImg = rootContainer.GetComponent<Image>();
-            rootImg.color = new Color(0.95f, 0.96f, 0.98f, 1f);
+            rootImg.color = RetroUITheme.WindowSkySoft;
             rootImg.raycastTarget = false; // Never block raycasts for buttons or interactive targets!
-            // Top Header Panel (Pure white #FFFFFF)
+            // Top Header Panel (Retro Blue Window Header)
             GameObject headerObj = new GameObject("HeaderPanel", typeof(RectTransform), typeof(Image));
             headerObj.transform.SetParent(rootContainer.transform, false);
             RectTransform headerRect = headerObj.GetComponent<RectTransform>();
@@ -444,7 +539,7 @@ namespace ComputerLearning
             headerRect.anchorMax = new Vector2(1f, 1f);
             headerRect.pivot = new Vector2(0.5f, 1f);
             headerRect.sizeDelta = new Vector2(0f, 138f);
-            headerObj.GetComponent<Image>().color = Color.white;
+            RetroUITheme.ApplySlicedSprite(headerObj.GetComponent<Image>(), retro != null ? retro.windowBody : null, RetroUITheme.WindowCream, false);
 
             // Subtle divider under header
             GameObject dividerObj = new GameObject("Divider", typeof(RectTransform), typeof(Image));
@@ -486,25 +581,13 @@ namespace ComputerLearning
             stepRect.anchoredPosition = new Vector2(25f, -14f);
             stepRect.sizeDelta = new Vector2(300f, 22f);
 
-            // Exit Button (Comfortable 105x38px tactile button)
-            CreateSimpleButton(headerObj.transform, config.ui.exitButton, new Vector2(20f, -12f), new Vector2(105f, 38f),
-                new Vector2(1f, 1f), new Vector2(1f, 1f), new Color(0.93f, 0.94f, 0.96f), new Color(0.28f, 0.34f, 0.44f), () => {
-                    IsTestActive = false;
-                    StopAllCoroutines();
-                    if (UnityEngine.SceneManagement.SceneManager.GetActiveScene().name == "AssessmentScene")
-                    {
-                        if (SceneSystem.Instance != null) SceneSystem.Instance.ChangeToMenu();
-                        else UnityEngine.SceneManagement.SceneManager.LoadScene("Menu");
-                    }
-                    else
-                    {
-                        if (appWindow != null) appWindow.CloseWindow();
-                    }
-                }, 15);
+            // Exit Button (Retro Cream/Red 3D button)
+            CreateSimpleButton(headerObj.transform, config.ui.exitButton, new Vector2(20f, -12f), new Vector2(115f, 40f),
+                new Vector2(1f, 1f), new Vector2(1f, 1f), RetroUITheme.BtnCoralRed, RetroUITheme.InkWhite, HandleExitClicked, 15);
 
-            // Skip Button (Comfortable 105x38px tactile button)
-            CreateSimpleButton(headerObj.transform, config.ui.skipButton, new Vector2(135f, -12f), new Vector2(105f, 38f),
-                new Vector2(1f, 1f), new Vector2(1f, 1f), new Color(0.89f, 0.91f, 0.94f), new Color(0.20f, 0.25f, 0.33f), () => {
+            // Skip Button (Retro Sunny Gold/Orange 3D button)
+            CreateSimpleButton(headerObj.transform, config.ui.skipButton, new Vector2(145f, -12f), new Vector2(115f, 40f),
+                new Vector2(1f, 1f), new Vector2(1f, 1f), RetroUITheme.BtnWarmOrange, RetroUITheme.InkWhite, () => {
                     if (!isTaskResolving) HandleTaskSkip();
                 }, 15);
 
@@ -571,7 +654,8 @@ namespace ComputerLearning
             rt.pivot = pivot;
             rt.anchoredPosition = new Vector2(-offsetFromAnchor.x, offsetFromAnchor.y);
             rt.sizeDelta = size;
-            btnObj.GetComponent<Image>().color = bgCol;
+            RetroThemeAssets retro = RetroThemeAssets.Instance;
+            RetroUITheme.ApplySlicedSprite(btnObj.GetComponent<Image>(), retro != null ? retro.button3D : null, bgCol, true);
 
             Button btn = btnObj.GetComponent<Button>();
             btn.onClick.AddListener(() => onClick?.Invoke());

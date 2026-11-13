@@ -1,0 +1,18 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cdc9bfee536b2cc44bc2bb76e70f3d34, type: 3}
+  m_Name: TeacherModeConfig
+  m_EditorClassIdentifier: Assembly-CSharp::ComputerLearning.TeacherModeConfig
+  allowTeacherMode: 1
+  defaultPin: 1234
+  requireLongPress: 0
+  longPressDuration: 1.5

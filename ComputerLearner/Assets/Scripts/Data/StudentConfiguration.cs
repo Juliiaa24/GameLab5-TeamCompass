@@ -147,11 +147,11 @@ namespace ComputerLearning
             if (cfg == null) return string.Empty;
 
             string lang = LocalizationManager.CurrentLanguage;
-            bool isEs = string.Equals(lang, "ES", StringComparison.OrdinalIgnoreCase);
+            bool isEs = string.Equals(lang, LocalizationManager.LANG_ES, StringComparison.OrdinalIgnoreCase);
+            bool isNo = string.Equals(lang, LocalizationManager.LANG_NO, StringComparison.OrdinalIgnoreCase);
 
-            string assessmentPart = isEs
-                ? (cfg.runAssessment ? "Assessment: ACTIVO" : "Assessment: DESACTIVADO")
-                : (cfg.runAssessment ? "Assessment: ON" : "Assessment: OFF");
+            UIDialogs ui = UIDialogs.Current;
+            string assessmentPart = cfg.runAssessment ? ui.path_assess_on : ui.path_assess_off;
 
             string flowPart;
             switch (cfg.learningPath)
@@ -159,20 +159,26 @@ namespace ComputerLearning
                 case LearningPath.Intermediate:
                     flowPart = isEs
                         ? "Tutorial ventanas -> Escritorio libre (Niveles 1-16)"
-                        : "Window Tutorial -> Full Desktop (Levels 1-16)";
+                        : (isNo
+                            ? "Vindusveiledning -> Fritt skrivebord (Nivå 1-16)"
+                            : "Window Tutorial -> Full Desktop (Levels 1-16)");
                     break;
 
                 case LearningPath.Advanced:
                     flowPart = isEs
                         ? "Escritorio directo sin tutoriales (Niveles 1-16)"
-                        : "Direct Virtual Desktop, No Tutorials (Levels 1-16)";
+                        : (isNo
+                            ? "Direkte skrivebord uten veiledning (Nivå 1-16)"
+                            : "Direct Virtual Desktop, No Tutorials (Levels 1-16)");
                     break;
 
                 case LearningPath.BeginnerFoundations:
                 default:
                     flowPart = isEs
                         ? "Guiado completo desde inicio (Niveles 1-16)"
-                        : "Full Guided Tutorial -> OS (Levels 1-16)";
+                        : (isNo
+                            ? "Full veiledet oppstart -> OS (Nivå 1-16)"
+                            : "Full Guided Tutorial -> OS (Levels 1-16)");
                     break;
             }
 

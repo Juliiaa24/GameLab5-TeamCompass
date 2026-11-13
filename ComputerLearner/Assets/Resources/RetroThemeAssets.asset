@@ -1,0 +1,53 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 0}
+  m_Name: RetroThemeAssets
+  m_EditorClassIdentifier: Assembly-CSharp:ComputerLearning:RetroThemeAssets
+  windowBody: {fileID: 21300000, guid: 6b8f4fe21cf9d804297625c9f401b69d, type: 3}
+  windowTitleBar: {fileID: 21300000, guid: 96f1dc6e3d26b7e48b4a39bab96d8955, type: 3}
+  button3D: {fileID: 21300000, guid: 81ae50fcbb4bb2e4991c0a9d366be7b5, type: 3}
+  cardRounded: {fileID: 21300000, guid: 63df42d3a39cb4e40ba13871d505de84, type: 3}
+  inputBox: {fileID: 21300000, guid: 063571e25d3d54945b2a08dd70c55176, type: 3}
+  badgePill: {fileID: 21300000, guid: 15af1d3b52bda3b479b1d5c54359a18c, type: 3}
+  iconLock: {fileID: 21300000, guid: 644219950ccd74446b5cc5ab21ac5ba4, type: 3}
+  iconUnlock: {fileID: 21300000, guid: e96427fa415d1834cb30b220b6f49437, type: 3}
+  iconGear: {fileID: 21300000, guid: 793bb4bd65d5d004fbf1f5d6af9664c3, type: 3}
+  iconPlay: {fileID: 21300000, guid: 05b2a96a3307e3344a8131c919376e2c, type: 3}
+  iconGlobe: {fileID: 21300000, guid: 0e32252d2feed784496292b092039379, type: 3}
+  iconClassroom: {fileID: 21300000, guid: dbc347e4678770249ace79a3cda97e36, type: 3}
+  iconCheck: {fileID: 21300000, guid: 6e66f87df5636fa4e8bdcd6e696c557e, type: 3}
+  iconExit: {fileID: 21300000, guid: 9e91e4a27e361404c9b5dcd2631164b0, type: 3}
+  desktopWallpaper: {fileID: 21300000, guid: cf649db4db92c1645b88137822fb3672, type: 3}
+  topBarClassic: {fileID: 21300000, guid: 909504cc610ebf94b8f9ef7a2ed2e867, type: 3}
+  topBarCloseBtn: {fileID: 21300000, guid: 549f17f26704b834d9d532f4067db148, type: 3}
+  topBarMinBtn: {fileID: 21300000, guid: 97e2e5cf2933a7745b17c54542026aff, type: 3}
+  topBarMaxBtn: {fileID: 21300000, guid: e3f27a7cb22fe9e46946826f628fa152, type: 3}
+  mascotLogoNoBg: {fileID: 21300000, guid: 585ac505c7434f8488caccd88fdbdeab, type: 3}
+  mascotLogoSquared: {fileID: 21300000, guid: d07f9bb9a150c444f8736ccf5dc49924, type: 3}
+  computerIcon: {fileID: 21300000, guid: 1ec82d76e1d102e4c9e676d3fbeb14ea, type: 3}
+  targetIcon: {fileID: 21300000, guid: 09a396a585994a74f9d02e783ed61cf7, type: 3}
+  mouseIcon: {fileID: 21300000, guid: 20f0f3993cb64a746828f5a17dc26b07, type: 3}
+  mouseMoveIcon: {fileID: 21300000, guid: 754ba7563c72a3e49b57eeedc1be63a0, type: 3}
+  mouseLeftClickIcon: {fileID: 21300000, guid: b30384dc1472a504583dea9bb304067f, type: 3}
+  mouseRightClickIcon: {fileID: 21300000, guid: 73528f0f4ea4be1479252600d05afa3d, type: 3}
+  mouseHoldClickIcon: {fileID: 21300000, guid: 301aa831261c0f240b5e43492d79b36f, type: 3}
+  goldMedal: {fileID: 21300000, guid: b45d7e2ce3a0fe04a85b145d67fe5245, type: 3}
+  silverMedal: {fileID: 21300000, guid: e236929aa689076488fe1c077cec8bea, type: 3}
+  bronzeMedal: {fileID: 21300000, guid: d3077cb3e1c9ae940a8df8b16f1728db, type: 3}
+  folderYellow: {fileID: 21300000, guid: 735c004f1ce73d54ba8fc28131a4c620, type: 3}
+  folderBlue: {fileID: 21300000, guid: c661b9f57f1ab9a43b6916676d92482e, type: 3}
+  folderGreen: {fileID: 21300000, guid: 2535ba149dfdb0b4cbc2145370d1e95c, type: 3}
+  folderCyan: {fileID: 21300000, guid: b1f5c0e1ff8a77e4595f90b2ee540fbc, type: 3}
+  folderPink: {fileID: 21300000, guid: dc4a8776811c892489a3d50d0985d096, type: 3}
+  folderPurple: {fileID: 21300000, guid: 63efd65564236ed449bbe2009507c589, type: 3}
+  barOutline: {fileID: 21300000, guid: 538822d7c6eeb2645a22ab0bfdd325fa, type: 3}
+  barFilling: {fileID: 21300000, guid: 19410b00e2fde1a4ba98a92c54fbd622, type: 3}

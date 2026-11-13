@@ -159,6 +159,10 @@ namespace ComputerLearning
         public string stats_level_mastered = "Mastered";
         public string stats_level_proficient = "Proficient";
         public string stats_level_practicing = "Practicing";
+        public string stats_gold_label = "Gold";
+        public string stats_silver_label = "Silver";
+        public string stats_bronze_label = "Bronze";
+        public string stats_levels_label = "Levels";
         public string skill_mouse_move = "Move Cursor";
         public string skill_hover = "Hover";
         public string skill_click = "Single Click";
@@ -176,6 +180,87 @@ namespace ComputerLearning
         public string playtest_auto_download_disabled_toast = "Auto download disabled (data will only save when clicking Export)";
         public string playtest_export_success = "Exported {0} to Desktop/ComputerLearner_PlaytestData";
         public string playtest_reset_success = "Progress reset! Next student ID: {0}";
+
+        // Kid-Friendly Student Menu & Welcome Card
+        public string menu_welcome_title = "Welcome to Your Computer!";
+        public string menu_greeting_format = "Hi, {0}!";
+        public string menu_name_label = "Your Name:";
+        public string menu_name_placeholder = "Type your name...";
+        public string menu_btn_join_class = "Join Class";
+        public string menu_language_label = "Language";
+        public string menu_connected_status_format = "Connected to {0}'s class";
+        public string menu_btn_leave_class = "Leave Class";
+
+        // Teacher Mode Gate, PIN & Panel
+        public string teacher_btn_locked = "Teacher";
+        public string teacher_btn_unlocked = "Teacher (Unlocked)";
+        public string teacher_pin_title = "Teacher Mode";
+        public string teacher_pin_prompt = "Enter the 4-digit teacher PIN:";
+        public string teacher_pin_wrong = "Oops! Wrong PIN. Try again.";
+        public string teacher_pin_backspace = "Del";
+        public string teacher_pin_clear = "Clear";
+        public string teacher_panel_title = "Teacher Control Window";
+        public string teacher_panel_subtitle = "Classroom setup, learning paths & student tools";
+        public string teacher_btn_lock = "Lock & Student Mode";
+        public string teacher_section_student_controls = "Student & Progress Tools";
+        public string teacher_section_class_network = "Classroom & Dashboard";
+        public string teacher_section_pin_config = "Teacher PIN";
+        public string teacher_pin_new_placeholder = "New 4 digits...";
+        public string teacher_pin_save_btn = "Save PIN";
+        public string teacher_pin_invalid_length = "Enter exactly 4 numbers.";
+        public string teacher_pin_updated_format = "PIN updated to {0}";
+
+        // Learning Path Selector
+        public string path_section_title = "Learning Path & Start Flow";
+        public string path_beginner_title = "Beginner";
+        public string path_intermediate_title = "Intermediate";
+        public string path_advanced_title = "Advanced";
+        public string path_assess_on = "Initial Assessment: ON";
+        public string path_assess_off = "Initial Assessment: OFF";
+        public string path_locked_by_class = "Controlled by Teacher Host ({0})";
+
+        // Classroom Network & Student Join
+        public string lan_join_modal_title = "Join Your Class";
+        public string lan_join_searching = "Looking for your teacher's class...";
+        public string lan_join_no_hosts = "No classrooms found yet. Ask your teacher to start the class!";
+        public string lan_join_host_entry_format = "{0}'s Class ({1})";
+        public string lan_join_btn_connect = "Join";
+        public string lan_join_connecting = "Joining...";
+        public string lan_join_manual_toggle = "Use teacher IP address instead";
+        public string lan_join_manual_placeholder = "Teacher IP (e.g. 192.168.1.50)";
+        public string lan_join_ip_empty = "Please type the teacher IP.";
+        public string lan_connected_banner_format = "Connected to class: {0}";
+        public string lan_teacher_open_dashboard = "Open Teacher Dashboard";
+        public string lan_teacher_host_offline = "Class server: Offline";
+        public string lan_teacher_host_online_format = "Class active - {0} students - {1}:{2}";
+
+        // Teacher Dashboard
+        public string dash_title = "Classroom Dashboard";
+        public string dash_server_off = "Server: Offline";
+        public string dash_server_on_format = "IP {0}:{1} - {2} students";
+        public string dash_btn_start_server = "Start Class Server";
+        public string dash_btn_stop_server = "Stop Server";
+        public string dash_btn_clear_offline = "Clear Offline";
+        public string dash_batch_label = "Class Default:";
+        public string dash_assess_on = "Assess: ON";
+        public string dash_assess_off = "Assess: OFF";
+        public string dash_btn_apply_all = "Apply to All";
+        public string dash_btn_launch_all = "Launch All";
+        public string dash_students_header = "Connected Students";
+        public string dash_empty_students = "Waiting for students to join...\n\nTell students to open \"Join Class\" in the menu.";
+        public string dash_inspector_placeholder = "Select a student to inspect progress and skills.";
+        public string dash_status_online = "Online";
+        public string dash_status_offline = "Offline";
+        public string dash_btn_start_student = "Start";
+        public string dash_btn_reset_student = "Reset";
+        public string dash_kpi_progress = "Levels Completed";
+        public string dash_kpi_medals = "Medals Earned";
+        public string dash_kpi_score = "Total Points";
+
+        // Assessment Header Badges
+        public string assessment_badge_task_format = "Game {0} of {1}";
+        public string assessment_btn_skip = "Skip Game";
+        public string assessment_btn_menu = "Menu";
 
         private static UIDialogs cached;
         private static string cachedLang;

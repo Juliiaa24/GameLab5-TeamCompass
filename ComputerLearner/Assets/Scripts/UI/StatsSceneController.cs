@@ -31,6 +31,12 @@ namespace ComputerLearning
         [Header("Skills Card")]
         [SerializeField] private Transform skillsTableContainer;
 
+        [Header("Medals Showcase (Optional)")]
+        [SerializeField] private TextMeshProUGUI goldMedalsText;
+        [SerializeField] private TextMeshProUGUI silverMedalsText;
+        [SerializeField] private TextMeshProUGUI bronzeMedalsText;
+        [SerializeField] private TextMeshProUGUI completedLevelsText;
+
         private void Awake()
         {
             Canvas canvas = GetComponentInParent<Canvas>();
@@ -78,8 +84,33 @@ namespace ComputerLearning
         public void RefreshLocalizedUI()
         {
             LocalizeStaticSceneTexts();
+            PopulateMedalsSummary();
             PopulateAssessmentData();
             PopulateSkillsData();
+        }
+
+        private void PopulateMedalsSummary()
+        {
+            if (ProgressData.Instance == null) return;
+            int gold = 0, silver = 0, bronze = 0, completed = 0;
+            for (int i = 1; i <= 16; i++)
+            {
+                LevelScoreRecord lvl = ProgressData.Instance.GetLevelRecord("level" + i);
+                bool isCompleted = ProgressData.Instance.IsLevelCompleted("level" + i);
+                if (isCompleted) completed++;
+                if (lvl == null) continue;
+                switch (lvl.bestMedal)
+                {
+                    case LevelMedal.Gold: gold++; break;
+                    case LevelMedal.Silver: silver++; break;
+                    case LevelMedal.Bronze: bronze++; break;
+                }
+            }
+
+            if (goldMedalsText != null) goldMedalsText.text = gold.ToString();
+            if (silverMedalsText != null) silverMedalsText.text = silver.ToString();
+            if (bronzeMedalsText != null) bronzeMedalsText.text = bronze.ToString();
+            if (completedLevelsText != null) completedLevelsText.text = $"{completed}/16";
         }
 
         private void LocalizeStaticSceneTexts()
@@ -104,16 +135,23 @@ namespace ComputerLearning
             SetTextAtRelativePath(root, "HeaderBar/Title", ui.stats_page_title);
 
             SetTextAtRelativePath(root, "AssessmentCard/CardTitle", ui.stats_card_assessment_title);
+            SetTextAtRelativePath(root, "AssessmentCard/WindowTitleBar/CardTitle", ui.stats_card_assessment_title);
             SetTextAtRelativePath(root, "ContentArea/AssessmentCard/Header/CardTitle", ui.stats_card_assessment_title);
 
             SetTextAtRelativePath(root, "AssessmentCard/CardSubtitle", ui.stats_card_assessment_subtitle);
             SetTextAtRelativePath(root, "ContentArea/AssessmentCard/Header/CardSubtitle", ui.stats_card_assessment_subtitle);
 
             SetTextAtRelativePath(root, "SkillsCard/CardTitle", ui.stats_card_skills_title);
+            SetTextAtRelativePath(root, "SkillsCard/WindowTitleBar/CardTitle", ui.stats_card_skills_title);
             SetTextAtRelativePath(root, "ContentArea/SkillsCard/Header/CardTitle", ui.stats_card_skills_title);
 
             SetTextAtRelativePath(root, "SkillsCard/CardSubtitle", ui.stats_card_skills_subtitle);
             SetTextAtRelativePath(root, "ContentArea/SkillsCard/Header/CardSubtitle", ui.stats_card_skills_subtitle);
+
+            SetTextAtRelativePath(root, "MedalShowcaseStrip/MiniStat_Gold/Caption", ui.stats_gold_label);
+            SetTextAtRelativePath(root, "MedalShowcaseStrip/MiniStat_Silver/Caption", ui.stats_silver_label);
+            SetTextAtRelativePath(root, "MedalShowcaseStrip/MiniStat_Bronze/Caption", ui.stats_bronze_label);
+            SetTextAtRelativePath(root, "MedalShowcaseStrip/MiniStat_Levels/Caption", ui.stats_levels_label);
         }
 
         private void SetTextAtRelativePath(Transform root, string path, string textValue)
@@ -239,32 +277,60 @@ namespace ComputerLearning
 
         private void CreateAssessmentRow(Transform parent, AssessmentSkillExportItem sk, bool isEven)
         {
+            RetroThemeAssets assets = RetroThemeAssets.Instance;
             GameObject rowObj = new GameObject("Row_" + sk.skillId, typeof(RectTransform), typeof(Image));
             rowObj.transform.SetParent(parent, false);
-            rowObj.GetComponent<RectTransform>().sizeDelta = new Vector2(0f, 32f);
-            rowObj.GetComponent<Image>().color = isEven ? new Color(0.97f, 0.98f, 0.99f) : new Color(0.92f, 0.94f, 0.96f);
+            rowObj.GetComponent<RectTransform>().sizeDelta = new Vector2(0f, 44f);
+            Image rowBg = rowObj.GetComponent<Image>();
+            RetroUITheme.ApplySlicedSprite(rowBg, assets != null ? assets.cardRounded : null,
+                isEven ? RetroUITheme.CardWhite : RetroUITheme.CardPastelBlue, false);
+
+            // Cute icon per skill
+            Sprite iconSprite = GetSkillIconSprite(sk.skillId, assets);
+            if (iconSprite != null)
+            {
+                GameObject iconObj = new GameObject("Icon", typeof(RectTransform), typeof(Image));
+                iconObj.transform.SetParent(rowObj.transform, false);
+                RectTransform iRt = iconObj.GetComponent<RectTransform>();
+                iRt.anchorMin = new Vector2(0f, 0.5f); iRt.anchorMax = new Vector2(0f, 0.5f);
+                iRt.pivot = new Vector2(0f, 0.5f);
+                iRt.anchoredPosition = new Vector2(12f, 0f);
+                iRt.sizeDelta = new Vector2(26f, 26f);
+                Image iconImg = iconObj.GetComponent<Image>();
+                iconImg.sprite = iconSprite;
+                iconImg.preserveAspect = true;
+                iconImg.raycastTarget = false;
+            }
 
             // Skill Name
-            TextMeshProUGUI nameTxt = CreateText(rowObj.transform, sk.skillName, 13, new Color(0.12f, 0.16f, 0.23f), TextAlignmentOptions.Left);
+            TextMeshProUGUI nameTxt = CreateText(rowObj.transform, sk.skillName, 15, RetroUITheme.InkDark, TextAlignmentOptions.Left);
+            nameTxt.fontStyle = FontStyles.Bold;
             RectTransform nRt = nameTxt.GetComponent<RectTransform>();
-            nRt.anchorMin = new Vector2(0f, 0f); nRt.anchorMax = new Vector2(0.5f, 1f);
-            nRt.offsetMin = new Vector2(12f, 0f); nRt.offsetMax = Vector2.zero;
+            nRt.anchorMin = new Vector2(0f, 0f); nRt.anchorMax = new Vector2(0.52f, 1f);
+            nRt.offsetMin = new Vector2(iconSprite != null ? 46f : 14f, 0f); nRt.offsetMax = Vector2.zero;
 
             // Attempts & Time
-            string meta = $"{sk.timeTakenSeconds:F1}s | {sk.extraAttempts} err";
-            TextMeshProUGUI metaTxt = CreateText(rowObj.transform, meta, 12, new Color(0.45f, 0.50f, 0.58f), TextAlignmentOptions.Center);
+            string meta = $"{sk.timeTakenSeconds:F1}s | {sk.extraAttempts}";
+            TextMeshProUGUI metaTxt = CreateText(rowObj.transform, meta, 13, RetroUITheme.InkMuted, TextAlignmentOptions.Center);
             RectTransform mRt = metaTxt.GetComponent<RectTransform>();
-            mRt.anchorMin = new Vector2(0.5f, 0f); mRt.anchorMax = new Vector2(0.78f, 1f);
+            mRt.anchorMin = new Vector2(0.52f, 0f); mRt.anchorMax = new Vector2(0.76f, 1f);
             mRt.offsetMin = Vector2.zero; mRt.offsetMax = Vector2.zero;
 
-            // Score Badge
-            Color col = sk.completed ? new Color(0.09f, 0.64f, 0.29f) : new Color(0.86f, 0.15f, 0.15f);
+            // Retro Score Pill
+            GameObject pillObj = new GameObject("ScorePill", typeof(RectTransform), typeof(Image));
+            pillObj.transform.SetParent(rowObj.transform, false);
+            RectTransform pRt = pillObj.GetComponent<RectTransform>();
+            pRt.anchorMin = new Vector2(0.78f, 0.16f); pRt.anchorMax = new Vector2(0.98f, 0.84f);
+            pRt.offsetMin = Vector2.zero; pRt.offsetMax = Vector2.zero;
+            Color pillCol = sk.completed ? RetroUITheme.SuccessMint : RetroUITheme.DangerCoral;
+            RetroUITheme.ApplySlicedSprite(pillObj.GetComponent<Image>(), assets != null ? assets.badgePill : null, pillCol, false);
+
             string scoreText = sk.completed ? $"{sk.score:0}%" : "0%";
-            TextMeshProUGUI sVal = CreateText(rowObj.transform, scoreText, 14, col, TextAlignmentOptions.Right);
+            TextMeshProUGUI sVal = CreateText(pillObj.transform, scoreText, 14, RetroUITheme.InkWhite, TextAlignmentOptions.Center);
             sVal.fontStyle = FontStyles.Bold;
             RectTransform svRt = sVal.GetComponent<RectTransform>();
-            svRt.anchorMin = new Vector2(0.78f, 0f); svRt.anchorMax = new Vector2(1f, 1f);
-            svRt.offsetMin = Vector2.zero; svRt.offsetMax = new Vector2(-12f, 0f);
+            svRt.anchorMin = Vector2.zero; svRt.anchorMax = Vector2.one;
+            svRt.offsetMin = Vector2.zero; svRt.offsetMax = Vector2.zero;
         }
 
         public void PopulateSkillsData()
@@ -291,52 +357,87 @@ namespace ComputerLearning
             foreach (var sk in skills)
             {
                 float score = SkillManager.GetPersistentScore(sk.id);
-                CreateSkillRow(skillsTableContainer, sk.name, score);
+                CreateSkillRow(skillsTableContainer, sk.id, sk.name, score);
             }
         }
 
-        private void CreateSkillRow(Transform parent, string skillName, float score)
+        private void CreateSkillRow(Transform parent, string skillId, string skillName, float score)
         {
             UIDialogs ui = UIDialogs.Current;
+            RetroThemeAssets assets = RetroThemeAssets.Instance;
+
             GameObject row = new GameObject("Row_" + skillName, typeof(RectTransform), typeof(Image));
             row.transform.SetParent(parent, false);
-            row.GetComponent<RectTransform>().sizeDelta = new Vector2(0f, 44f);
-            row.GetComponent<Image>().color = new Color(0.97f, 0.98f, 0.99f);
+            row.GetComponent<RectTransform>().sizeDelta = new Vector2(0f, 54f);
+            RetroUITheme.ApplySlicedSprite(row.GetComponent<Image>(), assets != null ? assets.cardRounded : null,
+                RetroUITheme.CardWhite, false);
+
+            Sprite iconSprite = GetSkillIconSprite(skillId, assets);
+            if (iconSprite != null)
+            {
+                GameObject iconObj = new GameObject("Icon", typeof(RectTransform), typeof(Image));
+                iconObj.transform.SetParent(row.transform, false);
+                RectTransform iRt = iconObj.GetComponent<RectTransform>();
+                iRt.anchorMin = new Vector2(0f, 0.5f); iRt.anchorMax = new Vector2(0f, 0.5f);
+                iRt.pivot = new Vector2(0f, 0.5f);
+                iRt.anchoredPosition = new Vector2(12f, 0f);
+                iRt.sizeDelta = new Vector2(30f, 30f);
+                Image iconImg = iconObj.GetComponent<Image>();
+                iconImg.sprite = iconSprite;
+                iconImg.preserveAspect = true;
+                iconImg.raycastTarget = false;
+            }
 
             // Skill Name (Top Left)
-            TextMeshProUGUI nameTxt = CreateText(row.transform, skillName, 13, new Color(0.12f, 0.16f, 0.23f), TextAlignmentOptions.Left);
+            TextMeshProUGUI nameTxt = CreateText(row.transform, skillName, 15, RetroUITheme.InkDark, TextAlignmentOptions.Left);
             nameTxt.fontStyle = FontStyles.Bold;
             RectTransform nRt = nameTxt.GetComponent<RectTransform>();
-            nRt.anchorMin = new Vector2(0f, 0.5f); nRt.anchorMax = new Vector2(0.5f, 1f);
-            nRt.offsetMin = new Vector2(12f, 0f); nRt.offsetMax = Vector2.zero;
+            nRt.anchorMin = new Vector2(0f, 0.5f); nRt.anchorMax = new Vector2(0.55f, 1f);
+            nRt.offsetMin = new Vector2(iconSprite != null ? 50f : 14f, 0f); nRt.offsetMax = Vector2.zero;
 
             // Score Percentage (Top Right)
-            Color scoreCol = (score >= 80f) ? new Color(0.09f, 0.64f, 0.29f) : (score >= 50f) ? new Color(0.85f, 0.47f, 0.02f) : new Color(0.45f, 0.50f, 0.58f);
+            Color scoreCol = (score >= 80f) ? RetroUITheme.SuccessMint : (score >= 50f) ? RetroUITheme.WarningAmber : RetroUITheme.BtnSkyBlue;
             string levelLabel = (score >= 80f) ? ui.stats_level_mastered : (score >= 50f) ? ui.stats_level_proficient : ui.stats_level_practicing;
 
-            TextMeshProUGUI scoreTxt = CreateText(row.transform, $"{score:0}% ({levelLabel})", 12, scoreCol, TextAlignmentOptions.Right);
+            TextMeshProUGUI scoreTxt = CreateText(row.transform, $"{score:0}% ({levelLabel})", 13, scoreCol, TextAlignmentOptions.Right);
             scoreTxt.fontStyle = FontStyles.Bold;
             RectTransform sRt = scoreTxt.GetComponent<RectTransform>();
-            sRt.anchorMin = new Vector2(0.5f, 0.5f); sRt.anchorMax = new Vector2(1f, 1f);
-            sRt.offsetMin = Vector2.zero; sRt.offsetMax = new Vector2(-12f, 0f);
+            sRt.anchorMin = new Vector2(0.55f, 0.5f); sRt.anchorMax = new Vector2(1f, 1f);
+            sRt.offsetMin = Vector2.zero; sRt.offsetMax = new Vector2(-14f, 0f);
 
             // Progress Bar Background (Bottom)
             GameObject barBg = new GameObject("BarBg", typeof(RectTransform), typeof(Image));
             barBg.transform.SetParent(row.transform, false);
             RectTransform bRt = barBg.GetComponent<RectTransform>();
-            bRt.anchorMin = new Vector2(0f, 0f); bRt.anchorMax = new Vector2(1f, 0.5f);
-            bRt.offsetMin = new Vector2(12f, 6f); bRt.offsetMax = new Vector2(-12f, -4f);
-            barBg.GetComponent<Image>().color = new Color(0.88f, 0.90f, 0.93f);
+            bRt.anchorMin = new Vector2(0f, 0f); bRt.anchorMax = new Vector2(1f, 0.45f);
+            bRt.offsetMin = new Vector2(iconSprite != null ? 50f : 14f, 7f); bRt.offsetMax = new Vector2(-14f, -3f);
+            RetroUITheme.ApplySlicedSprite(barBg.GetComponent<Image>(), assets != null ? assets.inputBox : null,
+                RetroUITheme.ProgressTrack, false);
 
             // Progress Bar Fill
             GameObject barFill = new GameObject("BarFill", typeof(RectTransform), typeof(Image));
             barFill.transform.SetParent(barBg.transform, false);
             RectTransform fRt = barFill.GetComponent<RectTransform>();
-            fRt.anchorMin = Vector2.zero; fRt.anchorMax = Vector2.one;
-            fRt.pivot = new Vector2(0f, 0.5f);
-            fRt.offsetMin = Vector2.zero; fRt.offsetMax = Vector2.zero;
-            fRt.localScale = new Vector3(Mathf.Clamp01(score / 100f), 1f, 1f);
-            barFill.GetComponent<Image>().color = scoreCol;
+            fRt.anchorMin = Vector2.zero; fRt.anchorMax = new Vector2(Mathf.Clamp01(score / 100f), 1f);
+            fRt.offsetMin = new Vector2(2f, 2f); fRt.offsetMax = new Vector2(-2f, -2f);
+            RetroUITheme.ApplySlicedSprite(barFill.GetComponent<Image>(), assets != null ? assets.badgePill : null,
+                scoreCol, false);
+        }
+
+        private static Sprite GetSkillIconSprite(string skillId, RetroThemeAssets assets)
+        {
+            if (assets == null) return null;
+            switch (skillId)
+            {
+                case "mouse_move": return assets.mouseMoveIcon ?? assets.mouseIcon;
+                case "hover": return assets.targetIcon ?? assets.mouseIcon;
+                case "click":
+                case "double_click": return assets.mouseLeftClickIcon ?? assets.mouseIcon;
+                case "right_click": return assets.mouseRightClickIcon ?? assets.mouseIcon;
+                case "click_hold": return assets.mouseHoldClickIcon ?? assets.mouseIcon;
+                case "drag_drop": return assets.folderYellow ?? assets.mouseIcon;
+                default: return assets.mouseIcon;
+            }
         }
 
         private TextMeshProUGUI CreateText(Transform parent, string content, int size, Color color, TextAlignmentOptions align)

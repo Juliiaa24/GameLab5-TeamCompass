@@ -105,7 +105,7 @@ namespace ComputerLearning
             foreach (Button btn in buttons)
             {
                 if (btn == null) continue;
-                TMP_Text label = btn.GetComponentInChildren<TMP_Text>(true);
+                TMP_Text label = FindButtonLabel(btn);
                 if (label == null) continue;
 
                 string btnName = btn.gameObject.name;
@@ -113,15 +113,15 @@ namespace ComputerLearning
                 {
                     label.text = ui.menu_btn_play;
                 }
-                else if (btnName == "Btn-VirtualDesktop")
-                {
-                    label.text = ui.menu_btn_virtual_desktop;
-                }
                 else if (btnName == "Btn-Stats")
                 {
                     label.text = ui.menu_btn_stats;
                 }
-                else if (btnName == "Btn-1")
+                else if (btnName == "Btn-JoinClass")
+                {
+                    label.text = ui.menu_btn_join_class;
+                }
+                else if (btnName == "Btn-1" || btnName == "Btn-ResetProgress")
                 {
                     label.text = ui.menu_btn_reset_progress;
                 }
@@ -130,6 +130,17 @@ namespace ComputerLearning
                     label.text = ui.menu_btn_exit;
                 }
             }
+        }
+
+        private static TMP_Text FindButtonLabel(Button btn)
+        {
+            Transform labelTr = btn.transform.Find("Label") ?? btn.transform.Find("Text (TMP)");
+            if (labelTr != null)
+            {
+                TMP_Text specific = labelTr.GetComponent<TMP_Text>();
+                if (specific != null) return specific;
+            }
+            return btn.GetComponentInChildren<TMP_Text>(true);
         }
     }
 }
