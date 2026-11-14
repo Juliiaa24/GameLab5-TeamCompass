@@ -1112,16 +1112,11 @@ namespace ComputerLearning
                     }
                 }
 
-                if (windowPrefab != null && windowPrefab.name.Contains("SkillsReport"))
-                {
-                    if (appWindow.GetComponent<StatsUIBuilder>() == null)
-                        appWindow.gameObject.AddComponent<StatsUIBuilder>();
-                }
-
                 if (resolvedTitle.Equals("Scores", StringComparison.OrdinalIgnoreCase) ||
                     resolvedTitle.Equals("Medals", StringComparison.OrdinalIgnoreCase) ||
                     resolvedTitle.Equals("High Scores", StringComparison.OrdinalIgnoreCase) ||
-                    resolvedTitle.Equals("Leaderboard", StringComparison.OrdinalIgnoreCase))
+                    resolvedTitle.Equals("Leaderboard", StringComparison.OrdinalIgnoreCase) ||
+                    (windowPrefab != null && windowPrefab.name.Contains("SkillsReport")))
                 {
                     if (appWindow.GetComponentInChildren<ScoresApp>() == null)
                     {

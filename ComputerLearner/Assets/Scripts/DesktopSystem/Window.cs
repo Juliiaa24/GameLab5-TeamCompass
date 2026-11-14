@@ -81,6 +81,8 @@ namespace ComputerLearning
                 titleLabelTmp.text = Title;
             }
 
+            UpdateTitleHeaderLayout();
+
             windowRectTransform.localScale = Vector3.zero; // Start small for open animation
             if (contentPrefab != null) SetContent(Instantiate(contentPrefab));
             InstallFocusRelays();
@@ -254,6 +256,25 @@ namespace ComputerLearning
             {
                 windowIconImg.sprite = icon;
                 windowIconImg.gameObject.SetActive(icon != null);
+            }
+            UpdateTitleHeaderLayout();
+        }
+
+        private void UpdateTitleHeaderLayout()
+        {
+            bool hasIcon = windowIconImg != null && windowIcon != null;
+            if (windowIconImg != null)
+            {
+                windowIconImg.sprite = windowIcon;
+                windowIconImg.gameObject.SetActive(hasIcon);
+            }
+
+            if (titleLabelTmp != null)
+            {
+                RectTransform titleRt = titleLabelTmp.rectTransform;
+                Vector2 offsetMin = titleRt.offsetMin;
+                offsetMin.x = hasIcon ? 56f : 18f;
+                titleRt.offsetMin = offsetMin;
             }
         }
 

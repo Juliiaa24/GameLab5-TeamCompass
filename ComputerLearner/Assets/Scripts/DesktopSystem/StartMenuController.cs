@@ -164,7 +164,7 @@ namespace ComputerLearning
 
             if (startMenuPanel != null)
             {
-                Transform header = startMenuPanel.transform.Find("HeaderTitle");
+                Transform header = startMenuPanel.transform.Find("Header/Title") ?? startMenuPanel.transform.Find("HeaderTitle");
                 if (header != null)
                 {
                     TMP_Text headerTmp = header.GetComponent<TMP_Text>();
@@ -209,14 +209,14 @@ namespace ComputerLearning
         public void OpenFileExplorer()
         {
             CloseMenu();
-            OpenAppWindow("File Explorer", fileExplorerPrefab, ref fileExplorerWindow);
+            OpenAppWindow("File Explorer", fileExplorerPrefab, ref fileExplorerWindow, GetButtonIcon(btnFileExplorer));
         }
 
         public FileExplorerApp OpenFileExplorerAtFolder(string folderName)
         {
             CloseMenu();
             string winTitle = string.IsNullOrEmpty(folderName) ? "File Explorer" : $"File Explorer - {folderName}";
-            OpenAppWindow(winTitle, fileExplorerPrefab, ref fileExplorerWindow);
+            OpenAppWindow(winTitle, fileExplorerPrefab, ref fileExplorerWindow, GetButtonIcon(btnFileExplorer));
             if (fileExplorerWindow != null && fileExplorerWindow.Content != null)
             {
                 FileExplorerApp explorer = fileExplorerWindow.Content.GetComponentInChildren<FileExplorerApp>();
@@ -232,14 +232,14 @@ namespace ComputerLearning
         public void OpenNotepad()
         {
             CloseMenu();
-            OpenAppWindow("Notepad", notepadPrefab, ref notepadWindow);
+            OpenAppWindow("Notepad", notepadPrefab, ref notepadWindow, GetButtonIcon(btnNotepad));
         }
 
         public NotepadApp OpenNotepadWithFile(ExplorerItemData fileItem, ExplorerItemData folder = null)
         {
             CloseMenu();
             string winTitle = fileItem != null ? $"Notepad - {fileItem.name}" : "Notepad";
-            OpenAppWindow(winTitle, notepadPrefab, ref notepadWindow);
+            OpenAppWindow(winTitle, notepadPrefab, ref notepadWindow, GetButtonIcon(btnNotepad));
             if (notepadWindow != null)
             {
                 notepadWindow.setTitle(winTitle);
@@ -267,7 +267,7 @@ namespace ComputerLearning
             CloseMenu();
             string winTitle = fileItem != null ? $"Paint - {fileItem.name}" : "Paint - Untitled.png";
 
-            OpenAppWindow(winTitle, paintPrefab, ref paintWindow);
+            OpenAppWindow(winTitle, paintPrefab, ref paintWindow, GetButtonIcon(btnPaint));
             if (paintWindow != null)
             {
                 paintWindow.setTitle(winTitle);
@@ -375,7 +375,16 @@ namespace ComputerLearning
         #endregion
 
         #region Private Methods
-        private void OpenAppWindow(string title, GameObject contentPrefab, ref Window windowRef)
+        private static Sprite GetButtonIcon(Button btn)
+        {
+            if (btn == null) return null;
+            Transform iconTr = btn.transform.Find("Icon");
+            if (iconTr == null) return null;
+            Image img = iconTr.GetComponent<Image>();
+            return img != null ? img.sprite : null;
+        }
+
+        private void OpenAppWindow(string title, GameObject contentPrefab, ref Window windowRef, Sprite appIcon = null)
         {
             WindowManager winManager = WindowManager.Instance;
             if (winManager == null)
@@ -415,6 +424,10 @@ namespace ComputerLearning
             if (windowRef != null)
             {
                 windowRef.setTitle(title);
+                if (appIcon != null)
+                {
+                    windowRef.setIcon(appIcon);
+                }
                 if (contentPrefab != null)
                 {
                     GameObject contentInstance = Instantiate(contentPrefab);

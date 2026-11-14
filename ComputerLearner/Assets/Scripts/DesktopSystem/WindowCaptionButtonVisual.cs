@@ -27,8 +27,8 @@ namespace ComputerLearning
         [SerializeField] private Graphic[] glyphGraphics;
 
         [Header("Colors")]
-        [SerializeField] private Color normalBgColor = new Color(0f, 0f, 0f, 0f);
-        [SerializeField] private Color hoverBgColor = new Color(0.84f, 0.86f, 0.90f, 1f);
+        [SerializeField] private Color normalBgColor = Color.white;
+        [SerializeField] private Color hoverBgColor = new Color(0.86f, 0.94f, 1f, 1f);
         [SerializeField] private Color normalGlyphColor = new Color(0.15f, 0.18f, 0.22f, 1f);
         [SerializeField] private Color hoverGlyphColor = new Color(0.15f, 0.18f, 0.22f, 1f);
 

@@ -73,6 +73,11 @@ namespace RetroUIBuilder
             RetroThemeAssets assets = AssetDatabase.LoadAssetAtPath<RetroThemeAssets>(ResourcesAssetPath);
             if (assets == null)
             {
+                if (File.Exists(ResourcesAssetPath))
+                {
+                    AssetDatabase.DeleteAsset(ResourcesAssetPath);
+                    AssetDatabase.Refresh();
+                }
                 assets = ScriptableObject.CreateInstance<RetroThemeAssets>();
                 AssetDatabase.CreateAsset(assets, ResourcesAssetPath);
             }

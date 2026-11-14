@@ -1,7 +1,9 @@
 using System;
+using System.Collections;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.Controls;
 using UnityEngine.UI;
 using TMPro;
 
@@ -33,6 +35,7 @@ namespace ComputerLearning
         [SerializeField] private GameObject pinModalRoot;
         [SerializeField] private TMP_Text pinTitleText;
         [SerializeField] private TMP_Text pinPromptText;
+        [SerializeField] private TMP_InputField pinInputField;
         [SerializeField] private Image[] pinDotImages = new Image[4];
         [SerializeField] private TMP_Text pinErrorText;
         [SerializeField] private Button[] digitButtons = new Button[10]; // 0..9
@@ -189,6 +192,12 @@ namespace ComputerLearning
                 pinCloseButton.onClick.RemoveAllListeners();
                 pinCloseButton.onClick.AddListener(ClosePinModal);
             }
+            if (pinInputField != null)
+            {
+                // Keep Keyboard.current as single source of truth so digits are never double-counted
+                pinInputField.readOnly = true;
+                pinInputField.characterLimit = 4;
+            }
             if (teacherPanelCloseButton != null)
             {
                 teacherPanelCloseButton.onClick.RemoveAllListeners();
@@ -309,8 +318,12 @@ namespace ComputerLearning
             if (pinErrorText != null)
                 pinErrorText.text = string.Empty;
             if (pinModalRoot != null)
+            {
                 pinModalRoot.SetActive(true);
+                pinModalRoot.transform.SetAsLastSibling();
+            }
             UpdatePinDots();
+            FocusPinInputField();
         }
 
         public void ClosePinModal()
@@ -318,8 +331,33 @@ namespace ComputerLearning
             _enteredPin = string.Empty;
             if (pinErrorText != null)
                 pinErrorText.text = string.Empty;
+            if (pinInputField != null)
+            {
+                pinInputField.SetTextWithoutNotify(string.Empty);
+                pinInputField.DeactivateInputField();
+            }
             if (pinModalRoot != null)
                 pinModalRoot.SetActive(false);
+        }
+
+        private void FocusPinInputField()
+        {
+            if (pinInputField == null) return;
+            pinInputField.SetTextWithoutNotify(new string('*', _enteredPin.Length));
+            EventSystem.current?.SetSelectedGameObject(pinInputField.gameObject);
+            pinInputField.Select();
+            pinInputField.ActivateInputField();
+            if (isActiveAndEnabled)
+                StartCoroutine(FocusPinInputDeferred());
+        }
+
+        private IEnumerator FocusPinInputDeferred()
+        {
+            yield return null;
+            if (!IsPinModalOpen || pinInputField == null) yield break;
+            EventSystem.current?.SetSelectedGameObject(pinInputField.gameObject);
+            pinInputField.Select();
+            pinInputField.ActivateInputField();
         }
 
         public void OpenTeacherPanel()
@@ -441,6 +479,10 @@ namespace ComputerLearning
                 bool filled = i < _enteredPin.Length;
                 pinDotImages[i].color = filled ? RetroUITheme.BtnSunnyGold : RetroUITheme.ProgressTrack;
             }
+            if (pinInputField != null)
+            {
+                pinInputField.SetTextWithoutNotify(new string('*', _enteredPin.Length));
+            }
         }
 
         private void HandlePinKeyboardInput()
@@ -453,16 +495,31 @@ namespace ComputerLearning
                 ClosePinModal();
                 return;
             }
+            if (kb.enterKey.wasPressedThisFrame || kb.numpadEnterKey.wasPressedThisFrame)
+            {
+                ValidatePin();
+                return;
+            }
             if (kb.backspaceKey.wasPressedThisFrame)
             {
                 BackspacePin();
                 return;
             }
+
+            KeyControl[] mainDigits =
+            {
+                kb.digit0Key, kb.digit1Key, kb.digit2Key, kb.digit3Key, kb.digit4Key,
+                kb.digit5Key, kb.digit6Key, kb.digit7Key, kb.digit8Key, kb.digit9Key
+            };
+            KeyControl[] numpadDigits =
+            {
+                kb.numpad0Key, kb.numpad1Key, kb.numpad2Key, kb.numpad3Key, kb.numpad4Key,
+                kb.numpad5Key, kb.numpad6Key, kb.numpad7Key, kb.numpad8Key, kb.numpad9Key
+            };
+
             for (int d = 0; d <= 9; d++)
             {
-                Key digitKey = Key.Digit0 + d;
-                Key numpadKey = Key.Numpad0 + d;
-                if (kb[digitKey].wasPressedThisFrame || kb[numpadKey].wasPressedThisFrame)
+                if (mainDigits[d].wasPressedThisFrame || numpadDigits[d].wasPressedThisFrame)
                 {
                     AppendPinDigit((char)('0' + d));
                     break;

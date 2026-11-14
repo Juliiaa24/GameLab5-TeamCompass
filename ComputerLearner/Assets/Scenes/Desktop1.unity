@@ -421,7 +421,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1992709050079140081, guid: 60a9e92780e80e842921532766567dcd, type: 3}
       propertyPath: m_SizeDelta.y
-      value: 64
+      value: 68
       objectReference: {fileID: 0}
     - target: {fileID: 1992709050079140081, guid: 60a9e92780e80e842921532766567dcd, type: 3}
       propertyPath: m_LocalPosition.x
@@ -753,6 +753,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 20689734a35732e49b534f3f93cafc59, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ComputerLearning.IconGrid
+  targetRows: 6
+  cellWidth: 155
+  cellHeight: 164
+  initialPosX: 30
+  initialPosY: 16
+  autoFitRows: 1
   INITIAL_POS_X: 30
   INITIAL_POS_Y: 30
   ICON_SIZE: 120
@@ -1073,13 +1079,13 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 6729021528199283428, guid: 53de8dc874b096d4993662fd51f6d6f2, type: 3}
     - target: {fileID: 1752656936260673201, guid: 8fd5d29b8e6b66b4aa43469e74eaad42, type: 3}
-      propertyPath: desktopIconContainer
-      value: 
-      objectReference: {fileID: 678566843}
-    - target: {fileID: 1752656936260673201, guid: 8fd5d29b8e6b66b4aa43469e74eaad42, type: 3}
       propertyPath: enableScoresAppIcon
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 1752656936260673201, guid: 8fd5d29b8e6b66b4aa43469e74eaad42, type: 3}
+      propertyPath: desktopIconContainer
+      value: 
+      objectReference: {fileID: 678566843}
     - target: {fileID: 1752656936260673201, guid: 8fd5d29b8e6b66b4aa43469e74eaad42, type: 3}
       propertyPath: initialDesktopIcons.Array.data[0].iconName
       value: Move
@@ -1209,6 +1215,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3c492d5a34458174887d2374404372a5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ComputerLearning.FirstDesktopTutorial
+  forcePlayTutorial: 0
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
