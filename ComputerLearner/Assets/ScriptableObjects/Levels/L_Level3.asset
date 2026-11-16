@@ -17,6 +17,7 @@ MonoBehaviour:
   instructionText: 'LEFT CLICK on the red targets
 
     to earn practice points.'
+  videoDemonstration: {fileID: 32900000, guid: 158b13a58fdd4f84bbc979e661559d8c, type: 3}
   isAdaptive: 0
   adaptiveTaskCount: 5
   tasks:

@@ -25,3 +25,4 @@ MonoBehaviour:
     timeLimit: 0
     requiredHoverDuration: 1.5
     maxAttempts: 0
+  videoDemonstration: {fileID: 32900000, guid: 03bd417d748f39347948c9e08d9ee576, type: 3}

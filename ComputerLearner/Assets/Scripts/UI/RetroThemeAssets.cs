@@ -37,6 +37,11 @@ namespace ComputerLearning
         public Sprite iconClassroom;
         public Sprite iconCheck;
         public Sprite iconExit;
+        public Sprite iconTrophy;
+        public Sprite iconRefresh;
+
+        [Header("Video Demonstration Assets")]
+        public RenderTexture videoDemoRenderTexture;
 
         [Header("Existing Project Art")]
         public Sprite desktopWallpaper;

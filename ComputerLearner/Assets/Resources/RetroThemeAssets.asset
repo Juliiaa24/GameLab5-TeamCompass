@@ -26,6 +26,9 @@ MonoBehaviour:
   iconClassroom: {fileID: 21300000, guid: dbc347e4678770249ace79a3cda97e36, type: 3}
   iconCheck: {fileID: 21300000, guid: 6e66f87df5636fa4e8bdcd6e696c557e, type: 3}
   iconExit: {fileID: 21300000, guid: 9e91e4a27e361404c9b5dcd2631164b0, type: 3}
+  iconTrophy: {fileID: 21300000, guid: a09b9336bf5f4f4419884893a9feec0a, type: 3}
+  iconRefresh: {fileID: 21300000, guid: f7dcf934d1badc84095281b53e155088, type: 3}
+  videoDemoRenderTexture: {fileID: 8400000, guid: 104e0159500f6d449a3ea540e67d0fce, type: 2}
   desktopWallpaper: {fileID: 21300000, guid: cf649db4db92c1645b88137822fb3672, type: 3}
   topBarClassic: {fileID: 21300000, guid: 909504cc610ebf94b8f9ef7a2ed2e867, type: 3}
   topBarCloseBtn: {fileID: 21300000, guid: 549f17f26704b834d9d532f4067db148, type: 3}

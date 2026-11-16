@@ -1,9 +1,10 @@
 /**
  * Author: TeamCompass
- * Description: Teacher LAN Host server (DontDestroyOnLoad). Accepts multiple Student TCP clients,
- *              broadcasts presence via LanDiscovery, pushes StudentConfiguration JSON (per-student or classroom-wide),
- *              and aggregates live StudentTelemetrySnapshot updates for the Teacher Dashboard UI.
- *              Strictly decoupled from gameplay scripts.
+ * Description: Teacher LAN Host server (DontDestroyOnLoad). Accepts multiple Student TCP clients
+ *              (both inbound on 47778 and outbound Reverse-TCP to Student 47779), broadcasts presence
+ *              via LanDiscovery, relays/receives UDP session envelopes over 47777 as firewall-resilient
+ *              transport, pushes StudentConfiguration JSON, and aggregates live StudentTelemetrySnapshot
+ *              updates for the Teacher Dashboard UI. Strictly decoupled from gameplay scripts.
  */
 using System;
 using System.Collections.Concurrent;
@@ -13,6 +14,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using UnityEngine;
 
 namespace ComputerLearning
@@ -27,11 +29,16 @@ namespace ComputerLearning
         public string connectedSince;
         public StudentConfiguration assignedConfig;
         public StudentTelemetrySnapshot latestTelemetry;
+        [NonSerialized] public int remoteUdpPort;
+        [NonSerialized] public float lastActivityRealtime;
     }
 
     public class NetworkSessionHost : MonoBehaviour
     {
         private static readonly UTF8Encoding Utf8NoBom = new UTF8Encoding(false);
+        private const string PrefClassNameKey = "TeacherCustomClassName";
+        private const string PrefLockStudentNamesKey = "TeacherLockStudentNames";
+        private const string PrefLockLeaveClassKey = "TeacherLockLeaveClass";
 
         private static NetworkSessionHost instance;
 
@@ -63,6 +70,8 @@ namespace ComputerLearning
 
         public LearningPath DefaultClassroomPath { get; private set; } = LearningPath.BeginnerFoundations;
         public bool DefaultClassroomAssessment { get; private set; } = true;
+        public bool LockStudentNames { get; private set; }
+        public bool LockLeaveClass { get; private set; }
 
         public event Action OnHostStateChanged;
         public event Action OnStudentsChanged;
@@ -78,10 +87,10 @@ namespace ComputerLearning
             public readonly object writeLock = new object();
             public volatile bool closed;
 
-            public void SendEnvelope(string type, string payloadJson)
+            public void SendEnvelope(string type, string payloadJson, string packetId = null)
             {
                 if (closed || writer == null) return;
-                NetworkEnvelope env = new NetworkEnvelope(type, payloadJson);
+                NetworkEnvelope env = new NetworkEnvelope(type, payloadJson, packetId);
                 string line = JsonUtility.ToJson(env);
                 lock (writeLock)
                 {
@@ -108,6 +117,7 @@ namespace ComputerLearning
             }
         }
 
+        private string hostUid;
         private TcpListener tcpListener;
         private Thread acceptThread;
         private volatile bool stopRequested;
@@ -121,7 +131,17 @@ namespace ComputerLearning
             new List<ConnectedStudentSession>();
 
         private readonly ConcurrentQueue<Action> mainThreadQueue = new ConcurrentQueue<Action>();
+        private readonly HashSet<string> processedPacketIds = new HashSet<string>(StringComparer.Ordinal);
+        private readonly Queue<string> processedPacketOrder = new Queue<string>();
+
+        private readonly ConcurrentDictionary<string, byte> inFlightReverseConnects =
+            new ConcurrentDictionary<string, byte>(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, float> lastReverseAttemptTime =
+            new Dictionary<string, float>(StringComparer.OrdinalIgnoreCase);
+
         private float nextPingTime;
+        private float nextArpProbeTime;
+        private float nextUdpTimeoutCheckTime;
 
         public IReadOnlyList<ConnectedStudentSession> ConnectedStudents => orderedStudents;
 
@@ -147,13 +167,20 @@ namespace ComputerLearning
             }
 
             instance = this;
+            Application.runInBackground = true;
             if (transform.parent == null)
             {
                 DontDestroyOnLoad(gameObject);
             }
 
+            hostUid = "HOST_" + Guid.NewGuid().ToString("N").Substring(0, 8);
             LocalIpAddress = LanDiscovery.GetPrimaryLocalIPv4();
-            HostName = $"{LanDiscovery.GetDefaultDeviceName()} (Teacher)";
+            string savedClassName = PlayerPrefs.GetString(PrefClassNameKey, string.Empty);
+            HostName = !string.IsNullOrWhiteSpace(savedClassName)
+                ? savedClassName.Trim()
+                : $"{LanDiscovery.GetDefaultDeviceName()} (Teacher)";
+            LockStudentNames = PlayerPrefs.GetInt(PrefLockStudentNamesKey, 0) == 1;
+            LockLeaveClass = PlayerPrefs.GetInt(PrefLockLeaveClassKey, 0) == 1;
         }
 
         private void Update()
@@ -170,10 +197,26 @@ namespace ComputerLearning
                 }
             }
 
-            if (IsHosting && Time.unscaledTime >= nextPingTime)
+            if (IsHosting)
             {
-                nextPingTime = Time.unscaledTime + 5.0f;
-                BroadcastRawEnvelope(NetworkProtocol.MsgPing, string.Empty);
+                float now = Time.unscaledTime;
+                if (now >= nextPingTime)
+                {
+                    nextPingTime = now + 3.0f;
+                    BroadcastRawEnvelope(NetworkProtocol.MsgPing, string.Empty);
+                }
+
+                if (now >= nextArpProbeTime)
+                {
+                    nextArpProbeTime = now + 1.0f;
+                    ProbeArpNeighborsForReverseTcp();
+                }
+
+                if (now >= nextUdpTimeoutCheckTime)
+                {
+                    nextUdpTimeoutCheckTime = now + 2.0f;
+                    PruneTimedOutUdpOnlyStudents();
+                }
             }
         }
 
@@ -238,8 +281,12 @@ namespace ComputerLearning
                 };
                 acceptThread.Start();
 
-                LanDiscovery.Instance.StartBroadcasting(HostName, ListenPort, () => ActiveConnectedCount);
+                LanDiscovery discovery = LanDiscovery.Instance;
+                discovery.LocalSenderUid = hostUid;
+                SubscribeDiscoveryEvents(true);
+                discovery.StartBroadcasting(HostName, ListenPort, () => ActiveConnectedCount);
 
+                nextArpProbeTime = 0f;
                 Debug.Log($"[NetworkSessionHost] Classroom Host started on {LocalIpAddress}:{ListenPort} ('{HostName}').");
                 OnHostStateChanged?.Invoke();
                 return true;
@@ -259,8 +306,10 @@ namespace ComputerLearning
             stopRequested = true;
             IsHosting = false;
 
+            SubscribeDiscoveryEvents(false);
             if (LanDiscovery.ExistingInstance != null)
             {
+                LanDiscovery.ExistingInstance.LocalSenderUid = string.Empty;
                 LanDiscovery.ExistingInstance.StopBroadcasting();
             }
 
@@ -280,6 +329,11 @@ namespace ComputerLearning
             {
                 orderedStudents[i].isConnected = false;
             }
+            studentSessions.Clear();
+            orderedStudents.Clear();
+            processedPacketIds.Clear();
+            processedPacketOrder.Clear();
+            lastReverseAttemptTime.Clear();
 
             if (wasHosting)
             {
@@ -287,6 +341,191 @@ namespace ComputerLearning
                 OnHostStateChanged?.Invoke();
                 OnStudentsChanged?.Invoke();
             }
+        }
+
+        private void SubscribeDiscoveryEvents(bool subscribe)
+        {
+            LanDiscovery discovery = LanDiscovery.ExistingInstance ?? (subscribe ? LanDiscovery.Instance : null);
+            if (discovery == null) return;
+
+            discovery.OnUdpEnvelopeReceived -= HandleUdpEnvelopeReceived;
+            discovery.OnStudentDiscoveryAckReceived -= HandleStudentDiscoveryAck;
+            if (subscribe)
+            {
+                discovery.OnUdpEnvelopeReceived += HandleUdpEnvelopeReceived;
+                discovery.OnStudentDiscoveryAckReceived += HandleStudentDiscoveryAck;
+            }
+        }
+
+        private void HandleStudentDiscoveryAck(string studentIp, int callbackPort)
+        {
+            if (!IsHosting || string.IsNullOrWhiteSpace(studentIp)) return;
+            if (!HasActiveTcpConnectionForIp(studentIp))
+            {
+                TryReverseTcpConnectAsync(studentIp, callbackPort);
+            }
+        }
+
+        private void HandleUdpEnvelopeReceived(IPEndPoint remoteEp, UdpEnvelopePacket pkt)
+        {
+            if (!IsHosting || pkt == null) return;
+            if (!string.IsNullOrEmpty(pkt.targetUid) && pkt.targetUid != "HOST" && pkt.targetUid != hostUid) return;
+
+            string remoteIp = remoteEp?.Address != null ? remoteEp.Address.ToString() : "Unknown";
+            int remoteUdpPort = remoteEp != null ? remoteEp.Port : NetworkProtocol.DiscoveryPort;
+
+            if (!string.IsNullOrWhiteSpace(pkt.senderUid) &&
+                studentSessions.TryGetValue(pkt.senderUid, out ConnectedStudentSession existingSession))
+            {
+                existingSession.lastActivityRealtime = Time.realtimeSinceStartup;
+                if (remoteEp?.Address != null) existingSession.remoteIp = remoteIp;
+                if (remoteUdpPort > 0) existingSession.remoteUdpPort = remoteUdpPort;
+            }
+
+            if (pkt.type == NetworkProtocol.MsgPing)
+            {
+                if (!string.IsNullOrEmpty(pkt.senderUid) && LanDiscovery.ExistingInstance != null)
+                {
+                    LanDiscovery.ExistingInstance.SendUdpEnvelopeToStudent(remoteIp, remoteUdpPort, new UdpEnvelopePacket
+                    {
+                        packetId = Guid.NewGuid().ToString("N").Substring(0, 12),
+                        senderUid = hostUid,
+                        targetUid = pkt.senderUid,
+                        type = NetworkProtocol.MsgPong,
+                        payloadJson = string.Empty
+                    });
+                }
+                return;
+            }
+
+            if (pkt.type == NetworkProtocol.MsgPong)
+            {
+                return;
+            }
+
+            if (!MarkPacketProcessed(pkt.packetId))
+            {
+                return;
+            }
+
+            if (pkt.type == NetworkProtocol.MsgHello)
+            {
+                HandleClientHelloData(null, remoteIp, remoteUdpPort, pkt.payloadJson);
+                if (!string.IsNullOrEmpty(pkt.senderUid) &&
+                    !HasActiveTcpConnectionForUid(pkt.senderUid) &&
+                    pkt.callbackTcpPort > 0)
+                {
+                    TryReverseTcpConnectAsync(remoteIp, pkt.callbackTcpPort);
+                }
+            }
+            else if (pkt.type == NetworkProtocol.MsgTelemetry)
+            {
+                HandleClientTelemetryData(null, remoteIp, remoteUdpPort, pkt.payloadJson);
+            }
+        }
+
+        private void ProbeArpNeighborsForReverseTcp()
+        {
+            List<IPAddress> neighbors = LanDiscovery.GetArpNeighborIPv4Addresses();
+            for (int i = 0; i < neighbors.Count; i++)
+            {
+                string ip = neighbors[i].ToString();
+                if (HasActiveTcpConnectionForIp(ip)) continue;
+                TryReverseTcpConnectAsync(ip, NetworkProtocol.DefaultClientCallbackPort);
+            }
+        }
+
+        private void TryReverseTcpConnectAsync(string studentIp, int callbackPort)
+        {
+            if (!IsHosting || stopRequested || string.IsNullOrWhiteSpace(studentIp)) return;
+            if (callbackPort <= 0) callbackPort = NetworkProtocol.DefaultClientCallbackPort;
+
+            string key = $"{studentIp}:{callbackPort}";
+            float now = Time.unscaledTime;
+            if (lastReverseAttemptTime.TryGetValue(key, out float lastAttempt) && now - lastAttempt < 2.5f)
+            {
+                return;
+            }
+            if (!inFlightReverseConnects.TryAdd(key, 1))
+            {
+                return;
+            }
+            lastReverseAttemptTime[key] = now;
+
+            Task.Run(() =>
+            {
+                try
+                {
+                    TcpClient tcp = new TcpClient();
+                    IAsyncResult ar = tcp.BeginConnect(studentIp, callbackPort, null, null);
+                    bool signaled = ar.AsyncWaitHandle.WaitOne(TimeSpan.FromMilliseconds(650));
+                    if (!signaled || !tcp.Connected || stopRequested || !IsHosting)
+                    {
+                        try { tcp.Close(); } catch { }
+                        return;
+                    }
+                    tcp.EndConnect(ar);
+                    RegisterAcceptedTcpClient(tcp);
+                    Debug.Log($"[NetworkSessionHost] Established Reverse-TCP connection to Student at {studentIp}:{callbackPort}.");
+                }
+                catch
+                {
+                    // Neighbor is not a Student listening on callback port
+                }
+                finally
+                {
+                    inFlightReverseConnects.TryRemove(key, out _);
+                }
+            });
+        }
+
+        public void SetCustomClassName(string newClassName)
+        {
+            string trimmed = string.IsNullOrWhiteSpace(newClassName)
+                ? $"{LanDiscovery.GetDefaultDeviceName()} (Teacher)"
+                : newClassName.Trim();
+
+            HostName = trimmed;
+            PlayerPrefs.SetString(PrefClassNameKey, trimmed);
+            PlayerPrefs.Save();
+
+            if (LanDiscovery.ExistingInstance != null)
+            {
+                LanDiscovery.ExistingInstance.UpdateBroadcastHostName(HostName);
+            }
+
+            BroadcastClassroomPermissions();
+            OnHostStateChanged?.Invoke();
+        }
+
+        public void SetLockStudentNames(bool locked)
+        {
+            LockStudentNames = locked;
+            PlayerPrefs.SetInt(PrefLockStudentNamesKey, locked ? 1 : 0);
+            PlayerPrefs.Save();
+            BroadcastClassroomPermissions();
+            OnHostStateChanged?.Invoke();
+        }
+
+        public void SetLockLeaveClass(bool locked)
+        {
+            LockLeaveClass = locked;
+            PlayerPrefs.SetInt(PrefLockLeaveClassKey, locked ? 1 : 0);
+            PlayerPrefs.Save();
+            BroadcastClassroomPermissions();
+            OnHostStateChanged?.Invoke();
+        }
+
+        private void BroadcastClassroomPermissions()
+        {
+            if (!IsHosting) return;
+            ClassroomPermissionsPayload payload = new ClassroomPermissionsPayload
+            {
+                className = HostName,
+                lockStudentNames = LockStudentNames,
+                lockLeaveClass = LockLeaveClass
+            };
+            BroadcastRawEnvelope(NetworkProtocol.MsgClassroomPermissions, JsonUtility.ToJson(payload));
         }
 
         public void SetClassroomDefaults(LearningPath path, bool runAssessment)
@@ -386,7 +625,9 @@ namespace ComputerLearning
             {
                 configuration = session.assignedConfig,
                 startImmediately = startImmediately,
-                resetProgress = resetProgress
+                resetProgress = resetProgress,
+                lockStudentNames = LockStudentNames,
+                lockLeaveClass = LockLeaveClass
             };
 
             SendToClientUid(clientUid, NetworkProtocol.MsgAssignConfig, JsonUtility.ToJson(payload));
@@ -471,29 +712,7 @@ namespace ComputerLearning
                 try
                 {
                     TcpClient tcp = tcpListener.AcceptTcpClient();
-                    tcp.NoDelay = true;
-
-                    string remoteIp = (tcp.Client.RemoteEndPoint as IPEndPoint)?.Address.ToString() ?? "Unknown";
-                    string connKey = Guid.NewGuid().ToString("N");
-
-                    NetworkStream netStream = tcp.GetStream();
-                    StreamWriter writer = new StreamWriter(netStream, Utf8NoBom) { AutoFlush = true };
-
-                    ClientConnectionHandle handle = new ClientConnectionHandle
-                    {
-                        connectionKey = connKey,
-                        remoteIp = remoteIp,
-                        tcpClient = tcp,
-                        writer = writer
-                    };
-                    activeHandles[connKey] = handle;
-
-                    Thread readerThread = new Thread(() => ClientReadLoop(handle, netStream))
-                    {
-                        IsBackground = true,
-                        Name = $"CL_HostClient_{remoteIp}"
-                    };
-                    readerThread.Start();
+                    RegisterAcceptedTcpClient(tcp);
                 }
                 catch (SocketException)
                 {
@@ -511,6 +730,35 @@ namespace ComputerLearning
                     }
                 }
             }
+        }
+
+        private void RegisterAcceptedTcpClient(TcpClient tcp)
+        {
+            if (tcp == null) return;
+            tcp.NoDelay = true;
+            tcp.ReceiveTimeout = 30000;
+
+            string remoteIp = (tcp.Client.RemoteEndPoint as IPEndPoint)?.Address.ToString() ?? "Unknown";
+            string connKey = Guid.NewGuid().ToString("N");
+
+            NetworkStream netStream = tcp.GetStream();
+            StreamWriter writer = new StreamWriter(netStream, Utf8NoBom) { AutoFlush = true };
+
+            ClientConnectionHandle handle = new ClientConnectionHandle
+            {
+                connectionKey = connKey,
+                remoteIp = remoteIp,
+                tcpClient = tcp,
+                writer = writer
+            };
+            activeHandles[connKey] = handle;
+
+            Thread readerThread = new Thread(() => ClientReadLoop(handle, netStream))
+            {
+                IsBackground = true,
+                Name = $"CL_HostClient_{remoteIp}"
+            };
+            readerThread.Start();
         }
 
         private void ClientReadLoop(ClientConnectionHandle handle, NetworkStream netStream)
@@ -532,7 +780,7 @@ namespace ComputerLearning
 
                         if (env.type == NetworkProtocol.MsgPing)
                         {
-                            handle.SendEnvelope(NetworkProtocol.MsgPong, string.Empty);
+                            handle.SendEnvelope(NetworkProtocol.MsgPong, string.Empty, Guid.NewGuid().ToString("N").Substring(0, 12));
                             continue;
                         }
                         if (env.type == NetworkProtocol.MsgPong)
@@ -542,7 +790,8 @@ namespace ComputerLearning
 
                         string msgType = env.type;
                         string payload = env.payloadJson;
-                        mainThreadQueue.Enqueue(() => HandleEnvelopeOnMainThread(handle, msgType, payload));
+                        string packetId = env.packetId;
+                        mainThreadQueue.Enqueue(() => HandleEnvelopeOnMainThread(handle, msgType, payload, packetId));
                     }
                 }
             }
@@ -563,29 +812,51 @@ namespace ComputerLearning
             }
         }
 
-        private void HandleEnvelopeOnMainThread(ClientConnectionHandle handle, string msgType, string payloadJson)
+        private void HandleEnvelopeOnMainThread(ClientConnectionHandle handle, string msgType, string payloadJson, string packetId)
         {
-            switch (msgType)
+            if (!string.IsNullOrEmpty(handle.clientUid) &&
+                studentSessions.TryGetValue(handle.clientUid, out ConnectedStudentSession activeSession))
             {
-                case NetworkProtocol.MsgHello:
-                    HandleClientHello(handle, payloadJson);
-                    break;
+                activeSession.lastActivityRealtime = Time.realtimeSinceStartup;
+            }
 
-                case NetworkProtocol.MsgTelemetry:
-                    HandleClientTelemetry(handle, payloadJson);
-                    break;
+            if (msgType == NetworkProtocol.MsgHello)
+            {
+                // Always bind clientUid to the TCP handle even if the same packetId arrived over UDP first
+                HandleClientHelloData(handle, handle.remoteIp, 0, payloadJson, packetId);
+                return;
+            }
+
+            if (!MarkPacketProcessed(packetId))
+            {
+                return;
+            }
+
+            if (msgType == NetworkProtocol.MsgTelemetry)
+            {
+                HandleClientTelemetryData(handle, handle.remoteIp, 0, payloadJson);
             }
         }
 
-        private void HandleClientHello(ClientConnectionHandle handle, string payloadJson)
+        private void HandleClientHelloData(ClientConnectionHandle handle, string remoteIp, int remoteUdpPort, string payloadJson, string packetId = null)
         {
             if (string.IsNullOrWhiteSpace(payloadJson)) return;
 
             ClientHelloPayload hello = JsonUtility.FromJson<ClientHelloPayload>(payloadJson);
             if (hello == null) return;
 
-            string uid = !string.IsNullOrWhiteSpace(hello.clientUid) ? hello.clientUid : handle.connectionKey;
-            handle.clientUid = uid;
+            string uid = !string.IsNullOrWhiteSpace(hello.clientUid)
+                ? hello.clientUid
+                : (handle != null ? handle.connectionKey : remoteIp);
+
+            if (handle != null)
+            {
+                handle.clientUid = uid;
+            }
+
+            // If this exact hello packet already came through another transport, just ensure handle is bound and welcome sent
+            bool duplicateHello = !string.IsNullOrEmpty(packetId) && !MarkPacketProcessed(packetId);
+            bool isNewOrUpdated = false;
 
             if (!studentSessions.TryGetValue(uid, out ConnectedStudentSession session))
             {
@@ -598,9 +869,11 @@ namespace ComputerLearning
                 session = new ConnectedStudentSession
                 {
                     clientUid = uid,
-                    remoteIp = handle.remoteIp,
+                    remoteIp = remoteIp,
+                    remoteUdpPort = remoteUdpPort > 0 ? remoteUdpPort : NetworkProtocol.DiscoveryPort,
+                    lastActivityRealtime = Time.realtimeSinceStartup,
                     studentId = uniqueStudentId,
-                    deviceName = !string.IsNullOrWhiteSpace(hello.deviceName) ? hello.deviceName : handle.remoteIp,
+                    deviceName = !string.IsNullOrWhiteSpace(hello.deviceName) ? hello.deviceName : remoteIp,
                     isConnected = true,
                     connectedSince = DateTime.Now.ToString("HH:mm:ss"),
                     assignedConfig = defaultCfg
@@ -608,12 +881,19 @@ namespace ComputerLearning
 
                 studentSessions[uid] = session;
                 orderedStudents.Add(session);
+                isNewOrUpdated = true;
             }
             else
             {
-                session.remoteIp = handle.remoteIp;
-                session.deviceName = !string.IsNullOrWhiteSpace(hello.deviceName) ? hello.deviceName : session.deviceName;
-                session.isConnected = true;
+                if (!duplicateHello)
+                {
+                    session.remoteIp = remoteIp;
+                    if (remoteUdpPort > 0) session.remoteUdpPort = remoteUdpPort;
+                    session.deviceName = !string.IsNullOrWhiteSpace(hello.deviceName) ? hello.deviceName : session.deviceName;
+                    session.isConnected = true;
+                    isNewOrUpdated = true;
+                }
+                session.lastActivityRealtime = Time.realtimeSinceStartup;
                 if (session.assignedConfig == null)
                 {
                     session.assignedConfig = StudentConfiguration.FromLearningPath(
@@ -627,23 +907,50 @@ namespace ComputerLearning
             {
                 hostName = HostName,
                 assignedStudentId = session.studentId,
-                assignedConfiguration = session.assignedConfig
+                assignedConfiguration = session.assignedConfig,
+                lockStudentNames = LockStudentNames,
+                lockLeaveClass = LockLeaveClass
             };
 
-            handle.SendEnvelope(NetworkProtocol.MsgWelcome, JsonUtility.ToJson(welcome));
-            Debug.Log($"[NetworkSessionHost] Student connected: {session.studentId} ({session.deviceName} @ {session.remoteIp}).");
+            string welcomeJson = JsonUtility.ToJson(welcome);
+            string welcomePacketId = Guid.NewGuid().ToString("N").Substring(0, 12);
 
-            OnStudentsChanged?.Invoke();
+            if (handle != null && !handle.closed)
+            {
+                handle.SendEnvelope(NetworkProtocol.MsgWelcome, welcomeJson, welcomePacketId);
+            }
+            else
+            {
+                SendTcpToClientUid(uid, NetworkProtocol.MsgWelcome, welcomeJson, welcomePacketId);
+            }
+
+            if (LanDiscovery.ExistingInstance != null)
+            {
+                LanDiscovery.ExistingInstance.SendUdpEnvelopeToStudent(session.remoteIp, session.remoteUdpPort, new UdpEnvelopePacket
+                {
+                    packetId = welcomePacketId,
+                    senderUid = hostUid,
+                    targetUid = uid,
+                    type = NetworkProtocol.MsgWelcome,
+                    payloadJson = welcomeJson
+                });
+            }
+
+            if (isNewOrUpdated)
+            {
+                Debug.Log($"[NetworkSessionHost] Student connected: {session.studentId} ({session.deviceName} @ {session.remoteIp}).");
+                OnStudentsChanged?.Invoke();
+            }
         }
 
-        private void HandleClientTelemetry(ClientConnectionHandle handle, string payloadJson)
+        private void HandleClientTelemetryData(ClientConnectionHandle handle, string remoteIp, int remoteUdpPort, string payloadJson)
         {
             if (string.IsNullOrWhiteSpace(payloadJson)) return;
 
             StudentTelemetrySnapshot snap = JsonUtility.FromJson<StudentTelemetrySnapshot>(payloadJson);
             if (snap == null) return;
 
-            string uid = !string.IsNullOrWhiteSpace(snap.clientUid) ? snap.clientUid : handle.clientUid;
+            string uid = !string.IsNullOrWhiteSpace(snap.clientUid) ? snap.clientUid : handle?.clientUid;
             if (string.IsNullOrWhiteSpace(uid)) return;
 
             if (!studentSessions.TryGetValue(uid, out ConnectedStudentSession session))
@@ -651,8 +958,18 @@ namespace ComputerLearning
                 return;
             }
 
+            if (!string.IsNullOrWhiteSpace(remoteIp) && remoteIp != "Unknown")
+            {
+                session.remoteIp = remoteIp;
+            }
+            if (remoteUdpPort > 0)
+            {
+                session.remoteUdpPort = remoteUdpPort;
+            }
+            session.lastActivityRealtime = Time.realtimeSinceStartup;
             session.isConnected = true;
             session.latestTelemetry = snap;
+
             if (!string.IsNullOrWhiteSpace(snap.studentId))
             {
                 session.studentId = snap.studentId;
@@ -667,7 +984,6 @@ namespace ComputerLearning
 
         private void HandleClientDisconnectedOnMainThread(string clientUid, string closedConnectionKey)
         {
-            // Check whether the student already reconnected on a newer socket handle
             foreach (var kvp in activeHandles)
             {
                 if (kvp.Value.clientUid == clientUid && kvp.Key != closedConnectionKey && !kvp.Value.closed)
@@ -678,10 +994,75 @@ namespace ComputerLearning
 
             if (studentSessions.TryGetValue(clientUid, out ConnectedStudentSession session))
             {
-                session.isConnected = false;
-                Debug.Log($"[NetworkSessionHost] Student disconnected: {session.studentId} ({session.remoteIp}).");
+                studentSessions.Remove(clientUid);
+                orderedStudents.Remove(session);
+                Debug.Log($"[NetworkSessionHost] Student disconnected and removed: {session.studentId} ({session.remoteIp}).");
                 OnStudentsChanged?.Invoke();
             }
+        }
+
+        private void PruneTimedOutUdpOnlyStudents()
+        {
+            float now = Time.realtimeSinceStartup;
+            bool removedAny = false;
+            for (int i = orderedStudents.Count - 1; i >= 0; i--)
+            {
+                ConnectedStudentSession session = orderedStudents[i];
+                if (HasActiveTcpConnectionForUid(session.clientUid)) continue;
+
+                if (now - session.lastActivityRealtime > 10.0f)
+                {
+                    studentSessions.Remove(session.clientUid);
+                    orderedStudents.RemoveAt(i);
+                    removedAny = true;
+                    Debug.Log($"[NetworkSessionHost] UDP-only student timed out: {session.studentId} ({session.remoteIp}).");
+                }
+            }
+
+            if (removedAny)
+            {
+                OnStudentsChanged?.Invoke();
+            }
+        }
+
+        private bool HasActiveTcpConnectionForUid(string clientUid)
+        {
+            if (string.IsNullOrEmpty(clientUid)) return false;
+            foreach (var kvp in activeHandles)
+            {
+                if (!kvp.Value.closed && kvp.Value.clientUid == clientUid)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private bool HasActiveTcpConnectionForIp(string ip)
+        {
+            if (string.IsNullOrEmpty(ip)) return false;
+            foreach (var kvp in activeHandles)
+            {
+                if (!kvp.Value.closed && string.Equals(kvp.Value.remoteIp, ip, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private bool MarkPacketProcessed(string packetId)
+        {
+            if (string.IsNullOrEmpty(packetId)) return true;
+            if (!processedPacketIds.Add(packetId)) return false;
+
+            processedPacketOrder.Enqueue(packetId);
+            while (processedPacketOrder.Count > 512)
+            {
+                string oldest = processedPacketOrder.Dequeue();
+                processedPacketIds.Remove(oldest);
+            }
+            return true;
         }
 
         private string EnsureUniqueStudentIdForNewClient(string requestedId, string clientUid)
@@ -729,24 +1110,53 @@ namespace ComputerLearning
             return int.TryParse(digits, out int val) && val > 0 ? val : 1;
         }
 
-        private void SendToClientUid(string clientUid, string type, string payloadJson)
+        private void SendTcpToClientUid(string clientUid, string type, string payloadJson, string packetId)
         {
             foreach (var kvp in activeHandles)
             {
                 if (kvp.Value.clientUid == clientUid && !kvp.Value.closed)
                 {
-                    kvp.Value.SendEnvelope(type, payloadJson);
+                    kvp.Value.SendEnvelope(type, payloadJson, packetId);
                 }
+            }
+        }
+
+        private void SendToClientUid(string clientUid, string type, string payloadJson)
+        {
+            string packetId = Guid.NewGuid().ToString("N").Substring(0, 12);
+            SendTcpToClientUid(clientUid, type, payloadJson, packetId);
+
+            if (studentSessions.TryGetValue(clientUid, out ConnectedStudentSession session) &&
+                LanDiscovery.ExistingInstance != null)
+            {
+                LanDiscovery.ExistingInstance.SendUdpEnvelopeToStudent(session.remoteIp, session.remoteUdpPort, new UdpEnvelopePacket
+                {
+                    packetId = packetId,
+                    senderUid = hostUid,
+                    targetUid = clientUid,
+                    type = type,
+                    payloadJson = payloadJson
+                });
             }
         }
 
         private void BroadcastRawEnvelope(string type, string payloadJson)
         {
+            for (int i = 0; i < orderedStudents.Count; i++)
+            {
+                ConnectedStudentSession s = orderedStudents[i];
+                if (s != null && s.isConnected)
+                {
+                    SendToClientUid(s.clientUid, type, payloadJson);
+                }
+            }
+
+            // Also reach any unassigned TCP handle still mid-handshake
             foreach (var kvp in activeHandles)
             {
-                if (!kvp.Value.closed)
+                if (string.IsNullOrEmpty(kvp.Value.clientUid) && !kvp.Value.closed)
                 {
-                    kvp.Value.SendEnvelope(type, payloadJson);
+                    kvp.Value.SendEnvelope(type, payloadJson, Guid.NewGuid().ToString("N").Substring(0, 12));
                 }
             }
         }

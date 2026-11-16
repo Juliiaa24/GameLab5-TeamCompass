@@ -1174,7 +1174,7 @@ MonoBehaviour:
   m_fontColor32:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontColor: {r: 0.11, g: 0.2, b: 0.36, a: 1}
+  m_fontColor: {r: 0.015, g: 0.035, b: 0.085, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -2018,7 +2018,7 @@ MonoBehaviour:
   m_fontColor32:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontColor: {r: 0.11, g: 0.2, b: 0.36, a: 1}
+  m_fontColor: {r: 0.015, g: 0.035, b: 0.085, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -2832,7 +2832,7 @@ MonoBehaviour:
   m_fontColor32:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontColor: {r: 0.11, g: 0.2, b: 0.36, a: 1}
+  m_fontColor: {r: 0.015, g: 0.035, b: 0.085, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -2940,7 +2940,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
   m_AnchoredPosition: {x: 14, y: 74}
-  m_SizeDelta: {x: 330, y: 434}
+  m_SizeDelta: {x: 340, y: 510}
   m_Pivot: {x: 0, y: 0}
 --- !u!114 &1255423010
 MonoBehaviour:
@@ -2967,6 +2967,7 @@ MonoBehaviour:
   notepadPrefab: {fileID: 1014635146025430949, guid: 0a99e06c5b2dc5849bf2e50fd391d95b, type: 3}
   paintPrefab: {fileID: 6729021528199283428, guid: 53de8dc874b096d4993662fd51f6d6f2, type: 3}
   minigamesHubPrefab: {fileID: 3931090814690589213, guid: f1fd78961bfa04e49bfa48cca72297ba, type: 3}
+  scoresContentPrefab: {fileID: 1668796572045913962, guid: ab96947f0b4b6134cb7719d8351fb390, type: 3}
 --- !u!114 &1255423012
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3072,7 +3073,7 @@ MonoBehaviour:
   m_fontColor32:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontColor: {r: 0.11, g: 0.2, b: 0.36, a: 1}
+  m_fontColor: {r: 0.015, g: 0.035, b: 0.085, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -3986,7 +3987,7 @@ MonoBehaviour:
   m_fontColor32:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontColor: {r: 0.11, g: 0.2, b: 0.36, a: 1}
+  m_fontColor: {r: 0.015, g: 0.035, b: 0.085, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -4113,7 +4114,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: b45d7e2ce3a0fe04a85b145d67fe5245, type: 3}
+  m_Sprite: {fileID: 21300000, guid: a09b9336bf5f4f4419884893a9feec0a, type: 3}
   m_Type: 0
   m_PreserveAspect: 1
   m_FillCenter: 1
@@ -4256,7 +4257,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Skills Report
+  m_text: Score
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -4266,7 +4267,7 @@ MonoBehaviour:
   m_fontColor32:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontColor: {r: 0.11, g: 0.2, b: 0.36, a: 1}
+  m_fontColor: {r: 0.015, g: 0.035, b: 0.085, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -4546,6 +4547,10 @@ PrefabInstance:
       propertyPath: paintContentPrefab
       value: 
       objectReference: {fileID: 6729021528199283428, guid: 53de8dc874b096d4993662fd51f6d6f2, type: 3}
+    - target: {fileID: 1752656936260673201, guid: 8fd5d29b8e6b66b4aa43469e74eaad42, type: 3}
+      propertyPath: scoresContentPrefab
+      value: 
+      objectReference: {fileID: 1668796572045913962, guid: ab96947f0b4b6134cb7719d8351fb390, type: 3}
     - target: {fileID: 1752656936260673201, guid: 8fd5d29b8e6b66b4aa43469e74eaad42, type: 3}
       propertyPath: desktopIconContainer
       value: 

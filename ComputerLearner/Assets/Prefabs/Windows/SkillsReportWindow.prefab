@@ -11,10 +11,10 @@ PrefabInstance:
     - target: {fileID: 168255811264083141, guid: 0e4a41ca73db6a54fa7c2d386fa55f52, type: 3}
       propertyPath: windowIcon
       value: 
-      objectReference: {fileID: 21300000, guid: b45d7e2ce3a0fe04a85b145d67fe5245, type: 3}
+      objectReference: {fileID: 21300000, guid: a09b9336bf5f4f4419884893a9feec0a, type: 3}
     - target: {fileID: 168255811264083141, guid: 0e4a41ca73db6a54fa7c2d386fa55f52, type: 3}
       propertyPath: windowTitle
-      value: Scores & Achievements
+      value: Score
       objectReference: {fileID: 0}
     - target: {fileID: 168255811264083141, guid: 0e4a41ca73db6a54fa7c2d386fa55f52, type: 3}
       propertyPath: contentPrefab
@@ -35,7 +35,7 @@ PrefabInstance:
     - target: {fileID: 1784291947614735595, guid: 0e4a41ca73db6a54fa7c2d386fa55f52, type: 3}
       propertyPath: m_Sprite
       value: 
-      objectReference: {fileID: 21300000, guid: b45d7e2ce3a0fe04a85b145d67fe5245, type: 3}
+      objectReference: {fileID: 21300000, guid: a09b9336bf5f4f4419884893a9feec0a, type: 3}
     - target: {fileID: 4904818136831297891, guid: 0e4a41ca73db6a54fa7c2d386fa55f52, type: 3}
       propertyPath: m_SizeDelta.x
       value: -184

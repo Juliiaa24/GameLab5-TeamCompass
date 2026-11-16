@@ -490,10 +490,23 @@ namespace ComputerLearning
                 }
             }
 
-            if (WallpaperImage != null && defaultWallpaperSprite == null && WallpaperImage.sprite != null)
+            if (WallpaperImage != null)
             {
-                defaultWallpaperSprite = WallpaperImage.sprite;
+                if (defaultWallpaperSprite == null)
+                {
+                    defaultWallpaperSprite = WallpaperImage.sprite != null
+                        ? WallpaperImage.sprite
+                        : RetroThemeAssets.Instance?.desktopWallpaper;
+                }
             }
+        }
+
+        public static void ResetWallpaperPreferences()
+        {
+            CustomWallpaperSprite = null;
+            PlayerPrefs.DeleteKey("DesktopWallpaperTheme");
+            PlayerPrefs.DeleteKey("DesktopCustomWallpaperBase64");
+            PlayerPrefs.Save();
         }
 
         public void SetDesktopWallpaperTheme(string theme)
@@ -574,9 +587,12 @@ namespace ComputerLearning
                 default:
                     if (WallpaperImage != null)
                     {
-                        if (defaultWallpaperSprite != null)
+                        Sprite fallback = defaultWallpaperSprite != null
+                            ? defaultWallpaperSprite
+                            : RetroThemeAssets.Instance?.desktopWallpaper;
+                        if (fallback != null)
                         {
-                            WallpaperImage.sprite = defaultWallpaperSprite;
+                            WallpaperImage.sprite = fallback;
                         }
                         WallpaperImage.color = Color.white;
                     }

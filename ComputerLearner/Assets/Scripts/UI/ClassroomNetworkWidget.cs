@@ -18,8 +18,7 @@ namespace ComputerLearning
     {
         public static ClassroomNetworkWidget Instance { get; private set; }
 
-        public static bool IsManualInputFocused =>
-            Instance != null && Instance.manualIpInputField != null && Instance.manualIpInputField.isFocused;
+        public static bool IsManualInputFocused => false;
 
         public static bool IsAnyInputFocused => IsManualInputFocused;
 
@@ -33,6 +32,9 @@ namespace ComputerLearning
         [SerializeField] private GameObject joinModalRoot;
         [SerializeField] private TMP_Text joinModalTitleText;
         [SerializeField] private Button joinModalCloseButton;
+        [SerializeField] private Button refreshDiscoveryButton;
+        [SerializeField] private TMP_Text refreshDiscoveryLabel;
+        [SerializeField] private RectTransform refreshSpinnerIcon;
         [SerializeField] private TMP_Text discoveryStatusText;
         [SerializeField] private Transform discoveredHostsContainer;
         [SerializeField] private GameObject hostRowTemplate;
@@ -54,16 +56,36 @@ namespace ComputerLearning
 
         private readonly List<GameObject> _spawnedHostRows = new List<GameObject>();
         private float _nextUiRefreshAt;
-        private bool _manualIpExpanded;
+        private float _manualSearchSpinUntil;
+        private string _lastHostsSignature = string.Empty;
 
         private void Awake()
         {
             Instance = this;
             if (hostRowTemplate != null)
                 hostRowTemplate.SetActive(false);
+            HideManualIpControls();
+            BindEvents();
+        }
+
+        private void HideManualIpControls()
+        {
+            if (toggleManualIpButton != null)
+                toggleManualIpButton.gameObject.SetActive(false);
             if (manualIpSectionRoot != null)
                 manualIpSectionRoot.SetActive(false);
-            BindEvents();
+
+            ScrollRect hostsScroll = discoveredHostsContainer != null
+                ? discoveredHostsContainer.GetComponentInParent<ScrollRect>()
+                : null;
+            if (hostsScroll != null)
+            {
+                RectTransform scrollRt = hostsScroll.GetComponent<RectTransform>();
+                if (scrollRt != null)
+                {
+                    scrollRt.offsetMin = new Vector2(scrollRt.offsetMin.x, 54f);
+                }
+            }
         }
 
         private void OnEnable()
@@ -88,10 +110,20 @@ namespace ComputerLearning
         {
             if (joinModalRoot != null && joinModalRoot.activeSelf)
             {
+                bool isSearching = Time.unscaledTime < _manualSearchSpinUntil ||
+                                   (LanDiscovery.ExistingInstance != null && LanDiscovery.ExistingInstance.DiscoveredHosts.Count == 0);
+                if (refreshSpinnerIcon != null)
+                {
+                    if (isSearching)
+                        refreshSpinnerIcon.Rotate(0f, 0f, -360f * Time.unscaledDeltaTime);
+                    else
+                        refreshSpinnerIcon.localRotation = Quaternion.identity;
+                }
+
                 if (Time.unscaledTime >= _nextUiRefreshAt)
                 {
-                    _nextUiRefreshAt = Time.unscaledTime + 1.0f;
-                    RebuildDiscoveredHostsList();
+                    _nextUiRefreshAt = Time.unscaledTime + 0.8f;
+                    RebuildDiscoveredHostsList(forceRebuild: false);
                 }
 
                 if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
@@ -113,31 +145,28 @@ namespace ComputerLearning
                 joinModalCloseButton.onClick.AddListener(CloseStudentJoinModal);
             }
 
+            if (refreshDiscoveryButton != null)
+            {
+                refreshDiscoveryButton.onClick.RemoveAllListeners();
+                refreshDiscoveryButton.onClick.AddListener(OnRefreshDiscoveryClicked);
+            }
+
             if (leaveClassButton != null)
             {
                 leaveClassButton.onClick.RemoveAllListeners();
                 leaveClassButton.onClick.AddListener(() =>
                 {
+                    if (NetworkSessionClient.ExistingInstance != null &&
+                        NetworkSessionClient.ExistingInstance.IsConnected &&
+                        NetworkSessionClient.ExistingInstance.IsLeaveClassLocked)
+                    {
+                        return;
+                    }
                     NetworkSessionClient.Instance?.Disconnect(false);
+                    if (joinModalRoot == null || !joinModalRoot.activeSelf)
+                        LanDiscovery.ExistingInstance?.StopListening();
                     RefreshUI();
                 });
-            }
-
-            if (toggleManualIpButton != null)
-            {
-                toggleManualIpButton.onClick.RemoveAllListeners();
-                toggleManualIpButton.onClick.AddListener(() =>
-                {
-                    _manualIpExpanded = !_manualIpExpanded;
-                    if (manualIpSectionRoot != null)
-                        manualIpSectionRoot.SetActive(_manualIpExpanded);
-                });
-            }
-
-            if (connectManualButton != null)
-            {
-                connectManualButton.onClick.RemoveAllListeners();
-                connectManualButton.onClick.AddListener(OnManualConnectClicked);
             }
 
             if (openTeacherDashboardButton != null)
@@ -190,16 +219,27 @@ namespace ComputerLearning
         public void OpenStudentJoinModal()
         {
             if (joinModalRoot == null) return;
+            HideManualIpControls();
             joinModalRoot.SetActive(true);
+            joinModalRoot.transform.SetAsLastSibling();
 
             if (clientErrorText != null)
                 clientErrorText.text = string.Empty;
 
-            if (manualIpInputField != null && NetworkSessionClient.Instance != null && string.IsNullOrEmpty(manualIpInputField.text))
-                manualIpInputField.text = NetworkSessionClient.Instance.SavedLastHostIp ?? string.Empty;
+            _manualSearchSpinUntil = Time.unscaledTime + 1.5f;
+            LanDiscovery.Instance?.StartListening(NetworkProtocol.DiscoveryPort);
+            RebuildDiscoveredHostsList(forceRebuild: true);
+            RefreshUI();
+        }
 
-            LanDiscovery.Instance?.StartListening();
-            RebuildDiscoveredHostsList();
+        private void OnRefreshDiscoveryClicked()
+        {
+            _manualSearchSpinUntil = Time.unscaledTime + 1.5f;
+            if (clientErrorText != null)
+                clientErrorText.text = string.Empty;
+
+            LanDiscovery.Instance?.RestartDiscovery(NetworkProtocol.DiscoveryPort);
+            RebuildDiscoveredHostsList(forceRebuild: true);
             RefreshUI();
         }
 
@@ -208,8 +248,9 @@ namespace ComputerLearning
             if (joinModalRoot != null)
                 joinModalRoot.SetActive(false);
 
-            bool isConnecting = NetworkSessionClient.Instance != null && NetworkSessionClient.Instance.IsConnecting;
-            if (!isConnecting)
+            bool keepListening = NetworkSessionClient.Instance != null &&
+                                 (NetworkSessionClient.Instance.IsConnecting || NetworkSessionClient.Instance.IsConnected);
+            if (!keepListening)
                 LanDiscovery.Instance?.StopListening();
         }
 
@@ -226,30 +267,37 @@ namespace ComputerLearning
                 TeacherDashboardController.OpenOnCanvas(GetComponentInParent<Canvas>()?.transform);
         }
 
-        private void OnManualConnectClicked()
-        {
-            if (NetworkSessionClient.Instance == null) return;
-            string ip = manualIpInputField != null ? manualIpInputField.text.Trim() : string.Empty;
-            if (string.IsNullOrEmpty(ip))
-            {
-                if (clientErrorText != null)
-                    clientErrorText.text = UIDialogs.Current.lan_join_ip_empty;
-                return;
-            }
-
-            if (clientErrorText != null)
-                clientErrorText.text = UIDialogs.Current.lan_join_connecting;
-            NetworkSessionClient.Instance.ConnectToHost(ip, NetworkProtocol.DefaultSessionPort);
-        }
-
         private void HandleHostsUpdated(IReadOnlyList<DiscoveredHostInfo> _)
         {
             if (joinModalRoot != null && joinModalRoot.activeSelf)
-                RebuildDiscoveredHostsList();
+                RebuildDiscoveredHostsList(forceRebuild: false);
         }
 
-        private void RebuildDiscoveredHostsList()
+        private string ComputeHostsSignature(IReadOnlyList<DiscoveredHostInfo> hosts, UIDialogs ui)
         {
+            string lang = LocalizationManager.CurrentLanguage;
+            if (hosts == null || hosts.Count == 0)
+                return $"{lang}|EMPTY|{ui.lan_join_no_hosts}";
+
+            System.Text.StringBuilder sb = new System.Text.StringBuilder();
+            sb.Append(lang).Append('|').Append(ui.lan_join_btn_connect).Append('|').Append(hosts.Count);
+            for (int i = 0; i < hosts.Count; i++)
+            {
+                DiscoveredHostInfo h = hosts[i];
+                sb.Append('|').Append(h.hostName).Append(':').Append(h.EndpointKey);
+            }
+            return sb.ToString();
+        }
+
+        private void RebuildDiscoveredHostsList(bool forceRebuild)
+        {
+            IReadOnlyList<DiscoveredHostInfo> hosts = LanDiscovery.Instance != null ? LanDiscovery.Instance.DiscoveredHosts : null;
+            UIDialogs ui = UIDialogs.Current;
+            string signature = ComputeHostsSignature(hosts, ui);
+            if (!forceRebuild && signature == _lastHostsSignature)
+                return;
+            _lastHostsSignature = signature;
+
             for (int i = 0; i < _spawnedHostRows.Count; i++)
             {
                 if (_spawnedHostRows[i] != null)
@@ -257,19 +305,17 @@ namespace ComputerLearning
             }
             _spawnedHostRows.Clear();
 
-            IReadOnlyList<DiscoveredHostInfo> hosts = LanDiscovery.Instance != null ? LanDiscovery.Instance.DiscoveredHosts : null;
             bool hasHosts = hosts != null && hosts.Count > 0;
 
             if (emptyHostsText != null)
             {
                 emptyHostsText.gameObject.SetActive(!hasHosts);
-                emptyHostsText.text = UIDialogs.Current.lan_join_no_hosts;
+                emptyHostsText.text = ui.lan_join_no_hosts;
             }
 
             if (!hasHosts || hostRowTemplate == null || discoveredHostsContainer == null)
                 return;
 
-            UIDialogs ui = UIDialogs.Current;
             for (int i = 0; i < hosts.Count; i++)
             {
                 DiscoveredHostInfo host = hosts[i];
@@ -280,7 +326,7 @@ namespace ComputerLearning
 
                 TMP_Text hostNameText = row.transform.Find("HostNameText")?.GetComponent<TMP_Text>();
                 if (hostNameText != null)
-                    hostNameText.text = string.Format(ui.lan_join_host_entry_format, host.hostName, host.hostIp);
+                    hostNameText.text = host.hostName;
 
                 Button joinBtn = row.transform.Find("Btn-JoinHost")?.GetComponent<Button>();
                 TMP_Text joinBtnLabel = joinBtn != null ? joinBtn.GetComponentInChildren<TMP_Text>(true) : null;
@@ -289,14 +335,13 @@ namespace ComputerLearning
 
                 if (joinBtn != null)
                 {
-                    string ipCopy = host.hostIp;
-                    int portCopy = host.tcpPort;
+                    DiscoveredHostInfo hostCopy = host;
                     joinBtn.onClick.RemoveAllListeners();
                     joinBtn.onClick.AddListener(() =>
                     {
                         if (clientErrorText != null)
                             clientErrorText.text = ui.lan_join_connecting;
-                        NetworkSessionClient.Instance?.ConnectToHost(ipCopy, portCopy);
+                        NetworkSessionClient.Instance?.ConnectToHost(hostCopy);
                     });
                 }
             }
@@ -319,7 +364,7 @@ namespace ComputerLearning
                 if (clientConnected)
                 {
                     string host = NetworkSessionClient.Instance.ConnectedHostName;
-                    if (string.IsNullOrEmpty(host)) host = NetworkSessionClient.Instance.ConnectedHostIp;
+                    if (string.IsNullOrEmpty(host)) host = "Teacher";
                     teacherHostStatusText.text = string.Format(ui.lan_connected_banner_format, host);
                     teacherHostStatusText.color = RetroUITheme.TitleBlue;
                 }
@@ -345,6 +390,9 @@ namespace ComputerLearning
             UIDialogs ui = UIDialogs.Current;
             bool clientConnected = NetworkSessionClient.Instance != null && NetworkSessionClient.Instance.IsConnected;
             bool clientConnecting = NetworkSessionClient.Instance != null && NetworkSessionClient.Instance.IsConnecting;
+            bool leaveLocked = clientConnected && NetworkSessionClient.Instance.IsLeaveClassLocked;
+
+            HideManualIpControls();
 
             if (clientConnected && joinModalRoot != null && joinModalRoot.activeSelf)
                 CloseStudentJoinModal();
@@ -355,23 +403,24 @@ namespace ComputerLearning
             if (connectedBannerText != null && clientConnected)
             {
                 string host = NetworkSessionClient.Instance.ConnectedHostName;
-                if (string.IsNullOrEmpty(host)) host = NetworkSessionClient.Instance.ConnectedHostIp;
+                if (string.IsNullOrEmpty(host)) host = "Teacher";
                 connectedBannerText.text = string.Format(ui.menu_connected_status_format, host);
             }
 
+            if (leaveClassButton != null)
+            {
+                leaveClassButton.gameObject.SetActive(clientConnected && !leaveLocked);
+                leaveClassButton.interactable = clientConnected && !leaveLocked;
+            }
             if (leaveClassButtonLabel != null)
                 leaveClassButtonLabel.text = ui.menu_btn_leave_class;
 
             if (joinModalTitleText != null)
                 joinModalTitleText.text = ui.lan_join_modal_title;
+            if (refreshDiscoveryLabel != null)
+                refreshDiscoveryLabel.text = ui.net_btn_search_again;
             if (discoveryStatusText != null)
                 discoveryStatusText.text = clientConnecting ? ui.lan_join_connecting : ui.lan_join_searching;
-            if (toggleManualIpLabel != null)
-                toggleManualIpLabel.text = ui.lan_join_manual_toggle;
-            if (manualIpPlaceholderText != null)
-                manualIpPlaceholderText.text = ui.lan_join_manual_placeholder;
-            if (connectManualLabel != null)
-                connectManualLabel.text = ui.lan_join_btn_connect;
 
             if (clientErrorText != null && NetworkSessionClient.Instance != null && !clientConnected && !clientConnecting)
             {
@@ -381,7 +430,7 @@ namespace ComputerLearning
             }
 
             if (joinModalRoot != null && joinModalRoot.activeSelf)
-                RebuildDiscoveredHostsList();
+                RebuildDiscoveredHostsList(forceRebuild: false);
 
             RefreshTeacherHostSummary();
         }

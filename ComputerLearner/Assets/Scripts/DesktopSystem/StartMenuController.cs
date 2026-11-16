@@ -48,23 +48,22 @@ namespace ComputerLearning
         [SerializeField] private GameObject notepadPrefab;
         [SerializeField] private GameObject paintPrefab;
         [SerializeField] private GameObject minigamesHubPrefab;
+        [SerializeField] private GameObject scoresContentPrefab;
 
         private Window fileExplorerWindow;
         private Window notepadWindow;
         private Window paintWindow;
         private Window minigamesHubWindow;
+        private Window scoresWindow;
         #endregion
 
         #region Unity Methods
         private void Awake()
         {
             instance = this;
+            ResolveFallbackReferences();
+            BindButtons();
 
-            if (startButton != null)
-            {
-                startButton.onClick.RemoveListener(ToggleMenu);
-                startButton.onClick.AddListener(ToggleMenu);
-            }
             if (btnMinigamesHub != null)
             {
                 btnMinigamesHub.gameObject.SetActive(false);
@@ -89,43 +88,73 @@ namespace ComputerLearning
 
         private void Start()
         {
-            if (startButton != null)
-            {
-                startButton.onClick.RemoveListener(ToggleMenu);
-                startButton.onClick.AddListener(ToggleMenu);
-            }
+            ResolveFallbackReferences();
+            BindButtons();
 
             if (startMenuPanel != null)
             {
                 startMenuPanel.SetActive(false);
             }
 
-            if (btnFileExplorer != null)
-            {
-                btnFileExplorer.onClick.AddListener(OpenFileExplorer);
-            }
-            if (btnNotepad != null)
-            {
-                btnNotepad.onClick.AddListener(OpenNotepad);
-            }
-            if (btnPaint != null)
-            {
-                btnPaint.onClick.AddListener(OpenPaint);
-            }
             if (btnMinigamesHub != null)
             {
                 btnMinigamesHub.gameObject.SetActive(false);
             }
+
+            UpdateLocalizedMenuLabels();
+        }
+
+        private void ResolveFallbackReferences()
+        {
+            if (startMenuPanel == null) return;
+            Transform container = startMenuPanel.transform.Find("ButtonsContainer");
+            if (container == null) return;
+
+            if (btnFileExplorer == null) btnFileExplorer = container.Find("btnExplorer")?.GetComponent<Button>();
+            if (btnNotepad == null) btnNotepad = container.Find("btnNotepad")?.GetComponent<Button>();
+            if (btnPaint == null) btnPaint = container.Find("BtnPaint")?.GetComponent<Button>();
+            if (btnMinigamesHub == null) btnMinigamesHub = container.Find("btnMinigames")?.GetComponent<Button>();
+            if (btnStats == null) btnStats = container.Find("btnStats")?.GetComponent<Button>();
+            if (btnExitMenu == null) btnExitMenu = container.Find("btnExit")?.GetComponent<Button>();
+        }
+
+        private void BindButtons()
+        {
+            if (startButton != null)
+            {
+                startButton.onClick.RemoveListener(ToggleMenu);
+                startButton.onClick.AddListener(ToggleMenu);
+            }
+            if (btnFileExplorer != null)
+            {
+                btnFileExplorer.onClick.RemoveListener(OpenFileExplorer);
+                btnFileExplorer.onClick.AddListener(OpenFileExplorer);
+            }
+            if (btnNotepad != null)
+            {
+                btnNotepad.onClick.RemoveListener(OpenNotepad);
+                btnNotepad.onClick.AddListener(OpenNotepad);
+            }
+            if (btnPaint != null)
+            {
+                btnPaint.onClick.RemoveListener(OpenPaint);
+                btnPaint.onClick.AddListener(OpenPaint);
+            }
+            if (btnMinigamesHub != null)
+            {
+                btnMinigamesHub.onClick.RemoveListener(OpenMinigamesHub);
+                btnMinigamesHub.onClick.AddListener(OpenMinigamesHub);
+            }
             if (btnStats != null)
             {
+                btnStats.onClick.RemoveListener(OpenStats);
                 btnStats.onClick.AddListener(OpenStats);
             }
             if (btnExitMenu != null)
             {
+                btnExitMenu.onClick.RemoveListener(ExitToMainMenu);
                 btnExitMenu.onClick.AddListener(ExitToMainMenu);
             }
-
-            UpdateLocalizedMenuLabels();
         }
 
         private void Update()
@@ -133,20 +162,37 @@ namespace ComputerLearning
             if (IsMenuOpen && UnityEngine.InputSystem.Mouse.current != null && UnityEngine.InputSystem.Mouse.current.leftButton.wasPressedThisFrame)
             {
                 Vector2 mousePos = UnityEngine.InputSystem.Mouse.current.position.ReadValue();
-                if (startMenuPanel != null && startButton != null)
+                if (startMenuPanel != null)
                 {
+                    Canvas rootCanvas = startMenuPanel.GetComponentInParent<Canvas>();
+                    Camera uiCam = (rootCanvas != null && rootCanvas.renderMode != RenderMode.ScreenSpaceOverlay)
+                        ? rootCanvas.worldCamera
+                        : null;
+
                     RectTransform panelRect = startMenuPanel.GetComponent<RectTransform>();
-                    RectTransform btnRect = startButton.GetComponent<RectTransform>();
+                    bool insidePanel = panelRect != null && RectTransformUtility.RectangleContainsScreenPoint(panelRect, mousePos, uiCam);
+                    bool insideStartBtn = startButton != null &&
+                                          RectTransformUtility.RectangleContainsScreenPoint(startButton.GetComponent<RectTransform>(), mousePos, uiCam);
+                    bool insideAnyMenuBtn = IsPointerInsideButton(btnFileExplorer, mousePos, uiCam) ||
+                                            IsPointerInsideButton(btnNotepad, mousePos, uiCam) ||
+                                            IsPointerInsideButton(btnPaint, mousePos, uiCam) ||
+                                            IsPointerInsideButton(btnMinigamesHub, mousePos, uiCam) ||
+                                            IsPointerInsideButton(btnStats, mousePos, uiCam) ||
+                                            IsPointerInsideButton(btnExitMenu, mousePos, uiCam);
 
-                    bool insidePanel = RectTransformUtility.RectangleContainsScreenPoint(panelRect, mousePos);
-                    bool insideButton = RectTransformUtility.RectangleContainsScreenPoint(btnRect, mousePos);
-
-                    if (!insidePanel && !insideButton)
+                    if (!insidePanel && !insideStartBtn && !insideAnyMenuBtn)
                     {
                         CloseMenu();
                     }
                 }
             }
+        }
+
+        private static bool IsPointerInsideButton(Button btn, Vector2 mousePos, Camera uiCam)
+        {
+            if (btn == null || !btn.gameObject.activeInHierarchy) return false;
+            RectTransform rt = btn.GetComponent<RectTransform>();
+            return rt != null && RectTransformUtility.RectangleContainsScreenPoint(rt, mousePos, uiCam);
         }
         #endregion
 
@@ -232,14 +278,16 @@ namespace ComputerLearning
         public void OpenNotepad()
         {
             CloseMenu();
-            OpenAppWindow("Notepad", notepadPrefab, ref notepadWindow, GetButtonIcon(btnNotepad));
+            GameObject prefab = notepadPrefab != null ? notepadPrefab : (DesktopManager.Instance != null ? DesktopManager.Instance.NotepadContentPrefab : null);
+            OpenAppWindow("Notepad", prefab, ref notepadWindow, GetButtonIcon(btnNotepad));
         }
 
         public NotepadApp OpenNotepadWithFile(ExplorerItemData fileItem, ExplorerItemData folder = null)
         {
             CloseMenu();
             string winTitle = fileItem != null ? $"Notepad - {fileItem.name}" : "Notepad";
-            OpenAppWindow(winTitle, notepadPrefab, ref notepadWindow, GetButtonIcon(btnNotepad));
+            GameObject prefab = notepadPrefab != null ? notepadPrefab : (DesktopManager.Instance != null ? DesktopManager.Instance.NotepadContentPrefab : null);
+            OpenAppWindow(winTitle, prefab, ref notepadWindow, GetButtonIcon(btnNotepad));
             if (notepadWindow != null)
             {
                 notepadWindow.setTitle(winTitle);
@@ -267,7 +315,8 @@ namespace ComputerLearning
             CloseMenu();
             string winTitle = fileItem != null ? $"Paint - {fileItem.name}" : "Paint - Untitled.png";
 
-            OpenAppWindow(winTitle, paintPrefab, ref paintWindow, GetButtonIcon(btnPaint));
+            GameObject prefab = paintPrefab != null ? paintPrefab : (DesktopManager.Instance != null ? DesktopManager.Instance.PaintContentPrefab : null);
+            OpenAppWindow(winTitle, prefab, ref paintWindow, GetButtonIcon(btnPaint));
             if (paintWindow != null)
             {
                 paintWindow.setTitle(winTitle);
@@ -348,6 +397,22 @@ namespace ComputerLearning
         public void OpenStats()
         {
             CloseMenu();
+            WindowManager winManager = WindowManager.Instance != null ? WindowManager.Instance : FindAnyObjectByType<WindowManager>();
+            GameObject contentPrefab = scoresContentPrefab != null
+                ? scoresContentPrefab
+                : (DesktopManager.Instance != null ? DesktopManager.Instance.ScoresContentPrefab : null);
+
+            if (winManager != null && contentPrefab != null)
+            {
+                RetroThemeAssets assets = RetroThemeAssets.Instance;
+                Sprite trophyIcon = assets != null && assets.iconTrophy != null ? assets.iconTrophy : GetButtonIcon(btnStats);
+                string title = UIDialogs.Current != null && !string.IsNullOrEmpty(UIDialogs.Current.scores_window_title)
+                    ? UIDialogs.Current.scores_window_title
+                    : "Score";
+                OpenAppWindow(title, contentPrefab, ref scoresWindow, trophyIcon);
+                return;
+            }
+
             SceneSystem sceneSys = SceneSystem.Instance != null ? SceneSystem.Instance : UnityEngine.Object.FindFirstObjectByType<SceneSystem>();
             if (sceneSys != null)
             {

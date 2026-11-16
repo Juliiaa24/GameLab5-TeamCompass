@@ -6,6 +6,7 @@ using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using UnityEngine.Video;
 using TMPro;
 using ComputerLearning;
 
@@ -117,6 +118,16 @@ namespace RetroUIBuilder
             sniRt.anchorMin = new Vector2(0f, 0f); sniRt.anchorMax = new Vector2(1f, 0f);
             sniRt.pivot = new Vector2(0.5f, 0f);
             sniRt.offsetMin = new Vector2(138f, 16f); sniRt.offsetMax = new Vector2(-18f, 68f);
+
+            GameObject nameLockGo = CreateImageObject("NameLockIcon", studentNameInput.transform, assets.iconLock, RetroUITheme.BtnWarmOrange, false);
+            Image nameLockImg = nameLockGo.GetComponent<Image>();
+            nameLockImg.preserveAspect = true;
+            RectTransform nameLockRt = nameLockGo.GetComponent<RectTransform>();
+            nameLockRt.anchorMin = new Vector2(1f, 0.5f); nameLockRt.anchorMax = new Vector2(1f, 0.5f);
+            nameLockRt.pivot = new Vector2(1f, 0.5f);
+            nameLockRt.anchoredPosition = new Vector2(-10f, 0f);
+            nameLockRt.sizeDelta = new Vector2(26f, 26f);
+            nameLockGo.SetActive(false);
 
             // =====================================================================
             // 3. Top-Center Connected Classroom Pill Banner (hidden when offline)
@@ -300,6 +311,7 @@ namespace RetroUIBuilder
             SetPrivateField(playtestWidget, "studentNamePromptText", nameLabel);
             SetPrivateField(playtestWidget, "studentNameInputField", studentNameInput);
             SetPrivateField(playtestWidget, "studentNamePlaceholderText", namePlaceholder);
+            SetPrivateField(playtestWidget, "nameLockIcon", nameLockGo);
             SetPrivateField(playtestWidget, "toastContainer", toastBanner);
             SetPrivateField(playtestWidget, "toastText", toastTmp);
 
@@ -649,13 +661,28 @@ namespace RetroUIBuilder
             TMP_Text statusText = CreateTmp("DiscoveryStatusText", win.transform, font, "Looking for your teacher's class...", 18, FontStyles.Bold, RetroUITheme.TitleBlue, TextAlignmentOptions.Left);
             RectTransform stRt = statusText.GetComponent<RectTransform>();
             stRt.anchorMin = new Vector2(0f, 1f); stRt.anchorMax = new Vector2(1f, 1f);
-            stRt.offsetMin = new Vector2(26f, -104f); stRt.offsetMax = new Vector2(-26f, -68f);
+            stRt.offsetMin = new Vector2(26f, -104f); stRt.offsetMax = new Vector2(-216f, -68f);
+
+            Button refreshBtn = CreateRetroButton("Btn-RefreshDiscovery", win.transform, assets, font, "Search Again", assets.iconRefresh, RetroUITheme.BtnSkyBlue, RetroUITheme.InkWhite, 15, out TMP_Text refreshLbl);
+            RectTransform rfRt = refreshBtn.GetComponent<RectTransform>();
+            rfRt.anchorMin = new Vector2(1f, 1f); rfRt.anchorMax = new Vector2(1f, 1f);
+            rfRt.pivot = new Vector2(1f, 1f);
+            rfRt.anchoredPosition = new Vector2(-24f, -66f);
+            rfRt.sizeDelta = new Vector2(182f, 40f);
+
+            Transform refreshIconTr = refreshBtn.transform.Find("Icon");
+            RectTransform spinnerRt = refreshIconTr != null ? refreshIconTr.GetComponent<RectTransform>() : null;
+            if (spinnerRt != null)
+            {
+                spinnerRt.pivot = new Vector2(0.5f, 0.5f);
+                spinnerRt.anchoredPosition = new Vector2(18f + spinnerRt.sizeDelta.x * 0.5f, 2f);
+            }
 
             // Hosts Scroll Area
             GameObject scrollBox = CreateRetroScrollList("HostsScroll", win.transform, assets, out Transform contentTr);
             RectTransform sbRt = scrollBox.GetComponent<RectTransform>();
             sbRt.anchorMin = Vector2.zero; sbRt.anchorMax = Vector2.one;
-            sbRt.offsetMin = new Vector2(24f, 168f); sbRt.offsetMax = new Vector2(-24f, -112f);
+            sbRt.offsetMin = new Vector2(24f, 54f); sbRt.offsetMax = new Vector2(-24f, -112f);
 
             TMP_Text emptyText = CreateTmp("EmptyHostsText", scrollBox.transform, font, "No classrooms found yet.", 18, FontStyles.Normal, RetroUITheme.InkMuted, TextAlignmentOptions.Center);
             StretchFull(emptyText.GetComponent<RectTransform>(), 24f, 24f);
@@ -679,12 +706,13 @@ namespace RetroUIBuilder
             jhRt.sizeDelta = new Vector2(132f, 46f);
             hostRow.SetActive(false);
 
-            // Secondary Manual IP Link & Section
+            // Hidden Manual IP Link & Section (students join strictly by class name)
             Button toggleManualBtn = CreateRetroButton("Btn-ToggleManualIp", win.transform, assets, font, "Use teacher IP address instead", null, RetroUITheme.BtnNeutralCream, RetroUITheme.InkMuted, 15, out TMP_Text toggleManualLbl);
             RectTransform tmRt = toggleManualBtn.GetComponent<RectTransform>();
             tmRt.anchorMin = new Vector2(0f, 0f); tmRt.anchorMax = new Vector2(1f, 0f);
             tmRt.pivot = new Vector2(0.5f, 0f);
             tmRt.offsetMin = new Vector2(24f, 114f); tmRt.offsetMax = new Vector2(-24f, 154f);
+            toggleManualBtn.gameObject.SetActive(false);
 
             GameObject manualSection = new GameObject("ManualIpSection", typeof(RectTransform));
             manualSection.transform.SetParent(win.transform, false);
@@ -702,6 +730,7 @@ namespace RetroUIBuilder
             ciRt.anchorMin = new Vector2(1f, 0f); ciRt.anchorMax = new Vector2(1f, 1f);
             ciRt.pivot = new Vector2(1f, 0.5f);
             ciRt.offsetMin = new Vector2(-138f, 0f); ciRt.offsetMax = Vector2.zero;
+            manualSection.SetActive(false);
 
             TMP_Text errorTmp = CreateTmp("ClientErrorText", win.transform, font, "", 15, FontStyles.Bold, RetroUITheme.DangerCoral, TextAlignmentOptions.Center);
             RectTransform errRt = errorTmp.GetComponent<RectTransform>();
@@ -712,6 +741,9 @@ namespace RetroUIBuilder
             SetPrivateField(classroomWidget, "joinModalTitleText", titleTmp);
             SetPrivateField(classroomWidget, "joinModalCloseButton", closeBtn);
             SetPrivateField(classroomWidget, "discoveryStatusText", statusText);
+            SetPrivateField(classroomWidget, "refreshDiscoveryButton", refreshBtn);
+            SetPrivateField(classroomWidget, "refreshDiscoveryLabel", refreshLbl);
+            SetPrivateField(classroomWidget, "refreshSpinnerIcon", spinnerRt);
             SetPrivateField(classroomWidget, "discoveredHostsContainer", contentTr);
             SetPrivateField(classroomWidget, "hostRowTemplate", hostRow);
             SetPrivateField(classroomWidget, "emptyHostsText", emptyText);
@@ -948,38 +980,48 @@ namespace RetroUIBuilder
             TMP_Text secClassLbl = CreateTmp("SectionClassLabel", rightCard.transform, font, "Classroom & Dashboard", 20, FontStyles.Bold, RetroUITheme.InkDark, TextAlignmentOptions.Left);
             RectTransform sclRt = secClassLbl.GetComponent<RectTransform>();
             sclRt.anchorMin = new Vector2(0f, 1f); sclRt.anchorMax = new Vector2(1f, 1f);
-            sclRt.offsetMin = new Vector2(20f, -210f); sclRt.offsetMax = new Vector2(-20f, -174f);
+            sclRt.offsetMin = new Vector2(20f, -202f); sclRt.offsetMax = new Vector2(-20f, -170f);
+
+            TMP_Text classNameLbl = CreateTmp("ClassNameLabel", rightCard.transform, font, "Class Name:", 15, FontStyles.Bold, RetroUITheme.InkDark, TextAlignmentOptions.MidlineLeft);
+            RectTransform cnlRt = classNameLbl.GetComponent<RectTransform>();
+            cnlRt.anchorMin = new Vector2(0f, 1f); cnlRt.anchorMax = new Vector2(0.36f, 1f);
+            cnlRt.offsetMin = new Vector2(20f, -248f); cnlRt.offsetMax = new Vector2(-4f, -204f);
+
+            TMP_InputField classNameInput = CreateRetroInputField("Input-ClassName", rightCard.transform, assets, font, "e.g. Room 3B", 28, TMP_InputField.ContentType.Standard, out TMP_Text classNamePh);
+            RectTransform cniRt = classNameInput.GetComponent<RectTransform>();
+            cniRt.anchorMin = new Vector2(0.36f, 1f); cniRt.anchorMax = new Vector2(1f, 1f);
+            cniRt.offsetMin = new Vector2(4f, -248f); cniRt.offsetMax = new Vector2(-20f, -204f);
 
             Button openDashBtn = CreateRetroButton("Btn-OpenTeacherDashboard", rightCard.transform, assets, font, "Open Teacher Dashboard", assets.iconClassroom, RetroUITheme.BtnPlayfulPurple, RetroUITheme.InkWhite, 19, out TMP_Text openDashLbl);
             RectTransform odRt = openDashBtn.GetComponent<RectTransform>();
             odRt.anchorMin = new Vector2(0f, 1f); odRt.anchorMax = new Vector2(1f, 1f);
-            odRt.offsetMin = new Vector2(20f, -278f); odRt.offsetMax = new Vector2(-20f, -218f);
+            odRt.offsetMin = new Vector2(20f, -310f); odRt.offsetMax = new Vector2(-20f, -256f);
 
             TMP_Text hostStatusTmp = CreateTmp("TeacherHostStatusText", rightCard.transform, font, "Class server: Offline", 15, FontStyles.Bold, RetroUITheme.InkMuted, TextAlignmentOptions.Left);
             RectTransform hsRt = hostStatusTmp.GetComponent<RectTransform>();
             hsRt.anchorMin = new Vector2(0f, 1f); hsRt.anchorMax = new Vector2(1f, 1f);
-            hsRt.offsetMin = new Vector2(20f, -314f); hsRt.offsetMax = new Vector2(-20f, -284f);
+            hsRt.offsetMin = new Vector2(20f, -340f); hsRt.offsetMax = new Vector2(-20f, -314f);
 
             // PIN Section
             TMP_Text secPinLbl = CreateTmp("SectionPinLabel", rightCard.transform, font, "Teacher PIN", 20, FontStyles.Bold, RetroUITheme.InkDark, TextAlignmentOptions.Left);
             RectTransform splRt = secPinLbl.GetComponent<RectTransform>();
             splRt.anchorMin = new Vector2(0f, 1f); splRt.anchorMax = new Vector2(1f, 1f);
-            splRt.offsetMin = new Vector2(20f, -370f); splRt.offsetMax = new Vector2(-20f, -334f);
+            splRt.offsetMin = new Vector2(20f, -378f); splRt.offsetMax = new Vector2(-20f, -346f);
 
             TMP_InputField newPinInput = CreateRetroInputField("Input-NewPin", rightCard.transform, assets, font, "New 4 digits...", 4, TMP_InputField.ContentType.IntegerNumber, out TMP_Text newPinPh);
             RectTransform npiRt = newPinInput.GetComponent<RectTransform>();
             npiRt.anchorMin = new Vector2(0f, 1f); npiRt.anchorMax = new Vector2(0.60f, 1f);
-            npiRt.offsetMin = new Vector2(20f, -432f); npiRt.offsetMax = new Vector2(-8f, -378f);
+            npiRt.offsetMin = new Vector2(20f, -434f); npiRt.offsetMax = new Vector2(-8f, -384f);
 
             Button savePinBtn = CreateRetroButton("Btn-SavePin", rightCard.transform, assets, font, "Save PIN", assets.iconCheck, RetroUITheme.BtnSunnyGold, RetroUITheme.InkDark, 17, out TMP_Text savePinLbl);
             RectTransform spbRt = savePinBtn.GetComponent<RectTransform>();
             spbRt.anchorMin = new Vector2(0.62f, 1f); spbRt.anchorMax = new Vector2(1f, 1f);
-            spbRt.offsetMin = new Vector2(4f, -432f); spbRt.offsetMax = new Vector2(-20f, -378f);
+            spbRt.offsetMin = new Vector2(4f, -434f); spbRt.offsetMax = new Vector2(-20f, -384f);
 
             TMP_Text pinChangeFb = CreateTmp("PinChangeFeedbackText", rightCard.transform, font, "", 15, FontStyles.Bold, RetroUITheme.SuccessMint, TextAlignmentOptions.Left);
             RectTransform pcfbRt = pinChangeFb.GetComponent<RectTransform>();
             pcfbRt.anchorMin = new Vector2(0f, 1f); pcfbRt.anchorMax = new Vector2(1f, 1f);
-            pcfbRt.offsetMin = new Vector2(20f, -468f); pcfbRt.offsetMax = new Vector2(-20f, -438f);
+            pcfbRt.offsetMin = new Vector2(20f, -466f); pcfbRt.offsetMax = new Vector2(-20f, -438f);
 
             // Bottom Footer Lock Teacher Button
             Button lockBtn = CreateRetroButton("Btn-LockTeacherMode", win.transform, assets, font, "Lock & Student Mode", assets.iconLock, RetroUITheme.BtnWarmOrange, RetroUITheme.InkWhite, 20, out TMP_Text lockLbl);
@@ -1002,6 +1044,9 @@ namespace RetroUIBuilder
             SetPrivateField(gate, "lanLockNoticeText", lanBannerText);
             SetPrivateField(gate, "sectionStudentControlsLabel", secStudentLbl);
             SetPrivateField(gate, "sectionClassNetworkLabel", secClassLbl);
+            SetPrivateField(gate, "classNameLabelText", classNameLbl);
+            SetPrivateField(gate, "classNameInputField", classNameInput);
+            SetPrivateField(gate, "classNamePlaceholderText", classNamePh);
             SetPrivateField(gate, "sectionPinConfigLabel", secPinLbl);
             SetPrivateField(gate, "newPinInputField", newPinInput);
             SetPrivateField(gate, "newPinPlaceholderText", newPinPh);
@@ -1113,13 +1158,46 @@ namespace RetroUIBuilder
             laRt.anchoredPosition = new Vector2(-18f, 0f);
             laRt.sizeDelta = new Vector2(184f, 46f);
 
+            // Permissions & Class Name Bar
+            GameObject permBar = CreateRetroCardWindow("PermissionsAndNameBar", win.transform,
+                new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0.5f, 1f),
+                Vector2.zero, Vector2.zero, assets.cardRounded, RetroUITheme.CardPastelYellow);
+            RectTransform pbRt = permBar.GetComponent<RectTransform>();
+            pbRt.offsetMin = new Vector2(22f, -202f); pbRt.offsetMax = new Vector2(-22f, -144f);
+
+            TMP_Text dashClassNameLbl = CreateTmp("ClassNameLabel", permBar.transform, font, "Class Name:", 16, FontStyles.Bold, RetroUITheme.InkDark, TextAlignmentOptions.MidlineLeft);
+            RectTransform dcnlRt = dashClassNameLbl.GetComponent<RectTransform>();
+            dcnlRt.anchorMin = new Vector2(0f, 0f); dcnlRt.anchorMax = new Vector2(0f, 1f);
+            dcnlRt.offsetMin = new Vector2(18f, 0f); dcnlRt.offsetMax = new Vector2(155f, 0f);
+
+            TMP_InputField dashClassNameInput = CreateRetroInputField("Input-ClassName", permBar.transform, assets, font, "e.g. Room 3B", 28, TMP_InputField.ContentType.Standard, out TMP_Text dashClassNamePh);
+            RectTransform dcniRt = dashClassNameInput.GetComponent<RectTransform>();
+            dcniRt.anchorMin = new Vector2(0f, 0.5f); dcniRt.anchorMax = new Vector2(0f, 0.5f);
+            dcniRt.pivot = new Vector2(0f, 0.5f);
+            dcniRt.anchoredPosition = new Vector2(160f, 0f);
+            dcniRt.sizeDelta = new Vector2(330f, 44f);
+
+            Button lockNamesBtn = CreateRetroButton("Btn-LockStudentNames", permBar.transform, assets, font, "Student Names: UNLOCKED", assets.iconLock, RetroUITheme.BtnMintGreen, RetroUITheme.InkWhite, 15, out TMP_Text lockNamesLbl);
+            RectTransform lnbRt = lockNamesBtn.GetComponent<RectTransform>();
+            lnbRt.anchorMin = new Vector2(1f, 0.5f); lnbRt.anchorMax = new Vector2(1f, 0.5f);
+            lnbRt.pivot = new Vector2(1f, 0.5f);
+            lnbRt.anchoredPosition = new Vector2(-376f, 0f);
+            lnbRt.sizeDelta = new Vector2(340f, 44f);
+
+            Button lockLeaveBtn = CreateRetroButton("Btn-LockLeaveClass", permBar.transform, assets, font, "Leave Class: ALLOWED", assets.iconLock, RetroUITheme.BtnMintGreen, RetroUITheme.InkWhite, 15, out TMP_Text lockLeaveLbl);
+            RectTransform llbRt = lockLeaveBtn.GetComponent<RectTransform>();
+            llbRt.anchorMin = new Vector2(1f, 0.5f); llbRt.anchorMax = new Vector2(1f, 0.5f);
+            llbRt.pivot = new Vector2(1f, 0.5f);
+            llbRt.anchoredPosition = new Vector2(-18f, 0f);
+            llbRt.sizeDelta = new Vector2(344f, 44f);
+
             // Left Students Card
             GameObject leftPanel = CreateRetroCardWindow("StudentsListCard", win.transform,
                 Vector2.zero, Vector2.one, new Vector2(0f, 0.5f), Vector2.zero, Vector2.zero,
                 assets.cardRounded, RetroUITheme.WindowSkySoft);
             RectTransform lpRt = leftPanel.GetComponent<RectTransform>();
             lpRt.anchorMin = new Vector2(0f, 0f); lpRt.anchorMax = new Vector2(0.57f, 1f);
-            lpRt.offsetMin = new Vector2(22f, 22f); lpRt.offsetMax = new Vector2(-8f, -152f);
+            lpRt.offsetMin = new Vector2(22f, 22f); lpRt.offsetMax = new Vector2(-8f, -214f);
 
             TMP_Text studentsHdr = CreateTmp("StudentsHeaderText", leftPanel.transform, font, "Connected Students", 20, FontStyles.Bold, RetroUITheme.InkDark, TextAlignmentOptions.Left);
             RectTransform shRt = studentsHdr.GetComponent<RectTransform>();
@@ -1143,7 +1221,7 @@ namespace RetroUIBuilder
                 assets.cardRounded, RetroUITheme.WindowSkySoft);
             RectTransform rpRt = rightPanel.GetComponent<RectTransform>();
             rpRt.anchorMin = new Vector2(0.58f, 0f); rpRt.anchorMax = new Vector2(1f, 1f);
-            rpRt.offsetMin = new Vector2(8f, 22f); rpRt.offsetMax = new Vector2(-22f, -152f);
+            rpRt.offsetMin = new Vector2(8f, 22f); rpRt.offsetMax = new Vector2(-22f, -214f);
 
             TMP_Text inspPlaceholder = CreateTmp("InspectorPlaceholderText", rightPanel.transform, font, "Select a student...", 19, FontStyles.Normal, RetroUITheme.InkMuted, TextAlignmentOptions.Center);
             StretchFull(inspPlaceholder.GetComponent<RectTransform>(), 32f, 32f);
@@ -1222,6 +1300,15 @@ namespace RetroUIBuilder
             SetPrivateField(ctrl, "applyAllLabel", applyAllLbl);
             SetPrivateField(ctrl, "launchAllButton", launchAllBtn);
             SetPrivateField(ctrl, "launchAllLabel", launchAllLbl);
+            SetPrivateField(ctrl, "classNameLabelText", dashClassNameLbl);
+            SetPrivateField(ctrl, "classNameInputField", dashClassNameInput);
+            SetPrivateField(ctrl, "classNamePlaceholderText", dashClassNamePh);
+            SetPrivateField(ctrl, "lockStudentNamesButton", lockNamesBtn);
+            SetPrivateField(ctrl, "lockStudentNamesBg", lockNamesBtn.GetComponent<Image>());
+            SetPrivateField(ctrl, "lockStudentNamesLabel", lockNamesLbl);
+            SetPrivateField(ctrl, "lockLeaveClassButton", lockLeaveBtn);
+            SetPrivateField(ctrl, "lockLeaveClassBg", lockLeaveBtn.GetComponent<Image>());
+            SetPrivateField(ctrl, "lockLeaveClassLabel", lockLeaveLbl);
             SetPrivateField(ctrl, "studentsHeaderText", studentsHdr);
             SetPrivateField(ctrl, "studentsListContainer", studentsContent);
             SetPrivateField(ctrl, "studentRowTemplate", studentRowTemplate);
@@ -1710,12 +1797,13 @@ namespace RetroUIBuilder
                 RetroizeWindowPrefab(path, assets, font);
             }
 
-            RetroizeSkillsReportContentPrefab("Assets/Prefabs/Windows/SkillsReportContent.prefab");
+            RetroizeSkillsReportContentPrefab("Assets/Prefabs/Windows/SkillsReportContent.prefab", assets, font);
             RetroizeSkillsReportWindowPrefab("Assets/Prefabs/Windows/SkillsReportWindow.prefab", assets, font);
+            AssignVideoDemonstrationsToAssets();
 
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
-            Debug.Log("[RetroSceneMaterializer] Applied Menu-identical Colorful Retro Desktop chrome to BaseWindow, GenericLevelWindow, AdaptiveSessionWindow, SkillsReportWindow, and SkillsReportContent.");
+            Debug.Log("[RetroSceneMaterializer] Applied Menu-identical Colorful Retro Desktop chrome to BaseWindow, GenericLevelWindow, AdaptiveSessionWindow, SkillsReportWindow, and SkillsReportContent, and assigned tutorial VideoClips.");
         }
 
         private static void RetroizeWindowPrefab(string prefabPath, RetroThemeAssets assets, TMP_FontAsset font)
@@ -1730,11 +1818,123 @@ namespace RetroUIBuilder
             try
             {
                 ApplyMenuWindowChrome(root, assets, font);
+                Transform contentsTr = FindChildRecursive(root.transform, "WindowContents");
+                if (contentsTr != null)
+                {
+                    MaterializeLevelRunnerPanels(contentsTr, root.GetComponent<LevelRunner>(), assets, font);
+                }
                 PrefabUtility.SaveAsPrefabAsset(root, prefabPath);
             }
             finally
             {
                 PrefabUtility.UnloadPrefabContents(root);
+            }
+        }
+
+        private static void MaterializeLevelRunnerPanels(Transform contentsTr, LevelRunner runner, RetroThemeAssets assets, TMP_FontAsset font)
+        {
+            if (contentsTr == null || assets == null) return;
+
+            Transform existingIntro = contentsTr.Find("LevelIntroPanel");
+            if (existingIntro != null) UnityEngine.Object.DestroyImmediate(existingIntro.gameObject);
+            Transform existingProg = contentsTr.Find("LevelProgressBarContainer");
+            if (existingProg != null) UnityEngine.Object.DestroyImmediate(existingProg.gameObject);
+
+            // 1. Pre-built Level Intro Panel (hidden until LevelRunner.ShowInstructionScreen activates it)
+            GameObject introPanel = CreateImageObject("LevelIntroPanel", contentsTr, null, RetroUITheme.WindowSkySoft, true);
+            StretchFull(introPanel.GetComponent<RectTransform>());
+
+            GameObject introCard = CreateRetroCardWindow("IntroCard", introPanel.transform,
+                new Vector2(0.06f, 0.06f), new Vector2(0.94f, 0.94f), new Vector2(0.5f, 0.5f),
+                Vector2.zero, Vector2.zero, assets.windowBody, RetroUITheme.WindowCream);
+
+            TMP_Text introTitle = CreateTmp("IntroTitle", introCard.transform, font, "Level Challenge", 28, FontStyles.Bold, RetroUITheme.TitleBlue, TextAlignmentOptions.Center);
+            introTitle.enableAutoSizing = true;
+            introTitle.fontSizeMin = 18f;
+            introTitle.fontSizeMax = 30f;
+            RectTransform itRt = introTitle.GetComponent<RectTransform>();
+            itRt.anchorMin = new Vector2(0.06f, 0.82f); itRt.anchorMax = new Vector2(0.94f, 0.95f);
+            itRt.offsetMin = Vector2.zero; itRt.offsetMax = Vector2.zero;
+
+            TMP_Text introBody = CreateTmp("IntroBody", introCard.transform, font, "Watch how to do this skill, then try it!", 20, FontStyles.Bold, RetroUITheme.InkDark, TextAlignmentOptions.Center);
+            introBody.enableAutoSizing = true;
+            introBody.fontSizeMin = 14f;
+            introBody.fontSizeMax = 22f;
+            introBody.textWrappingMode = TextWrappingModes.Normal;
+            RectTransform ibRt = introBody.GetComponent<RectTransform>();
+            ibRt.anchorMin = new Vector2(0.08f, 0.62f); ibRt.anchorMax = new Vector2(0.92f, 0.81f);
+            ibRt.offsetMin = Vector2.zero; ibRt.offsetMax = Vector2.zero;
+
+            // 16:9 Retro Video Frame (320x184 outer, 304x168 inner)
+            GameObject videoFrame = CreateRetroCardWindow("VideoDemoFrame", introCard.transform,
+                new Vector2(0.5f, 0.39f), new Vector2(0.5f, 0.39f), new Vector2(0.5f, 0.5f),
+                Vector2.zero, new Vector2(320f, 184f), assets.cardRounded, RetroUITheme.TitleBlue);
+
+            GameObject rawImgGo = new GameObject("VideoRawImage", typeof(RectTransform), typeof(CanvasRenderer), typeof(RawImage));
+            rawImgGo.transform.SetParent(videoFrame.transform, false);
+            StretchFull(rawImgGo.GetComponent<RectTransform>(), 8f, 8f);
+            RawImage rawImg = rawImgGo.GetComponent<RawImage>();
+            rawImg.texture = assets.videoDemoRenderTexture;
+            rawImg.color = Color.white;
+            rawImg.raycastTarget = false;
+
+            VideoPlayer vp = videoFrame.AddComponent<VideoPlayer>();
+            vp.playOnAwake = false;
+            vp.isLooping = true;
+            vp.renderMode = VideoRenderMode.RenderTexture;
+            vp.targetTexture = assets.videoDemoRenderTexture;
+            vp.audioOutputMode = VideoAudioOutputMode.None;
+            vp.source = VideoSource.VideoClip;
+
+            Button startBtn = CreateRetroButton("Btn-IntroStart", introCard.transform, assets, font, "Start!", assets.iconPlay, RetroUITheme.BtnMintGreen, RetroUITheme.InkWhite, 22, out TMP_Text startLbl);
+            RectTransform sbRt = startBtn.GetComponent<RectTransform>();
+            sbRt.anchorMin = new Vector2(0.5f, 0.04f); sbRt.anchorMax = new Vector2(0.5f, 0.04f);
+            sbRt.pivot = new Vector2(0.5f, 0f);
+            sbRt.anchoredPosition = Vector2.zero;
+            sbRt.sizeDelta = new Vector2(240f, 54f);
+
+            introPanel.SetActive(false);
+
+            // 2. Pre-built Level Progress Bar Container (hidden until tasks start)
+            GameObject progContainer = new GameObject("LevelProgressBarContainer", typeof(RectTransform));
+            progContainer.transform.SetParent(contentsTr, false);
+            RectTransform pcRt = progContainer.GetComponent<RectTransform>();
+            pcRt.anchorMin = new Vector2(0.5f, 1f); pcRt.anchorMax = new Vector2(0.5f, 1f);
+            pcRt.pivot = new Vector2(0.5f, 1f);
+            pcRt.anchoredPosition = new Vector2(0f, -14f);
+            pcRt.sizeDelta = new Vector2(340f, 24f);
+
+            GameObject trackBorder = CreateImageObject("TrackBorder", progContainer.transform, assets.badgePill, RetroUITheme.InkDark, false);
+            trackBorder.GetComponent<Image>().type = Image.Type.Sliced;
+            StretchFull(trackBorder.GetComponent<RectTransform>());
+
+            GameObject trackBg = CreateImageObject("TrackBg", trackBorder.transform, assets.badgePill, new Color(0.88f, 0.92f, 0.96f, 1f), false);
+            trackBg.GetComponent<Image>().type = Image.Type.Sliced;
+            StretchFull(trackBg.GetComponent<RectTransform>(), 3f, 3f);
+
+            GameObject fillGo = CreateImageObject("ProgressFill", trackBg.transform, assets.badgePill, RetroUITheme.BtnMintGreen, false);
+            fillGo.GetComponent<Image>().type = Image.Type.Sliced;
+            RectTransform fillRt = fillGo.GetComponent<RectTransform>();
+            fillRt.anchorMin = Vector2.zero;
+            fillRt.anchorMax = new Vector2(0f, 1f);
+            fillRt.pivot = new Vector2(0f, 0.5f);
+            fillRt.offsetMin = Vector2.zero;
+            fillRt.offsetMax = Vector2.zero;
+
+            progContainer.SetActive(false);
+
+            if (runner != null)
+            {
+                SetPrivateField(runner, "introPanel", introPanel);
+                SetPrivateField(runner, "introTitleText", introTitle);
+                SetPrivateField(runner, "introBodyText", introBody);
+                SetPrivateField(runner, "introStartButton", startBtn);
+                SetPrivateField(runner, "introStartButtonText", startLbl);
+                SetPrivateField(runner, "videoDemoFrame", videoFrame);
+                SetPrivateField(runner, "videoRawImage", rawImg);
+                SetPrivateField(runner, "videoPlayer", vp);
+                SetPrivateField(runner, "progressBarContainer", progContainer);
+                SetPrivateField(runner, "progressFillRect", fillRt);
             }
         }
 
@@ -1915,7 +2115,7 @@ namespace RetroUIBuilder
             }
         }
 
-        private static void RetroizeSkillsReportContentPrefab(string contentPrefabPath)
+        private static void RetroizeSkillsReportContentPrefab(string contentPrefabPath, RetroThemeAssets assets, TMP_FontAsset font)
         {
             if (AssetDatabase.LoadAssetAtPath<GameObject>(contentPrefabPath) == null) return;
             GameObject root = PrefabUtility.LoadPrefabContents(contentPrefabPath);
@@ -1924,13 +2124,56 @@ namespace RetroUIBuilder
                 RemoveMissingScriptsRecursive(root);
                 ClearChildrenImmediate(root.transform);
 
+                RectTransform rootRt = root.GetComponent<RectTransform>() ?? root.AddComponent<RectTransform>();
+                StretchFull(rootRt);
+
                 Image img = root.GetComponent<Image>() ?? root.AddComponent<Image>();
                 img.sprite = null;
                 img.color = RetroUITheme.WindowSkySoft;
                 img.raycastTarget = false;
 
-                if (root.GetComponent<ScoresApp>() == null)
-                    root.AddComponent<ScoresApp>();
+                ScoresApp scoresApp = root.GetComponent<ScoresApp>() ?? root.AddComponent<ScoresApp>();
+
+                // Top Action Strip (Subtitle + Refresh Button ONLY - Reset Records intentionally removed)
+                GameObject topStrip = new GameObject("TopActionStrip", typeof(RectTransform));
+                topStrip.transform.SetParent(root.transform, false);
+                RectTransform tsRt = topStrip.GetComponent<RectTransform>();
+                tsRt.anchorMin = new Vector2(0f, 1f); tsRt.anchorMax = new Vector2(1f, 1f);
+                tsRt.pivot = new Vector2(0.5f, 1f);
+                tsRt.offsetMin = new Vector2(18f, -54f); tsRt.offsetMax = new Vector2(-18f, -8f);
+
+                TMP_Text subtitleTmp = CreateTmp("SubtitleText", topStrip.transform, font,
+                    "Track your progress, medals, accuracy, and best times across all 16 levels",
+                    15, FontStyles.Bold, RetroUITheme.InkDark, TextAlignmentOptions.MidlineLeft);
+                subtitleTmp.enableAutoSizing = true;
+                subtitleTmp.fontSizeMin = 12f;
+                subtitleTmp.fontSizeMax = 16f;
+                RectTransform subRt = subtitleTmp.GetComponent<RectTransform>();
+                subRt.anchorMin = Vector2.zero; subRt.anchorMax = Vector2.one;
+                subRt.offsetMin = new Vector2(6f, 0f); subRt.offsetMax = new Vector2(-200f, 0f);
+
+                Button refreshBtn = CreateRetroButton("Btn-RefreshRecords", topStrip.transform, assets, font,
+                    "Refresh Records", assets != null ? assets.iconRefresh : null, RetroUITheme.BtnSkyBlue, RetroUITheme.InkWhite, 15, out TMP_Text refreshLbl);
+                RectTransform rfRt = refreshBtn.GetComponent<RectTransform>();
+                rfRt.anchorMin = new Vector2(1f, 0.5f); rfRt.anchorMax = new Vector2(1f, 0.5f);
+                rfRt.pivot = new Vector2(1f, 0.5f);
+                rfRt.anchoredPosition = new Vector2(-4f, 0f);
+                rfRt.sizeDelta = new Vector2(184f, 40f);
+
+                // Shared Stats Body
+                GameObject bodyRoot = new GameObject("SharedStatsBody", typeof(RectTransform));
+                bodyRoot.transform.SetParent(root.transform, false);
+                RectTransform brRt = bodyRoot.GetComponent<RectTransform>();
+                brRt.anchorMin = Vector2.zero; brRt.anchorMax = Vector2.one;
+                brRt.offsetMin = new Vector2(18f, 14f); brRt.offsetMax = new Vector2(-18f, -58f);
+
+                RetroStatsSharedUI.StatsUIBinding sharedBinding = RetroStatsSharedUI.BuildStatsBody(bodyRoot.transform, assets, font);
+                RetroStatsSharedUI.RenderAll(sharedBinding, RetroStatsSharedUI.LevelFilter.All, assets, font);
+
+                SetPrivateField(scoresApp, "_subtitleText", subtitleTmp);
+                SetPrivateField(scoresApp, "_refreshBtn", refreshBtn);
+                SetPrivateField(scoresApp, "_refreshBtnLabel", refreshLbl);
+                SetPrivateField(scoresApp, "_sharedUI", sharedBinding);
 
                 PrefabUtility.SaveAsPrefabAsset(root, contentPrefabPath);
             }
@@ -1953,6 +2196,7 @@ namespace RetroUIBuilder
                 if (rootRt != null)
                     rootRt.sizeDelta = new Vector2(1480f, 820f);
 
+                Sprite scoreIcon = assets.iconTrophy != null ? assets.iconTrophy : assets.goldMedal;
                 Window winComp = root.GetComponent<Window>();
                 if (winComp != null)
                 {
@@ -1960,16 +2204,16 @@ namespace RetroUIBuilder
                     if (contentPrefab != null)
                         SetPrivateField(winComp, "contentPrefab", contentPrefab);
 
-                    SetPrivateField(winComp, "windowTitle", "Scores & Achievements");
-                    if (assets.goldMedal != null)
-                        SetPrivateField(winComp, "windowIcon", assets.goldMedal);
+                    SetPrivateField(winComp, "windowTitle", "Score");
+                    if (scoreIcon != null)
+                        SetPrivateField(winComp, "windowIcon", scoreIcon);
 
                     Transform iconTr = FindChildRecursive(root.transform, "WindowIcon");
-                    if (iconTr != null && assets.goldMedal != null)
+                    if (iconTr != null && scoreIcon != null)
                     {
                         iconTr.gameObject.SetActive(true);
                         Image iconImg = iconTr.GetComponent<Image>();
-                        if (iconImg != null) iconImg.sprite = assets.goldMedal;
+                        if (iconImg != null) iconImg.sprite = scoreIcon;
                     }
                     Transform titleTr = FindChildRecursive(root.transform, "WindowTitleText");
                     if (titleTr != null)
@@ -1985,6 +2229,63 @@ namespace RetroUIBuilder
             {
                 PrefabUtility.UnloadPrefabContents(root);
             }
+        }
+
+        [MenuItem("Tools/Retro UI/7. Assign Tutorial Video Clips")]
+        public static void AssignVideoDemonstrationsToAssets()
+        {
+            VideoClip moveClip = AssetDatabase.LoadAssetAtPath<VideoClip>("Assets/TutorialAnimation/Move.mp4");
+            VideoClip clickClip = AssetDatabase.LoadAssetAtPath<VideoClip>("Assets/TutorialAnimation/LeftClick.mp4");
+            VideoClip dblClickClip = AssetDatabase.LoadAssetAtPath<VideoClip>("Assets/TutorialAnimation/DoubleClick.mp4");
+            VideoClip rightClickClip = AssetDatabase.LoadAssetAtPath<VideoClip>("Assets/TutorialAnimation/RightClick.mp4");
+            VideoClip clickHoldClip = AssetDatabase.LoadAssetAtPath<VideoClip>("Assets/TutorialAnimation/ClickAndHold.mp4");
+            VideoClip dragDropClip = AssetDatabase.LoadAssetAtPath<VideoClip>("Assets/TutorialAnimation/DragAndDrop.mp4");
+
+            int updated = 0;
+
+            void AssignClip(ScriptableObject so, VideoClip clip)
+            {
+                if (so == null || clip == null) return;
+                if (so is TaskDefinition taskDef && taskDef.videoDemonstration != clip)
+                {
+                    taskDef.videoDemonstration = clip;
+                    EditorUtility.SetDirty(taskDef);
+                    updated++;
+                }
+                else if (so is LevelDefinition levelDef && levelDef.videoDemonstration != clip)
+                {
+                    levelDef.videoDemonstration = clip;
+                    EditorUtility.SetDirty(levelDef);
+                    updated++;
+                }
+            }
+
+            string[] taskGuids = AssetDatabase.FindAssets("t:TaskDefinition", new[] { "Assets/ScriptableObjects/Tasks" });
+            foreach (string guid in taskGuids)
+            {
+                string path = AssetDatabase.GUIDToAssetPath(guid);
+                TaskDefinition td = AssetDatabase.LoadAssetAtPath<TaskDefinition>(path);
+                if (td == null) continue;
+
+                string pLower = path.ToLowerInvariant();
+                if (pLower.Contains("doubleclick")) AssignClip(td, dblClickClip);
+                else if (pLower.Contains("rightclick")) AssignClip(td, rightClickClip);
+                else if (pLower.Contains("clickhold")) AssignClip(td, clickHoldClip);
+                else if (pLower.Contains("dragdrop")) AssignClip(td, dragDropClip);
+                else if (pLower.Contains("/click/") || td.name.StartsWith("T_Click")) AssignClip(td, clickClip);
+                else if (pLower.Contains("/hover/") || td.name == "T_MoveMouse") AssignClip(td, moveClip);
+            }
+
+            AssignClip(AssetDatabase.LoadAssetAtPath<LevelDefinition>("Assets/ScriptableObjects/Levels/L_Level1.asset"), moveClip);
+            AssignClip(AssetDatabase.LoadAssetAtPath<LevelDefinition>("Assets/ScriptableObjects/Levels/L_Level2.asset"), moveClip);
+            AssignClip(AssetDatabase.LoadAssetAtPath<LevelDefinition>("Assets/ScriptableObjects/Levels/L_Level3.asset"), clickClip);
+            AssignClip(AssetDatabase.LoadAssetAtPath<LevelDefinition>("Assets/ScriptableObjects/Levels/L_Level5.asset"), dblClickClip);
+            AssignClip(AssetDatabase.LoadAssetAtPath<LevelDefinition>("Assets/ScriptableObjects/Levels/L_Level6.asset"), rightClickClip);
+            AssignClip(AssetDatabase.LoadAssetAtPath<LevelDefinition>("Assets/ScriptableObjects/Levels/L_Level7.asset"), clickHoldClip);
+            AssignClip(AssetDatabase.LoadAssetAtPath<LevelDefinition>("Assets/ScriptableObjects/Levels/L_Level8.asset"), dragDropClip);
+
+            AssetDatabase.SaveAssets();
+            Debug.Log($"[RetroSceneMaterializer] Assigned H.264 tutorial VideoClips to {updated} Task/Level ScriptableObjects.");
         }
 
         private static void RemoveMissingScriptsRecursive(GameObject go)
@@ -2406,6 +2707,17 @@ namespace RetroUIBuilder
                 EditorUtility.SetDirty(startMenuTr.gameObject);
             }
 
+            GameObject skillsContentPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Windows/SkillsReportContent.prefab");
+            if (skillsContentPrefab != null)
+            {
+                foreach (DesktopManager dm in UnityEngine.Object.FindObjectsByType<DesktopManager>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+                {
+                    if (dm == null) continue;
+                    SetPrivateField(dm, "scoresContentPrefab", skillsContentPrefab);
+                    EditorUtility.SetDirty(dm);
+                }
+            }
+
             EditorSceneManager.MarkSceneDirty(scene);
             EditorSceneManager.SaveScene(scene);
         }
@@ -2486,7 +2798,7 @@ namespace RetroUIBuilder
                 panelRt.anchorMax = Vector2.zero;
                 panelRt.pivot = Vector2.zero;
                 panelRt.anchoredPosition = new Vector2(14f, 74f);
-                panelRt.sizeDelta = new Vector2(330f, 434f);
+                panelRt.sizeDelta = new Vector2(340f, 510f);
             }
 
             StripComponent<Outline>(panelTr.gameObject);
@@ -2581,12 +2893,42 @@ namespace RetroUIBuilder
                 Sprite paintIcon = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Art/UI/App icons/Image_File_Icon_01_Scaled.png");
                 Sprite minigamesIcon = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Art/UI/App icons/Target_Minigame_Icon01_Scaled.png") ?? assets.targetIcon;
 
-                RetroizeStartMenuAppButton(containerTr.Find("btnExplorer"), assets, font, explorerIcon, Color.white, RetroUITheme.CardPastelYellow, DesktopDarkInk);
-                RetroizeStartMenuAppButton(containerTr.Find("btnNotepad"), assets, font, notepadIcon, Color.white, RetroUITheme.CardPastelBlue, DesktopDarkInk);
-                RetroizeStartMenuAppButton(containerTr.Find("BtnPaint"), assets, font, paintIcon, Color.white, RetroUITheme.CardPastelMint, DesktopDarkInk);
-                RetroizeStartMenuAppButton(containerTr.Find("btnMinigames"), assets, font, minigamesIcon, Color.white, RetroUITheme.CardPastelPeach, DesktopDarkInk);
-                RetroizeStartMenuAppButton(containerTr.Find("btnStats"), assets, font, assets.goldMedal, Color.white, RetroUITheme.CardPastelLavend, DesktopDarkInk);
-                RetroizeStartMenuAppButton(containerTr.Find("btnExit"), assets, font, assets.iconExit, RetroUITheme.InkWhite, RetroUITheme.BtnCoralRed, RetroUITheme.InkWhite);
+                Sprite statsIcon = assets.iconTrophy != null ? assets.iconTrophy : assets.goldMedal;
+                Transform btnExplorerTr = containerTr.Find("btnExplorer");
+                Transform btnNotepadTr = containerTr.Find("btnNotepad");
+                Transform btnPaintTr = containerTr.Find("BtnPaint") ?? containerTr.Find("btnPaint");
+                Transform btnMinigamesTr = containerTr.Find("btnMinigames");
+                Transform btnStatsTr = containerTr.Find("btnStats");
+                Transform btnExitTr = containerTr.Find("btnExit");
+
+                RetroizeStartMenuAppButton(btnExplorerTr, assets, font, explorerIcon, Color.white, RetroUITheme.CardPastelYellow, DesktopDarkInk);
+                RetroizeStartMenuAppButton(btnNotepadTr, assets, font, notepadIcon, Color.white, RetroUITheme.CardPastelBlue, DesktopDarkInk);
+                RetroizeStartMenuAppButton(btnPaintTr, assets, font, paintIcon, Color.white, RetroUITheme.CardPastelMint, DesktopDarkInk);
+                RetroizeStartMenuAppButton(btnMinigamesTr, assets, font, minigamesIcon, Color.white, RetroUITheme.CardPastelPeach, DesktopDarkInk);
+                RetroizeStartMenuAppButton(btnStatsTr, assets, font, statsIcon, Color.white, RetroUITheme.CardPastelLavend, DesktopDarkInk);
+                RetroizeStartMenuAppButton(btnExitTr, assets, font, assets.iconExit, RetroUITheme.InkWhite, RetroUITheme.BtnCoralRed, RetroUITheme.InkWhite);
+
+                if (btnStatsTr != null)
+                {
+                    Transform statsTxtTr = btnStatsTr.Find("Text");
+                    TMP_Text statsTmp = statsTxtTr != null ? statsTxtTr.GetComponent<TMP_Text>() : btnStatsTr.GetComponentInChildren<TMP_Text>(true);
+                    if (statsTmp != null) statsTmp.text = "Score";
+                }
+
+                StartMenuController smc = panelTr.GetComponent<StartMenuController>();
+                if (smc != null)
+                {
+                    GameObject skillsContentPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Windows/SkillsReportContent.prefab");
+                    if (skillsContentPrefab != null)
+                        SetPrivateField(smc, "scoresContentPrefab", skillsContentPrefab);
+                    if (btnExplorerTr != null) SetPrivateField(smc, "btnFileExplorer", btnExplorerTr.GetComponent<Button>());
+                    if (btnNotepadTr != null) SetPrivateField(smc, "btnNotepad", btnNotepadTr.GetComponent<Button>());
+                    if (btnPaintTr != null) SetPrivateField(smc, "btnPaint", btnPaintTr.GetComponent<Button>());
+                    if (btnMinigamesTr != null) SetPrivateField(smc, "btnMinigamesHub", btnMinigamesTr.GetComponent<Button>());
+                    if (btnStatsTr != null) SetPrivateField(smc, "btnStats", btnStatsTr.GetComponent<Button>());
+                    if (btnExitTr != null) SetPrivateField(smc, "btnExitMenu", btnExitTr.GetComponent<Button>());
+                    EditorUtility.SetDirty(smc);
+                }
             }
         }
 

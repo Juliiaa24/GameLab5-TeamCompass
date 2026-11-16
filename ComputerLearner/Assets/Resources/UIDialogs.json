@@ -16,7 +16,7 @@
     "start_menu_notepad": "Notepad",
     "start_menu_paint": "Paint",
     "start_menu_minigames": "Minigames Hub",
-    "start_menu_stats": "Skills Report",
+    "start_menu_stats": "Score",
     "start_menu_exit": "Exit to Menu",
     "minigames_btn_play": "Play!",
     "minigames_targets": "Targets & Clicks",
@@ -146,5 +146,15 @@
     "playtest_auto_download_enabled_toast": "Auto download enabled (data will save automatically)",
     "playtest_auto_download_disabled_toast": "Auto download disabled (data will only save when clicking Export)",
     "playtest_export_success": "Exported {0} to Desktop/ComputerLearner_PlaytestData",
-    "playtest_reset_success": "Progress reset! Next student ID: {0}"
+    "playtest_reset_success": "Progress reset! Next student ID: {0}",
+    "net_class_name_label": "Class Name:",
+    "net_class_name_placeholder": "e.g. Room 3B / Computer Lab",
+    "net_btn_search_again": "Search Again",
+    "net_lock_student_names_on": "Lock Student Names: ON",
+    "net_lock_student_names_off": "Lock Student Names: OFF",
+    "net_lock_leave_class_on": "Lock Leave Class: ON",
+    "net_lock_leave_class_off": "Lock Leave Class: OFF",
+    "net_student_name_locked_hint": "Locked by teacher",
+    "menu_connected_status_format": "Connected to class: {0}",
+    "lan_join_host_entry_format": "{0}"
 }

@@ -15,6 +15,7 @@ MonoBehaviour:
   levelId: level8
   displayName: 'Level 8: Drag & Drop'
   instructionText: Click and drag items to their correct drop zones!
+  videoDemonstration: {fileID: 32900000, guid: c2013aba92e12574f96234fa5ba30d7b, type: 3}
   isAdaptive: 0
   adaptiveTaskCount: 5
   tasks:

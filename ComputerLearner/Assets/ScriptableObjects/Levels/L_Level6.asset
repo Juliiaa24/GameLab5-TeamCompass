@@ -15,6 +15,7 @@ MonoBehaviour:
   levelId: level6
   displayName: 'Level 6: Right Click'
   instructionText: Right Click on the targets to practice opening context menus!
+  videoDemonstration: {fileID: 32900000, guid: 23915892dc383d746a6e4dc91529c869, type: 3}
   isAdaptive: 0
   adaptiveTaskCount: 5
   tasks:

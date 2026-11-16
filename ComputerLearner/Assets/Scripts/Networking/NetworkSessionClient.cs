@@ -1,14 +1,16 @@
 /**
  * Author: TeamCompass
- * Description: Student LAN Client (DontDestroyOnLoad). Connects to a Teacher Host (via LanDiscovery
- *              or manual IP), receives StudentConfiguration JSON payloads, applies them strictly
- *              through SessionManager, and streams live ProgressData + SkillManager telemetry back
- *              to the Teacher Dashboard without placing any networking code inside gameplay classes.
+ * Description: Student LAN Client (DontDestroyOnLoad). Connects to a Teacher Host via
+ *              concurrent Direct-TCP (47778), Reverse-TCP callback listener (47779), and
+ *              bidirectional UDP session envelopes over discovery port (47777), receives
+ *              StudentConfiguration JSON payloads, applies them strictly through SessionManager,
+ *              and streams live ProgressData + SkillManager telemetry back to the Teacher Dashboard.
  */
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
+using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
@@ -52,16 +54,31 @@ namespace ComputerLearning
         public int ConnectedHostPort { get; private set; } = NetworkProtocol.DefaultSessionPort;
         public string ConnectedHostName { get; private set; } = string.Empty;
         public string LastStatusMessage { get; private set; } = string.Empty;
+        public bool IsStudentNameLocked { get; private set; }
+        public bool IsLeaveClassLocked { get; private set; }
 
         public event Action OnClientStateChanged;
 
         private TcpClient tcpClient;
         private StreamWriter streamWriter;
+        private TcpListener reverseTcpListener;
+        private int activeCallbackPort = NetworkProtocol.DefaultClientCallbackPort;
         private readonly object writeLock = new object();
         private Thread readThread;
         private volatile bool stopRequested;
+        private int currentAttemptId;
+
+        private readonly List<string> activeCandidateIps = new List<string>();
+        private int activeHostUdpPort = NetworkProtocol.DiscoveryPort;
+        private string pendingHelloJson = string.Empty;
+        private float nextUdpHelloRetryTime;
+        private float connectDeadlineRealtime;
+        private float lastHostActivityRealtime;
 
         private readonly ConcurrentQueue<Action> mainThreadQueue = new ConcurrentQueue<Action>();
+        private readonly HashSet<string> processedPacketIds = new HashSet<string>(StringComparer.Ordinal);
+        private readonly Queue<string> processedPacketOrder = new Queue<string>();
+
         private ProgressData subscribedProgressData;
         private float nextTelemetryHeartbeatTime;
         private string lastCompletedLevelIdTracker = string.Empty;
@@ -77,6 +94,7 @@ namespace ComputerLearning
             }
 
             instance = this;
+            Application.runInBackground = true;
             if (transform.parent == null)
             {
                 DontDestroyOnLoad(gameObject);
@@ -90,6 +108,11 @@ namespace ComputerLearning
             SceneManager.sceneLoaded += HandleSceneLoaded;
             PlaytestDataManager.OnStudentIdChanged += HandleStudentIdChanged;
             SessionManager.Instance.OnConfigurationChanged += HandleConfigurationChanged;
+            if (LanDiscovery.Instance != null)
+            {
+                LanDiscovery.Instance.OnUdpEnvelopeReceived -= HandleUdpEnvelopeReceived;
+                LanDiscovery.Instance.OnUdpEnvelopeReceived += HandleUdpEnvelopeReceived;
+            }
             RefreshProgressDataSubscription();
         }
 
@@ -100,6 +123,10 @@ namespace ComputerLearning
             if (SessionManager.ExistingInstance != null)
             {
                 SessionManager.ExistingInstance.OnConfigurationChanged -= HandleConfigurationChanged;
+            }
+            if (LanDiscovery.ExistingInstance != null)
+            {
+                LanDiscovery.ExistingInstance.OnUdpEnvelopeReceived -= HandleUdpEnvelopeReceived;
             }
             UnsubscribeProgressData();
         }
@@ -118,6 +145,21 @@ namespace ComputerLearning
                 }
             }
 
+            if (IsConnecting)
+            {
+                if (Time.realtimeSinceStartup >= connectDeadlineRealtime)
+                {
+                    Disconnect(silent: true);
+                    LastStatusMessage = "Could not connect to the classroom. Please try again.";
+                    OnClientStateChanged?.Invoke();
+                }
+                else if (Time.unscaledTime >= nextUdpHelloRetryTime)
+                {
+                    nextUdpHelloRetryTime = Time.unscaledTime + 0.45f;
+                    SendUdpHelloPulse();
+                }
+            }
+
             if (IsConnected)
             {
                 if (subscribedProgressData != ProgressData.ExistingInstance)
@@ -125,9 +167,23 @@ namespace ComputerLearning
                     RefreshProgressDataSubscription();
                 }
 
+                bool hasTcp;
+                lock (writeLock)
+                {
+                    hasTcp = tcpClient != null && tcpClient.Connected;
+                }
+
+                if (!hasTcp && Time.realtimeSinceStartup - lastHostActivityRealtime > 12.0f)
+                {
+                    Disconnect(silent: true);
+                    LastStatusMessage = "Connection closed by Teacher Host.";
+                    OnClientStateChanged?.Invoke();
+                    return;
+                }
+
                 if (Time.unscaledTime >= nextTelemetryHeartbeatTime)
                 {
-                    nextTelemetryHeartbeatTime = Time.unscaledTime + 2.5f;
+                    nextTelemetryHeartbeatTime = Time.unscaledTime + 2.0f;
                     SendTelemetryNow();
                 }
             }
@@ -147,7 +203,18 @@ namespace ComputerLearning
             }
         }
 
-        public void ConnectToHost(string hostIp, int port = NetworkProtocol.DefaultSessionPort)
+        public void ConnectToHost(DiscoveredHostInfo host)
+        {
+            if (host == null) return;
+            ConnectToHost(host.hostIp, host.tcpPort, host.hostName, host.candidateIps, host.lastSenderUdpPort);
+        }
+
+        public void ConnectToHost(
+            string hostIp,
+            int port = NetworkProtocol.DefaultSessionPort,
+            string hostDisplayName = null,
+            IReadOnlyList<string> candidateIps = null,
+            int hostUdpPort = 0)
         {
             if (Application.platform == RuntimePlatform.WebGLPlayer)
             {
@@ -171,13 +238,38 @@ namespace ComputerLearning
             PlayerPrefs.SetString(LastHostIpPrefKey, trimmedIp);
             PlayerPrefs.Save();
 
+            int attemptId = ++currentAttemptId;
             IsConnecting = true;
             ConnectedHostIp = trimmedIp;
             ConnectedHostPort = port;
-            LastStatusMessage = $"Connecting to {trimmedIp}:{port}...";
-            OnClientStateChanged?.Invoke();
+            ConnectedHostName = !string.IsNullOrWhiteSpace(hostDisplayName) ? hostDisplayName.Trim() : string.Empty;
+            LastStatusMessage = UIDialogs.Current.lan_join_connecting;
+            lastHostActivityRealtime = Time.realtimeSinceStartup;
+            connectDeadlineRealtime = Time.realtimeSinceStartup + 5.5f;
+            nextUdpHelloRetryTime = 0f;
 
-            // Capture handshake fields on the Unity main thread before opening background socket
+            lock (writeLock)
+            {
+                activeCandidateIps.Clear();
+                if (candidateIps != null)
+                {
+                    for (int i = 0; i < candidateIps.Count; i++)
+                    {
+                        string ip = candidateIps[i];
+                        if (!string.IsNullOrWhiteSpace(ip) && !activeCandidateIps.Contains(ip.Trim()))
+                        {
+                            activeCandidateIps.Add(ip.Trim());
+                        }
+                    }
+                }
+                if (!activeCandidateIps.Contains(trimmedIp))
+                {
+                    activeCandidateIps.Add(trimmedIp);
+                }
+                activeHostUdpPort = hostUdpPort > 0 ? hostUdpPort : NetworkProtocol.DiscoveryPort;
+            }
+
+            // Capture handshake fields on the Unity main thread before opening sockets
             PlaytestDataManager.EnsureInitialized();
             StudentConfiguration currentCfg = SessionManager.Instance.CurrentConfiguration;
             ClientHelloPayload hello = new ClientHelloPayload
@@ -190,74 +282,255 @@ namespace ComputerLearning
                 currentPath = currentCfg != null ? currentCfg.learningPath : LearningPath.BeginnerFoundations,
                 runAssessment = currentCfg == null || currentCfg.runAssessment
             };
-            string helloJson = JsonUtility.ToJson(hello);
+            pendingHelloJson = JsonUtility.ToJson(hello);
 
             stopRequested = false;
 
+            StartReverseTcpListener(attemptId);
+
+            LanDiscovery discovery = LanDiscovery.Instance;
+            if (discovery != null)
+            {
+                discovery.LocalClientUid = ClientUid;
+                discovery.LocalSenderUid = ClientUid;
+                discovery.LocalCallbackTcpPort = activeCallbackPort;
+                discovery.OnUdpEnvelopeReceived -= HandleUdpEnvelopeReceived;
+                discovery.OnUdpEnvelopeReceived += HandleUdpEnvelopeReceived;
+                discovery.StartListening(NetworkProtocol.DiscoveryPort);
+            }
+
+            OnClientStateChanged?.Invoke();
+
+            // Immediately fire first UDP Hello and start parallel Direct-TCP attempts
+            SendUdpHelloPulse();
+            nextUdpHelloRetryTime = Time.unscaledTime + 0.45f;
+
+            List<string> ipsSnapshot;
+            lock (writeLock)
+            {
+                ipsSnapshot = new List<string>(activeCandidateIps);
+            }
+
+            Task.Run(() => TryDirectTcpCandidatesAsync(attemptId, ipsSnapshot, port, pendingHelloJson));
+        }
+
+        private void StartReverseTcpListener(int attemptId)
+        {
+            StopReverseTcpListener();
+
+            int[] candidatePorts =
+            {
+                NetworkProtocol.DefaultClientCallbackPort,
+                NetworkProtocol.DefaultClientCallbackPort + 1
+            };
+
+            for (int i = 0; i < candidatePorts.Length; i++)
+            {
+                try
+                {
+                    TcpListener listener = new TcpListener(IPAddress.Any, candidatePorts[i]);
+                    listener.Server.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
+                    listener.Start();
+                    reverseTcpListener = listener;
+                    activeCallbackPort = candidatePorts[i];
+                    break;
+                }
+                catch
+                {
+                    // Try next port
+                }
+            }
+
+            if (reverseTcpListener == null) return;
+
+            TcpListener activeListener = reverseTcpListener;
             Task.Run(() =>
             {
                 try
                 {
+                    while (!stopRequested && attemptId == currentAttemptId && activeListener != null)
+                    {
+                        if (!activeListener.Pending())
+                        {
+                            Thread.Sleep(25);
+                            continue;
+                        }
+
+                        TcpClient accepted = activeListener.AcceptTcpClient();
+                        if (stopRequested || attemptId != currentAttemptId)
+                        {
+                            try { accepted.Close(); } catch { }
+                            break;
+                        }
+
+                        AttachTcpConnection(attemptId, accepted, pendingHelloJson);
+                        break;
+                    }
+                }
+                catch
+                {
+                    // Listener closed
+                }
+            });
+        }
+
+        private void StopReverseTcpListener()
+        {
+            if (reverseTcpListener != null)
+            {
+                try { reverseTcpListener.Stop(); } catch { }
+                reverseTcpListener = null;
+            }
+        }
+
+        private void TryDirectTcpCandidatesAsync(int attemptId, List<string> candidateIps, int port, string helloJson)
+        {
+            if (candidateIps == null || candidateIps.Count == 0) return;
+
+            List<Task<TcpClient>> connectTasks = new List<Task<TcpClient>>(candidateIps.Count);
+            for (int i = 0; i < candidateIps.Count; i++)
+            {
+                string ip = candidateIps[i];
+                connectTasks.Add(Task.Run(() =>
+                {
                     TcpClient client = new TcpClient();
-                    IAsyncResult ar = client.BeginConnect(trimmedIp, port, null, null);
-                    bool signaled = ar.AsyncWaitHandle.WaitOne(TimeSpan.FromSeconds(3.5));
-                    if (!signaled || !client.Connected)
+                    try
+                    {
+                        IAsyncResult ar = client.BeginConnect(ip, port, null, null);
+                        bool signaled = ar.AsyncWaitHandle.WaitOne(TimeSpan.FromSeconds(2.8));
+                        if (!signaled || !client.Connected || stopRequested || attemptId != currentAttemptId)
+                        {
+                            try { client.Close(); } catch { }
+                            return null;
+                        }
+                        client.EndConnect(ar);
+                        return client;
+                    }
+                    catch
                     {
                         try { client.Close(); } catch { }
-                        throw new SocketException((int)SocketError.TimedOut);
+                        return null;
                     }
-                    client.EndConnect(ar);
-                    client.NoDelay = true;
+                }));
+            }
 
-                    NetworkStream netStream = client.GetStream();
-                    StreamWriter writer = new StreamWriter(netStream, Utf8NoBom) { AutoFlush = true };
-
-                    lock (writeLock)
-                    {
-                        tcpClient = client;
-                        streamWriter = writer;
-                    }
-
-                    SendEnvelopeThreadSafe(NetworkProtocol.MsgHello, helloJson);
-
-                    mainThreadQueue.Enqueue(() =>
-                    {
-                        IsConnecting = false;
-                        IsConnected = true;
-                        ConnectedHostName = trimmedIp;
-                        LastStatusMessage = $"Connected to {trimmedIp}:{port}";
-                        LanDiscovery.Instance.StopListening();
-                        RefreshProgressDataSubscription();
-                        SendTelemetryNow();
-                        OnClientStateChanged?.Invoke();
-                    });
-
-                    readThread = new Thread(() => ReadLoop(netStream))
-                    {
-                        IsBackground = true,
-                        Name = "CL_StudentClientReader"
-                    };
-                    readThread.Start();
-                }
-                catch (Exception e)
+            try
+            {
+                while (connectTasks.Count > 0 && !stopRequested && attemptId == currentAttemptId)
                 {
-                    mainThreadQueue.Enqueue(() =>
+                    int idx = Task.WaitAny(connectTasks.ToArray());
+                    if (idx < 0 || idx >= connectTasks.Count) break;
+
+                    Task<TcpClient> finished = connectTasks[idx];
+                    connectTasks.RemoveAt(idx);
+
+                    TcpClient connectedClient = finished.Status == TaskStatus.RanToCompletion ? finished.Result : null;
+                    if (connectedClient != null)
                     {
-                        IsConnecting = false;
-                        IsConnected = false;
-                        LastStatusMessage = $"Connection failed: {e.Message}";
-                        OnClientStateChanged?.Invoke();
-                    });
+                        if (!AttachTcpConnection(attemptId, connectedClient, helloJson))
+                        {
+                            try { connectedClient.Close(); } catch { }
+                        }
+                        break;
+                    }
                 }
+            }
+            catch { }
+        }
+
+        private bool AttachTcpConnection(int attemptId, TcpClient client, string helloJson)
+        {
+            if (client == null || stopRequested || attemptId != currentAttemptId) return false;
+
+            try
+            {
+                client.NoDelay = true;
+                NetworkStream netStream = client.GetStream();
+                StreamWriter writer = new StreamWriter(netStream, Utf8NoBom) { AutoFlush = true };
+
+                lock (writeLock)
+                {
+                    if (stopRequested || attemptId != currentAttemptId || tcpClient != null)
+                    {
+                        return false;
+                    }
+                    tcpClient = client;
+                    streamWriter = writer;
+                }
+
+                StopReverseTcpListener();
+
+                string helloPacketId = Guid.NewGuid().ToString("N").Substring(0, 12);
+                SendTcpEnvelopeOnly(NetworkProtocol.MsgHello, helloJson, helloPacketId);
+
+                mainThreadQueue.Enqueue(() =>
+                {
+                    if (stopRequested || attemptId != currentAttemptId) return;
+                    lastHostActivityRealtime = Time.realtimeSinceStartup;
+                    bool stateChanged = !IsConnected || IsConnecting;
+                    IsConnecting = false;
+                    IsConnected = true;
+                    if (!string.IsNullOrEmpty(ConnectedHostName))
+                    {
+                        LastStatusMessage = string.Format(UIDialogs.Current.lan_connected_banner_format, ConnectedHostName);
+                    }
+                    RefreshProgressDataSubscription();
+                    SendTelemetryNow();
+                    if (stateChanged)
+                    {
+                        OnClientStateChanged?.Invoke();
+                    }
+                });
+
+                readThread = new Thread(() => ReadLoop(attemptId, netStream))
+                {
+                    IsBackground = true,
+                    Name = "CL_StudentClientReader"
+                };
+                readThread.Start();
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private void SendUdpHelloPulse()
+        {
+            if (string.IsNullOrEmpty(pendingHelloJson) || LanDiscovery.ExistingInstance == null) return;
+
+            List<string> ipsCopy;
+            int udpPort;
+            lock (writeLock)
+            {
+                ipsCopy = new List<string>(activeCandidateIps);
+                udpPort = activeHostUdpPort;
+            }
+
+            LanDiscovery.ExistingInstance.SendUdpEnvelopeToHost(ipsCopy, udpPort, new UdpEnvelopePacket
+            {
+                packetId = Guid.NewGuid().ToString("N").Substring(0, 12),
+                senderUid = ClientUid,
+                targetUid = "HOST",
+                callbackTcpPort = activeCallbackPort,
+                type = NetworkProtocol.MsgHello,
+                payloadJson = pendingHelloJson
             });
         }
 
         public void Disconnect(bool silent = false)
         {
             bool wasActive = IsConnected || IsConnecting;
+            currentAttemptId++;
             stopRequested = true;
             IsConnecting = false;
             IsConnected = false;
+            IsStudentNameLocked = false;
+            IsLeaveClassLocked = false;
+            pendingHelloJson = string.Empty;
+
+            StopReverseTcpListener();
 
             lock (writeLock)
             {
@@ -266,6 +539,9 @@ namespace ComputerLearning
                 streamWriter = null;
                 tcpClient = null;
             }
+
+            processedPacketIds.Clear();
+            processedPacketOrder.Clear();
 
             if (!silent && wasActive)
             {
@@ -280,18 +556,17 @@ namespace ComputerLearning
 
             StudentTelemetrySnapshot snap = BuildTelemetrySnapshotOnMainThread();
             string json = JsonUtility.ToJson(snap);
-            nextTelemetryHeartbeatTime = Time.unscaledTime + 2.5f;
-
-            Task.Run(() => SendEnvelopeThreadSafe(NetworkProtocol.MsgTelemetry, json));
+            nextTelemetryHeartbeatTime = Time.unscaledTime + 2.0f;
+            SendEnvelopeOverTransports(NetworkProtocol.MsgTelemetry, json);
         }
 
-        private void ReadLoop(NetworkStream netStream)
+        private void ReadLoop(int attemptId, NetworkStream netStream)
         {
             try
             {
                 using (StreamReader reader = new StreamReader(netStream, Utf8NoBom))
                 {
-                    while (!stopRequested)
+                    while (!stopRequested && attemptId == currentAttemptId)
                     {
                         string line = reader.ReadLine();
                         if (line == null) break;
@@ -304,17 +579,20 @@ namespace ComputerLearning
 
                         if (env.type == NetworkProtocol.MsgPing)
                         {
-                            SendEnvelopeThreadSafe(NetworkProtocol.MsgPong, string.Empty);
+                            SendTcpEnvelopeOnly(NetworkProtocol.MsgPong, string.Empty, Guid.NewGuid().ToString("N").Substring(0, 12));
+                            mainThreadQueue.Enqueue(() => { lastHostActivityRealtime = Time.realtimeSinceStartup; });
                             continue;
                         }
                         if (env.type == NetworkProtocol.MsgPong)
                         {
+                            mainThreadQueue.Enqueue(() => { lastHostActivityRealtime = Time.realtimeSinceStartup; });
                             continue;
                         }
 
                         string msgType = env.type;
                         string payload = env.payloadJson;
-                        mainThreadQueue.Enqueue(() => HandleEnvelopeOnMainThread(msgType, payload));
+                        string packetId = env.packetId;
+                        mainThreadQueue.Enqueue(() => HandleEnvelopeOnMainThread(msgType, payload, packetId));
                     }
                 }
             }
@@ -324,10 +602,11 @@ namespace ComputerLearning
             }
             finally
             {
-                if (!stopRequested)
+                if (!stopRequested && attemptId == currentAttemptId)
                 {
                     mainThreadQueue.Enqueue(() =>
                     {
+                        if (stopRequested || attemptId != currentAttemptId) return;
                         Disconnect(silent: true);
                         LastStatusMessage = "Connection closed by Teacher Host.";
                         OnClientStateChanged?.Invoke();
@@ -336,8 +615,50 @@ namespace ComputerLearning
             }
         }
 
-        private void HandleEnvelopeOnMainThread(string msgType, string payloadJson)
+        private void HandleUdpEnvelopeReceived(IPEndPoint remoteEp, UdpEnvelopePacket pkt)
         {
+            if (stopRequested || pkt == null) return;
+            if (!IsConnecting && !IsConnected) return;
+            if (!string.IsNullOrEmpty(pkt.targetUid) && pkt.targetUid != ClientUid) return;
+
+            lastHostActivityRealtime = Time.realtimeSinceStartup;
+            if (remoteEp != null && remoteEp.Port > 0)
+            {
+                lock (writeLock)
+                {
+                    if (remoteEp.Address != null)
+                    {
+                        string addr = remoteEp.Address.ToString();
+                        if (!string.IsNullOrEmpty(addr) && addr != "0.0.0.0" && !activeCandidateIps.Contains(addr))
+                        {
+                            activeCandidateIps.Insert(0, addr);
+                        }
+                    }
+                    if (remoteEp.Port != NetworkProtocol.DiscoveryPort)
+                    {
+                        activeHostUdpPort = remoteEp.Port;
+                    }
+                }
+            }
+
+            if (pkt.type == NetworkProtocol.MsgPing)
+            {
+                SendEnvelopeOverTransports(NetworkProtocol.MsgPong, string.Empty);
+                return;
+            }
+            if (pkt.type == NetworkProtocol.MsgPong)
+            {
+                return;
+            }
+
+            HandleEnvelopeOnMainThread(pkt.type, pkt.payloadJson, pkt.packetId);
+        }
+
+        private void HandleEnvelopeOnMainThread(string msgType, string payloadJson, string packetId)
+        {
+            if (!MarkPacketProcessed(packetId)) return;
+            lastHostActivityRealtime = Time.realtimeSinceStartup;
+
             switch (msgType)
             {
                 case NetworkProtocol.MsgWelcome:
@@ -346,6 +667,10 @@ namespace ComputerLearning
 
                 case NetworkProtocol.MsgAssignConfig:
                     HandleAssignConfig(payloadJson);
+                    break;
+
+                case NetworkProtocol.MsgClassroomPermissions:
+                    HandleClassroomPermissions(payloadJson);
                     break;
 
                 case NetworkProtocol.MsgStartSession:
@@ -364,10 +689,15 @@ namespace ComputerLearning
             HostWelcomePayload welcome = JsonUtility.FromJson<HostWelcomePayload>(payloadJson);
             if (welcome == null) return;
 
+            IsConnecting = false;
+            IsConnected = true;
+
             if (!string.IsNullOrWhiteSpace(welcome.hostName))
             {
-                ConnectedHostName = welcome.hostName;
+                ConnectedHostName = welcome.hostName.Trim();
             }
+            IsStudentNameLocked = welcome.lockStudentNames;
+            IsLeaveClassLocked = welcome.lockLeaveClass;
 
             if (welcome.assignedConfiguration != null)
             {
@@ -378,14 +708,16 @@ namespace ComputerLearning
                 SessionManager.Instance.ApplyConfiguration(welcome.assignedConfiguration, resetExistingProgress: isIdleOnMenu);
             }
 
-            LastStatusMessage = $"Connected to {ConnectedHostName}";
+            string displayHost = !string.IsNullOrWhiteSpace(ConnectedHostName) ? ConnectedHostName : "Teacher";
+            LastStatusMessage = string.Format(UIDialogs.Current.lan_connected_banner_format, displayHost);
+            RefreshProgressDataSubscription();
             OnClientStateChanged?.Invoke();
             SendTelemetryNow();
 
             if (PlaytestStudentWidget.Instance != null)
             {
                 PlaytestStudentWidget.Instance.RefreshUI();
-                PlaytestStudentWidget.Instance.ShowToast($"Connected to {ConnectedHostName}", 3.0f);
+                PlaytestStudentWidget.Instance.ShowToast(LastStatusMessage, 3.0f);
             }
         }
 
@@ -394,6 +726,9 @@ namespace ComputerLearning
             if (string.IsNullOrWhiteSpace(payloadJson)) return;
             AssignConfigPayload assign = JsonUtility.FromJson<AssignConfigPayload>(payloadJson);
             if (assign == null || assign.configuration == null) return;
+
+            IsStudentNameLocked = assign.lockStudentNames;
+            IsLeaveClassLocked = assign.lockLeaveClass;
 
             SessionManager.Instance.ApplyConfiguration(assign.configuration, resetExistingProgress: assign.resetProgress);
             SendTelemetryNow();
@@ -410,6 +745,26 @@ namespace ComputerLearning
             if (assign.startImmediately)
             {
                 SessionManager.Instance.StartOrContinueSession();
+            }
+        }
+
+        private void HandleClassroomPermissions(string payloadJson)
+        {
+            if (string.IsNullOrWhiteSpace(payloadJson)) return;
+            ClassroomPermissionsPayload perms = JsonUtility.FromJson<ClassroomPermissionsPayload>(payloadJson);
+            if (perms == null) return;
+
+            IsStudentNameLocked = perms.lockStudentNames;
+            IsLeaveClassLocked = perms.lockLeaveClass;
+            if (!string.IsNullOrWhiteSpace(perms.className))
+            {
+                ConnectedHostName = perms.className.Trim();
+            }
+
+            OnClientStateChanged?.Invoke();
+            if (PlaytestStudentWidget.Instance != null)
+            {
+                PlaytestStudentWidget.Instance.RefreshUI();
             }
         }
 
@@ -562,9 +917,38 @@ namespace ComputerLearning
             return "Completed";
         }
 
-        private void SendEnvelopeThreadSafe(string type, string payloadJson)
+        private void SendEnvelopeOverTransports(string type, string payloadJson)
         {
-            NetworkEnvelope env = new NetworkEnvelope(type, payloadJson);
+            string packetId = Guid.NewGuid().ToString("N").Substring(0, 12);
+            List<string> ipsCopy;
+            int udpPort;
+            lock (writeLock)
+            {
+                ipsCopy = new List<string>(activeCandidateIps);
+                udpPort = activeHostUdpPort;
+            }
+
+            UdpEnvelopePacket udpPacket = new UdpEnvelopePacket
+            {
+                packetId = packetId,
+                senderUid = ClientUid,
+                targetUid = "HOST",
+                callbackTcpPort = activeCallbackPort,
+                type = type,
+                payloadJson = payloadJson
+            };
+
+            LanDiscovery discovery = LanDiscovery.ExistingInstance;
+            Task.Run(() =>
+            {
+                SendTcpEnvelopeOnly(type, payloadJson, packetId);
+                discovery?.SendUdpEnvelopeToHost(ipsCopy, udpPort, udpPacket);
+            });
+        }
+
+        private void SendTcpEnvelopeOnly(string type, string payloadJson, string packetId)
+        {
+            NetworkEnvelope env = new NetworkEnvelope(type, payloadJson, packetId);
             string line = JsonUtility.ToJson(env);
 
             lock (writeLock)
@@ -577,9 +961,23 @@ namespace ComputerLearning
                 }
                 catch
                 {
-                    // Reader loop will detect closed stream
+                    // Reader loop or UDP transport continues
                 }
             }
+        }
+
+        private bool MarkPacketProcessed(string packetId)
+        {
+            if (string.IsNullOrEmpty(packetId)) return true;
+            if (!processedPacketIds.Add(packetId)) return false;
+
+            processedPacketOrder.Enqueue(packetId);
+            while (processedPacketOrder.Count > 512)
+            {
+                string oldest = processedPacketOrder.Dequeue();
+                processedPacketIds.Remove(oldest);
+            }
+            return true;
         }
 
         private void HandleSceneLoaded(Scene scene, LoadSceneMode mode)

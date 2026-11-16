@@ -13,11 +13,17 @@ namespace ComputerLearning
     {
         public const string ProtocolId = "CL-LAN-1";
         public const int DefaultDiscoveryPort = 47777;
+        public const int DiscoveryPort = DefaultDiscoveryPort;
         public const int DefaultSessionPort = 47778;
+        public const int DefaultClientCallbackPort = 47779;
+
+        public const string MsgDiscoveryAck = "DISC_ACK";
+        public const string UdpEnvelopePrefix = "CL_ENV:";
 
         public const string MsgHello = "HELLO";
         public const string MsgWelcome = "WELCOME";
         public const string MsgAssignConfig = "ASSIGN_CONFIG";
+        public const string MsgClassroomPermissions = "CLASSROOM_PERMISSIONS";
         public const string MsgStartSession = "START_SESSION";
         public const string MsgResetStudent = "RESET_STUDENT";
         public const string MsgTelemetry = "TELEMETRY";
@@ -30,13 +36,15 @@ namespace ComputerLearning
     {
         public string type;
         public string payloadJson;
+        public string packetId;
 
         public NetworkEnvelope() { }
 
-        public NetworkEnvelope(string type, string payloadJson)
+        public NetworkEnvelope(string type, string payloadJson, string packetId = null)
         {
             this.type = type;
             this.payloadJson = payloadJson;
+            this.packetId = packetId;
         }
     }
 
@@ -46,8 +54,30 @@ namespace ComputerLearning
         public string protocol = NetworkProtocol.ProtocolId;
         public string hostName = "Teacher PC";
         public string hostIp = string.Empty;
+        public string[] alternateIps;
         public int tcpPort = NetworkProtocol.DefaultSessionPort;
         public int connectedStudents = 0;
+    }
+
+    [Serializable]
+    public class LanDiscoveryAck
+    {
+        public string protocol = NetworkProtocol.ProtocolId;
+        public string msgType = NetworkProtocol.MsgDiscoveryAck;
+        public string clientUid;
+        public int callbackTcpPort = NetworkProtocol.DefaultClientCallbackPort;
+    }
+
+    [Serializable]
+    public class UdpEnvelopePacket
+    {
+        public string protocol = NetworkProtocol.ProtocolId;
+        public string packetId;
+        public string senderUid;
+        public string targetUid;
+        public int callbackTcpPort;
+        public string type;
+        public string payloadJson;
     }
 
     [Serializable]
@@ -57,6 +87,8 @@ namespace ComputerLearning
         public string hostIp;
         public int tcpPort;
         public int connectedStudents;
+        public List<string> candidateIps = new List<string>();
+        [NonSerialized] public int lastSenderUdpPort;
         [NonSerialized] public float lastSeenRealtime;
 
         public string EndpointKey => $"{hostIp}:{tcpPort}";
@@ -80,6 +112,8 @@ namespace ComputerLearning
         public string hostName;
         public string assignedStudentId;
         public StudentConfiguration assignedConfiguration;
+        public bool lockStudentNames;
+        public bool lockLeaveClass;
     }
 
     [Serializable]
@@ -88,6 +122,16 @@ namespace ComputerLearning
         public StudentConfiguration configuration;
         public bool startImmediately = false;
         public bool resetProgress = true;
+        public bool lockStudentNames;
+        public bool lockLeaveClass;
+    }
+
+    [Serializable]
+    public class ClassroomPermissionsPayload
+    {
+        public string className;
+        public bool lockStudentNames;
+        public bool lockLeaveClass;
     }
 
     [Serializable]

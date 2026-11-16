@@ -99,7 +99,7 @@ namespace ComputerLearning
             if (IsLanClientLocked())
             {
                 string host = NetworkSessionClient.Instance.ConnectedHostName;
-                if (string.IsNullOrEmpty(host)) host = NetworkSessionClient.Instance.ConnectedHostIp;
+                if (string.IsNullOrEmpty(host)) host = "Teacher";
                 PlaytestStudentWidget.Instance?.ShowToast(string.Format(UIDialogs.Current.path_locked_by_class, host), 3.0f);
                 return;
             }
@@ -119,7 +119,7 @@ namespace ComputerLearning
             if (IsLanClientLocked())
             {
                 string host = NetworkSessionClient.Instance.ConnectedHostName;
-                if (string.IsNullOrEmpty(host)) host = NetworkSessionClient.Instance.ConnectedHostIp;
+                if (string.IsNullOrEmpty(host)) host = "Teacher";
                 PlaytestStudentWidget.Instance?.ShowToast(string.Format(UIDialogs.Current.path_locked_by_class, host), 3.0f);
                 return;
             }
@@ -190,7 +190,7 @@ namespace ComputerLearning
                 if (lanLocked)
                 {
                     string host = NetworkSessionClient.Instance.ConnectedHostName;
-                    if (string.IsNullOrEmpty(host)) host = NetworkSessionClient.Instance.ConnectedHostIp;
+                    if (string.IsNullOrEmpty(host)) host = "Teacher";
                     lanLockedNoticeText.text = string.Format(ui.path_locked_by_class, host);
                 }
             }

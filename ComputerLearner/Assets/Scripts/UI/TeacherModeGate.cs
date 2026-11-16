@@ -67,6 +67,11 @@ namespace ComputerLearning
         [SerializeField] private TMP_Text savePinLabel;
         [SerializeField] private TMP_Text pinChangeFeedbackText;
 
+        [Header("Classroom Name Control")]
+        [SerializeField] private TMP_Text classNameLabelText;
+        [SerializeField] private TMP_InputField classNameInputField;
+        [SerializeField] private TMP_Text classNamePlaceholderText;
+
         [Header("Linked Menu Windows (for lock/close & modal checks)")]
         [SerializeField] private TeacherDashboardController teacherDashboard;
         [SerializeField] private GameObject studentJoinModalRoot;
@@ -76,8 +81,12 @@ namespace ComputerLearning
         private float _holdTimer;
         private bool _holdTriggered;
         private float _feedbackClearAt = -1f;
+        private bool _lastKnownClientConnected;
 
         public TeacherModeConfig ActiveConfig => configOverride != null ? configOverride : TeacherModeConfig.Instance;
+
+        private static bool IsConnectedAsStudent =>
+            NetworkSessionClient.ExistingInstance != null && NetworkSessionClient.ExistingInstance.IsConnected;
 
         public bool IsPinModalOpen => pinModalRoot != null && pinModalRoot.activeSelf;
         public bool IsTeacherPanelOpen => teacherPanelRoot != null && teacherPanelRoot.activeSelf;
@@ -89,6 +98,7 @@ namespace ComputerLearning
                 if (studentJoinModalRoot != null && studentJoinModalRoot.activeSelf) return true;
                 if (teacherDashboard != null && teacherDashboard.IsOpen) return true;
                 if (newPinInputField != null && newPinInputField.isFocused) return true;
+                if (classNameInputField != null && classNameInputField.isFocused) return true;
                 return false;
             }
         }
@@ -122,6 +132,16 @@ namespace ComputerLearning
 
         private void Update()
         {
+            bool connectedNow = IsConnectedAsStudent;
+            if (connectedNow != _lastKnownClientConnected)
+            {
+                _lastKnownClientConnected = connectedNow;
+                RefreshVisualState();
+            }
+
+            if (connectedNow)
+                return;
+
             if (_isHolding && !IsTeacherUnlocked && ActiveConfig.allowTeacherMode && ActiveConfig.requireLongPress)
             {
                 _holdTimer += Time.unscaledDeltaTime;
@@ -213,6 +233,11 @@ namespace ComputerLearning
                 savePinButton.onClick.RemoveAllListeners();
                 savePinButton.onClick.AddListener(HandleChangePinClicked);
             }
+            if (classNameInputField != null)
+            {
+                classNameInputField.onEndEdit.RemoveAllListeners();
+                classNameInputField.onEndEdit.AddListener(HandleClassNameEndEdit);
+            }
             if (resetProgressButton != null)
             {
                 resetProgressButton.onClick.RemoveAllListeners();
@@ -247,21 +272,26 @@ namespace ComputerLearning
 
         public void ApplyBuildAvailability()
         {
-            bool allowed = ActiveConfig.allowTeacherMode;
+            bool connectedStudent = IsConnectedAsStudent;
+            bool allowed = ActiveConfig.allowTeacherMode && !connectedStudent;
             if (!allowed)
             {
                 IsTeacherUnlocked = false;
                 if (pinModalRoot != null) pinModalRoot.SetActive(false);
                 if (teacherPanelRoot != null) teacherPanelRoot.SetActive(false);
                 if (teacherDashboard != null && teacherDashboard.IsOpen) teacherDashboard.Close();
+                _isHolding = false;
+                ResetHoldIndicator();
             }
+            if (teacherAccessButton != null)
+                teacherAccessButton.interactable = allowed;
             if (teacherAccessRoot != null)
                 teacherAccessRoot.SetActive(allowed);
         }
 
         private void BeginHold()
         {
-            if (!ActiveConfig.allowTeacherMode || IsTeacherUnlocked || !ActiveConfig.requireLongPress) return;
+            if (!ActiveConfig.allowTeacherMode || IsConnectedAsStudent || IsTeacherUnlocked || !ActiveConfig.requireLongPress) return;
             _isHolding = true;
             _holdTriggered = false;
             _holdTimer = 0f;
@@ -284,7 +314,7 @@ namespace ComputerLearning
 
         public void HandleAccessButtonClicked()
         {
-            if (!ActiveConfig.allowTeacherMode) return;
+            if (!ActiveConfig.allowTeacherMode || IsConnectedAsStudent) return;
 
             if (IsTeacherUnlocked)
             {
@@ -307,7 +337,7 @@ namespace ComputerLearning
 
         public void OpenPinOrTeacherPanel()
         {
-            if (!ActiveConfig.allowTeacherMode) return;
+            if (!ActiveConfig.allowTeacherMode || IsConnectedAsStudent) return;
             if (IsTeacherUnlocked)
             {
                 OpenTeacherPanel();
@@ -362,7 +392,7 @@ namespace ComputerLearning
 
         public void OpenTeacherPanel()
         {
-            if (!ActiveConfig.allowTeacherMode || !IsTeacherUnlocked) return;
+            if (!ActiveConfig.allowTeacherMode || !IsTeacherUnlocked || IsConnectedAsStudent) return;
             if (pinModalRoot != null) pinModalRoot.SetActive(false);
             if (studentJoinModalRoot != null) studentJoinModalRoot.SetActive(false);
             if (teacherPanelRoot != null) teacherPanelRoot.SetActive(true);
@@ -421,7 +451,7 @@ namespace ComputerLearning
 
         public bool TryUnlockWithPin(string candidate)
         {
-            if (!ActiveConfig.allowTeacherMode) return false;
+            if (!ActiveConfig.allowTeacherMode || IsConnectedAsStudent) return false;
             if (string.Equals(candidate, GetActivePin(), StringComparison.Ordinal))
             {
                 IsTeacherUnlocked = true;
@@ -561,6 +591,16 @@ namespace ComputerLearning
                 newPinPlaceholderText.text = ui.teacher_pin_new_placeholder;
             if (savePinLabel != null)
                 savePinLabel.text = ui.teacher_pin_save_btn;
+            if (classNameLabelText != null)
+                classNameLabelText.text = ui.net_class_name_label;
+            if (classNamePlaceholderText != null)
+                classNamePlaceholderText.text = ui.net_class_name_placeholder;
+        }
+
+        private void HandleClassNameEndEdit(string rawName)
+        {
+            if (!IsTeacherUnlocked || IsConnectedAsStudent) return;
+            NetworkSessionHost.Instance?.SetCustomClassName(rawName);
         }
 
         public void RefreshVisualState()
@@ -584,13 +624,17 @@ namespace ComputerLearning
                 teacherAccessLabel.color = IsTeacherUnlocked ? RetroUITheme.InkWhite : RetroUITheme.InkDark;
             }
 
-            bool isClientConnected = NetworkSessionClient.Instance != null && NetworkSessionClient.Instance.IsConnected;
+            bool isClientConnected = IsConnectedAsStudent;
+            if (classNameInputField != null && !classNameInputField.isFocused && NetworkSessionHost.Instance != null)
+            {
+                classNameInputField.SetTextWithoutNotify(NetworkSessionHost.Instance.HostName);
+            }
             if (lanLockNoticeBanner != null)
                 lanLockNoticeBanner.SetActive(isClientConnected);
             if (lanLockNoticeText != null && isClientConnected)
             {
                 string host = NetworkSessionClient.Instance.ConnectedHostName;
-                if (string.IsNullOrEmpty(host)) host = NetworkSessionClient.Instance.ConnectedHostIp;
+                if (string.IsNullOrEmpty(host)) host = "Teacher";
                 lanLockNoticeText.text = string.Format(UIDialogs.Current.lan_connected_banner_format, host);
             }
         }

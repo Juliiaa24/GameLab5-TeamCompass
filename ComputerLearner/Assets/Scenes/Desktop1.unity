@@ -1083,6 +1083,10 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 1752656936260673201, guid: 8fd5d29b8e6b66b4aa43469e74eaad42, type: 3}
+      propertyPath: scoresContentPrefab
+      value: 
+      objectReference: {fileID: 1668796572045913962, guid: ab96947f0b4b6134cb7719d8351fb390, type: 3}
+    - target: {fileID: 1752656936260673201, guid: 8fd5d29b8e6b66b4aa43469e74eaad42, type: 3}
       propertyPath: desktopIconContainer
       value: 
       objectReference: {fileID: 678566843}

@@ -24,6 +24,7 @@ namespace ComputerLearning
         [SerializeField] private TMP_Text studentNamePromptText;
         [SerializeField] private TMP_InputField studentNameInputField;
         [SerializeField] private TMP_Text studentNamePlaceholderText;
+        [SerializeField] private GameObject nameLockIcon;
 
         [Header("Teacher Mode Playtest Controls")]
         [SerializeField] private TMP_Text teacherStudentIdLabelText;
@@ -50,6 +51,11 @@ namespace ComputerLearning
         {
             LocalizationManager.OnLanguageChanged += RefreshUI;
             SessionManager.Instance.OnConfigurationChanged += HandleConfigurationChanged;
+            if (NetworkSessionClient.Instance != null)
+            {
+                NetworkSessionClient.Instance.OnClientStateChanged -= RefreshUI;
+                NetworkSessionClient.Instance.OnClientStateChanged += RefreshUI;
+            }
             RefreshUI();
         }
 
@@ -58,6 +64,8 @@ namespace ComputerLearning
             LocalizationManager.OnLanguageChanged -= RefreshUI;
             if (SessionManager.Instance != null)
                 SessionManager.Instance.OnConfigurationChanged -= HandleConfigurationChanged;
+            if (NetworkSessionClient.ExistingInstance != null)
+                NetworkSessionClient.ExistingInstance.OnClientStateChanged -= RefreshUI;
         }
 
         private void OnDestroy()
@@ -142,18 +150,27 @@ namespace ComputerLearning
         {
             UIDialogs ui = UIDialogs.Current;
             string studentId = PlaytestDataManager.CurrentStudentId;
+            bool nameLocked = NetworkSessionClient.ExistingInstance != null &&
+                              NetworkSessionClient.ExistingInstance.IsConnected &&
+                              NetworkSessionClient.ExistingInstance.IsStudentNameLocked;
 
-            if (studentNameInputField != null && !studentNameInputField.isFocused)
+            if (studentNameInputField != null)
             {
-                _suppressInputEvent = true;
-                studentNameInputField.text = studentId;
-                _suppressInputEvent = false;
+                studentNameInputField.interactable = !nameLocked;
+                if (!studentNameInputField.isFocused)
+                {
+                    _suppressInputEvent = true;
+                    studentNameInputField.text = studentId;
+                    _suppressInputEvent = false;
+                }
             }
+            if (nameLockIcon != null)
+                nameLockIcon.SetActive(nameLocked);
 
             UpdateGreetingPreview(studentId);
 
             if (studentNamePromptText != null)
-                studentNamePromptText.text = ui.menu_name_label;
+                studentNamePromptText.text = nameLocked ? $"{ui.menu_name_label} ({ui.net_student_name_locked_hint})" : ui.menu_name_label;
             if (studentNamePlaceholderText != null)
                 studentNamePlaceholderText.text = ui.menu_name_placeholder;
 

@@ -15,6 +15,7 @@ MonoBehaviour:
   levelId: level7
   displayName: 'Level 7: Click & Hold'
   instructionText: Click and hold the button down until it fills completely!
+  videoDemonstration: {fileID: 32900000, guid: eb5a0f71669746640946d5f121d181db, type: 3}
   isAdaptive: 0
   adaptiveTaskCount: 5
   tasks:

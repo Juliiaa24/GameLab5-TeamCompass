@@ -227,6 +227,7 @@ namespace ComputerLearning
             }
 
             // 4. Wipe all PlayerPrefs and restore only global settings + clean initial flags
+            DesktopManager.ResetWallpaperPreferences();
             PlayerPrefs.DeleteAll();
             PlayerPrefs.SetString("SelectedLanguage", activeLanguage);
             PlayerPrefs.SetInt("Playtest_StudentCounter", currentStudentCounter);
@@ -239,6 +240,11 @@ namespace ComputerLearning
             PlayerPrefs.SetInt("AdvancedDesktopTourCompleted", 0);
             PlayerPrefs.SetInt("VirtualDesktopIntroCompleted", 0);
             PlayerPrefs.Save();
+
+            if (DesktopManager.HasInstance && DesktopManager.Instance != null)
+            {
+                DesktopManager.Instance.RestoreSavedWallpaper();
+            }
 
             // 5. Advance to the next sequential Student ID (e.g. S01 -> S02) and re-arm selected LearningPath + Assessment toggle
             string nextStudentId = PlaytestDataManager.AdvanceToNextStudent();

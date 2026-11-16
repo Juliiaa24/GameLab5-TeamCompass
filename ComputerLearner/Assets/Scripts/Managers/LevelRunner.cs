@@ -1,6 +1,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.Video;
+using TMPro;
 
 namespace ComputerLearning
 {
@@ -42,8 +44,18 @@ namespace ComputerLearning
         public int MaxPossibleScore => maxPossibleScore;
 
         // Discreet progress bar UI for target levels (no numbers, slightly larger bar)
-        private GameObject progressBarContainer;
-        private RectTransform progressFillRect;
+        [Header("Pre-Built Window UI (Serialized in Prefabs)")]
+        [SerializeField] private GameObject introPanel;
+        [SerializeField] private TMP_Text introTitleText;
+        [SerializeField] private TMP_Text introBodyText;
+        [SerializeField] private Button introStartButton;
+        [SerializeField] private TMP_Text introStartButtonText;
+        [SerializeField] private GameObject videoDemoFrame;
+        [SerializeField] private RawImage videoRawImage;
+        [SerializeField] private VideoPlayer videoPlayer;
+        [SerializeField] private GameObject progressBarContainer;
+        [SerializeField] private RectTransform progressFillRect;
+
         private float displayedProgress = 0f;
         private float targetProgress = 0f;
 
@@ -139,10 +151,58 @@ namespace ComputerLearning
             ShowInstructionScreen();
         }
 
+        private void ResolvePrebuiltUI()
+        {
+            Transform searchRoot = taskContentArea != null
+                ? taskContentArea
+                : (appWindow != null ? appWindow.ContentArea : transform);
+            if (searchRoot == null) return;
+
+            if (introPanel == null)
+                introPanel = searchRoot.Find("LevelIntroPanel")?.gameObject;
+
+            if (introPanel != null)
+            {
+                Transform t = introPanel.transform;
+                Transform card = t.Find("IntroCard") ?? t;
+                if (introTitleText == null)
+                    introTitleText = card.Find("IntroTitle")?.GetComponent<TMP_Text>();
+                if (introBodyText == null)
+                    introBodyText = card.Find("IntroBody")?.GetComponent<TMP_Text>();
+                if (videoDemoFrame == null)
+                    videoDemoFrame = card.Find("VideoDemoFrame")?.gameObject;
+                if (videoDemoFrame != null)
+                {
+                    if (videoRawImage == null)
+                        videoRawImage = videoDemoFrame.transform.Find("VideoRawImage")?.GetComponent<RawImage>()
+                                        ?? videoDemoFrame.GetComponentInChildren<RawImage>(true);
+                    if (videoPlayer == null)
+                        videoPlayer = videoDemoFrame.GetComponentInChildren<VideoPlayer>(true);
+                }
+                if (introStartButton == null)
+                    introStartButton = card.Find("Btn-IntroStart")?.GetComponent<Button>();
+                if (introStartButton != null && introStartButtonText == null)
+                    introStartButtonText = introStartButton.GetComponentInChildren<TMP_Text>(true);
+            }
+
+            if (progressBarContainer == null)
+                progressBarContainer = searchRoot.Find("LevelProgressBarContainer")?.gameObject;
+            if (progressBarContainer != null && progressFillRect == null)
+                progressFillRect = progressBarContainer.transform.Find("TrackBorder/TrackBg/ProgressFill")?.GetComponent<RectTransform>();
+        }
+
+        private void StopDemoVideo()
+        {
+            if (videoPlayer != null)
+            {
+                videoPlayer.Stop();
+            }
+        }
+
         private void ShowInstructionScreen()
         {
             if (currentLevel == null) return;
-            
+
             string localizedInstruction = currentLevel.GetLocalizedInstructionText();
 
             // If there's no instruction text, skip directly
@@ -152,33 +212,67 @@ namespace ComputerLearning
                 return;
             }
 
-            // Create dark background
-            GameObject panel = new GameObject("IntroPanel", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
-            panel.transform.SetParent(taskContentArea, false);
-            RectTransform rect = panel.GetComponent<RectTransform>();
-            rect.anchorMin = Vector2.zero; rect.anchorMax = Vector2.one;
-            rect.offsetMin = Vector2.zero; rect.offsetMax = Vector2.zero;
-            panel.GetComponent<Image>().color = new Color(0.15f, 0.25f, 0.35f, 0.95f); // Dark blueish background
+            ResolvePrebuiltUI();
 
-            // Instruction Text
-            GameObject textObj = new GameObject("InstructionText", typeof(RectTransform), typeof(CanvasRenderer), typeof(Text));
-            textObj.transform.SetParent(panel.transform, false);
-            RectTransform textRect = textObj.GetComponent<RectTransform>();
-            textRect.anchorMin = new Vector2(0.1f, 0.4f); textRect.anchorMax = new Vector2(0.9f, 0.9f);
-            textRect.offsetMin = Vector2.zero; textRect.offsetMax = Vector2.zero;
-            Text text = textObj.GetComponent<Text>();
-            text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-            if (text.font == null) text.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
-            text.text = localizedInstruction;
-            text.fontSize = 36;
-            text.alignment = TextAnchor.MiddleCenter;
-            text.color = Color.white;
+            if (introPanel == null)
+            {
+                Debug.LogWarning("[LevelRunner] Pre-serialized LevelIntroPanel not found in window prefab; starting task directly.");
+                SpawnNextTask();
+                return;
+            }
+
+            introPanel.SetActive(true);
+            introPanel.transform.SetAsLastSibling();
+
+            if (introTitleText != null)
+            {
+                string title = currentLevel.GetLocalizedDisplayName();
+                introTitleText.text = !string.IsNullOrEmpty(title) ? title : currentLevel.displayName;
+            }
+
+            if (introBodyText != null)
+            {
+                introBodyText.text = localizedInstruction;
+            }
+
+            // Configure pre-serialized Video Demonstration if the Level/Task defines one
+            VideoClip demoClip = currentLevel.GetVideoDemonstration();
+            if (videoDemoFrame != null)
+            {
+                if (demoClip != null && videoPlayer != null && videoRawImage != null)
+                {
+                    videoDemoFrame.SetActive(true);
+                    RenderTexture targetRt = videoPlayer.targetTexture != null
+                        ? videoPlayer.targetTexture
+                        : (videoRawImage.texture as RenderTexture ?? RetroThemeAssets.Instance?.videoDemoRenderTexture);
+                    if (targetRt != null)
+                    {
+                        videoPlayer.renderMode = VideoRenderMode.RenderTexture;
+                        videoPlayer.targetTexture = targetRt;
+                        videoRawImage.texture = targetRt;
+                    }
+                    videoPlayer.audioOutputMode = VideoAudioOutputMode.None;
+                    videoPlayer.source = VideoSource.VideoClip;
+                    videoPlayer.clip = demoClip;
+                    videoPlayer.isLooping = true;
+                    videoPlayer.Stop();
+                    videoPlayer.Play();
+                }
+                else
+                {
+                    StopDemoVideo();
+                    videoDemoFrame.SetActive(false);
+                }
+            }
 
             bool isAutoSequence = PlayerPrefs.GetInt("AutoSequenceCompleted", 0) == 0 ||
                                   UnityEngine.Object.FindAnyObjectByType<FirstDesktopTutorial>() != null;
 
             if (isAutoSequence)
             {
+                if (introStartButton != null)
+                    introStartButton.gameObject.SetActive(false);
+
                 // Generate a lively, localized description based on the level ID
                 string livelyMessage = dialogs.intro_default + localizedInstruction;
                 string lvlId = currentLevel.levelId != null ? currentLevel.levelId.Trim().ToLowerInvariant() : string.Empty;
@@ -202,50 +296,37 @@ namespace ComputerLearning
                 else if (lvlId == "level9")
                     livelyMessage = dialogs.intro_mixed;
 
-                VirtualMascot.Show(livelyMessage, appWindow.ContentArea, new Vector2(0, -80));
-                
+                VirtualMascot.Show(livelyMessage, appWindow != null ? appWindow.ContentArea : taskContentArea, new Vector2(0, -80));
+
                 // Automatically transition after 5 seconds instead of waiting for a button click
-                StartCoroutine(AutoStartLevelAfterDelay(5f, panel));
+                StartCoroutine(AutoStartLevelAfterDelay(5f));
             }
-            else
+            else if (introStartButton != null)
             {
-                // Normal flow for replayability/after onboarding: Show the manual Play button
-                GameObject btnObj = new GameObject("PlayButton", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button));
-                btnObj.transform.SetParent(panel.transform, false);
-                RectTransform btnRect = btnObj.GetComponent<RectTransform>();
-                btnRect.anchorMin = new Vector2(0.35f, 0.15f); btnRect.anchorMax = new Vector2(0.65f, 0.25f);
-                btnRect.offsetMin = Vector2.zero; btnRect.offsetMax = Vector2.zero;
-                btnObj.GetComponent<Image>().color = new Color(0.2f, 0.6f, 0.8f); // Blue
+                introStartButton.gameObject.SetActive(true);
+                if (introStartButtonText != null)
+                    introStartButtonText.text = !string.IsNullOrEmpty(dialogs.level_start_button) ? dialogs.level_start_button : "START!";
 
-                GameObject btnTextObj = new GameObject("BtnText", typeof(RectTransform), typeof(CanvasRenderer), typeof(Text));
-                btnTextObj.transform.SetParent(btnObj.transform, false);
-                RectTransform btnTextRect = btnTextObj.GetComponent<RectTransform>();
-                btnTextRect.anchorMin = Vector2.zero; btnTextRect.anchorMax = Vector2.one;
-                btnTextRect.offsetMin = Vector2.zero; btnTextRect.offsetMax = Vector2.zero;
-                Text btnText = btnTextObj.GetComponent<Text>();
-                btnText.font = text.font;
-                btnText.text = !string.IsNullOrEmpty(dialogs.level_start_button) ? dialogs.level_start_button : "START!";
-                btnText.fontSize = 28;
-                btnText.alignment = TextAnchor.MiddleCenter;
-                btnText.color = Color.white;
-
-                Button btn = btnObj.GetComponent<Button>();
-                btn.onClick.AddListener(() => {
+                introStartButton.onClick.RemoveAllListeners();
+                introStartButton.onClick.AddListener(() =>
+                {
                     VirtualMascot.HideMascot();
-                    Destroy(panel);
+                    StopDemoVideo();
+                    if (introPanel != null) introPanel.SetActive(false);
                     SpawnNextTask();
                 });
-                
-                // Call the mascot to point to the play button
+
+                RectTransform btnRect = introStartButton.GetComponent<RectTransform>();
                 VirtualMascot.Show(dialogs.level_ready_prompt, btnRect, new Vector2(250, 50));
             }
         }
 
-        private System.Collections.IEnumerator AutoStartLevelAfterDelay(float delay, GameObject panel)
+        private System.Collections.IEnumerator AutoStartLevelAfterDelay(float delay)
         {
             yield return VirtualMascot.WaitForDialogue(delay);
             VirtualMascot.HideMascot();
-            if (panel != null) Destroy(panel);
+            StopDemoVideo();
+            if (introPanel != null) introPanel.SetActive(false);
             SpawnNextTask();
         }
 
@@ -386,58 +467,8 @@ namespace ComputerLearning
 
         private void EnsureProgressBarCreated()
         {
-            if (progressBarContainer != null) return;
-
-            Transform parent = taskContentArea != null ? taskContentArea : transform;
-            progressBarContainer = new GameObject("LevelProgressBarContainer", typeof(RectTransform), typeof(CanvasGroup));
-            progressBarContainer.transform.SetParent(parent, false);
-
-            CanvasGroup cg = progressBarContainer.GetComponent<CanvasGroup>();
-            cg.interactable = false;
-            cg.blocksRaycasts = false;
-
-            RectTransform containerRect = progressBarContainer.GetComponent<RectTransform>();
-            containerRect.anchorMin = new Vector2(0.28f, 1f);
-            containerRect.anchorMax = new Vector2(0.72f, 1f);
-            containerRect.pivot = new Vector2(0.5f, 1f);
-            containerRect.anchoredPosition = new Vector2(0f, -14f);
-            containerRect.sizeDelta = new Vector2(0f, 14f);
-
-            // Outer frame / track border
-            GameObject borderObj = new GameObject("TrackBorder", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
-            borderObj.transform.SetParent(progressBarContainer.transform, false);
-            RectTransform borderRect = borderObj.GetComponent<RectTransform>();
-            borderRect.anchorMin = Vector2.zero;
-            borderRect.anchorMax = Vector2.one;
-            borderRect.offsetMin = Vector2.zero;
-            borderRect.offsetMax = Vector2.zero;
-            Image borderImg = borderObj.GetComponent<Image>();
-            borderImg.color = new Color(0.08f, 0.12f, 0.18f, 0.48f);
-            borderImg.raycastTarget = false;
-
-            // Inner track background
-            GameObject trackObj = new GameObject("TrackBg", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
-            trackObj.transform.SetParent(borderObj.transform, false);
-            RectTransform trackRect = trackObj.GetComponent<RectTransform>();
-            trackRect.anchorMin = Vector2.zero;
-            trackRect.anchorMax = Vector2.one;
-            trackRect.offsetMin = new Vector2(2f, 2f);
-            trackRect.offsetMax = new Vector2(-2f, -2f);
-            Image trackImg = trackObj.GetComponent<Image>();
-            trackImg.color = new Color(0.18f, 0.24f, 0.32f, 0.38f);
-            trackImg.raycastTarget = false;
-
-            // Fill bar
-            GameObject fillObj = new GameObject("ProgressFill", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
-            fillObj.transform.SetParent(trackObj.transform, false);
-            progressFillRect = fillObj.GetComponent<RectTransform>();
-            progressFillRect.anchorMin = new Vector2(0f, 0f);
-            progressFillRect.anchorMax = new Vector2(0f, 1f);
-            progressFillRect.offsetMin = Vector2.zero;
-            progressFillRect.offsetMax = Vector2.zero;
-            Image fillImg = fillObj.GetComponent<Image>();
-            fillImg.color = new Color(0.26f, 0.82f, 0.50f, 0.92f);
-            fillImg.raycastTarget = false;
+            if (progressBarContainer == null)
+                ResolvePrebuiltUI();
         }
 
         private void RefreshProgressBar()
@@ -449,6 +480,7 @@ namespace ComputerLearning
             }
 
             EnsureProgressBarCreated();
+            if (progressBarContainer == null) return;
             progressBarContainer.SetActive(true);
             progressBarContainer.transform.SetAsLastSibling();
 

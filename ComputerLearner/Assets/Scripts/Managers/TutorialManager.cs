@@ -7,6 +7,8 @@
 using System;
 using System.Collections;
 using UnityEngine;
+using UnityEngine.UI;
+using UnityEngine.Video;
 
 namespace ComputerLearning
 {
@@ -41,6 +43,12 @@ namespace ComputerLearning
         [Tooltip("If > 0, the tutorial advances automatically after this many seconds. " +
                  "If 0, you must call ConfirmTutorial() from a UI button.")]
         [SerializeField] private float autoAdvanceDelay = 0f;
+
+        [Header("Optional Video Demonstration")]
+        [SerializeField] private VideoClip videoDemonstration;
+        [SerializeField] private GameObject videoDemoFrame;
+        [SerializeField] private RawImage videoRawImage;
+        [SerializeField] private VideoPlayer videoPlayer;
         #endregion
 
         #region Unity Methods
@@ -65,6 +73,34 @@ namespace ComputerLearning
 
             foreach (GameObject panel in tutorialPanels)
                 if (panel != null) panel.SetActive(true);
+
+            if (videoDemoFrame != null)
+            {
+                if (videoDemonstration != null && videoPlayer != null && videoRawImage != null)
+                {
+                    videoDemoFrame.SetActive(true);
+                    RenderTexture targetRt = videoPlayer.targetTexture != null
+                        ? videoPlayer.targetTexture
+                        : (videoRawImage.texture as RenderTexture ?? RetroThemeAssets.Instance?.videoDemoRenderTexture);
+                    if (targetRt != null)
+                    {
+                        videoPlayer.renderMode = VideoRenderMode.RenderTexture;
+                        videoPlayer.targetTexture = targetRt;
+                        videoRawImage.texture = targetRt;
+                    }
+                    videoPlayer.audioOutputMode = VideoAudioOutputMode.None;
+                    videoPlayer.source = VideoSource.VideoClip;
+                    videoPlayer.clip = videoDemonstration;
+                    videoPlayer.isLooping = true;
+                    videoPlayer.Stop();
+                    videoPlayer.Play();
+                }
+                else
+                {
+                    if (videoPlayer != null) videoPlayer.Stop();
+                    videoDemoFrame.SetActive(false);
+                }
+            }
 
             if (autoAdvanceDelay > 0f)
                 StartCoroutine(AutoAdvanceCoroutine());
@@ -101,6 +137,9 @@ namespace ComputerLearning
 
             foreach (GameObject panel in tutorialPanels)
                 if (panel != null) panel.SetActive(false);
+
+            if (videoPlayer != null) videoPlayer.Stop();
+            if (videoDemoFrame != null) videoDemoFrame.SetActive(false);
 
             Debug.Log("[TutorialManager] Tutorial complete.");
             OnTutorialCompleted?.Invoke();

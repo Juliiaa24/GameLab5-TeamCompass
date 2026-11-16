@@ -4,6 +4,7 @@
  * Description: ScriptableObject that defines a single task in the adaptive system.
  */
 using UnityEngine;
+using UnityEngine.Video;
 
 namespace ComputerLearning
 {
@@ -37,6 +38,10 @@ namespace ComputerLearning
 
         [Tooltip("Runtime configuration passed to the spawned task prefab.")]
         public TaskConfig config = new TaskConfig();
+
+        [Header("Presentation")]
+        [Tooltip("Optional video demonstration shown on the instruction screen before the task starts.")]
+        public VideoClip videoDemonstration;
         #endregion
     }
 }

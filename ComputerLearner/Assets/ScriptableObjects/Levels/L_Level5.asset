@@ -15,6 +15,7 @@ MonoBehaviour:
   levelId: level5
   displayName: 'Level 5: Double Click'
   instructionText: Double Click on the targets to practice opening files and folders!
+  videoDemonstration: {fileID: 32900000, guid: b970be842215e3d4aa772caa2fe3bd69, type: 3}
   isAdaptive: 0
   adaptiveTaskCount: 5
   tasks:

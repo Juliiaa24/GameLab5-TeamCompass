@@ -18,6 +18,9 @@ namespace ComputerLearning
     {
         public static TeacherDashboardController Instance { get; private set; }
         public static bool IsDashboardOpen => Instance != null && Instance.gameObject.activeInHierarchy;
+        public static bool IsAnyInputFocused =>
+            Instance != null && Instance.gameObject.activeInHierarchy &&
+            Instance.classNameInputField != null && Instance.classNameInputField.isFocused;
 
         private static readonly LearningPath[] DashboardPaths =
         {
@@ -57,6 +60,17 @@ namespace ComputerLearning
         [SerializeField] private TMP_Text applyAllLabel;
         [SerializeField] private Button launchAllButton;
         [SerializeField] private TMP_Text launchAllLabel;
+
+        [Header("Classroom Name & Permissions")]
+        [SerializeField] private TMP_Text classNameLabelText;
+        [SerializeField] private TMP_InputField classNameInputField;
+        [SerializeField] private TMP_Text classNamePlaceholderText;
+        [SerializeField] private Button lockStudentNamesButton;
+        [SerializeField] private Image lockStudentNamesBg;
+        [SerializeField] private TMP_Text lockStudentNamesLabel;
+        [SerializeField] private Button lockLeaveClassButton;
+        [SerializeField] private Image lockLeaveClassBg;
+        [SerializeField] private TMP_Text lockLeaveClassLabel;
 
         [Header("Students List (Serialized Row Template)")]
         [SerializeField] private TMP_Text studentsHeaderText;
@@ -230,6 +244,38 @@ namespace ComputerLearning
                     RefreshStudentsList();
                 });
             }
+
+            if (classNameInputField != null)
+            {
+                classNameInputField.onEndEdit.RemoveAllListeners();
+                classNameInputField.onEndEdit.AddListener(val =>
+                {
+                    NetworkSessionHost.Instance?.SetCustomClassName(val);
+                    RefreshServerBanner();
+                });
+            }
+
+            if (lockStudentNamesButton != null)
+            {
+                lockStudentNamesButton.onClick.RemoveAllListeners();
+                lockStudentNamesButton.onClick.AddListener(() =>
+                {
+                    if (NetworkSessionHost.Instance == null) return;
+                    NetworkSessionHost.Instance.SetLockStudentNames(!NetworkSessionHost.Instance.LockStudentNames);
+                    RefreshBatchBar();
+                });
+            }
+
+            if (lockLeaveClassButton != null)
+            {
+                lockLeaveClassButton.onClick.RemoveAllListeners();
+                lockLeaveClassButton.onClick.AddListener(() =>
+                {
+                    if (NetworkSessionHost.Instance == null) return;
+                    NetworkSessionHost.Instance.SetLockLeaveClass(!NetworkSessionHost.Instance.LockLeaveClass);
+                    RefreshBatchBar();
+                });
+            }
         }
 
         private void SubscribeHostEvents(bool subscribe)
@@ -279,6 +325,12 @@ namespace ComputerLearning
             if (inspectorKpiProgressLabel != null) inspectorKpiProgressLabel.text = ui.dash_kpi_progress;
             if (inspectorKpiMedalsLabel != null) inspectorKpiMedalsLabel.text = ui.dash_kpi_medals;
             if (inspectorKpiScoreLabel != null) inspectorKpiScoreLabel.text = ui.dash_kpi_score;
+            if (classNameLabelText != null) classNameLabelText.text = ui.net_class_name_label;
+            if (classNamePlaceholderText != null) classNamePlaceholderText.text = ui.net_class_name_placeholder;
+            if (classNameInputField != null && !classNameInputField.isFocused && NetworkSessionHost.Instance != null)
+            {
+                classNameInputField.SetTextWithoutNotify(NetworkSessionHost.Instance.HostName);
+            }
 
             RefreshServerBanner();
             RefreshBatchBar();
@@ -332,6 +384,24 @@ namespace ComputerLearning
             {
                 batchAssessLabel.text = assessOn ? ui.dash_assess_on : ui.dash_assess_off;
                 batchAssessLabel.color = RetroUITheme.InkWhite;
+            }
+
+            bool lockNames = host != null && host.LockStudentNames;
+            if (lockStudentNamesBg != null)
+                lockStudentNamesBg.color = lockNames ? RetroUITheme.BtnMintGreen : RetroUITheme.BtnNeutralCream;
+            if (lockStudentNamesLabel != null)
+            {
+                lockStudentNamesLabel.text = lockNames ? ui.net_lock_student_names_on : ui.net_lock_student_names_off;
+                lockStudentNamesLabel.color = lockNames ? RetroUITheme.InkWhite : RetroUITheme.InkDark;
+            }
+
+            bool lockLeave = host != null && host.LockLeaveClass;
+            if (lockLeaveClassBg != null)
+                lockLeaveClassBg.color = lockLeave ? RetroUITheme.BtnMintGreen : RetroUITheme.BtnNeutralCream;
+            if (lockLeaveClassLabel != null)
+            {
+                lockLeaveClassLabel.text = lockLeave ? ui.net_lock_leave_class_on : ui.net_lock_leave_class_off;
+                lockLeaveClassLabel.color = lockLeave ? RetroUITheme.InkWhite : RetroUITheme.InkDark;
             }
         }
 

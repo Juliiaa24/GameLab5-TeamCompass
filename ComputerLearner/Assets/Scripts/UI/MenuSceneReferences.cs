@@ -31,6 +31,7 @@ namespace ComputerLearning
         public bool IsAnyInputOrModalActive()
         {
             if (TeacherDashboardController.IsDashboardOpen) return true;
+            if (TeacherDashboardController.IsAnyInputFocused) return true;
             if (ClassroomNetworkWidget.IsAnyInputFocused) return true;
             if (PlaytestStudentWidget.IsEditingStudentId) return true;
             if (teacherModeGate != null && teacherModeGate.IsAnyBlockingModalOpen) return true;

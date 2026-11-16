@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Video;
 
 namespace ComputerLearning
 {
@@ -16,6 +17,9 @@ namespace ComputerLearning
         [TextArea(2, 5)]
         [Tooltip("Text shown to the player in the didactic intro screen before starting the tasks.")]
         public string instructionText;
+
+        [Tooltip("Optional video demonstration shown on the instruction screen before the level starts.")]
+        public VideoClip videoDemonstration;
         
         [Header("Adaptive Mode")]
         [Tooltip("If true, the level ignores the fixed 'tasks' list and generates tasks dynamically.")]
@@ -36,6 +40,20 @@ namespace ComputerLearning
         public string GetLocalizedInstructionText()
         {
             return UIDialogs.Current.GetLevelInstructionText(levelId, instructionText);
+        }
+
+        public VideoClip GetVideoDemonstration()
+        {
+            if (videoDemonstration != null) return videoDemonstration;
+            if (tasks != null)
+            {
+                for (int i = 0; i < tasks.Count; i++)
+                {
+                    if (tasks[i] != null && tasks[i].videoDemonstration != null)
+                        return tasks[i].videoDemonstration;
+                }
+            }
+            return null;
         }
     }
 }

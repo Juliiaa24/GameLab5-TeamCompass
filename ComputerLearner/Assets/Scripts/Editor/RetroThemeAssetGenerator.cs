@@ -47,6 +47,8 @@ namespace RetroUIBuilder
             WriteClassroomIcon($"{ThemeArtFolder}/Icon_Classroom.png");
             WriteCheckIcon($"{ThemeArtFolder}/Icon_Check.png");
             WriteExitIcon($"{ThemeArtFolder}/Icon_Exit.png");
+            WriteTrophyIcon($"{ThemeArtFolder}/Icon_Trophy.png");
+            WriteRefreshIcon($"{ThemeArtFolder}/Icon_Refresh.png");
 
             AssetDatabase.Refresh(ImportAssetOptions.ForceUpdate);
 
@@ -66,6 +68,8 @@ namespace RetroUIBuilder
             ConfigureSprite($"{ThemeArtFolder}/Icon_Classroom.png", Vector4.zero);
             ConfigureSprite($"{ThemeArtFolder}/Icon_Check.png", Vector4.zero);
             ConfigureSprite($"{ThemeArtFolder}/Icon_Exit.png", Vector4.zero);
+            ConfigureSprite($"{ThemeArtFolder}/Icon_Trophy.png", Vector4.zero);
+            ConfigureSprite($"{ThemeArtFolder}/Icon_Refresh.png", Vector4.zero);
 
             AssetDatabase.Refresh(ImportAssetOptions.ForceUpdate);
 
@@ -97,6 +101,24 @@ namespace RetroUIBuilder
             assets.iconClassroom = LoadSprite($"{ThemeArtFolder}/Icon_Classroom.png");
             assets.iconCheck = LoadSprite($"{ThemeArtFolder}/Icon_Check.png");
             assets.iconExit = LoadSprite($"{ThemeArtFolder}/Icon_Exit.png");
+            assets.iconTrophy = LoadSprite($"{ThemeArtFolder}/Icon_Trophy.png");
+            assets.iconRefresh = LoadSprite($"{ThemeArtFolder}/Icon_Refresh.png");
+
+            string rtPath = $"{ThemeArtFolder}/VideoDemoRenderTexture.renderTexture";
+            RenderTexture demoRt = AssetDatabase.LoadAssetAtPath<RenderTexture>(rtPath);
+            if (demoRt == null || demoRt.width != 640 || demoRt.height != 360)
+            {
+                if (demoRt != null)
+                    AssetDatabase.DeleteAsset(rtPath);
+                demoRt = new RenderTexture(640, 360, 0, RenderTextureFormat.ARGB32)
+                {
+                    name = "VideoDemoRenderTexture",
+                    filterMode = FilterMode.Bilinear
+                };
+                demoRt.Create();
+                AssetDatabase.CreateAsset(demoRt, rtPath);
+            }
+            assets.videoDemoRenderTexture = demoRt;
 
             // Bind existing art assets
             assets.desktopWallpaper = LoadSprite("Assets/Art/UI/Desktop Background.png");
@@ -699,6 +721,87 @@ namespace RetroUIBuilder
                 float d = DistToTriangle(new Vector2(x + 0.5f, y + 0.5f), a, b, c);
                 if (d < 1.2f)
                     BlendPixel(tex, x, y, new Color(1f, 1f, 1f, Mathf.Clamp01(1.2f - d)));
+            }
+
+            tex.Apply();
+            SaveTexture(path, tex);
+        }
+
+        private static void WriteTrophyIcon(string path)
+        {
+            Texture2D tex = BlankTex();
+            Color ink = new Color(0.11f, 0.20f, 0.36f, 1f);
+            Color gold = new Color(1.00f, 0.78f, 0.14f, 1f);
+            Color goldHighlight = new Color(1.00f, 0.92f, 0.48f, 1f);
+            Color goldShadow = new Color(0.86f, 0.54f, 0.06f, 1f);
+
+            // Handles (left & right rings)
+            for (int y = 26; y <= 50; y++)
+            for (int x = 6; x <= 58; x++)
+            {
+                float dLeft = Vector2.Distance(new Vector2(x + 0.5f, y + 0.5f), new Vector2(16f, 39f));
+                float dRight = Vector2.Distance(new Vector2(x + 0.5f, y + 0.5f), new Vector2(48f, 39f));
+                if ((dLeft >= 5.5f && dLeft <= 10.5f && x <= 18) || (dRight >= 5.5f && dRight <= 10.5f && x >= 46))
+                {
+                    bool isInk = (dLeft >= 5.5f && dLeft <= 7.2f && x <= 18) || (dLeft >= 9.0f && dLeft <= 10.5f && x <= 18)
+                              || (dRight >= 5.5f && dRight <= 7.2f && x >= 46) || (dRight >= 9.0f && dRight <= 10.5f && x >= 46);
+                    BlendPixel(tex, x, y, isInk ? ink : goldShadow);
+                }
+            }
+
+            // Base pedestal
+            PlotRoundedBox(tex, 32f, 12f, 14f, 4.5f, 2f, ink);
+            PlotRoundedBox(tex, 32f, 12f, 11.8f, 2.5f, 1.2f, goldShadow);
+            // Stem
+            PlotRoundedBox(tex, 32f, 20f, 5f, 7f, 1.5f, ink);
+            PlotRoundedBox(tex, 32f, 20f, 2.8f, 6f, 1f, gold);
+            // Cup body
+            PlotRoundedBox(tex, 32f, 39f, 16f, 15f, 6f, ink);
+            PlotRoundedBox(tex, 32f, 39f, 13.5f, 12.8f, 4.5f, goldShadow);
+            PlotRoundedBox(tex, 32f, 40.5f, 13.5f, 11.3f, 4.5f, gold);
+            // Top lip
+            PlotRoundedBox(tex, 32f, 52.5f, 18f, 3.8f, 2f, ink);
+            PlotRoundedBox(tex, 32f, 52.5f, 15.8f, 2f, 1f, goldHighlight);
+            // Highlight stripe
+            PlotRoundedBox(tex, 25f, 40f, 2.5f, 7f, 1.5f, goldHighlight);
+
+            tex.Apply();
+            SaveTexture(path, tex);
+        }
+
+        private static void WriteRefreshIcon(string path)
+        {
+            Texture2D tex = BlankTex();
+            Color white = Color.white;
+
+            for (int y = 0; y < 64; y++)
+            for (int x = 0; x < 64; x++)
+            {
+                Vector2 d = new Vector2(x + 0.5f - 32f, y + 0.5f - 32f);
+                float r = d.magnitude;
+                if (r >= 13.5f && r <= 21.5f)
+                {
+                    float ang = Mathf.Atan2(d.y, d.x) * Mathf.Rad2Deg;
+                    if (ang < 0f) ang += 360f;
+                    // Leave a gap around 35-95 deg for arrow head
+                    if (ang < 45f || ang > 95f)
+                    {
+                        float alpha = Mathf.Clamp01(Mathf.Min(r - 13.5f, 21.5f - r) * 0.9f);
+                        BlendPixel(tex, x, y, new Color(white.r, white.g, white.b, alpha));
+                    }
+                }
+            }
+
+            // Arrow head near top-right (around 45 deg)
+            Vector2 a = new Vector2(44f, 56f);
+            Vector2 b = new Vector2(54f, 42f);
+            Vector2 c = new Vector2(36f, 40f);
+            for (int y = 0; y < 64; y++)
+            for (int x = 0; x < 64; x++)
+            {
+                float dist = DistToTriangle(new Vector2(x + 0.5f, y + 0.5f), a, b, c);
+                if (dist < 1.2f)
+                    BlendPixel(tex, x, y, new Color(1f, 1f, 1f, Mathf.Clamp01(1.2f - dist)));
             }
 
             tex.Apply();

@@ -26,7 +26,7 @@ namespace ComputerLearning
         public string start_menu_notepad = "Notepad";
         public string start_menu_paint = "Paint";
         public string start_menu_minigames = "Minigames Hub";
-        public string start_menu_stats = "Skills Report";
+        public string start_menu_stats = "Score";
         public string start_menu_exit = "Exit to Menu";
 
         // Minigames Hub (MinigamesHubApp)
@@ -188,7 +188,7 @@ namespace ComputerLearning
         public string menu_name_placeholder = "Type your name...";
         public string menu_btn_join_class = "Join Class";
         public string menu_language_label = "Language";
-        public string menu_connected_status_format = "Connected to {0}'s class";
+        public string menu_connected_status_format = "Connected to class: {0}";
         public string menu_btn_leave_class = "Leave Class";
 
         // Teacher Mode Gate, PIN & Panel
@@ -223,7 +223,7 @@ namespace ComputerLearning
         public string lan_join_modal_title = "Join Your Class";
         public string lan_join_searching = "Looking for your teacher's class...";
         public string lan_join_no_hosts = "No classrooms found yet. Ask your teacher to start the class!";
-        public string lan_join_host_entry_format = "{0}'s Class ({1})";
+        public string lan_join_host_entry_format = "{0}";
         public string lan_join_btn_connect = "Join";
         public string lan_join_connecting = "Joining...";
         public string lan_join_manual_toggle = "Use teacher IP address instead";
@@ -256,6 +256,16 @@ namespace ComputerLearning
         public string dash_kpi_progress = "Levels Completed";
         public string dash_kpi_medals = "Medals Earned";
         public string dash_kpi_score = "Total Points";
+
+        // Classroom Permissions, Search & Custom Class Name
+        public string net_class_name_label = "Class Name:";
+        public string net_class_name_placeholder = "e.g. Room 3B / Computer Lab";
+        public string net_btn_search_again = "Search Again";
+        public string net_lock_student_names_on = "Lock Student Names: ON";
+        public string net_lock_student_names_off = "Lock Student Names: OFF";
+        public string net_lock_leave_class_on = "Lock Leave Class: ON";
+        public string net_lock_leave_class_off = "Lock Leave Class: OFF";
+        public string net_student_name_locked_hint = "Locked by teacher";
 
         // Assessment Header Badges
         public string assessment_badge_task_format = "Game {0} of {1}";
