@@ -389,7 +389,7 @@ namespace ComputerLearning
 
                 bool isCelebrationTarget = targetRect != null && targetRect.GetComponentInParent<LevelCelebrationModal>() != null;
                 float predictedFlipScale = ShouldFaceLeft(finalTargetPos, canvas, isCelebrationTarget) ? -1f : 1f;
-                finalTargetPos = ClampMascotWorldPositionToScreen(finalTargetPos, canvas, predictedFlipScale);
+                finalTargetPos = ClampMascotWorldPositionToScreen(finalTargetPos, canvas, predictedFlipScale, isCelebrationTarget);
 
                 mascotRect.position = Vector3.Lerp(mascotRect.position, finalTargetPos, Time.deltaTime * followSpeed);
             }
@@ -485,19 +485,20 @@ namespace ComputerLearning
             return screenPoint.x > centerX;
         }
 
-        private Vector3 ClampMascotWorldPositionToScreen(Vector3 worldPos, Canvas canvas, float flipScale)
+        private Vector3 ClampMascotWorldPositionToScreen(Vector3 worldPos, Canvas canvas, float flipScale, bool isCelebrationTarget = false)
         {
             float pxPerUnit = GetPixelsPerCanvasUnit(canvas);
-            float margin = 12f * pxPerUnit;
+            float margin = (isCelebrationTarget ? 12f : 5f) * pxPerUnit;
             float rectWidth = mascotRect != null && mascotRect.rect.width > 1f ? mascotRect.rect.width : 100f;
             float rectHeight = mascotRect != null && mascotRect.rect.height > 1f ? mascotRect.rect.height : 100f;
             Vector2 pivot = mascotRect != null ? mascotRect.pivot : new Vector2(0.125f, 1.13f);
 
-            // Account for pivot + horizontal flip so the full mascot sprite remains on-screen
-            float leftExtent = (flipScale >= 0f ? pivot.x : (1f - pivot.x)) * rectWidth * pxPerUnit;
-            float rightExtent = (flipScale >= 0f ? (1f - pivot.x) : pivot.x) * rectWidth * pxPerUnit;
-            float bottomExtent = (pivot.y * rectHeight + 15f) * pxPerUnit;
-            float topExtent = ((1f - pivot.y) * rectHeight + 15f) * pxPerUnit;
+            // When pointing at a UI element (!isCelebrationTarget), the mascot's pointing finger is at its top pivot (0.125, 1.13),
+            // so its lower body must be allowed to extend partially off the bottom of the screen when pointing at the taskbar.
+            float leftExtent = isCelebrationTarget ? ((flipScale >= 0f ? pivot.x : (1f - pivot.x)) * rectWidth * pxPerUnit) : 0f;
+            float rightExtent = isCelebrationTarget ? ((flipScale >= 0f ? (1f - pivot.x) : pivot.x) * rectWidth * pxPerUnit) : 0f;
+            float bottomExtent = isCelebrationTarget ? ((pivot.y * rectHeight + 15f) * pxPerUnit) : 0f;
+            float topExtent = isCelebrationTarget ? (((1f - pivot.y) * rectHeight + 15f) * pxPerUnit) : 0f;
 
             Camera cam = canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay ? canvas.worldCamera : null;
             float minScreenX = cam != null ? cam.pixelRect.xMin : 0f;
@@ -872,7 +873,7 @@ namespace ComputerLearning
                     targetRect.GetWorldCorners(corners);
                     Vector3 desiredPos = ((corners[0] + corners[2]) / 2f) + CanvasOffsetToWorldDelta(currentTargetOffset, canvas);
                     float flipScale = ShouldFaceLeft(desiredPos, canvas, isCelebrationTarget) ? -1f : 1f;
-                    mascotRect.position = ClampMascotWorldPositionToScreen(desiredPos, canvas, flipScale);
+                    mascotRect.position = ClampMascotWorldPositionToScreen(desiredPos, canvas, flipScale, isCelebrationTarget);
                 }
             }
 

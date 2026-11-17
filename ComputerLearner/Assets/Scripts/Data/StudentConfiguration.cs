@@ -72,12 +72,12 @@ namespace ComputerLearning
             switch (path)
             {
                 case LearningPath.Intermediate:
-                    // Skips initial blocking tutorial (Desktop1); runs window management tutorial (DesktopTour)
+                    // Skips initial blocking tutorial (Desktop1); runs window management tutorials (DesktopTour + AdvancedDesktopTour)
                     // in VirtualDesktop, then unlocks everything while completing Levels 1-16 progressively.
                     cfg.runInitialGuidedTutorial = false;
                     cfg.postAssessmentScene = "VirtualDesktop";
                     cfg.skipBasicDesktopTours = false;
-                    cfg.skipAdvancedDesktopTour = true;
+                    cfg.skipAdvancedDesktopTour = false;
                     break;
 
                 case LearningPath.Advanced:

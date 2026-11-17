@@ -224,16 +224,17 @@ namespace ComputerLearning
             if (IsWindowClosedEarly(targetWindow)) yield break;
             
             // Wait a brief moment for the minimize animation
-            yield return new WaitForSeconds(0.5f);
+            yield return new WaitForSeconds(0.6f);
 
             // STEP 10 — Taskbar
             TaskbarWindowButton targetBtn = FindTaskbarButton(targetWindow);
 
             if (targetBtn != null)
             {
+                targetBtn.PulseHighlight();
                 RectTransform targetBtnRect = targetBtn.GetComponent<RectTransform>();
                 VirtualMascot.Show(dialogs.step10_lookTaskbar, targetBtnRect, new Vector2(100, 200));
-                yield return VirtualMascot.WaitForDialogue(3.0f);
+                yield return VirtualMascot.WaitForDialogue(4.5f);
                 
                 VirtualMascot.Show(dialogs.step10_clickTaskbar, targetBtnRect, new Vector2(100, 200));
                 

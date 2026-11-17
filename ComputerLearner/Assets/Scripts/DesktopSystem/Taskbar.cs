@@ -12,6 +12,20 @@ namespace ComputerLearning
     {
         #region Public Variables
         public int EntryCount => buttons.Count;
+
+        public static TaskbarWindowButton FindButtonForWindow(Window targetWindow)
+        {
+            if (targetWindow == null) return null;
+            Taskbar[] taskbars = FindObjectsByType<Taskbar>();
+            foreach (var tb in taskbars)
+            {
+                if (tb != null && tb.buttons.TryGetValue(targetWindow, out TaskbarWindowButton btn) && btn != null)
+                {
+                    return btn;
+                }
+            }
+            return null;
+        }
         #endregion
 
         #region Private Variables

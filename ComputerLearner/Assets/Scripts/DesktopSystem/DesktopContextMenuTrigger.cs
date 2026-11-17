@@ -11,11 +11,13 @@ using UnityEngine.EventSystems;
 
 namespace ComputerLearning
 {
-    public class DesktopContextMenuTrigger : MonoBehaviour, IPointerClickHandler, IPointerDownHandler
+    public class DesktopContextMenuTrigger : MonoBehaviour, IPointerClickHandler, IPointerDownHandler, IBeginDragHandler, IDragHandler, IEndDragHandler
     {
         public static bool RestrictToFolderCreationOnly { get; set; } = false;
 
         #region Private Variables
+        private bool isMarqueeDragging;
+        private bool suppressNextLeftClick;
         [Header("Desktop Creation Configuration")]
         [SerializeField] private Sprite folderSprite;
         [SerializeField] private Sprite textDocumentSprite;
@@ -44,25 +46,71 @@ namespace ComputerLearning
         #endregion
 
         #region Public Methods
+        private static void ClaimDesktopFocus()
+        {
+            FileExplorerApp.IsDesktopFocused = true;
+            FileExplorerApp.ClearAllExplorerSelections();
+            WindowManager.Instance?.ClearFocus();
+            if (EventSystem.current != null && EventSystem.current.currentSelectedGameObject != null)
+            {
+                var sel = EventSystem.current.currentSelectedGameObject;
+                if (sel.GetComponent<TMPro.TMP_InputField>() != null || sel.GetComponent<UnityEngine.UI.InputField>() != null)
+                {
+                    EventSystem.current.SetSelectedGameObject(null);
+                }
+            }
+        }
+
         public void OnPointerDown(PointerEventData eventData)
         {
             if (eventData.button == PointerEventData.InputButton.Left)
             {
+                suppressNextLeftClick = false;
                 DraggableIcon.ClearSelection();
+                ClaimDesktopFocus();
             }
+        }
+
+        public void OnBeginDrag(PointerEventData eventData)
+        {
+            if (eventData.button != PointerEventData.InputButton.Left) return;
+            isMarqueeDragging = true;
+            suppressNextLeftClick = true;
+            ClaimDesktopFocus();
+            DesktopManager.Instance?.BeginMarqueeSelection(eventData);
+        }
+
+        public void OnDrag(PointerEventData eventData)
+        {
+            if (!isMarqueeDragging || eventData.button != PointerEventData.InputButton.Left) return;
+            DesktopManager.Instance?.UpdateMarqueeSelection(eventData);
+        }
+
+        public void OnEndDrag(PointerEventData eventData)
+        {
+            if (!isMarqueeDragging || eventData.button != PointerEventData.InputButton.Left) return;
+            isMarqueeDragging = false;
+            DesktopManager.Instance?.EndMarqueeSelection(eventData);
         }
 
         public void OnPointerClick(PointerEventData eventData)
         {
             if (eventData.button == PointerEventData.InputButton.Left)
             {
+                if (suppressNextLeftClick || eventData.dragging)
+                {
+                    suppressNextLeftClick = false;
+                    return;
+                }
                 DraggableIcon.ClearSelection();
+                ClaimDesktopFocus();
                 return;
             }
 
             if (eventData.button == PointerEventData.InputButton.Right)
             {
                 DraggableIcon.ClearSelection();
+                ClaimDesktopFocus();
                 if (ContextMenuController.Instance != null)
                 {
                     int binCount = FileExplorerApp.GetRecycleBinCount();
@@ -159,6 +207,11 @@ namespace ComputerLearning
             }
 
             ExplorerItemData desktopFolder = FileExplorerApp.GetDesktopFolder();
+            if (desktopFolder != null && desktopFolder.children != null && desktopFolder.children.Count >= FileExplorerApp.MAX_ITEMS_PER_FOLDER)
+            {
+                Debug.LogWarning("[DesktopContextMenuTrigger] Desktop folder item limit reached.");
+                return;
+            }
             ExplorerItemData linkedFolder = new ExplorerItemData
             {
                 name = folderName,
@@ -216,6 +269,11 @@ namespace ComputerLearning
             }
 
             ExplorerItemData desktopFolder = FileExplorerApp.GetDesktopFolder();
+            if (desktopFolder != null && desktopFolder.children != null && desktopFolder.children.Count >= FileExplorerApp.MAX_ITEMS_PER_FOLDER)
+            {
+                Debug.LogWarning("[DesktopContextMenuTrigger] Desktop folder item limit reached.");
+                return;
+            }
             ExplorerItemData linkedDoc = FileExplorerApp.SaveOrCreateTextDocument(docName, "", desktopFolder);
 
             if (desktopMgr.GetIconByName(docName) == null)
@@ -265,6 +323,11 @@ namespace ComputerLearning
             }
 
             ExplorerItemData desktopFolder = FileExplorerApp.GetDesktopFolder();
+            if (desktopFolder != null && desktopFolder.children != null && desktopFolder.children.Count >= FileExplorerApp.MAX_ITEMS_PER_FOLDER)
+            {
+                Debug.LogWarning("[DesktopContextMenuTrigger] Desktop folder item limit reached.");
+                return;
+            }
             ExplorerItemData linkedImg = FileExplorerApp.SaveOrCreateImageDocument(imgName, null, desktopFolder);
 
             if (desktopMgr.GetIconByName(imgName) == null)

@@ -17,7 +17,7 @@ namespace ComputerLearning
         private const string SelectedPathPrefKey = "Session_SelectedLearningPath_v2";
         private const string RunAssessmentPrefKey = "Session_RunAssessment_v2";
         private const string ConfigJsonPrefKey = "Session_CurrentConfigJson_v2";
-        private const string AppliedSignaturePrefKey = "Session_AppliedSignature_v2";
+        private const string AppliedSignaturePrefKey = "Session_AppliedSignature_v3";
         private const string PendingSwitchPrefKey = "Session_PendingPathSwitch_v2";
 
         private static SessionManager instance;
@@ -152,6 +152,8 @@ namespace ComputerLearning
             // 2. Optionally clear previous session records before seeding the new path
             if (resetExistingProgress)
             {
+                DesktopManager.ResetWallpaperPreferences();
+                FileExplorerApp.ResetStaticFileSystem();
                 PlaytestDataManager.ClearCurrentStudentSessionData();
                 if (SkillManager.Instance != null)
                 {

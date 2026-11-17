@@ -163,8 +163,6 @@ namespace ComputerLearning
             RegisterSceneIconsIntoDesktopFolder();
             if (IsVirtualDesktopScene())
             {
-                PlayerPrefs.SetInt("InitialAssessmentCompleted", 1);
-                PlayerPrefs.SetInt("AutoSequenceCompleted", 1);
                 if (ProgressData.Instance != null)
                 {
                     ProgressData.Instance.SyncProgressionFlagsToPlayerPrefs();
@@ -177,10 +175,19 @@ namespace ComputerLearning
                 // Tutorial 1: DesktopTour on first entry to VirtualDesktop
                 if (PlayerPrefs.GetInt("DesktopTourCompleted", 0) == 0)
                 {
-                    if (UnityEngine.Object.FindAnyObjectByType<DesktopTour>() == null)
+                    DesktopTour tour = UnityEngine.Object.FindAnyObjectByType<DesktopTour>();
+                    if (tour == null)
                     {
-                        gameObject.AddComponent<DesktopTour>();
+                        tour = gameObject.AddComponent<DesktopTour>();
                     }
+                    tour.OnIntroductionCompleted -= HandleDesktopTourCompleted;
+                    tour.OnIntroductionCompleted += HandleDesktopTourCompleted;
+                }
+                else if (SessionManager.ExistingInstance != null &&
+                         SessionManager.ExistingInstance.ActiveLearningPath == LearningPath.Intermediate &&
+                         PlayerPrefs.GetInt("AdvancedDesktopTourCompleted", 0) == 0)
+                {
+                    TriggerAdvancedDesktopTourAfterLevel9();
                 }
                 else if (PlayerPrefs.GetInt("VirtualDesktopIntroCompleted", 0) == 0)
                 {
@@ -192,6 +199,17 @@ namespace ComputerLearning
 
                 // Tutorial 2: Trigger AdvancedDesktopTour after Level 9 is completed
                 SetupAdvancedDesktopTourTrigger();
+            }
+        }
+
+        private void HandleDesktopTourCompleted()
+        {
+            if (SessionManager.ExistingInstance != null &&
+                SessionManager.ExistingInstance.ActiveLearningPath == LearningPath.Intermediate)
+            {
+                PlayerPrefs.SetInt("AdvancedDesktopTourCompleted", 0);
+                PlayerPrefs.Save();
+                TriggerAdvancedDesktopTourAfterLevel9();
             }
         }
 
@@ -348,40 +366,45 @@ namespace ComputerLearning
             if (!isV) isV = Input.GetKeyDown(KeyCode.V);
 #endif
 
-            if (deletePressed)
+            if (deletePressed && (FileExplorerApp.IsDesktopFocused || !FileExplorerApp.HasActiveFocusedExplorer()))
             {
-                if (DraggableIcon.SelectedIcon != null && !DraggableIcon.SelectedIcon.IsProtected)
+                if (DraggableIcon.SelectedIcons != null && DraggableIcon.SelectedIcons.Count > 0)
                 {
-                    DraggableIcon.SelectedIcon.DeleteDesktopIconToRecycleBin();
+                    DraggableIcon.DeleteSelectedDesktopIcons();
                 }
             }
 
             if (!isCtrl) return;
 
+            bool isDesktopShortcutTarget = FileExplorerApp.IsDesktopFocused || !FileExplorerApp.HasActiveFocusedExplorer();
+            if (!isDesktopShortcutTarget) return;
+
             if (isC)
             {
-                if (DraggableIcon.SelectedIcon != null && !DraggableIcon.SelectedIcon.IsProtected &&
+                if (DraggableIcon.SelectedIcons != null && DraggableIcon.SelectedIcons.Count > 0 &&
                     FileExplorerApp.TryConsumeClipboardShortcutFrame())
                 {
-                    DraggableIcon.SelectedIcon.CopyDesktopIcon();
+                    DraggableIcon.CopySelectedDesktopIcons();
                 }
             }
             else if (isX)
             {
-                if (DraggableIcon.SelectedIcon != null && !DraggableIcon.SelectedIcon.IsProtected &&
+                if (DraggableIcon.SelectedIcons != null && DraggableIcon.SelectedIcons.Count > 0 &&
                     FileExplorerApp.TryConsumeClipboardShortcutFrame())
                 {
-                    DraggableIcon.SelectedIcon.CutDesktopIcon();
+                    DraggableIcon.CutSelectedDesktopIcons();
                 }
             }
             else if (isV)
             {
-                bool shouldPasteOnDesktop = FileExplorerApp.IsDesktopFocused || !FileExplorerApp.HasActiveFocusedExplorer();
-                if (shouldPasteOnDesktop && FileExplorerApp.SharedClipboardItem != null &&
+                if (FileExplorerApp.HasClipboardItems &&
                     FileExplorerApp.TryConsumeClipboardShortcutFrame())
                 {
-                    FileExplorerApp.PasteClipboardIntoFolder(FileExplorerApp.GetDesktopFolder());
-                    FeedbackManager.PlaySuccess();
+                    ExplorerItemData firstPasted = FileExplorerApp.PasteClipboardIntoFolder(FileExplorerApp.GetDesktopFolder());
+                    if (firstPasted != null)
+                    {
+                        FeedbackManager.PlaySuccess();
+                    }
                 }
             }
         }
@@ -409,36 +432,41 @@ namespace ComputerLearning
                 string cmd = e.commandName;
                 if (cmd == "Copy" || cmd == "Cut" || cmd == "Paste")
                 {
+                    bool isDesktopShortcutTarget = FileExplorerApp.IsDesktopFocused || !FileExplorerApp.HasActiveFocusedExplorer();
+                    if (!isDesktopShortcutTarget) return;
+
                     if (e.type == EventType.ValidateCommand)
                     {
                         e.Use();
                         return;
                     }
 
-                    if (cmd == "Copy" && DraggableIcon.SelectedIcon != null && !DraggableIcon.SelectedIcon.IsProtected)
+                    if (cmd == "Copy" && DraggableIcon.SelectedIcons != null && DraggableIcon.SelectedIcons.Count > 0)
                     {
                         if (FileExplorerApp.TryConsumeClipboardShortcutFrame())
                         {
-                            DraggableIcon.SelectedIcon.CopyDesktopIcon();
+                            DraggableIcon.CopySelectedDesktopIcons();
                             e.Use();
                         }
                     }
-                    else if (cmd == "Cut" && DraggableIcon.SelectedIcon != null && !DraggableIcon.SelectedIcon.IsProtected)
+                    else if (cmd == "Cut" && DraggableIcon.SelectedIcons != null && DraggableIcon.SelectedIcons.Count > 0)
                     {
                         if (FileExplorerApp.TryConsumeClipboardShortcutFrame())
                         {
-                            DraggableIcon.SelectedIcon.CutDesktopIcon();
+                            DraggableIcon.CutSelectedDesktopIcons();
                             e.Use();
                         }
                     }
                     else if (cmd == "Paste")
                     {
-                        bool shouldPasteOnDesktop = FileExplorerApp.IsDesktopFocused || !FileExplorerApp.HasActiveFocusedExplorer();
-                        if (shouldPasteOnDesktop && FileExplorerApp.SharedClipboardItem != null &&
+                        if (FileExplorerApp.HasClipboardItems &&
                             FileExplorerApp.TryConsumeClipboardShortcutFrame())
                         {
-                            FileExplorerApp.PasteClipboardIntoFolder(FileExplorerApp.GetDesktopFolder());
-                            FeedbackManager.PlaySuccess();
+                            ExplorerItemData firstPasted = FileExplorerApp.PasteClipboardIntoFolder(FileExplorerApp.GetDesktopFolder());
+                            if (firstPasted != null)
+                            {
+                                FeedbackManager.PlaySuccess();
+                            }
                             e.Use();
                         }
                     }
@@ -452,6 +480,8 @@ namespace ComputerLearning
         }
 
         private Sprite defaultWallpaperSprite;
+        private Color defaultWallpaperColor = Color.white;
+        private bool hasCapturedDefaultWallpaper;
         public UnityEngine.UI.Image WallpaperImage { get; private set; }
         public static Sprite CustomWallpaperSprite { get; set; }
 
@@ -492,14 +522,180 @@ namespace ComputerLearning
 
             if (WallpaperImage != null)
             {
-                if (defaultWallpaperSprite == null)
+                if (!hasCapturedDefaultWallpaper)
+                {
+                    defaultWallpaperSprite = WallpaperImage.sprite != null
+                        ? WallpaperImage.sprite
+                        : RetroThemeAssets.Instance?.desktopWallpaper;
+                    defaultWallpaperColor = WallpaperImage.color;
+                    hasCapturedDefaultWallpaper = true;
+                }
+                else if (defaultWallpaperSprite == null)
                 {
                     defaultWallpaperSprite = WallpaperImage.sprite != null
                         ? WallpaperImage.sprite
                         : RetroThemeAssets.Instance?.desktopWallpaper;
                 }
+
+                if (WallpaperImage.GetComponent<DesktopContextMenuTrigger>() == null)
+                {
+                    WallpaperImage.raycastTarget = true;
+                    WallpaperImage.gameObject.AddComponent<DesktopContextMenuTrigger>();
+                }
+            }
+
+            if (desktopIconContainer != null)
+            {
+                UnityEngine.UI.Graphic containerGraphic = desktopIconContainer.GetComponent<UnityEngine.UI.Graphic>();
+                if (containerGraphic != null)
+                {
+                    containerGraphic.raycastTarget = true;
+                    if (desktopIconContainer.GetComponent<DesktopContextMenuTrigger>() == null)
+                    {
+                        desktopIconContainer.gameObject.AddComponent<DesktopContextMenuTrigger>();
+                    }
+                }
             }
         }
+
+        #region Desktop Marquee Selection
+        private GameObject marqueeBoxObject;
+        private RectTransform marqueeBoxRect;
+        private Vector2 marqueeStartScreenPos;
+
+        public void BeginMarqueeSelection(UnityEngine.EventSystems.PointerEventData eventData)
+        {
+            if (eventData == null) return;
+            EnsureMarqueeBox();
+            if (marqueeBoxObject == null || marqueeBoxRect == null) return;
+
+            DraggableIcon.ClearSelection();
+            marqueeStartScreenPos = eventData.position;
+            marqueeBoxRect.sizeDelta = Vector2.zero;
+            marqueeBoxObject.SetActive(true);
+            marqueeBoxRect.SetAsLastSibling();
+            UpdateMarqueeSelection(eventData);
+        }
+
+        public void UpdateMarqueeSelection(UnityEngine.EventSystems.PointerEventData eventData)
+        {
+            if (eventData == null || marqueeBoxObject == null || !marqueeBoxObject.activeSelf || marqueeBoxRect == null)
+                return;
+
+            RectTransform parentRt = marqueeBoxRect.parent as RectTransform;
+            if (parentRt == null) return;
+
+            Canvas canvas = parentRt.GetComponentInParent<Canvas>();
+            Camera cam = eventData.pressEventCamera;
+            if (cam == null && canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay)
+            {
+                cam = canvas.worldCamera != null ? canvas.worldCamera : Camera.main;
+            }
+
+            RectTransformUtility.ScreenPointToLocalPointInRectangle(parentRt, marqueeStartScreenPos, cam, out Vector2 startLocal);
+            RectTransformUtility.ScreenPointToLocalPointInRectangle(parentRt, eventData.position, cam, out Vector2 currentLocal);
+
+            Vector2 min = Vector2.Min(startLocal, currentLocal);
+            Vector2 max = Vector2.Max(startLocal, currentLocal);
+            Vector2 size = max - min;
+
+            marqueeBoxRect.anchorMin = parentRt.pivot;
+            marqueeBoxRect.anchorMax = parentRt.pivot;
+            marqueeBoxRect.pivot = new Vector2(0.5f, 0.5f);
+            marqueeBoxRect.anchoredPosition = (min + max) * 0.5f;
+            marqueeBoxRect.sizeDelta = size;
+            marqueeBoxRect.SetAsLastSibling();
+
+            Rect marqueeLocalRect = new Rect(min, size);
+            Vector3[] iconWorldCorners = new Vector3[4];
+
+            for (int i = 0; i < activeIcons.Count; i++)
+            {
+                DraggableIcon icon = activeIcons[i];
+                if (icon == null || !icon.gameObject.activeInHierarchy) continue;
+
+                RectTransform iconRt = icon.transform as RectTransform;
+                if (iconRt == null) continue;
+
+                iconRt.GetWorldCorners(iconWorldCorners);
+                Vector2 iconMin = new Vector2(float.MaxValue, float.MaxValue);
+                Vector2 iconMax = new Vector2(float.MinValue, float.MinValue);
+
+                for (int c = 0; c < 4; c++)
+                {
+                    Vector3 localPt = parentRt.InverseTransformPoint(iconWorldCorners[c]);
+                    if (localPt.x < iconMin.x) iconMin.x = localPt.x;
+                    if (localPt.y < iconMin.y) iconMin.y = localPt.y;
+                    if (localPt.x > iconMax.x) iconMax.x = localPt.x;
+                    if (localPt.y > iconMax.y) iconMax.y = localPt.y;
+                }
+
+                Rect iconLocalRect = new Rect(iconMin, iconMax - iconMin);
+                bool intersects = size.sqrMagnitude > 16f && marqueeLocalRect.Overlaps(iconLocalRect, true);
+                icon.SetMarqueeSelected(intersects);
+            }
+        }
+
+        public void EndMarqueeSelection(UnityEngine.EventSystems.PointerEventData eventData)
+        {
+            if (marqueeBoxObject != null)
+            {
+                marqueeBoxObject.SetActive(false);
+            }
+        }
+
+        public static void EnsureMarqueeSelectionBox(string boxName, Transform parent, ref GameObject boxObject, ref RectTransform boxRect)
+        {
+            if (boxObject != null && boxRect != null) return;
+            if (parent == null) return;
+
+            Transform existing = parent.Find(boxName);
+            if (existing != null)
+            {
+                boxObject = existing.gameObject;
+                boxRect = boxObject.GetComponent<RectTransform>();
+                return;
+            }
+
+            boxObject = new GameObject(boxName, typeof(RectTransform), typeof(CanvasRenderer), typeof(UnityEngine.UI.Image));
+            boxObject.transform.SetParent(parent, false);
+            boxRect = boxObject.GetComponent<RectTransform>();
+
+            UnityEngine.UI.Image fillImg = boxObject.GetComponent<UnityEngine.UI.Image>();
+            fillImg.color = new Color(0.2f, 0.5f, 1f, 0.22f);
+            fillImg.raycastTarget = false;
+
+            Color borderCol = new Color(0.2f, 0.5f, 1f, 0.75f);
+            CreateMarqueeBorderEdge("BorderTop", boxRect, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, 1.5f), borderCol);
+            CreateMarqueeBorderEdge("BorderBottom", boxRect, new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 1.5f), borderCol);
+            CreateMarqueeBorderEdge("BorderLeft", boxRect, new Vector2(0f, 0f), new Vector2(0f, 1f), new Vector2(0f, 0.5f), new Vector2(1.5f, 0f), borderCol);
+            CreateMarqueeBorderEdge("BorderRight", boxRect, new Vector2(1f, 0f), new Vector2(1f, 1f), new Vector2(1f, 0.5f), new Vector2(1.5f, 0f), borderCol);
+
+            boxObject.SetActive(false);
+        }
+
+        private void EnsureMarqueeBox()
+        {
+            Transform parent = desktopIconContainer != null ? desktopIconContainer : transform;
+            EnsureMarqueeSelectionBox("DesktopMarqueeSelectionBox", parent, ref marqueeBoxObject, ref marqueeBoxRect);
+        }
+
+        private static void CreateMarqueeBorderEdge(string edgeName, RectTransform parent, Vector2 anchorMin, Vector2 anchorMax, Vector2 pivot, Vector2 sizeDelta, Color color)
+        {
+            GameObject edgeObj = new GameObject(edgeName, typeof(RectTransform), typeof(CanvasRenderer), typeof(UnityEngine.UI.Image));
+            edgeObj.transform.SetParent(parent, false);
+            RectTransform rt = edgeObj.GetComponent<RectTransform>();
+            rt.anchorMin = anchorMin;
+            rt.anchorMax = anchorMax;
+            rt.pivot = pivot;
+            rt.anchoredPosition = Vector2.zero;
+            rt.sizeDelta = sizeDelta;
+
+            UnityEngine.UI.Image img = edgeObj.GetComponent<UnityEngine.UI.Image>();
+            img.color = color;
+            img.raycastTarget = false;
+        }
+        #endregion
 
         public static void ResetWallpaperPreferences()
         {
@@ -507,7 +703,13 @@ namespace ComputerLearning
             PlayerPrefs.DeleteKey("DesktopWallpaperTheme");
             PlayerPrefs.DeleteKey("DesktopCustomWallpaperBase64");
             PlayerPrefs.Save();
+            if (HasInstance && _instance != null)
+            {
+                _instance.RestoreSavedWallpaper();
+            }
         }
+
+        public static void ResetStaticWallpaper() => ResetWallpaperPreferences();
 
         public void SetDesktopWallpaperTheme(string theme)
         {
@@ -590,11 +792,8 @@ namespace ComputerLearning
                         Sprite fallback = defaultWallpaperSprite != null
                             ? defaultWallpaperSprite
                             : RetroThemeAssets.Instance?.desktopWallpaper;
-                        if (fallback != null)
-                        {
-                            WallpaperImage.sprite = fallback;
-                        }
-                        WallpaperImage.color = Color.white;
+                        WallpaperImage.sprite = fallback;
+                        WallpaperImage.color = hasCapturedDefaultWallpaper ? defaultWallpaperColor : Color.white;
                     }
                     break;
             }
@@ -948,7 +1147,7 @@ namespace ComputerLearning
                 IconGrid grid = desktopIconContainer != null ? desktopIconContainer.GetComponent<IconGrid>() : null;
                 if (di != null && grid != null)
                 {
-                    Canvas canvas = GetComponentInParent<Canvas>();
+                    Canvas canvas = desktopIconContainer.GetComponentInParent<Canvas>();
                     Camera cam = canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay ? canvas.worldCamera : null;
                     grid.TryPlaceIcon(di, dropScreenPosition.Value, go.transform.position, cam);
                 }

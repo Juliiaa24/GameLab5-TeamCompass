@@ -251,21 +251,10 @@ namespace ComputerLearning
             if (binImage != null) binImage.color = Color.white;
             if (eventData.pointerDrag == null) return;
 
-            // 1. Check if an item was dragged from inside FileExplorerApp
+            // 1. Check if an item was dragged from inside FileExplorerApp (handled in batch by ExplorerItemPointerHandler.OnEndDrag)
             ExplorerItemPointerHandler explorerItem = eventData.pointerDrag.GetComponent<ExplorerItemPointerHandler>();
             if (explorerItem != null && explorerItem.ItemData != null)
             {
-                if (!explorerItem.ItemData.isProtected)
-                {
-                    FileExplorerApp.MoveItemToRecycleBin(explorerItem.ItemData);
-                    UpdateAllBinVisuals();
-                    NotifyIconRecycled(null);
-                    Debug.Log($"[RecycleBin] Moved explorer item '{explorerItem.ItemData.name}' to Recycle Bin.");
-                }
-                else
-                {
-                    Debug.Log($"[RecycleBin] '{explorerItem.ItemData.name}' is protected and cannot be deleted.");
-                }
                 return;
             }
 
@@ -281,6 +270,12 @@ namespace ComputerLearning
         {
             if (icon == null || icon.gameObject == this.gameObject) return false;
             if (binImage != null) binImage.color = Color.white;
+
+            if (DraggableIcon.TryHandleGroupDropOnRecycleBin(this, icon))
+            {
+                return true;
+            }
+
             icon.MarkDropHandled();
 
             bool isTutorialTour = FindAnyObjectByType<AdvancedDesktopTour>() != null;

@@ -47,7 +47,7 @@
     "level_instruction_4": "¡Te damos la bienvenida al reto adaptativo!\nAquí practicarás todo lo que has aprendido.",
     "level_instruction_5": "¡Haz doble clic sobre los objetivos para practicar cómo abrir archivos y carpetas!",
     "level_instruction_6": "¡Haz clic derecho sobre los objetivos para practicar cómo abrir menús contextuales!",
-    "level_instruction_7": "¡Haz clic y mantén pulsado el botón hasta que se llene por completo!",
+    "level_instruction_7": "¡Mantén presionado el botón IZQUIERDO del ratón hasta llenar el círculo!",
     "level_instruction_8": "¡Haz clic y arrastra los elementos hasta su zona correspondiente!",
     "level_instruction_9": "¿Todo listo para el reto final?",
     "level_instruction_10": "¡Aprende a usar el menú contextual del escritorio!\nHaz clic derecho en el escritorio para explorar las opciones.",
@@ -227,5 +227,8 @@
     "net_lock_student_names_off": "Bloquear cambio de nombre: NO",
     "net_lock_leave_class_on": "Bloquear salir de clase: SÍ",
     "net_lock_leave_class_off": "Bloquear salir de clase: NO",
-    "net_student_name_locked_hint": "Bloqueado por el profesor"
+    "net_student_name_locked_hint": "Bloqueado por el profesor",
+    "explorer_folder_limit_reached": "Límite de elementos en la carpeta alcanzado (máx. 35).",
+    "explorer_depth_limit_reached": "Profundidad máxima de carpetas alcanzada.",
+    "explorer_cycle_error": "No se puede mover ni pegar una carpeta dentro de sí misma o sus subcarpetas."
 }

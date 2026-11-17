@@ -52,7 +52,7 @@
     {
       "skillId": "click_hold",
       "title": "Click and Hold",
-      "instruction": "Press and hold the mouse button on the red circle for 2 seconds.",
+      "instruction": "Press and hold the left mouse button on the red circle for 2 seconds.",
       "timeoutSeconds": 20,
       "shape": "circle",
       "requiredDuration": 2.0

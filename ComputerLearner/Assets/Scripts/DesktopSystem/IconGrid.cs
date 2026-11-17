@@ -126,6 +126,20 @@ namespace ComputerLearning
                 Place(icon, GetGridPosition(rect.InverseTransformPoint(previousPosition)));
             }
         }
+
+        public void TryPlaceIconAtCurrentPosition(DraggableIcon icon, Vector3 previousPosition)
+        {
+            if (icon == null) return;
+            EnsureGrid();
+            Vector2 local = rect.InverseTransformPoint(icon.transform.position);
+            Unregister(icon);
+            registered.Add(icon);
+            if (!Place(icon, GetGridPosition(local)))
+            {
+                icon.transform.position = previousPosition;
+                Place(icon, GetGridPosition(rect.InverseTransformPoint(previousPosition)));
+            }
+        }
         #endregion
 
         #region Private Methods
@@ -172,7 +186,7 @@ namespace ComputerLearning
                         rect.rect.xMin + startX + slot.x * stepX + stepX * 0.5f,
                         rect.rect.yMax - startY - slot.y * stepY - stepY * 0.5f));
 
-                    if (icon == DraggableIcon.SelectedIcon)
+                    if (icon == DraggableIcon.SelectedIcon || icon.IsSelected)
                     {
                         icon.UpdateSelectionCardTransform();
                     }
@@ -229,7 +243,7 @@ namespace ComputerLearning
                 rect.rect.xMin + startX + closest.x * stepX + stepX * 0.5f,
                 rect.rect.yMax - startY - closest.y * stepY - stepY * 0.5f));
 
-            if (icon == DraggableIcon.SelectedIcon)
+            if (icon == DraggableIcon.SelectedIcon || icon.IsSelected)
             {
                 icon.UpdateSelectionCardTransform();
             }

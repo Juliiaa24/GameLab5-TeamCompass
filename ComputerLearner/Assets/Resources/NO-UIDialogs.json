@@ -47,7 +47,7 @@
   "level_instruction_4": "Velkommen til den adaptive utfordringen!\nHer får du øve på alt du har lært.",
   "level_instruction_5": "Dobbeltklikk på målene for å øve på å åpne filer og mapper!",
   "level_instruction_6": "Høyreklikk på målene for å øve på å åpne kontekstmenyer!",
-  "level_instruction_7": "Klikk og hold knappen nede til den fylles helt opp!",
+  "level_instruction_7": "Klikk og hold nede VENSTRE museknapp til sirkelen fylles helt opp!",
   "level_instruction_8": "Klikk og dra elementer til riktige slippsoner!",
   "level_instruction_9": "Er du klar for den siste utfordringen?",
   "level_instruction_10": "Lær hvordan du bruker kontekstmenyen på skrivebordet!\nHøyreklikk på skrivebordet for å utforske alternativene.",
@@ -227,5 +227,8 @@
   "net_lock_student_names_off": "Lås elevnavn: AV",
   "net_lock_leave_class_on": "Lås forlat klasse: PÅ",
   "net_lock_leave_class_off": "Lås forlat klasse: AV",
-  "net_student_name_locked_hint": "Låst av lærer"
+  "net_student_name_locked_hint": "Låst av lærer",
+  "explorer_folder_limit_reached": "Mappegrensen er nådd (maks 35 elementer).",
+  "explorer_depth_limit_reached": "Maksimal mappedybde er nådd.",
+  "explorer_cycle_error": "Kan ikke flytte eller lime inn en mappe i seg selv eller undermappene sine."
 }

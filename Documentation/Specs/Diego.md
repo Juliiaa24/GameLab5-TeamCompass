@@ -2789,3 +2789,62 @@ To enrich the educational operating system simulation, the Virtual Desktop neede
 2. **Removed `+ New Folder` from Level 10 Context Menu (`DesktopContextMenuTrigger.cs`, `VirtualDesktopGuidedLevels.cs`, `*GuidedLevelsDialogs.json`):**
    * Removed `+ New Folder` from the `RestrictToFolderCreationOnly` menu branch so Level 10 displays only `+ New Text Document (.txt)`.
    * Synced `l10_clickMenu` and `l10_menuSelectReminder` across `VirtualDesktopGuidedLevels.cs`, `GuidedLevelsDialogs.json`, `EN`, `ES`, and `NO` to refer solely to `+ New Text Document (.txt)`.
+
+
+---
+
+### 102. PLAYTESTING POST-PULL AUDIT & IMPLEMENTATION: PERSISTENCE & SESSION RESET PURGE, VIRTUAL FS CYCLE/DEPTH GUARDS, DRAG CANVAS ELEVATION, ASSESSMENT GRACE PERIOD, LEVEL 7 LEFT-BUTTON CLARITY, RESIZE CURSORS, TASKBAR DATE+TIME CLOCK, MINIMIZE PACING & DESKTOP MARQUEE SELECTION - 17/11/2026
+
+**Context & Motivation:**
+* Following the integration of `SessionManager`, `TeacherModeGate`, `StudentConfiguration`, and `TaskbarClock` on `main`, a full playtesting pass addressed 9 core usability and stability issues:
+  1. `SceneSystem.ResetProgress()` and `SessionManager.ApplyConfiguration(..., resetExistingProgress: true)` cleared `PlayerPrefs` but left `FileExplorerApp.sharedRootFolder` in static RAM, while `DesktopManager.Start()` forced `InitialAssessmentCompleted = 1` and `AutoSequenceCompleted = 1` when entering `VirtualDesktop` directly.
+  2. Stress-testing folder creation and copy-pasting folders into themselves or their subfolders caused recursive loops (`clipboardItem` was a detached clone without tracking `clipboardSourceItem`).
+  3. Dragging desktop icons (such as `Practice Note`) over the open Recycle Bin window rendered the dragged icon behind the window.
+  4. In `InitialTestManager`, `currentTaskTimer` started counting down at frame 0 before children finished reading the task prompt.
+  5. Level 7 (`Click & Hold`) followed Right-Click (Level 6) without explicitly instructing players to hold down the **LEFT** mouse button.
+  6. `ResizeHandle` lacked visual resize cursors (`↔`, `↕`, `↖↘`, `↗↙`) when hovering over window borders/corners.
+  7. `TaskbarClock` displayed `HH:mm` without the current date (`dd/MM/yyyy`).
+  8. `Window.Minimize()` shrank in place in `0.2s` instead of smoothly traveling toward its `TaskbarWindowButton` on the taskbar.
+  9. The desktop lacked a failsafe to restore default practice files and Windows-style blue marquee multi-selection.
+
+**Architectural Solutions & Implementation (`Documentation/Specs/Plan_Playtest_Fixes_And_Features.md`):**
+
+**1. Static Memory Reset & Session Flow (`FileExplorerApp.cs`, `DesktopManager.cs`, `SceneSystem.cs`, `SessionManager.cs`):**
+* Added `FileExplorerApp.ResetStaticFileSystem()` to nullify `sharedRootFolder`, `clipboardItem`, `clipboardSourceItem`, and delete `VirtualFileSystemSnapshot_v1` from `PlayerPrefs`.
+* Updated `DesktopManager.ResetWallpaperPreferences()` to restore the default wallpaper immediately if `DesktopManager.Instance` is active, and removed the forced `InitialAssessmentCompleted = 1` / `AutoSequenceCompleted = 1` overrides from `DesktopManager.Start()`.
+* Invoked `FileExplorerApp.ResetStaticFileSystem()` and `DesktopManager.ResetWallpaperPreferences()` in both `SceneSystem.ResetProgress()` and `SessionManager.ApplyConfiguration(..., resetExistingProgress: true)`.
+
+**2. Virtual File System Cycle & Depth Guards (`FileExplorerApp.cs`, `DesktopContextMenuTrigger.cs`):**
+* Tracked `clipboardSourceItem` alongside `clipboardItem` and added `IsFolderDescendantOf`, `GetFolderDepth`, and `GetSubtreeMaxDepth` to block moving or pasting a folder into itself or any of its descendants.
+* Enforced `MAX_ITEMS_PER_FOLDER = 35` and `MAX_FOLDER_DEPTH = 8` across folder/file creation, paste, move, and recursive traversal methods (`CollectSnapshotEntriesRecursive`, `CloneChildrenRecursive`, `RemoveItemRecursive`, `FindFolderRecursiveStatic`, `FindPathRecursive`, `FindFolderChainRecursive`, `RefreshIconsRecursive`).
+
+**3. Drag Sorting Canvas Elevation (`DraggableIcon.cs`, `ExplorerItemPointerHandler.cs`):**
+* Added `ElevateForDrag()` and `RestoreAfterDrag()` on `DraggableIcon` using a temporary `Canvas` (`overrideSorting = true`, `sortingOrder = 32000`) during drag, and applied the same sorting override to `ExplorerItemPointerHandler`'s `dragGhost`.
+* Updated `DraggableIcon.DeleteDesktopIconToRecycleBin()` to invoke `RecycleBinIcon.NotifyIconRecycled(this)`.
+
+**4. Assessment Reading Grace Period & Level 7 Left-Button Clarity (`InitialTestManager.cs`, `UIDialogs.cs`, `TutorialDialogs.cs`, JSONs):**
+* Added a `2.5s` reading grace period (`readingGracePeriod = 2.5f`) at the start of each task in `InitialTestManager` before timer countdown and time penalties begin.
+* Updated `level_instruction_7`, `intro_click_hold`, and `click_hold` assessment instructions across `EN`, `ES`, and `NO` to explicitly specify the **LEFT** mouse button.
+
+**5. Procedural Window Resize Cursors (`ResizeHandle.cs`):**
+* Implemented `IPointerEnterHandler`, `IPointerExitHandler`, and `IEndDragHandler` with crisp 32×32 procedural resize cursors (`↔`, `↕`, `↖↘`, `↗↙`) and automatic restoration to the default cursor.
+
+**6. Taskbar Clock Time & Date (`TaskbarClock.cs`, `Taskbar.cs`):**
+* Updated `TaskbarClock.cs` to format two-line time and date (`<b>HH:mm</b>\n<size=72%>dd/MM/yyyy</size>`) inside `ClockTray`, and added `Taskbar.FindButtonForWindow(Window)` for taskbar button lookup.
+
+**7. Paced Window Minimize Animation & Taskbar Pulse (`Window.cs`, `TaskbarWindowButton.cs`, `DesktopTour.cs`):**
+* Replaced in-place `0.2s` minimize scaling in `Window.Minimize()` with `AnimateMinimize()` (`0.48s` `Mathf.SmoothStep`), translating and scaling the window directly into its `TaskbarWindowButton` while preserving `preMinimizeLocalPosition` for `Restore()`, followed by `TaskbarWindowButton.PulseHighlight()`.
+
+**8. System Folder Protection (`FileExplorerApp.cs`):**
+* Added `IsProtectedSystemFolderStatic` to protect root system folders (`Desktop`, `Documents`, `Pictures`, `Levels`, `Recycle Bin`, etc.) against accidental deletion, cutting, or renaming.
+
+**9. Desktop Marquee Box Selection (`DesktopManager.cs`, `DesktopContextMenuTrigger.cs`, `DraggableIcon.cs`):**
+* Implemented left-drag `DesktopMarqueeSelectionBox` on the desktop background with multi-icon selection (`DraggableIcon.SelectedIcons`, `SetMarqueeSelected`) and batch `Delete` to the Recycle Bin.
+* Resolved `Canvas` and `Camera` from `parentRt.GetComponentInParent<Canvas>()` (since `DesktopManager` resides on the root `Managers` object outside the `Canvas` hierarchy in `VirtualDesktop.unity`), preventing `ScreenSpaceCamera` coordinate misprojection.
+* Updated `VirtualMascot.ClampMascotWorldPositionToScreen` to allow the mascot's lower body to extend partially below the screen edge when pointing its top-left finger pivot `(0.125, 1.13)` at taskbar buttons, enabled `AdvancedDesktopTour` chaining after `DesktopTour` in `LearningPath.Intermediate` (`StudentConfiguration.cs`, `DesktopManager.cs`), and removed the self-referential `Canvas` lookup on `ExplorerItemPointerHandler.dragGhost` during explorer item dragging.
+
+**10. Full Desktop & File Explorer Multi-Selection, Group Dragging, Batch Clipboard (`Ctrl+C`/`Ctrl+X`/`Ctrl+V`/`Delete`), and Protected-Item Safeguards (`FileExplorerApp.cs`, `ExplorerClickRelay.cs`, `ExplorerItemPointerHandler.cs`, `DraggableIcon.cs`, `IconGrid.cs`, `DesktopManager.cs`, `DesktopContextMenuTrigger.cs`, `WindowManager.cs`, `RecycleBinIcon.cs`):**
+* **File Explorer Marquee & `Ctrl+Click` Multi-Selection:** Updated `ExplorerClickRelay` to temporarily yield `ScrollRect` on left pointer-down over empty Explorer space and drive `FileExplorerApp.BeginMarqueeSelection` / `UpdateMarqueeSelection` / `EndMarqueeSelection` (reusing `DesktopManager.EnsureMarqueeSelectionBox` with `ExplorerMarqueeSelectionBox` clipped inside `ScrollView`), alongside `selectedItems`, `ToggleItemSelection`, `SetMarqueeSelection`, and `RefreshItemSelectionVisuals`.
+* **Group Drag & Drop Across Desktop and Explorer:** Added relative-offset group dragging (`activeDragGroup`, `IconGrid.TryPlaceIconAtCurrentPosition`) on the Desktop grid and into folders, File Explorer windows, or the Recycle Bin (`DraggableIcon.MoveDesktopIconsIntoFolder`, `TryHandleGroupDropOnRecycleBin`, `RecycleBinIcon.OnDrop`/`HandleDesktopIconDropped`), plus batch dragging from File Explorer (`ExplorerItemPointerHandler.GetActiveDragItems` with `CountBadge` overlay when dragging multiple movable items, `MoveItemsToFolder`, `MoveItemsToRecycleBin`).
+* **Unified Focus Routing & Deferred Windows-Style Clipboard (`Ctrl+C` / `Ctrl+X` / `Ctrl+V` / `Delete`):** Added `WindowManager.ClearFocus()`, `DesktopContextMenuTrigger.ClaimDesktopFocus()`, and `DraggableIcon.ClaimDesktopFocus()`, plus `FileExplorerApp.HasActiveFocusedExplorer()` / `IsPrimaryActiveExplorer()` so shortcuts route reliably to Desktop or the focused File Explorer window. Replaced single-item immediate-delete cut with batch clipboard (`CopyItemsToClipboard`, deferred-move `CutItemsToClipboard` dimming cut items at `0.48f` alpha via `IsItemInCutClipboard`, `PasteClipboardBatchIntoFolder`), plus `DraggableIcon.CopySelectedDesktopIcons` / `CutSelectedDesktopIcons` / `DeleteSelectedDesktopIcons` and multi-selection right-click menus (`ShowMultiSelectionContextMenu`).
+* **Protected-Item Handling:** Protected items (`IsProtected`, `IsItemProtectedStatic`) can be moved together with a group on the Desktop grid, while batch Copy/Cut/Delete/folder-move operations automatically skip protected elements, keep them safely in place, act on all non-protected items in mixed selections, and display status notices in File Explorer when any/all selected items are protected.

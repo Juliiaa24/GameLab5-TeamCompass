@@ -37,7 +37,7 @@ namespace ComputerLearning
         public string intro_adaptive = "Time for a challenge!\nLet's see what you've learned so far.";
         public string intro_double_click = "One more trick!\nDouble click quickly to clear the targets!";
         public string intro_right_click = "Let's learn how to use the right button on your mouse!";
-        public string intro_click_hold = "Sometimes you need to hold the button down. Give it a try!";
+        public string intro_click_hold = "Sometimes you need to hold the LEFT mouse button down. Give it a try!";
         public string intro_drag_drop = "Click, hold, and move to drag items around!";
         public string intro_mixed = "The ultimate test!\nUse everything you've learned so far.";
         public string intro_default = "Get ready! ";

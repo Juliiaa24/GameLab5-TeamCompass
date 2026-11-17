@@ -128,6 +128,13 @@ namespace ComputerLearning
             WindowsChanged?.Invoke();
         }
 
+        public void ClearFocus()
+        {
+            if (ActiveWindow == null) return;
+            ActiveWindow = null;
+            WindowsChanged?.Invoke();
+        }
+
         public void ToggleFromTaskbar(Window window)
         {
             if (window == null || window.IsClosed) return;

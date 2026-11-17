@@ -57,7 +57,10 @@ namespace ComputerLearning
 
         [Header("Animation Settings")]
         [SerializeField] private float animationDuration = 0.2f;
+        [SerializeField] private float minimizeAnimationDuration = 0.48f;
         private Coroutine animationCoroutine;
+        private Vector3 preMinimizeLocalPosition;
+        private bool hasPreMinimizePosition;
         #endregion
 
         #region Unity Methods
@@ -197,8 +200,10 @@ namespace ComputerLearning
         public void Minimize()
         {
             if (IsClosed || IsMinimized) return;
+            preMinimizeLocalPosition = windowRectTransform.localPosition;
+            hasPreMinimizePosition = true;
             if (animationCoroutine != null) StopCoroutine(animationCoroutine);
-            animationCoroutine = StartCoroutine(AnimateScale(windowRectTransform.localScale, Vector3.zero, () => gameObject.SetActive(false)));
+            animationCoroutine = StartCoroutine(AnimateMinimize());
         }
 
         public void Restore()
@@ -206,6 +211,10 @@ namespace ComputerLearning
             if (IsClosed) return;
 
             bool wasInactive = !gameObject.activeSelf;
+            if (wasInactive && hasPreMinimizePosition)
+            {
+                windowRectTransform.localPosition = preMinimizeLocalPosition;
+            }
             gameObject.SetActive(true);
 
             if (!wasInactive)
@@ -305,6 +314,53 @@ namespace ComputerLearning
                 if (!(control is IPointerDownHandler) && !(control is IPointerClickHandler)) continue;
                 if (control.GetComponent<WindowFocusRelay>() == null)
                     control.gameObject.AddComponent<WindowFocusRelay>();
+            }
+        }
+
+        private IEnumerator AnimateMinimize()
+        {
+            Vector3 startScale = windowRectTransform.localScale;
+            Vector3 endScale = new Vector3(0.08f, 0.05f, 1f);
+            Vector3 startWorldPos = windowRectTransform.position;
+
+            TaskbarWindowButton targetBtn = Taskbar.FindButtonForWindow(this);
+            Vector3 targetWorldPos = startWorldPos;
+            if (targetBtn != null)
+            {
+                targetWorldPos = targetBtn.transform.position;
+            }
+            else
+            {
+                Taskbar tb = FindAnyObjectByType<Taskbar>();
+                if (tb != null)
+                {
+                    targetWorldPos = tb.transform.position;
+                }
+            }
+
+            float duration = Mathf.Max(0.45f, minimizeAnimationDuration);
+            float elapsed = 0f;
+
+            while (elapsed < duration)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                float progress = Mathf.Clamp01(elapsed / duration);
+                float curve = Mathf.SmoothStep(0f, 1f, progress);
+                windowRectTransform.localScale = Vector3.Lerp(startScale, endScale, curve);
+                windowRectTransform.position = Vector3.Lerp(startWorldPos, targetWorldPos, curve);
+                yield return null;
+            }
+
+            windowRectTransform.localScale = Vector3.zero;
+            if (hasPreMinimizePosition)
+            {
+                windowRectTransform.localPosition = preMinimizeLocalPosition;
+            }
+
+            gameObject.SetActive(false);
+            if (targetBtn != null)
+            {
+                targetBtn.PulseHighlight();
             }
         }
 

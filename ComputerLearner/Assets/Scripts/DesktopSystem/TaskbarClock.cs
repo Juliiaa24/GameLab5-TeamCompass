@@ -18,11 +18,13 @@ namespace ComputerLearning
             {
                 timeText = GetComponentInChildren<TMP_Text>(true);
             }
+            ConfigureClockAppearance();
         }
 
         private void OnEnable()
         {
             lastFormattedTime = null;
+            ConfigureClockAppearance();
             UpdateClock();
         }
 
@@ -31,11 +33,29 @@ namespace ComputerLearning
             UpdateClock();
         }
 
+        private void ConfigureClockAppearance()
+        {
+            RectTransform trayRt = transform as RectTransform;
+            if (trayRt != null && trayRt.sizeDelta.x < 114f)
+            {
+                trayRt.sizeDelta = new Vector2(116f, trayRt.sizeDelta.y);
+            }
+
+            if (timeText != null)
+            {
+                timeText.fontSize = 14.5f;
+                timeText.lineSpacing = -10f;
+                timeText.textWrappingMode = TextWrappingModes.NoWrap;
+                timeText.alignment = TextAlignmentOptions.Center;
+            }
+        }
+
         private void UpdateClock()
         {
             if (timeText == null) return;
 
-            string nowFormatted = DateTime.Now.ToString("HH:mm");
+            DateTime now = DateTime.Now;
+            string nowFormatted = $"<b>{now:HH:mm}</b>\n<size=72%>{now:dd/MM/yyyy}</size>";
             if (nowFormatted != lastFormattedTime)
             {
                 lastFormattedTime = nowFormatted;

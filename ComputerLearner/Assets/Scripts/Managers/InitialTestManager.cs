@@ -120,6 +120,9 @@ namespace ComputerLearning
         // Active task tracking
         private float currentTaskTimer = 0f;
         private float currentTaskTimeout = 15f;
+        private float readingGracePeriod = 2.5f;
+        private float currentGraceTimer = 0f;
+        private bool isWaitingGracePeriod = false;
         private int currentAttempts = 0;
         private bool isTaskResolving = false;
         private Coroutine activeTaskRoutine;
@@ -186,6 +189,21 @@ namespace ComputerLearning
             }
 
             if (!IsTestActive || isTaskResolving || currentTaskIndex >= config.tasks.Count) return;
+
+            if (isWaitingGracePeriod)
+            {
+                currentGraceTimer -= Time.deltaTime;
+                currentTaskTimer = 0f;
+                if (timerBarFill != null)
+                {
+                    timerBarFill.localScale = Vector3.one;
+                }
+                if (currentGraceTimer <= 0f)
+                {
+                    isWaitingGracePeriod = false;
+                }
+                return;
+            }
 
             // Handle timeout countdown
             currentTaskTimer += Time.deltaTime;
@@ -409,7 +427,7 @@ namespace ComputerLearning
             fallback.tasks.Add(new AssessmentTaskConfig { skillId = "click", title = "Single Click", instruction = "Click the orange square once.", timeoutSeconds = 15f, shape = "square" });
             fallback.tasks.Add(new AssessmentTaskConfig { skillId = "double_click", title = "Double Click", instruction = "Double-click quickly on the teal circle.", timeoutSeconds = 15f, shape = "circle" });
             fallback.tasks.Add(new AssessmentTaskConfig { skillId = "right_click", title = "Right Click", instruction = "Click the amber rectangle using the right mouse button.", timeoutSeconds = 15f, shape = "rectangle" });
-            fallback.tasks.Add(new AssessmentTaskConfig { skillId = "click_hold", title = "Click and Hold", instruction = "Press and hold the mouse button on the red circle for 2 seconds.", timeoutSeconds = 20f, shape = "circle", requiredDuration = 2f });
+            fallback.tasks.Add(new AssessmentTaskConfig { skillId = "click_hold", title = "Click and Hold", instruction = "Press and hold the LEFT mouse button on the red circle for 2 seconds.", timeoutSeconds = 20f, shape = "circle", requiredDuration = 2f });
             fallback.tasks.Add(new AssessmentTaskConfig { skillId = "drag_drop", title = "Drag and Drop", instruction = "Drag the blue square into the target frame.", timeoutSeconds = 20f, shape = "drag_drop" });
             return fallback;
         }
@@ -691,10 +709,19 @@ namespace ComputerLearning
 
             AssessmentTaskConfig task = config.tasks[currentTaskIndex];
             currentTaskTimer = 0f;
+            currentGraceTimer = readingGracePeriod;
+            isWaitingGracePeriod = true;
             currentTaskTimeout = task.timeoutSeconds > 0 ? task.timeoutSeconds : 15f;
             currentAttempts = 0;
             isTaskResolving = false;
             statusText.text = "";
+
+            if (timerBarFill != null)
+            {
+                timerBarFill.localScale = Vector3.one;
+                Image fillImg = timerBarFill.GetComponent<Image>();
+                if (fillImg != null) fillImg.color = new Color(0.15f, 0.55f, 0.95f);
+            }
 
             // Update UI headers
             stepText.text = string.Format(config.ui.stepFormat, currentTaskIndex + 1, config.tasks.Count);

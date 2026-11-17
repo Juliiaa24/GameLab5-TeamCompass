@@ -25,6 +25,10 @@ namespace ComputerLearning
 
         #region Static Selection
         public static DraggableIcon SelectedIcon { get; private set; }
+        private static readonly List<DraggableIcon> selectedIcons = new List<DraggableIcon>();
+        private static readonly List<DraggableIcon> activeDragGroup = new List<DraggableIcon>();
+        public static IReadOnlyList<DraggableIcon> SelectedIcons => selectedIcons;
+        public static bool HasActiveDragGroup => activeDragGroup.Count > 1;
         private static DraggableIcon hoveredIcon;
 
         private static GameObject selectionCard;
@@ -35,54 +39,147 @@ namespace ComputerLearning
         private static UnityEngine.UI.Image hoverCardImg;
         private static RectTransform hoverCardRect;
 
+        private static bool IsCtrlHeld()
+        {
+            var kb = UnityEngine.InputSystem.Keyboard.current;
+            if (kb != null && (kb.ctrlKey.isPressed || kb.leftCtrlKey.isPressed || kb.rightCtrlKey.isPressed))
+                return true;
+#if ENABLE_LEGACY_INPUT_MANAGER
+            return Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl);
+#else
+            return false;
+#endif
+        }
+
+        public static void ClaimDesktopFocus()
+        {
+            FileExplorerApp.IsDesktopFocused = true;
+            FileExplorerApp.ClearAllExplorerSelections();
+            if (WindowManager.Instance != null)
+            {
+                WindowManager.Instance.ClearFocus();
+            }
+        }
+
+        private static void RefreshSelectionVisuals()
+        {
+            for (int i = selectedIcons.Count - 1; i >= 0; i--)
+            {
+                if (selectedIcons[i] == null)
+                {
+                    selectedIcons.RemoveAt(i);
+                }
+            }
+
+            if (selectedIcons.Count == 0)
+            {
+                SelectedIcon = null;
+                if (selectionCard != null) selectionCard.SetActive(false);
+                return;
+            }
+
+            if (selectedIcons.Count == 1)
+            {
+                DraggableIcon single = selectedIcons[0];
+                if (!single.gameObject.scene.IsValid() || single.transform.parent == null) return;
+
+                SelectedIcon = single;
+                single.isSelected = true;
+                if (single.multiSelectCard != null) single.multiSelectCard.SetActive(false);
+                if (hoveredIcon == single && hoverCard != null) hoverCard.SetActive(false);
+
+                EnsureSelectionCard(single.transform.parent);
+                if (selectionCardImg != null) selectionCardImg.color = single.selectedColor;
+                if (selectionCard != null) selectionCard.SetActive(true);
+                single.UpdateSelectionCardTransform();
+                return;
+            }
+
+            if (selectionCard != null) selectionCard.SetActive(false);
+            SelectedIcon = selectedIcons[selectedIcons.Count - 1];
+
+            foreach (var ic in selectedIcons)
+            {
+                if (ic == null || !ic.gameObject.scene.IsValid() || ic.transform.parent == null) continue;
+                ic.isSelected = true;
+                if (hoveredIcon == ic && hoverCard != null) hoverCard.SetActive(false);
+
+                ic.EnsureMultiSelectCard();
+                if (ic.multiSelectCardImg != null) ic.multiSelectCardImg.color = ic.selectedColor;
+                if (ic.multiSelectCard != null)
+                {
+                    ic.multiSelectCard.SetActive(true);
+                    ic.UpdateCardTransform(ic.multiSelectCard, ic.multiSelectCardRect);
+                }
+            }
+        }
+
         public static void SelectIcon(DraggableIcon icon)
         {
             if (icon != null)
             {
-                FileExplorerApp.IsDesktopFocused = true;
-                FileExplorerApp.ClearAllExplorerSelections();
+                ClaimDesktopFocus();
             }
 
-            if (SelectedIcon == icon)
+            for (int i = selectedIcons.Count - 1; i >= 0; i--)
             {
-                if (icon != null) icon.UpdateSelectionCardTransform();
-                return;
+                DraggableIcon prev = selectedIcons[i];
+                if (prev != null && prev != icon)
+                {
+                    prev.isSelected = false;
+                    if (prev.multiSelectCard != null) prev.multiSelectCard.SetActive(false);
+                }
             }
+            selectedIcons.Clear();
 
-            if (SelectedIcon != null)
+            if (SelectedIcon != null && SelectedIcon != icon)
             {
                 SelectedIcon.isSelected = false;
             }
 
-            SelectedIcon = icon;
-
-            if (SelectedIcon != null)
+            if (icon != null)
             {
-                SelectedIcon.isSelected = true;
-                if (hoveredIcon == SelectedIcon && hoverCard != null)
-                {
-                    hoverCard.SetActive(false);
-                }
+                selectedIcons.Add(icon);
+                icon.isSelected = true;
+                if (icon.multiSelectCard != null) icon.multiSelectCard.SetActive(false);
+            }
 
-                EnsureSelectionCard(SelectedIcon.transform.parent);
-                if (selectionCardImg != null)
-                {
-                    selectionCardImg.color = SelectedIcon.selectedColor;
-                }
-                if (selectionCard != null)
-                {
-                    selectionCard.SetActive(true);
-                }
-                SelectedIcon.UpdateSelectionCardTransform();
+            RefreshSelectionVisuals();
+        }
+
+        public static void ToggleSelection(DraggableIcon icon)
+        {
+            if (icon == null) return;
+            ClaimDesktopFocus();
+
+            if (selectedIcons.Contains(icon))
+            {
+                icon.isSelected = false;
+                selectedIcons.Remove(icon);
+                if (icon.multiSelectCard != null) icon.multiSelectCard.SetActive(false);
             }
             else
             {
-                if (selectionCard != null) selectionCard.SetActive(false);
+                selectedIcons.Add(icon);
+                icon.isSelected = true;
             }
+
+            RefreshSelectionVisuals();
         }
 
         public static void ClearSelection()
         {
+            for (int i = selectedIcons.Count - 1; i >= 0; i--)
+            {
+                DraggableIcon ic = selectedIcons[i];
+                if (ic != null)
+                {
+                    ic.isSelected = false;
+                    if (ic.multiSelectCard != null) ic.multiSelectCard.SetActive(false);
+                }
+            }
+            selectedIcons.Clear();
+
             if (SelectedIcon != null)
             {
                 SelectedIcon.isSelected = false;
@@ -92,7 +189,218 @@ namespace ComputerLearning
             {
                 selectionCard.SetActive(false);
             }
-            FileExplorerApp.IsDesktopFocused = true;
+        }
+
+        private static List<DraggableIcon> GetCurrentSelectionSnapshot()
+        {
+            List<DraggableIcon> snapshot = new List<DraggableIcon>();
+            foreach (var ic in selectedIcons)
+            {
+                if (ic != null && !snapshot.Contains(ic)) snapshot.Add(ic);
+            }
+            if (snapshot.Count == 0 && SelectedIcon != null)
+            {
+                snapshot.Add(SelectedIcon);
+            }
+            return snapshot;
+        }
+
+        public static void CopySelectedDesktopIcons()
+        {
+            List<DraggableIcon> snapshot = GetCurrentSelectionSnapshot();
+            if (snapshot.Count == 0) return;
+
+            List<ExplorerItemData> items = new List<ExplorerItemData>();
+            int localProtected = 0;
+            foreach (var ic in snapshot)
+            {
+                if (ic == null) continue;
+                if (ic.IsProtected || ic.GetComponent<RecycleBinIcon>() != null)
+                {
+                    localProtected++;
+                    continue;
+                }
+                ic.EnsureLinkedExplorerItem();
+                if (ic.LinkedExplorerItem != null)
+                {
+                    items.Add(ic.LinkedExplorerItem);
+                }
+            }
+
+            FileExplorerApp.CopyItemsToClipboard(items, out int copiedCount, out int fsSkipped);
+            int totalSkipped = localProtected + fsSkipped;
+            if (copiedCount > 0)
+            {
+                FeedbackManager.PlayClick();
+                Debug.Log($"[Desktop] Copied {copiedCount} item(s) to clipboard" + (totalSkipped > 0 ? $" ({totalSkipped} protected skipped)." : "."));
+            }
+            else if (totalSkipped > 0)
+            {
+                Debug.Log("[Desktop] Protected system items cannot be copied.");
+            }
+        }
+
+        public static void CutSelectedDesktopIcons()
+        {
+            List<DraggableIcon> snapshot = GetCurrentSelectionSnapshot();
+            if (snapshot.Count == 0) return;
+
+            List<ExplorerItemData> items = new List<ExplorerItemData>();
+            int localProtected = 0;
+            foreach (var ic in snapshot)
+            {
+                if (ic == null) continue;
+                if (ic.IsProtected || ic.GetComponent<RecycleBinIcon>() != null)
+                {
+                    localProtected++;
+                    continue;
+                }
+                ic.EnsureLinkedExplorerItem();
+                if (ic.LinkedExplorerItem != null)
+                {
+                    items.Add(ic.LinkedExplorerItem);
+                }
+            }
+
+            FileExplorerApp.CutItemsToClipboard(items, out int cutCount, out int fsSkipped);
+            int totalSkipped = localProtected + fsSkipped;
+            if (cutCount > 0)
+            {
+                FeedbackManager.PlayClick();
+                Debug.Log($"[Desktop] Cut {cutCount} item(s) to clipboard" + (totalSkipped > 0 ? $" ({totalSkipped} protected skipped)." : "."));
+            }
+            else if (totalSkipped > 0)
+            {
+                Debug.Log("[Desktop] Protected system items cannot be cut.");
+            }
+        }
+
+        public static void DeleteSelectedDesktopIcons()
+        {
+            List<DraggableIcon> snapshot = GetCurrentSelectionSnapshot();
+            if (snapshot.Count == 0) return;
+
+            RecycleDesktopIconsList(snapshot, notifyBinEvent: true);
+        }
+
+        private static void RecycleDesktopIconsList(List<DraggableIcon> icons, bool notifyBinEvent)
+        {
+            if (icons == null || icons.Count == 0) return;
+
+            List<DraggableIcon> iconsToDelete = new List<DraggableIcon>();
+            List<ExplorerItemData> itemsToRecycle = new List<ExplorerItemData>();
+            int protectedSkipped = 0;
+
+            foreach (var ic in icons)
+            {
+                if (ic == null) continue;
+                if (ic.IsProtected || ic.GetComponent<RecycleBinIcon>() != null)
+                {
+                    protectedSkipped++;
+                    ic.ReturnToInitialPosition();
+                    continue;
+                }
+
+                ic.EnsureLinkedExplorerItem();
+                if (ic.LinkedExplorerItem == null || FileExplorerApp.IsItemProtectedStatic(ic.LinkedExplorerItem))
+                {
+                    protectedSkipped++;
+                    ic.ReturnToInitialPosition();
+                    continue;
+                }
+
+                iconsToDelete.Add(ic);
+                itemsToRecycle.Add(ic.LinkedExplorerItem);
+            }
+
+            if (itemsToRecycle.Count > 0)
+            {
+                FileExplorerApp.MoveItemsToRecycleBin(itemsToRecycle, out _);
+
+                foreach (var ic in iconsToDelete)
+                {
+                    if (ic == null) continue;
+                    ic.MarkDropHandled();
+                    if (notifyBinEvent)
+                    {
+                        RecycleBinIcon.NotifyIconRecycled(ic);
+                    }
+
+                    if (ic.appWindow != null && !ic.appWindow.IsClosed)
+                    {
+#if UNITY_EDITOR
+                        if (!Application.isPlaying) DestroyImmediate(ic.appWindow.gameObject);
+                        else Destroy(ic.appWindow.gameObject);
+#else
+                        Destroy(ic.appWindow.gameObject);
+#endif
+                    }
+
+                    if (DesktopManager.Instance != null)
+                    {
+                        DesktopManager.Instance.UnregisterIcon(ic);
+                    }
+
+#if UNITY_EDITOR
+                    if (!Application.isPlaying) DestroyImmediate(ic.gameObject);
+                    else Destroy(ic.gameObject);
+#else
+                    Destroy(ic.gameObject);
+#endif
+                }
+
+                FeedbackManager.PlayClick();
+                Debug.Log($"[Desktop] Recycled {iconsToDelete.Count} item(s)" + (protectedSkipped > 0 ? $" ({protectedSkipped} protected skipped)." : "."));
+            }
+            else if (protectedSkipped > 0)
+            {
+                Debug.Log("[Desktop] Protected system items cannot be deleted.");
+            }
+
+            RefreshSelectionVisuals();
+            RecycleBinIcon.UpdateAllBinVisuals();
+        }
+
+        public static bool TryHandleGroupDropOnRecycleBin(RecycleBinIcon targetBin, DraggableIcon leaderIcon)
+        {
+            if (targetBin == null || activeDragGroup.Count <= 1 || leaderIcon == null || !activeDragGroup.Contains(leaderIcon))
+            {
+                return false;
+            }
+
+            List<DraggableIcon> group = new List<DraggableIcon>(activeDragGroup);
+            activeDragGroup.Clear();
+
+            foreach (var m in group)
+            {
+                if (m == null) continue;
+                m.dragging = false;
+                m.MarkDropHandled();
+                m.RestoreAfterDrag();
+                m.CanvasGroup.blocksRaycasts = true;
+            }
+
+            bool isTutorialTour = FindAnyObjectByType<AdvancedDesktopTour>() != null;
+            if (isTutorialTour)
+            {
+                foreach (var m in group)
+                {
+                    if (m == null || m.gameObject == targetBin.gameObject) continue;
+                    RecycleBinIcon.NotifyIconRecycled(m);
+#if UNITY_EDITOR
+                    if (!Application.isPlaying) DestroyImmediate(m.gameObject);
+                    else Destroy(m.gameObject);
+#else
+                    Destroy(m.gameObject);
+#endif
+                }
+                RefreshSelectionVisuals();
+                RecycleBinIcon.UpdateAllBinVisuals();
+                return true;
+            }
+
+            RecycleDesktopIconsList(group, notifyBinEvent: true);
+            return true;
         }
 
         private static void EnsureSelectionCard(Transform parent)
@@ -188,16 +496,57 @@ namespace ComputerLearning
 
         private bool isHovered;
         private bool isSelected;
+        private bool preserveGroupOnClick;
         private float lastLeftClickTime;
+        private GameObject multiSelectCard;
+        private UnityEngine.UI.Image multiSelectCardImg;
+        private RectTransform multiSelectCardRect;
 
         private Window appWindow;
         private WindowManager manager;
         private Vector3 initialPosition;
+        private Vector3 dragStartWorldPos;
+        private Vector3 dragPointerOffset;
         private Vector3 originalScale;
         private Color originalColor = Color.white;
         private bool dragging;
         private bool dropHandled;
         private CanvasGroup canvasGroup;
+        private Canvas dragSortingCanvas;
+        private bool addedDragSortingCanvas;
+
+        private void ElevateForDrag()
+        {
+            Canvas parentCanvas = transform.parent != null ? transform.parent.GetComponentInParent<Canvas>() : null;
+            dragSortingCanvas = GetComponent<Canvas>();
+            if (dragSortingCanvas == null)
+            {
+                dragSortingCanvas = gameObject.AddComponent<Canvas>();
+                addedDragSortingCanvas = true;
+            }
+            if (parentCanvas != null)
+            {
+                dragSortingCanvas.additionalShaderChannels = parentCanvas.additionalShaderChannels;
+                dragSortingCanvas.sortingLayerID = parentCanvas.sortingLayerID;
+            }
+            dragSortingCanvas.overrideSorting = true;
+            dragSortingCanvas.sortingOrder = 32000;
+        }
+
+        private void RestoreAfterDrag()
+        {
+            if (dragSortingCanvas == null) dragSortingCanvas = GetComponent<Canvas>();
+            if (dragSortingCanvas != null)
+            {
+                dragSortingCanvas.overrideSorting = false;
+                if (addedDragSortingCanvas)
+                {
+                    Destroy(dragSortingCanvas);
+                    dragSortingCanvas = null;
+                    addedDragSortingCanvas = false;
+                }
+            }
+        }
 
         public CanvasGroup CanvasGroup
         {
@@ -303,9 +652,8 @@ namespace ComputerLearning
 
         private void Update()
         {
-            bool actuallyLocked = isLocked;
-            if (levelDefinition != null && ProgressData.Instance != null)
-                actuallyLocked = !ProgressData.Instance.IsLevelUnlocked(levelDefinition.levelId);
+            bool actuallyLocked = IsEffectivelyLocked();
+            bool isCut = !actuallyLocked && LinkedExplorerItem != null && FileExplorerApp.IsItemInCutClipboard(LinkedExplorerItem);
 
             UnityEngine.UI.Image img = GetComponent<UnityEngine.UI.Image>();
             if (img != null)
@@ -315,7 +663,9 @@ namespace ComputerLearning
 
             if (canvasGroup != null)
             {
-                canvasGroup.alpha = actuallyLocked ? 0.6f : 1f;
+                if (actuallyLocked) canvasGroup.alpha = 0.6f;
+                else if (isCut) canvasGroup.alpha = 0.48f;
+                else canvasGroup.alpha = 1f;
             }
 
             TMPro.TextMeshProUGUI textLabel = GetComponentInChildren<TMPro.TextMeshProUGUI>();
@@ -354,7 +704,11 @@ namespace ComputerLearning
                 transform.localScale = originalScale;
             }
 
-            if (SelectedIcon == this && selectionCard != null && selectionCard.activeSelf)
+            if (isSelected && multiSelectCard != null && multiSelectCard.activeSelf)
+            {
+                UpdateCardTransform(multiSelectCard, multiSelectCardRect);
+            }
+            else if (SelectedIcon == this && selectionCard != null && selectionCard.activeSelf)
             {
                 UpdateSelectionCardTransform();
             }
@@ -366,9 +720,17 @@ namespace ComputerLearning
 
         private void OnDestroy()
         {
+            selectedIcons.Remove(this);
+            activeDragGroup.Remove(this);
+            if (multiSelectCard != null)
+            {
+                Destroy(multiSelectCard);
+                multiSelectCard = null;
+            }
             if (SelectedIcon == this)
             {
-                ClearSelection();
+                SelectedIcon = null;
+                RefreshSelectionVisuals();
             }
             if (hoveredIcon == this)
             {
@@ -439,8 +801,18 @@ namespace ComputerLearning
             dropHandled = true;
         }
 
+        private bool IsEffectivelyLocked()
+        {
+            if (levelDefinition != null && ProgressData.Instance != null)
+            {
+                return !ProgressData.Instance.IsLevelUnlocked(levelDefinition.levelId);
+            }
+            return isLocked;
+        }
+
         public void ReturnToInitialPosition()
         {
+            RestoreAfterDrag();
             transform.position = initialPosition;
             CanvasGroup.blocksRaycasts = true;
             dragging = false;
@@ -456,13 +828,24 @@ namespace ComputerLearning
         {
             if (eventData.button == PointerEventData.InputButton.Left)
             {
-                SelectIcon(this);
+                ClaimDesktopFocus();
+                bool isCtrl = IsCtrlHeld();
+                preserveGroupOnClick = !isCtrl && selectedIcons.Count > 1 && selectedIcons.Contains(this);
+                if (!isCtrl && !preserveGroupOnClick)
+                {
+                    SelectIcon(this);
+                }
+            }
+            else if (eventData.button == PointerEventData.InputButton.Right)
+            {
+                ClaimDesktopFocus();
+                if (!selectedIcons.Contains(this))
+                {
+                    SelectIcon(this);
+                }
             }
 
-            bool actuallyLocked = isLocked;
-            if (levelDefinition != null && ProgressData.Instance != null)
-                actuallyLocked = !ProgressData.Instance.IsLevelUnlocked(levelDefinition.levelId);
-            if (actuallyLocked) return;
+            if (IsEffectivelyLocked()) return;
 
             if (eventData.button != PointerEventData.InputButton.Left) return;
             initialPosition = transform.position;
@@ -475,6 +858,7 @@ namespace ComputerLearning
         public void OnPointerUp(PointerEventData eventData)
         {
             if (eventData.button != PointerEventData.InputButton.Left) return;
+            if (!dragging) RestoreAfterDrag();
             CanvasGroup.blocksRaycasts = true;
             dragging = false;
         }
@@ -482,32 +866,98 @@ namespace ComputerLearning
         public void OnBeginDrag(PointerEventData eventData)
         {
             if (eventData.button != PointerEventData.InputButton.Left) return;
-            SelectIcon(this);
-            dragging = true;
-            dropHandled = false;
-            CanvasGroup.blocksRaycasts = false;
-            if (grid != null) grid.Unregister(this);
-            transform.SetAsLastSibling();
-            UpdateSelectionCardTransform();
+            if (IsEffectivelyLocked()) return;
+
+            preserveGroupOnClick = false;
+            ClaimDesktopFocus();
+            if (!selectedIcons.Contains(this))
+            {
+                SelectIcon(this);
+            }
+
+            activeDragGroup.Clear();
+            foreach (var sel in selectedIcons)
+            {
+                if (sel != null && sel.gameObject.activeInHierarchy && !sel.IsEffectivelyLocked())
+                {
+                    activeDragGroup.Add(sel);
+                }
+            }
+            if (!activeDragGroup.Contains(this))
+            {
+                activeDragGroup.Clear();
+                activeDragGroup.Add(this);
+            }
+
+            dragStartWorldPos = transform.position;
+            if (RectTransformUtility.ScreenPointToWorldPointInRectangle(
+                transform.parent as RectTransform, eventData.position, eventData.pressEventCamera, out Vector3 grabWorld))
+            {
+                dragPointerOffset = transform.position - grabWorld;
+            }
+            else
+            {
+                dragPointerOffset = Vector3.zero;
+            }
+
+            foreach (var member in activeDragGroup)
+            {
+                member.initialPosition = member.transform.position;
+                member.dragStartWorldPos = member.transform.position;
+                member.dragging = true;
+                member.dropHandled = false;
+                member.CanvasGroup.blocksRaycasts = false;
+                if (member.grid != null) member.grid.Unregister(member);
+                member.transform.SetAsLastSibling();
+                member.ElevateForDrag();
+                member.UpdateSelectionCardTransform();
+            }
         }
 
         public void OnDrag(PointerEventData eventData)
         {
             if (eventData.button != PointerEventData.InputButton.Left) return;
+            if (IsEffectivelyLocked()) return;
+
             dragging = true;
             if (RectTransformUtility.ScreenPointToWorldPointInRectangle(
                 transform.parent as RectTransform, eventData.position, eventData.pressEventCamera, out Vector3 point))
             {
-                transform.position = point;
-                UpdateSelectionCardTransform();
+                Vector3 targetLeaderPos = point + dragPointerOffset;
+                Vector3 delta = targetLeaderPos - dragStartWorldPos;
+                foreach (var member in activeDragGroup)
+                {
+                    if (member == null) continue;
+                    member.dragging = true;
+                    member.transform.position = member.dragStartWorldPos + delta;
+                    member.UpdateSelectionCardTransform();
+                }
             }
         }
 
         public void OnEndDrag(PointerEventData eventData)
         {
-            dragging = false;
-            CanvasGroup.blocksRaycasts = true;
-            UpdateSelectionCardTransform();
+            List<DraggableIcon> group = new List<DraggableIcon>();
+            if (activeDragGroup.Contains(this))
+            {
+                foreach (var m in activeDragGroup)
+                {
+                    if (m != null) group.Add(m);
+                }
+                activeDragGroup.Clear();
+            }
+            if (group.Count == 0)
+            {
+                group.Add(this);
+            }
+
+            foreach (var member in group)
+            {
+                member.dragging = false;
+                member.RestoreAfterDrag();
+                member.CanvasGroup.blocksRaycasts = true;
+                member.UpdateSelectionCardTransform();
+            }
 
             if (eventData.button != PointerEventData.InputButton.Left)
             {
@@ -519,26 +969,49 @@ namespace ComputerLearning
                 return;
             }
 
-            // 1. Check if dropped on the Recycle Bin icon on the Desktop
+            if (IsEffectivelyLocked())
+            {
+                ReturnGroupToInitialPositions(group);
+                return;
+            }
+
+            // 1. Check if dropped on the Recycle Bin icon on the Desktop (skip if Recycle Bin itself is in the dragged group)
             if (GetComponent<RecycleBinIcon>() == null)
             {
                 RecycleBinIcon targetBin = RecycleBinIcon.FindBinAtScreenPoint(eventData.position, eventData.pressEventCamera, transform as RectTransform);
                 if (targetBin != null && targetBin.gameObject != this.gameObject)
                 {
-                    dropHandled = true;
-                    if (targetBin.HandleDesktopIconDropped(this))
+                    DraggableIcon binIcon = targetBin.GetComponent<DraggableIcon>();
+                    if (binIcon == null || !group.Contains(binIcon))
                     {
-                        CanvasGroup.blocksRaycasts = true;
-                        dragging = false;
-                        return;
+                        if (group.Count > 1)
+                        {
+                            RecycleGroupForDrop(targetBin, group);
+                            return;
+                        }
+                        dropHandled = true;
+                        if (targetBin.HandleDesktopIconDropped(this))
+                        {
+                            CanvasGroup.blocksRaycasts = true;
+                            dragging = false;
+                            return;
+                        }
                     }
                 }
             }
 
-            CanvasGroup.blocksRaycasts = true;
-
             // 2. Check if dropped into an open FileExplorerApp window or another folder icon via RaycastAll
-            if (EventSystem.current != null && !IsProtected)
+            bool hasAnyMovable = false;
+            foreach (var m in group)
+            {
+                if (m != null && !m.IsProtected && m.GetComponent<RecycleBinIcon>() == null)
+                {
+                    hasAnyMovable = true;
+                    break;
+                }
+            }
+
+            if (EventSystem.current != null && hasAnyMovable)
             {
                 List<RaycastResult> results = new List<RaycastResult>();
                 EventSystem.current.RaycastAll(eventData, results);
@@ -554,10 +1027,10 @@ namespace ComputerLearning
                         ExplorerItemData targetFolder = itemHandler.ItemData;
                         if (targetFolder.name.Equals("Recycle Bin", StringComparison.OrdinalIgnoreCase))
                         {
-                            DeleteDesktopIconToRecycleBin();
+                            RecycleDesktopIconsList(group, notifyBinEvent: true);
                             return;
                         }
-                        if (MoveDesktopIconIntoFolder(targetFolder))
+                        if (MoveDesktopIconsIntoFolder(group, targetFolder))
                         {
                             return;
                         }
@@ -575,10 +1048,10 @@ namespace ComputerLearning
                         ExplorerItemData targetFolder = explorer.CurrentFolder;
                         if (targetFolder.name.Equals("Recycle Bin", StringComparison.OrdinalIgnoreCase))
                         {
-                            DeleteDesktopIconToRecycleBin();
+                            RecycleDesktopIconsList(group, notifyBinEvent: true);
                             return;
                         }
-                        if (MoveDesktopIconIntoFolder(targetFolder))
+                        if (MoveDesktopIconsIntoFolder(group, targetFolder))
                         {
                             return;
                         }
@@ -591,12 +1064,12 @@ namespace ComputerLearning
                     if (res.gameObject == null || res.gameObject == this.gameObject) continue;
 
                     DraggableIcon otherIcon = res.gameObject.GetComponentInParent<DraggableIcon>();
-                    if (otherIcon != null && otherIcon != this && otherIcon.GetComponent<RecycleBinIcon>() == null)
+                    if (otherIcon != null && otherIcon != this && !group.Contains(otherIcon) && otherIcon.GetComponent<RecycleBinIcon>() == null)
                     {
                         if (otherIcon.ItemType == DesktopItemType.Folder && otherIcon.LinkedExplorerItem != null &&
                             otherIcon.LinkedExplorerItem != LinkedExplorerItem)
                         {
-                            if (MoveDesktopIconIntoFolder(otherIcon.LinkedExplorerItem))
+                            if (MoveDesktopIconsIntoFolder(group, otherIcon.LinkedExplorerItem))
                             {
                                 return;
                             }
@@ -605,51 +1078,144 @@ namespace ComputerLearning
                 }
             }
 
-            // 3. Otherwise place on the Desktop IconGrid at the new drop position
-            if (grid != null)
+            // 3. Otherwise place on the Desktop IconGrid at the new drop position(s)
+            if (group.Count == 1)
             {
-                grid.TryPlaceIcon(this, eventData.position, initialPosition, eventData.pressEventCamera);
+                if (grid != null)
+                {
+                    grid.TryPlaceIcon(this, eventData.position, initialPosition, eventData.pressEventCamera);
+                }
+            }
+            else
+            {
+                foreach (var member in group)
+                {
+                    if (member == null) continue;
+                    if (member.grid != null)
+                    {
+                        member.grid.TryPlaceIconAtCurrentPosition(member, member.initialPosition);
+                    }
+                    member.UpdateSelectionCardTransform();
+                }
+                RefreshSelectionVisuals();
             }
         }
 
-        private bool MoveDesktopIconIntoFolder(ExplorerItemData targetFolder)
+        private static void ReturnGroupToInitialPositions(List<DraggableIcon> group)
         {
-            if (targetFolder == null || IsProtected) return false;
+            if (group == null) return;
+            foreach (var member in group)
+            {
+                if (member != null) member.ReturnToInitialPosition();
+            }
+        }
 
-            // Prevent dropping a folder into itself
-            if (LinkedExplorerItem != null && LinkedExplorerItem == targetFolder) return false;
+        private static void RecycleGroupForDrop(RecycleBinIcon targetBin, List<DraggableIcon> group)
+        {
+            bool isTutorialTour = FindAnyObjectByType<AdvancedDesktopTour>() != null;
+            if (isTutorialTour)
+            {
+                foreach (var m in group)
+                {
+                    if (m == null || (targetBin != null && m.gameObject == targetBin.gameObject)) continue;
+                    m.MarkDropHandled();
+                    RecycleBinIcon.NotifyIconRecycled(m);
+#if UNITY_EDITOR
+                    if (!Application.isPlaying) DestroyImmediate(m.gameObject);
+                    else Destroy(m.gameObject);
+#else
+                    Destroy(m.gameObject);
+#endif
+                }
+                RefreshSelectionVisuals();
+                RecycleBinIcon.UpdateAllBinVisuals();
+                return;
+            }
 
-            // If dropped into "Desktop" folder, keep it on Desktop
+            RecycleDesktopIconsList(group, notifyBinEvent: true);
+        }
+
+        private bool MoveDesktopIconsIntoFolder(List<DraggableIcon> group, ExplorerItemData targetFolder)
+        {
+            if (group == null || group.Count == 0 || targetFolder == null) return false;
+
             if (targetFolder.name.Equals("Desktop", StringComparison.OrdinalIgnoreCase))
             {
                 return false;
             }
 
-            // Prevent dropping into read-only system folders like Levels/Minigames/This PC root
             if (targetFolder.name.Equals("This PC", StringComparison.OrdinalIgnoreCase) ||
                 targetFolder.name.Equals("Files", StringComparison.OrdinalIgnoreCase) ||
                 targetFolder.name.Equals("Levels", StringComparison.OrdinalIgnoreCase) ||
                 targetFolder.name.Equals("Mouse Levels", StringComparison.OrdinalIgnoreCase) ||
                 targetFolder.name.Equals("Minigames", StringComparison.OrdinalIgnoreCase))
             {
-                ReturnToInitialPosition();
+                ReturnGroupToInitialPositions(group);
                 return true;
             }
 
-            EnsureLinkedExplorerItem();
-            if (LinkedExplorerItem != null)
+            List<DraggableIcon> candidateIcons = new List<DraggableIcon>();
+            List<ExplorerItemData> itemsToMove = new List<ExplorerItemData>();
+
+            foreach (var member in group)
             {
-                if (FileExplorerApp.MoveItemToFolder(LinkedExplorerItem, targetFolder))
+                if (member == null) continue;
+
+                if (member.IsProtected || member.GetComponent<RecycleBinIcon>() != null)
                 {
-                    if (appWindow != null && !appWindow.IsClosed)
+                    member.ReturnToInitialPosition();
+                    continue;
+                }
+
+                member.EnsureLinkedExplorerItem();
+                ExplorerItemData expItem = member.LinkedExplorerItem;
+                if (expItem == null || FileExplorerApp.IsItemProtectedStatic(expItem))
+                {
+                    member.ReturnToInitialPosition();
+                    continue;
+                }
+
+                if (expItem == targetFolder || FileExplorerApp.IsFolderDescendantOf(targetFolder, expItem))
+                {
+                    member.ReturnToInitialPosition();
+                    continue;
+                }
+
+                candidateIcons.Add(member);
+                itemsToMove.Add(expItem);
+            }
+
+            if (itemsToMove.Count > 0)
+            {
+                FileExplorerApp.MoveItemsToFolder(itemsToMove, targetFolder, out _, out _);
+
+                foreach (var movedIcon in candidateIcons)
+                {
+                    if (movedIcon == null) continue;
+                    bool verifiedMoved = targetFolder.children != null && movedIcon.LinkedExplorerItem != null &&
+                                         targetFolder.children.Contains(movedIcon.LinkedExplorerItem);
+                    if (verifiedMoved)
                     {
-                        Destroy(appWindow.gameObject);
+                        if (movedIcon.appWindow != null && !movedIcon.appWindow.IsClosed)
+                        {
+                            Destroy(movedIcon.appWindow.gameObject);
+                        }
+                        Destroy(movedIcon.gameObject);
                     }
-                    Destroy(gameObject);
-                    return true;
+                    else
+                    {
+                        movedIcon.ReturnToInitialPosition();
+                    }
                 }
             }
-            return false;
+
+            RefreshSelectionVisuals();
+            return true;
+        }
+
+        private bool MoveDesktopIconIntoFolder(ExplorerItemData targetFolder)
+        {
+            return MoveDesktopIconsIntoFolder(new List<DraggableIcon> { this }, targetFolder);
         }
 
         private void EnsureLinkedExplorerItem()
@@ -698,13 +1264,35 @@ namespace ComputerLearning
 
             if (eventData.button == PointerEventData.InputButton.Right)
             {
-                SelectIcon(this);
-                ShowIconContextMenu(eventData.position);
+                preserveGroupOnClick = false;
+                if (selectedIcons.Count > 1 && selectedIcons.Contains(this))
+                {
+                    ShowMultiSelectionContextMenu(eventData.position);
+                }
+                else
+                {
+                    SelectIcon(this);
+                    ShowIconContextMenu(eventData.position);
+                }
                 return;
             }
 
             if (eventData.button == PointerEventData.InputButton.Left)
             {
+                if (eventData.dragging || dragging)
+                {
+                    preserveGroupOnClick = false;
+                    return;
+                }
+
+                if (IsCtrlHeld())
+                {
+                    preserveGroupOnClick = false;
+                    ToggleSelection(this);
+                    return;
+                }
+
+                preserveGroupOnClick = false;
                 SelectIcon(this);
 
                 if (!AllowDoubleClick) return;
@@ -720,6 +1308,30 @@ namespace ComputerLearning
                     OpenApplication();
                 }
             }
+        }
+
+        private void ShowMultiSelectionContextMenu(Vector2 screenPosition)
+        {
+            if (ContextMenuController.Instance == null) return;
+
+            int modifiableCount = 0;
+            foreach (var ic in selectedIcons)
+            {
+                if (ic != null && !ic.IsProtected && ic.GetComponent<RecycleBinIcon>() == null)
+                {
+                    modifiableCount++;
+                }
+            }
+
+            bool hasModifiable = modifiableCount > 0;
+            var items = new List<ContextMenuItem>
+            {
+                new ContextMenuItem(hasModifiable ? $"Copy ({modifiableCount})" : "Copy", CopySelectedDesktopIcons, hasModifiable),
+                new ContextMenuItem(hasModifiable ? $"Cut ({modifiableCount})" : "Cut", CutSelectedDesktopIcons, hasModifiable),
+                new ContextMenuItem(hasModifiable ? $"Delete ({modifiableCount})" : "Delete", DeleteSelectedDesktopIcons, hasModifiable)
+            };
+
+            ContextMenuController.Instance.Show(screenPosition, items);
         }
 
         private void ShowIconContextMenu(Vector2 screenPosition)
@@ -826,46 +1438,27 @@ namespace ComputerLearning
 
         public void CopyDesktopIcon()
         {
-            if (IsProtected) return;
+            if (IsProtected || GetComponent<RecycleBinIcon>() != null) return;
             EnsureLinkedExplorerItem();
-            if (LinkedExplorerItem != null && !LinkedExplorerItem.isProtected)
+            if (LinkedExplorerItem != null && !FileExplorerApp.IsItemProtectedStatic(LinkedExplorerItem))
             {
-                FileExplorerApp.SharedClipboardItem = LinkedExplorerItem;
-                FileExplorerApp.IsClipboardCut = false;
-                FeedbackManager.PlayClick();
+                if (FileExplorerApp.CopyItemsToClipboard(new[] { LinkedExplorerItem }, out int copiedCount, out _) && copiedCount > 0)
+                {
+                    FeedbackManager.PlayClick();
+                }
             }
         }
 
         public void CutDesktopIcon()
         {
-            if (IsProtected) return;
+            if (IsProtected || GetComponent<RecycleBinIcon>() != null) return;
             EnsureLinkedExplorerItem();
-            if (LinkedExplorerItem != null && !LinkedExplorerItem.isProtected)
+            if (LinkedExplorerItem != null && !FileExplorerApp.IsItemProtectedStatic(LinkedExplorerItem))
             {
-                FileExplorerApp.CutItemToClipboard(LinkedExplorerItem);
-                FeedbackManager.PlayClick();
-
-                if (appWindow != null && !appWindow.IsClosed)
+                if (FileExplorerApp.CutItemsToClipboard(new[] { LinkedExplorerItem }, out int cutCount, out _) && cutCount > 0)
                 {
-#if UNITY_EDITOR
-                    if (!Application.isPlaying) DestroyImmediate(appWindow.gameObject);
-                    else Destroy(appWindow.gameObject);
-#else
-                    Destroy(appWindow.gameObject);
-#endif
+                    FeedbackManager.PlayClick();
                 }
-
-                if (DesktopManager.Instance != null)
-                {
-                    DesktopManager.Instance.UnregisterIcon(this);
-                }
-
-#if UNITY_EDITOR
-                if (!Application.isPlaying) DestroyImmediate(gameObject);
-                else Destroy(gameObject);
-#else
-                Destroy(gameObject);
-#endif
             }
         }
 
@@ -915,6 +1508,8 @@ namespace ComputerLearning
             {
                 FileExplorerApp.MoveItemToRecycleBin(LinkedExplorerItem);
             }
+
+            RecycleBinIcon.NotifyIconRecycled(this);
 
             if (appWindow != null && !appWindow.IsClosed)
             {
@@ -1224,7 +1819,14 @@ namespace ComputerLearning
 
         public void UpdateSelectionCardTransform()
         {
-            UpdateCardTransform(selectionCard, selectionCardRect);
+            if (SelectedIcon == this && selectedIcons.Count <= 1 && selectionCard != null && selectionCard.activeSelf)
+            {
+                UpdateCardTransform(selectionCard, selectionCardRect);
+            }
+            if (isSelected && multiSelectCard != null && multiSelectCard.activeSelf)
+            {
+                UpdateCardTransform(multiSelectCard, multiSelectCardRect);
+            }
         }
 
         public void UpdateHoverCardTransform()
@@ -1235,7 +1837,7 @@ namespace ComputerLearning
         public void OnPointerEnter(PointerEventData eventData)
         {
             isHovered = true;
-            if (SelectedIcon == this) return;
+            if (isSelected || SelectedIcon == this) return;
 
             hoveredIcon = this;
             EnsureHoverCard(transform.parent);
@@ -1269,9 +1871,48 @@ namespace ComputerLearning
             {
                 SelectIcon(this);
             }
-            else if (SelectedIcon == this)
+            else if (SelectedIcon == this || isSelected)
             {
-                ClearSelection();
+                SetMarqueeSelected(false);
+            }
+        }
+
+        public void SetMarqueeSelected(bool selected)
+        {
+            if (selected)
+            {
+                ClaimDesktopFocus();
+                isSelected = true;
+                if (!selectedIcons.Contains(this))
+                {
+                    selectedIcons.Add(this);
+                }
+                RefreshSelectionVisuals();
+            }
+            else
+            {
+                isSelected = false;
+                selectedIcons.Remove(this);
+                if (multiSelectCard != null)
+                {
+                    multiSelectCard.SetActive(false);
+                }
+                RefreshSelectionVisuals();
+            }
+        }
+
+        private void EnsureMultiSelectCard()
+        {
+            if (multiSelectCard == null || multiSelectCardImg == null || multiSelectCardRect == null)
+            {
+                multiSelectCard = new GameObject($"MarqueeHighlight_{name}", typeof(RectTransform), typeof(CanvasRenderer), typeof(UnityEngine.UI.Image));
+                multiSelectCardImg = multiSelectCard.GetComponent<UnityEngine.UI.Image>();
+                multiSelectCardRect = multiSelectCard.GetComponent<RectTransform>();
+                multiSelectCardImg.raycastTarget = false;
+            }
+            if (transform.parent != null && multiSelectCard.transform.parent != transform.parent)
+            {
+                multiSelectCard.transform.SetParent(transform.parent, false);
             }
         }
 

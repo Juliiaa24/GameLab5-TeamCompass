@@ -52,7 +52,7 @@
     {
       "skillId": "click_hold",
       "title": "Klikk og hold",
-      "instruction": "Klikk og hold museknappen inne på den røde sirkelen i 2 sekunder.",
+      "instruction": "Klikk og hold VENSTRE museknapp inne på den røde sirkelen i 2 sekunder.",
       "timeoutSeconds": 20,
       "shape": "circle",
       "requiredDuration": 2.0

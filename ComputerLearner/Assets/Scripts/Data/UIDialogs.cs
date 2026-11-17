@@ -63,7 +63,7 @@ namespace ComputerLearning
         public string level_instruction_4 = "Welcome to the Adaptive Challenge!\nHere you will practice everything you've learned.";
         public string level_instruction_5 = "Double Click on the targets to practice opening files and folders!";
         public string level_instruction_6 = "Right Click on the targets to practice opening context menus!";
-        public string level_instruction_7 = "Click and hold the button down until it fills completely!";
+        public string level_instruction_7 = "Click and hold down the LEFT mouse button until the circle fills completely!";
         public string level_instruction_8 = "Click and drag items to their correct drop zones!";
         public string level_instruction_9 = "Are you ready for the final challenge?";
         public string level_instruction_10 = "Learn how to use the desktop Context Menu!\nRight-click on the desktop to explore options.";
@@ -271,6 +271,11 @@ namespace ComputerLearning
         public string assessment_badge_task_format = "Game {0} of {1}";
         public string assessment_btn_skip = "Skip Game";
         public string assessment_btn_menu = "Menu";
+
+        // File Explorer Safety
+        public string explorer_folder_limit_reached = "Folder item limit reached (max 35 items).";
+        public string explorer_depth_limit_reached = "Maximum folder nesting depth reached.";
+        public string explorer_cycle_error = "Cannot move or paste a folder inside itself or its subfolders.";
 
         private static UIDialogs cached;
         private static string cachedLang;
