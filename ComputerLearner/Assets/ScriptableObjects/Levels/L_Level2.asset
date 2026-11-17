@@ -17,7 +17,7 @@ MonoBehaviour:
   instructionText: 'HOVER your mouse over the targets
 
     until they are full'
-  videoDemonstration: {fileID: 32900000, guid: 03bd417d748f39347948c9e08d9ee576, type: 3}
+  videoDemonstration: {fileID: 32900000, guid: 299fd23aba7ee0a4d9a130e84f72472e, type: 3}
   isAdaptive: 0
   adaptiveTaskCount: 5
   tasks:

@@ -83,8 +83,6 @@ namespace RetroUIBuilder
             GameObject softVignette = CreateImageObject("SkyGlowTint", canvas.transform, null, new Color(0.95f, 0.98f, 1f, 0.22f), false);
             StretchFull(softVignette.GetComponent<RectTransform>());
 
-            BuildDesktopShortcutDecoration(canvas.transform, assets, font);
-
             // =====================================================================
             // 2. Top-Left Student Welcome Card ("¡Hola, [Nombre]!")
             // =====================================================================
@@ -2397,7 +2395,7 @@ namespace RetroUIBuilder
             string previousScenePath = SceneManager.GetActiveScene().path;
             try
             {
-                RetroizeDesktopScene("Assets/Scenes/Desktop1.unity", false, assets, font);
+                RetroizeDesktopScene("Assets/Scenes/Desktop1.unity", true, assets, font);
                 RetroizeDesktopScene("Assets/Scenes/VirtualDesktop.unity", true, assets, font);
             }
             finally
@@ -2664,26 +2662,40 @@ namespace RetroUIBuilder
                 Transform desktopLabelTr = taskbarTr.Find("DesktopLabel");
                 if (desktopLabelTr != null)
                 {
-                    TMP_Text lbl = desktopLabelTr.GetComponent<TMP_Text>();
-                    if (lbl != null)
+                    if (hasStartMenu)
                     {
-                        if (font != null) lbl.font = font;
-                        lbl.fontSize = 15f;
-                        lbl.fontStyle = FontStyles.Bold;
-                        lbl.color = RetroUITheme.TitleBlue;
-                        lbl.alignment = TextAlignmentOptions.Center;
-                        lbl.raycastTarget = false;
-                        EditorUtility.SetDirty(lbl);
+                        desktopLabelTr.gameObject.SetActive(false);
+                    }
+                    else
+                    {
+                        TMP_Text lbl = desktopLabelTr.GetComponent<TMP_Text>();
+                        if (lbl != null)
+                        {
+                            if (font != null) lbl.font = font;
+                            lbl.fontSize = 15f;
+                            lbl.fontStyle = FontStyles.Bold;
+                            lbl.color = RetroUITheme.TitleBlue;
+                            lbl.alignment = TextAlignmentOptions.Center;
+                            lbl.raycastTarget = false;
+                            EditorUtility.SetDirty(lbl);
+                        }
                     }
                 }
 
                 if (hasStartMenu)
                 {
                     Transform startBtnTr = taskbarTr.Find("StartButton");
-                    if (startBtnTr != null)
+                    if (startBtnTr == null)
                     {
-                        RetroizeStartButton(startBtnTr, assets, font);
+                        GameObject startBtnGo = new GameObject("StartButton", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button));
+                        startBtnGo.layer = taskbarTr.gameObject.layer;
+                        startBtnGo.transform.SetParent(taskbarTr, false);
+                        startBtnGo.transform.SetAsFirstSibling();
+                        TextMeshProUGUI startBtnTxt = CreateTmp("Text", startBtnGo.transform, font, "Start", 20f, FontStyles.Bold, DesktopDarkInk, TextAlignmentOptions.MidlineLeft);
+                        startBtnTxt.gameObject.layer = taskbarTr.gameObject.layer;
+                        startBtnTr = startBtnGo.transform;
                     }
+                    RetroizeStartButton(startBtnTr, assets, font);
 
                     Transform viewportTr = taskbarTr.Find("Viewport");
                     if (viewportTr != null)
@@ -2701,9 +2713,78 @@ namespace RetroUIBuilder
                 EditorUtility.SetDirty(taskbarTr.gameObject);
             }
 
+            if (hasStartMenu && startMenuTr == null && taskbarTr != null && taskbarTr.parent != null)
+            {
+                Transform canvasParent = taskbarTr.parent;
+                GameObject panelGo = new GameObject("StartMenuPanel", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(StartMenuController));
+                panelGo.layer = canvasParent.gameObject.layer;
+                panelGo.transform.SetParent(canvasParent, false);
+                panelGo.transform.SetSiblingIndex(taskbarTr.GetSiblingIndex() + 1);
+                startMenuTr = panelGo.transform;
+
+                GameObject headerGo = CreateImageObject("Header", startMenuTr, assets.windowTitleBar, RetroUITheme.TitleBlue, false);
+                headerGo.layer = panelGo.layer;
+                CreateImageObject("HeaderIcon", headerGo.transform, LoadRetroComputerIcon(assets), Color.white, false).layer = panelGo.layer;
+                CreateTmp("Title", headerGo.transform, font, "My Computer", 20f, FontStyles.Bold, RetroUITheme.InkWhite, TextAlignmentOptions.MidlineLeft).gameObject.layer = panelGo.layer;
+
+                GameObject containerGo = new GameObject("ButtonsContainer", typeof(RectTransform), typeof(VerticalLayoutGroup));
+                containerGo.layer = panelGo.layer;
+                containerGo.transform.SetParent(startMenuTr, false);
+
+                (string goName, string label, bool active)[] menuItems =
+                {
+                    ("btnExplorer", "File Explorer", true),
+                    ("btnNotepad", "Notepad", true),
+                    ("BtnPaint", "Paint", true),
+                    ("btnMinigames", "Minigames", false),
+                    ("btnStats", "Score", true),
+                    ("btnExit", "Exit to Main Menu", true)
+                };
+
+                foreach (var item in menuItems)
+                {
+                    GameObject btnGo = new GameObject(item.goName, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button), typeof(LayoutElement));
+                    btnGo.layer = panelGo.layer;
+                    btnGo.transform.SetParent(containerGo.transform, false);
+                    CreateTmp("Text", btnGo.transform, font, item.label, 19f, FontStyles.Bold, DesktopDarkInk, TextAlignmentOptions.MidlineLeft).gameObject.layer = panelGo.layer;
+                    btnGo.SetActive(item.active);
+                }
+            }
+
             if (hasStartMenu && startMenuTr != null)
             {
                 RetroizeStartMenuPanel(startMenuTr, assets, font);
+
+                StartMenuController smc = startMenuTr.GetComponent<StartMenuController>();
+                if (smc != null)
+                {
+                    if (taskbarTr != null)
+                    {
+                        Transform startBtnTr = taskbarTr.Find("StartButton");
+                        if (startBtnTr != null)
+                        {
+                            SetPrivateField(smc, "startButton", startBtnTr.GetComponent<Button>());
+                        }
+                    }
+                    SetPrivateField(smc, "startMenuPanel", startMenuTr.gameObject);
+
+                    GameObject baseWinPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Windows/BaseWindow.prefab");
+                    GameObject explorerPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Windows/FileExplorerContent.prefab");
+                    GameObject notepadPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Windows/NotepadContent.prefab");
+                    GameObject paintPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Windows/PaintContent.prefab");
+                    GameObject minigamesPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Windows/MinigamesHubContent.prefab");
+                    GameObject scoresPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Windows/SkillsReportContent.prefab");
+
+                    if (baseWinPrefab != null) SetPrivateField(smc, "baseWindowPrefab", baseWinPrefab);
+                    if (explorerPrefab != null) SetPrivateField(smc, "fileExplorerPrefab", explorerPrefab);
+                    if (notepadPrefab != null) SetPrivateField(smc, "notepadPrefab", notepadPrefab);
+                    if (paintPrefab != null) SetPrivateField(smc, "paintPrefab", paintPrefab);
+                    if (minigamesPrefab != null) SetPrivateField(smc, "minigamesHubPrefab", minigamesPrefab);
+                    if (scoresPrefab != null) SetPrivateField(smc, "scoresContentPrefab", scoresPrefab);
+
+                    EditorUtility.SetDirty(smc);
+                }
+
                 EditorUtility.SetDirty(startMenuTr.gameObject);
             }
 

@@ -27,6 +27,8 @@ namespace ComputerLearning
             private set => instance = value;
         }
         public bool IsMenuOpen => startMenuPanel != null && startMenuPanel.activeSelf;
+        public RectTransform StartButtonRect => startButton != null ? startButton.GetComponent<RectTransform>() : null;
+        public RectTransform StartMenuPanelRect => startMenuPanel != null ? startMenuPanel.GetComponent<RectTransform>() : null;
         #endregion
 
         #region Private Variables
@@ -106,6 +108,11 @@ namespace ComputerLearning
 
         private void ResolveFallbackReferences()
         {
+            if (startMenuPanel == null) startMenuPanel = gameObject;
+            if (startButton == null && transform.parent != null)
+            {
+                startButton = transform.parent.Find("Taskbar/StartButton")?.GetComponent<Button>();
+            }
             if (startMenuPanel == null) return;
             Transform container = startMenuPanel.transform.Find("ButtonsContainer");
             if (container == null) return;

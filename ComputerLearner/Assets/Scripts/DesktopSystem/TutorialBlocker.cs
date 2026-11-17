@@ -114,6 +114,26 @@ namespace ComputerLearning
                 }
             }
 
+            bool maximizedCoveringTaskbar = WindowManager.Instance != null && WindowManager.Instance.HasVisibleMaximizedWindow;
+            if (!maximizedCoveringTaskbar && StartMenuController.Instance != null)
+            {
+                RectTransform startBtnRt = StartMenuController.Instance.StartButtonRect;
+                if (startBtnRt != null && startBtnRt.gameObject.activeInHierarchy &&
+                    RectTransformUtility.RectangleContainsScreenPoint(startBtnRt, sp, cam))
+                {
+                    return false;
+                }
+                if (StartMenuController.Instance.IsMenuOpen)
+                {
+                    RectTransform menuPanelRt = StartMenuController.Instance.StartMenuPanelRect;
+                    if (menuPanelRt != null && menuPanelRt.gameObject.activeInHierarchy &&
+                        RectTransformUtility.RectangleContainsScreenPoint(menuPanelRt, sp, cam))
+                    {
+                        return false;
+                    }
+                }
+            }
+
             if (allowedTarget == null) return true; // Block everything if active but no target
 
             // Check if the screen point is inside the allowed target

@@ -18,6 +18,19 @@ namespace ComputerLearning
         public IReadOnlyList<Window> Windows => windows;
         public Window ActiveWindow { get; private set; }
         public RectTransform WindowsContainer => windowsContainer;
+        public bool HasVisibleMaximizedWindow
+        {
+            get
+            {
+                for (int i = 0; i < windows.Count; i++)
+                {
+                    Window w = windows[i];
+                    if (w != null && !w.IsClosed && !w.IsMinimized && w.IsMaximized)
+                        return true;
+                }
+                return false;
+            }
+        }
 
         public event Action WindowsChanged;
         #endregion
@@ -92,6 +105,7 @@ namespace ComputerLearning
             windows.Add(window);
             window.StateChanged += OnWindowChanged;
             window.SetManager(this);
+            UpdateTaskbarAndWindowLayering();
             WindowsChanged?.Invoke();
         }
 
@@ -100,6 +114,7 @@ namespace ComputerLearning
             if (!windows.Remove(window)) return;
             window.StateChanged -= OnWindowChanged;
             if (ActiveWindow == window) FocusTopWindow();
+            UpdateTaskbarAndWindowLayering();
             WindowsChanged?.Invoke();
         }
 
@@ -109,6 +124,7 @@ namespace ComputerLearning
             RegisterWindow(window);
             window.transform.SetAsLastSibling();
             ActiveWindow = window;
+            UpdateTaskbarAndWindowLayering();
             WindowsChanged?.Invoke();
         }
 
@@ -138,7 +154,41 @@ namespace ComputerLearning
         {
             if (window.IsClosed) { UnregisterWindow(window); return; }
             if (window == ActiveWindow && window.IsMinimized) FocusTopWindow();
+            UpdateTaskbarAndWindowLayering();
             WindowsChanged?.Invoke();
+        }
+
+        private void UpdateTaskbarAndWindowLayering()
+        {
+            if (windowsContainer == null) return;
+            Transform canvasTr = windowsContainer.parent;
+            if (canvasTr == null) return;
+
+            Transform taskbarTr = canvasTr.Find("Taskbar");
+            if (taskbarTr == null) return;
+
+            int windowsIdx = windowsContainer.GetSiblingIndex();
+            int taskbarIdx = taskbarTr.GetSiblingIndex();
+
+            if (HasVisibleMaximizedWindow)
+            {
+                if (windowsIdx < taskbarIdx)
+                {
+                    windowsContainer.SetSiblingIndex(taskbarIdx);
+                }
+            }
+            else
+            {
+                if (taskbarIdx < windowsIdx)
+                {
+                    taskbarTr.SetSiblingIndex(windowsIdx);
+                }
+            }
+
+            if (VirtualMascot.Instance != null && VirtualMascot.Instance.transform.parent == canvasTr)
+            {
+                VirtualMascot.Instance.transform.SetAsLastSibling();
+            }
         }
 
         private void FocusTopWindow()

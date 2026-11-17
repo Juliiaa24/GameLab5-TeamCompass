@@ -239,7 +239,6 @@ namespace ComputerLearning
                 launchAllButton.onClick.RemoveAllListeners();
                 launchAllButton.onClick.AddListener(() =>
                 {
-                    NetworkSessionHost.Instance.ApplyClassroomDefaultsToAll(true);
                     NetworkSessionHost.Instance.StartAllConnectedStudents();
                     RefreshStudentsList();
                 });

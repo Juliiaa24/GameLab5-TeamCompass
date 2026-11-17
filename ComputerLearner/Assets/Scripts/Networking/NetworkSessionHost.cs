@@ -665,9 +665,10 @@ namespace ComputerLearning
             {
                 if (orderedStudents[i].isConnected)
                 {
-                    StartStudentSession(orderedStudents[i].clientUid);
+                    PushStudentConfiguration(orderedStudents[i].clientUid, startImmediately: true, resetProgress: true);
                 }
             }
+            OnStudentsChanged?.Invoke();
         }
 
         public void ResetStudentSession(string clientUid)

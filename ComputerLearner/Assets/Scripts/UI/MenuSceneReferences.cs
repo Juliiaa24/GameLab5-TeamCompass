@@ -28,6 +28,15 @@ namespace ComputerLearning
         public ClassroomNetworkWidget classroomNetworkWidget;
         public TeacherDashboardController teacherDashboardController;
 
+        private void Awake()
+        {
+            Transform decor = transform.Find("DesktopShortcutsDecor");
+            if (decor != null)
+            {
+                Destroy(decor.gameObject);
+            }
+        }
+
         public bool IsAnyInputOrModalActive()
         {
             if (TeacherDashboardController.IsDashboardOpen) return true;

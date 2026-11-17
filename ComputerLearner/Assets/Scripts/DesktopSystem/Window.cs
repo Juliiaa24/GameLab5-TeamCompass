@@ -90,7 +90,7 @@ namespace ComputerLearning
 
         private void OnEnable()
         {
-            if (manager == null) manager = GetComponentInParent<WindowManager>();
+            if (manager == null) manager = GetComponentInParent<WindowManager>() ?? WindowManager.Instance;
             if (manager != null) manager.RegisterWindow(this);
             BringToFront();
             StateChanged?.Invoke(this);
@@ -164,8 +164,22 @@ namespace ComputerLearning
                 maximized = true;
                 windowRectTransform.anchorMin = Vector2.zero;
                 windowRectTransform.anchorMax = Vector2.one;
-                windowRectTransform.offsetMin = Vector2.zero;
-                windowRectTransform.offsetMax = Vector2.zero;
+                if (windowRectTransform.parent is RectTransform parentRect &&
+                    parentRect.anchorMin == Vector2.zero &&
+                    parentRect.anchorMax == Vector2.one)
+                {
+                    windowRectTransform.offsetMin = -parentRect.offsetMin;
+                    windowRectTransform.offsetMax = -parentRect.offsetMax;
+                }
+                else
+                {
+                    windowRectTransform.offsetMin = Vector2.zero;
+                    windowRectTransform.offsetMax = Vector2.zero;
+                }
+                if (StartMenuController.Instance != null && StartMenuController.Instance.IsMenuOpen)
+                {
+                    StartMenuController.Instance.CloseMenu();
+                }
             }
             else
             {
@@ -176,6 +190,7 @@ namespace ComputerLearning
                 maximized = false;
                 KeepTitleVisible();
             }
+            BringToFront();
             StateChanged?.Invoke(this);
         }
 
