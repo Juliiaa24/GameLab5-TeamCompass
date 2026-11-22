@@ -14,8 +14,11 @@ namespace ComputerLearning
         private Vector2 baseAnchoredPosition;
         private bool hasRecordedBasePos;
         private float moveSpeed;
+        private Vector2 circularRadius = new Vector2(32f, 22f);
 
-        public void Setup(TaskDefinition definition)
+        public TargetMovementType MovementType { get; private set; } = TargetMovementType.Stationary;
+
+        public void Setup(TaskDefinition definition, TargetMovementType? overrideMovementType = null, float defaultDvdSpeed = 95f)
         {
             rectTransform = GetComponent<RectTransform>();
             parentRect = transform.parent as RectTransform;
@@ -26,28 +29,45 @@ namespace ComputerLearning
             float size = definition.config.targetSize > 0 ? definition.config.targetSize : 100f;
             rectTransform.sizeDelta = new Vector2(size, size);
 
-            if (definition.config.isMoving)
-            {
-                isMoving = true;
-                isSwayingOnly = false;
-                float baseSpeed = definition.config.moveSpeed > 0 ? definition.config.moveSpeed : 100f;
-                moveSpeed = baseSpeed * 1.2f; // +20% speed on existing movers
-            }
-            else
-            {
-                // Subtle sinusoidal oscillation for static targets to give life
-                isMoving = false;
-                isSwayingOnly = true;
-                moveSpeed = 35f;
-                swayTimer = Random.Range(0f, 6.28f);
-            }
-
-            // Pick a random starting direction
-            moveDirection = Random.insideUnitCircle.normalized;
-            if (moveDirection == Vector2.zero) moveDirection = Vector2.right;
+            TargetMovementType mode = overrideMovementType ?? BaseTask.ResolveTargetMovementType(definition);
+            SetMovementType(mode, definition.config.moveSpeed, defaultDvdSpeed);
 
             // Start at a random position inside the parent
             RandomizePosition();
+        }
+
+        public void SetCircularRadius(float radiusX, float radiusY)
+        {
+            circularRadius = new Vector2(Mathf.Max(4f, radiusX), Mathf.Max(4f, radiusY));
+        }
+
+        public void SetMovementType(TargetMovementType mode, float configSpeed = 0f, float defaultDvdSpeed = 95f)
+        {
+            MovementType = mode;
+            switch (mode)
+            {
+                case TargetMovementType.DvdBounce:
+                    isMoving = true;
+                    isSwayingOnly = false;
+                    float baseSpeed = configSpeed > 0f ? configSpeed : defaultDvdSpeed;
+                    moveSpeed = baseSpeed * 1.15f;
+                    moveDirection = BaseTask.GetRandomDvdDirection();
+                    break;
+
+                case TargetMovementType.Circular:
+                    isMoving = false;
+                    isSwayingOnly = true;
+                    moveSpeed = 35f;
+                    swayTimer = Random.Range(0f, 6.28f);
+                    break;
+
+                case TargetMovementType.Stationary:
+                default:
+                    isMoving = false;
+                    isSwayingOnly = false;
+                    moveSpeed = 0f;
+                    break;
+            }
         }
 
         private void RandomizePosition()
@@ -74,8 +94,7 @@ namespace ComputerLearning
 
         public void SetMoving(bool moving)
         {
-            isMoving = moving;
-            if (moving) isSwayingOnly = false;
+            SetMovementType(moving ? TargetMovementType.DvdBounce : TargetMovementType.Stationary, moveSpeed);
         }
 
         private void Update()
@@ -91,7 +110,7 @@ namespace ComputerLearning
                 }
 
                 swayTimer += Time.deltaTime * 1.5f;
-                Vector2 swayOffset = new Vector2(Mathf.Sin(swayTimer) * 32f, Mathf.Cos(swayTimer * 0.85f) * 22f);
+                Vector2 swayOffset = new Vector2(Mathf.Sin(swayTimer) * circularRadius.x, Mathf.Cos(swayTimer * 0.85f) * circularRadius.y);
                 Vector2 targetPos = (hasRecordedBasePos ? baseAnchoredPosition : rectTransform.anchoredPosition) + swayOffset;
 
                 Rect swayBounds = parentRect.rect;

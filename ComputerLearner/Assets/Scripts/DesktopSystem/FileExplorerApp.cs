@@ -45,21 +45,85 @@ namespace ComputerLearning
         public static Sprite SharedTextIcon { get; private set; }
         public static Sprite SharedImageIcon { get; private set; }
         public static Sprite SharedGameIcon { get; private set; }
+        public static Sprite SharedPaintAppIcon { get; private set; }
+        public static Sprite SharedNotepadAppIcon { get; private set; }
 
         public static ExplorerItemData ActiveExplorerFolder { get; private set; }
         public static bool IsClipboardCut { get; set; }
         public static bool IsDesktopFocused { get; set; } = true;
         private static readonly List<FileExplorerApp> activeExplorers = new List<FileExplorerApp>();
+        private static readonly Stack<List<ExplorerItemData>> createdItemsUndoStack = new Stack<List<ExplorerItemData>>();
+        public static bool HasCreatedItemsToUndo => createdItemsUndoStack.Count > 0;
         private static int lastClipboardShortcutFrame = -1;
         private static bool isRestoringSnapshot;
         private const string SNAPSHOT_PREFS_KEY = "VirtualFileSystemSnapshot_v1";
         public const int MAX_FOLDER_DEPTH = 8;
-        public const int MAX_ITEMS_PER_FOLDER = 35;
+        public const int MAX_ITEMS_PER_FOLDER = 16;
+        public const int MAX_BASE_NAME_LENGTH = 16;
+        public const int MAX_ITEM_NAME_LENGTH = 20;
+
+        public static bool IsFolderAtCapacity(ExplorerItemData folder)
+        {
+            return folder != null && folder.children != null && folder.children.Count >= MAX_ITEMS_PER_FOLDER;
+        }
+
+        public static string ClampBaseName(string baseName, int maxBaseLen = MAX_BASE_NAME_LENGTH)
+        {
+            if (string.IsNullOrWhiteSpace(baseName)) return "New Item";
+            string trimmed = baseName.Trim();
+            int limit = Mathf.Max(3, maxBaseLen);
+            if (trimmed.Length > limit)
+            {
+                trimmed = trimmed.Substring(0, limit).TrimEnd();
+            }
+            return string.IsNullOrEmpty(trimmed) ? "New Item" : trimmed;
+        }
+
+        public static string ClampAndFormatItemName(string rawName, string requiredExtension = "")
+        {
+            if (string.IsNullOrWhiteSpace(rawName))
+            {
+                rawName = "New Item";
+            }
+
+            string clean = rawName.Trim();
+            string ext = requiredExtension ?? string.Empty;
+
+            if (!string.IsNullOrEmpty(ext))
+            {
+                if (clean.EndsWith(ext, StringComparison.OrdinalIgnoreCase))
+                {
+                    clean = clean.Substring(0, clean.Length - ext.Length).TrimEnd();
+                }
+            }
+            else
+            {
+                if (clean.EndsWith(".txt", StringComparison.OrdinalIgnoreCase))
+                {
+                    ext = ".txt";
+                    clean = clean.Substring(0, clean.Length - 4).TrimEnd();
+                }
+                else if (clean.EndsWith(".png", StringComparison.OrdinalIgnoreCase))
+                {
+                    ext = ".png";
+                    clean = clean.Substring(0, clean.Length - 4).TrimEnd();
+                }
+                else if (clean.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase))
+                {
+                    ext = ".jpg";
+                    clean = clean.Substring(0, clean.Length - 4).TrimEnd();
+                }
+            }
+
+            string clampedBase = ClampBaseName(clean, MAX_BASE_NAME_LENGTH);
+            return clampedBase + ext;
+        }
 
         public static void ResetStaticFileSystem()
         {
             sharedRootFolder = null;
             activeExplorers.Clear();
+            createdItemsUndoStack.Clear();
             clipboardItems.Clear();
             clipboardSourceItems.Clear();
             IsClipboardCut = false;
@@ -67,6 +131,95 @@ namespace ComputerLearning
             IsDesktopFocused = true;
             PlayerPrefs.DeleteKey(SNAPSHOT_PREFS_KEY);
             PlayerPrefs.Save();
+        }
+
+        public static void RegisterCreatedItemsForUndo(ExplorerItemData item)
+        {
+            if (item == null || IsItemProtectedStatic(item)) return;
+            createdItemsUndoStack.Push(new List<ExplorerItemData> { item });
+        }
+
+        public static void RegisterCreatedItemsForUndo(IEnumerable<ExplorerItemData> items)
+        {
+            if (items == null) return;
+            List<ExplorerItemData> batch = new List<ExplorerItemData>();
+            foreach (var item in items)
+            {
+                if (item != null && !IsItemProtectedStatic(item) && !batch.Contains(item))
+                {
+                    batch.Add(item);
+                }
+            }
+            if (batch.Count > 0)
+            {
+                createdItemsUndoStack.Push(batch);
+            }
+        }
+
+        public static bool UndoLastCreatedItems()
+        {
+            ExplorerItemData root = GetRootFolder();
+            if (root == null) return false;
+            ExplorerItemData recycleBin = FindFolderRecursiveStatic(root, "Recycle Bin");
+
+            while (createdItemsUndoStack.Count > 0)
+            {
+                List<ExplorerItemData> batch = createdItemsUndoStack.Pop();
+                if (batch == null || batch.Count == 0) continue;
+
+                List<string> removedNames = new List<string>();
+                foreach (var item in batch)
+                {
+                    if (item == null || IsItemProtectedStatic(item)) continue;
+                    if (recycleBin != null && recycleBin.children != null && IsFolderDescendantOf(item, recycleBin))
+                    {
+                        continue;
+                    }
+
+                    if (RemoveItemRecursive(root, item))
+                    {
+                        removedNames.Add(item.name);
+                    }
+                }
+
+                if (removedNames.Count > 0)
+                {
+                    InputModalDialog openModal = UnityEngine.Object.FindAnyObjectByType<InputModalDialog>();
+                    if (openModal != null)
+                    {
+                        if (Application.isPlaying) Destroy(openModal.gameObject);
+                        else DestroyImmediate(openModal.gameObject);
+                    }
+
+                    foreach (var exp in activeExplorers)
+                    {
+                        if (exp == null) continue;
+                        for (int i = exp.selectedItems.Count - 1; i >= 0; i--)
+                        {
+                            if (batch.Contains(exp.selectedItems[i]))
+                            {
+                                exp.selectedItems.RemoveAt(i);
+                            }
+                        }
+                    }
+
+                    DraggableIcon.ClearSelection();
+                    NotifyFileSystemChanged();
+
+                    string statusMsg = removedNames.Count == 1
+                        ? $"Undid creation of '{removedNames[0]}'"
+                        : $"Undid creation of {removedNames.Count} items";
+                    foreach (var exp in activeExplorers)
+                    {
+                        if (exp != null) exp.SetStatusMessage(statusMsg);
+                    }
+
+                    FeedbackManager.PlayClick();
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         public static void ClearAllExplorerSelections(FileExplorerApp except = null)
@@ -438,6 +591,28 @@ namespace ComputerLearning
             SharedFolderIcon = Resources.Load<Sprite>("Folder_Icon01");
             return SharedFolderIcon;
         }
+
+        public static Sprite GetPaintAppSprite()
+        {
+            if (SharedPaintAppIcon != null) return SharedPaintAppIcon;
+#if UNITY_EDITOR
+            SharedPaintAppIcon = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Art/UI/App icons/Paint_App_Icon_01.png");
+            if (SharedPaintAppIcon != null) return SharedPaintAppIcon;
+#endif
+            SharedPaintAppIcon = Resources.Load<Sprite>("Paint_App_Icon_01");
+            return SharedPaintAppIcon;
+        }
+
+        public static Sprite GetNotepadAppSprite()
+        {
+            if (SharedNotepadAppIcon != null) return SharedNotepadAppIcon;
+#if UNITY_EDITOR
+            SharedNotepadAppIcon = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Art/UI/App icons/Notepad_App_Icon_01.png");
+            if (SharedNotepadAppIcon != null) return SharedNotepadAppIcon;
+#endif
+            SharedNotepadAppIcon = Resources.Load<Sprite>("Notepad_App_Icon_01");
+            return SharedNotepadAppIcon;
+        }
         #endregion
 
         #region Public Variables
@@ -682,6 +857,8 @@ namespace ComputerLearning
             bool isC = kb != null && kb.cKey.wasPressedThisFrame;
             bool isX = kb != null && kb.xKey.wasPressedThisFrame;
             bool isV = kb != null && kb.vKey.wasPressedThisFrame;
+            bool isD = kb != null && kb.dKey.wasPressedThisFrame;
+            bool isZ = kb != null && kb.zKey.wasPressedThisFrame;
 
 #if ENABLE_LEGACY_INPUT_MANAGER
             if (!deletePressed) deletePressed = Input.GetKeyDown(KeyCode.Delete);
@@ -689,6 +866,8 @@ namespace ComputerLearning
             if (!isC) isC = Input.GetKeyDown(KeyCode.C);
             if (!isX) isX = Input.GetKeyDown(KeyCode.X);
             if (!isV) isV = Input.GetKeyDown(KeyCode.V);
+            if (!isD) isD = Input.GetKeyDown(KeyCode.D);
+            if (!isZ) isZ = Input.GetKeyDown(KeyCode.Z);
 #endif
 
             if (deletePressed && selectedItems.Count > 0)
@@ -712,6 +891,16 @@ namespace ComputerLearning
             {
                 lastClipboardShortcutFrame = Time.frameCount;
                 PasteClipboardItem();
+            }
+            else if (isD && selectedItems.Count > 0 && currentFolder != null)
+            {
+                lastClipboardShortcutFrame = Time.frameCount;
+                DuplicateSelectedItems();
+            }
+            else if (isZ)
+            {
+                lastClipboardShortcutFrame = Time.frameCount;
+                UndoLastCreatedItems();
             }
         }
 
@@ -1149,6 +1338,10 @@ namespace ComputerLearning
                 clipboardSourceItems.Clear();
                 anyChange = true;
             }
+            else if (!wasCut && results.Count > 0)
+            {
+                RegisterCreatedItemsForUndo(results);
+            }
 
             if (anyChange)
             {
@@ -1156,6 +1349,119 @@ namespace ComputerLearning
             }
 
             return results;
+        }
+
+        public static List<ExplorerItemData> DuplicateItemsInFolder(IEnumerable<ExplorerItemData> sourceItems, ExplorerItemData targetFolder, out int skippedProtectedCount, out string errorMessage)
+        {
+            skippedProtectedCount = 0;
+            errorMessage = null;
+            List<ExplorerItemData> results = new List<ExplorerItemData>();
+            if (sourceItems == null || targetFolder == null) return results;
+            if (IsReadOnlySystemFolderStatic(targetFolder))
+            {
+                errorMessage = "Cannot duplicate items in this system folder.";
+                return results;
+            }
+
+            if (targetFolder.children == null) targetFolder.children = new List<ExplorerItemData>();
+            List<ExplorerItemData> snapshot = new List<ExplorerItemData>();
+            foreach (var s in sourceItems)
+            {
+                if (s != null && !snapshot.Contains(s)) snapshot.Add(s);
+            }
+
+            foreach (var srcItem in snapshot)
+            {
+                if (IsItemProtectedStatic(srcItem))
+                {
+                    skippedProtectedCount++;
+                    continue;
+                }
+
+                if (targetFolder.children.Count >= MAX_ITEMS_PER_FOLDER)
+                {
+                    errorMessage = UIDialogs.Current.explorer_folder_limit_reached;
+                    break;
+                }
+
+                if (srcItem.fileType == ExplorerFileType.Folder &&
+                    GetFolderDepth(targetFolder) + 1 + GetSubtreeMaxDepth(srcItem) > MAX_FOLDER_DEPTH)
+                {
+                    errorMessage = UIDialogs.Current.explorer_depth_limit_reached;
+                    continue;
+                }
+
+                string ext = System.IO.Path.GetExtension(srcItem.name);
+                string nameWithoutExt = System.IO.Path.GetFileNameWithoutExtension(srcItem.name);
+                string desiredPrefix = $"Copy of {nameWithoutExt}";
+                string copyName = GetUniqueItemNameStatic(targetFolder, desiredPrefix, ext);
+
+                ExplorerItemData duplicate = new ExplorerItemData
+                {
+                    name = copyName,
+                    fileType = srcItem.fileType,
+                    icon = srcItem.icon,
+                    textContent = srcItem.textContent,
+                    imageContent = srcItem.imageContent,
+                    isProtected = false,
+                    children = CloneChildrenRecursive(srcItem.children, 0)
+                };
+
+                targetFolder.children.Add(duplicate);
+                results.Add(duplicate);
+            }
+
+            if (results.Count > 0)
+            {
+                RegisterCreatedItemsForUndo(results);
+                NotifyFileSystemChanged();
+            }
+
+            return results;
+        }
+
+        public void DuplicateSelectedItems()
+        {
+            if (selectedItems.Count == 0 || currentFolder == null) return;
+            if (IsReadOnlySystemFolderStatic(currentFolder))
+            {
+                SetStatusMessage("<color=#D9534F>Cannot duplicate items in this system folder.</color>");
+                return;
+            }
+
+            List<ExplorerItemData> duplicated = DuplicateItemsInFolder(selectedItems, currentFolder, out int skippedProtected, out string errorMessage);
+            if (duplicated.Count > 0)
+            {
+                selectedItems.Clear();
+                foreach (var d in duplicated)
+                {
+                    if (d != null && currentFolder.children != null && currentFolder.children.Contains(d))
+                    {
+                        selectedItems.Add(d);
+                    }
+                }
+                RefreshItemSelectionVisuals();
+
+                string msg = duplicated.Count == 1
+                    ? $"Duplicated '{duplicated[0].name}'"
+                    : $"Duplicated {duplicated.Count} items";
+                if (!string.IsNullOrEmpty(errorMessage))
+                {
+                    msg += $" ({errorMessage})";
+                }
+                SetStatusMessage(msg);
+                FeedbackManager.PlaySuccess();
+            }
+            else if (!string.IsNullOrEmpty(errorMessage))
+            {
+                SetStatusMessage($"<color=#D9534F>{errorMessage}</color>");
+                FeedbackManager.PlayError(true);
+                VirtualMascot.ShowContextualFeedback(errorMessage, transform as RectTransform, 3.2f);
+            }
+            else if (skippedProtected > 0)
+            {
+                SetStatusMessage("<color=#D9534F>System items are protected and cannot be duplicated.</color>");
+            }
         }
         #endregion
 
@@ -1240,11 +1546,7 @@ namespace ComputerLearning
             if (string.IsNullOrWhiteSpace(requestedName))
                 requestedName = "New Document.txt";
 
-            requestedName = requestedName.Trim();
-            if (!requestedName.EndsWith(".txt", StringComparison.OrdinalIgnoreCase))
-            {
-                requestedName += ".txt";
-            }
+            requestedName = ClampAndFormatItemName(requestedName, ".txt");
 
             if (targetFolder == null)
             {
@@ -1259,6 +1561,7 @@ namespace ComputerLearning
             }
 
             if (targetFolder == null) return null;
+            if (targetFolder.children == null) targetFolder.children = new List<ExplorerItemData>();
 
             foreach (var child in targetFolder.children)
             {
@@ -1271,6 +1574,14 @@ namespace ComputerLearning
                 }
             }
 
+            if (IsFolderAtCapacity(targetFolder))
+            {
+                BroadcastStatusError(UIDialogs.Current.explorer_folder_limit_reached);
+                FeedbackManager.PlayError(true);
+                VirtualMascot.ShowContextualFeedback(UIDialogs.Current.explorer_folder_limit_reached, null, 3.2f);
+                return null;
+            }
+
             ExplorerItemData newDoc = new ExplorerItemData
             {
                 name = requestedName,
@@ -1281,6 +1592,7 @@ namespace ComputerLearning
             };
 
             targetFolder.children.Add(newDoc);
+            RegisterCreatedItemsForUndo(newDoc);
             NotifyFileSystemChanged();
             return newDoc;
         }
@@ -1290,11 +1602,7 @@ namespace ComputerLearning
             if (string.IsNullOrWhiteSpace(requestedName))
                 requestedName = "New Drawing.png";
 
-            requestedName = requestedName.Trim();
-            if (!requestedName.EndsWith(".png", StringComparison.OrdinalIgnoreCase))
-            {
-                requestedName += ".png";
-            }
+            requestedName = ClampAndFormatItemName(requestedName, ".png");
 
             if (targetFolder == null)
             {
@@ -1309,6 +1617,7 @@ namespace ComputerLearning
             }
 
             if (targetFolder == null) return null;
+            if (targetFolder.children == null) targetFolder.children = new List<ExplorerItemData>();
 
             Sprite defaultIcon = GetImageFileSprite();
 
@@ -1323,6 +1632,14 @@ namespace ComputerLearning
                 }
             }
 
+            if (IsFolderAtCapacity(targetFolder))
+            {
+                BroadcastStatusError(UIDialogs.Current.explorer_folder_limit_reached);
+                FeedbackManager.PlayError(true);
+                VirtualMascot.ShowContextualFeedback(UIDialogs.Current.explorer_folder_limit_reached, null, 3.2f);
+                return null;
+            }
+
             ExplorerItemData newImg = new ExplorerItemData
             {
                 name = requestedName,
@@ -1333,6 +1650,7 @@ namespace ComputerLearning
             };
 
             targetFolder.children.Add(newImg);
+            RegisterCreatedItemsForUndo(newImg);
             NotifyFileSystemChanged();
             return newImg;
         }
@@ -1700,11 +2018,15 @@ namespace ComputerLearning
             if (target.children.Count >= MAX_ITEMS_PER_FOLDER)
             {
                 SetStatusMessage($"<color=#D9534F>{UIDialogs.Current.explorer_folder_limit_reached}</color>");
+                FeedbackManager.PlayError(true);
+                VirtualMascot.ShowContextualFeedback(UIDialogs.Current.explorer_folder_limit_reached, transform as RectTransform, 3.2f);
                 return null;
             }
             if (GetFolderDepth(target) + 1 > MAX_FOLDER_DEPTH)
             {
                 SetStatusMessage($"<color=#D9534F>{UIDialogs.Current.explorer_depth_limit_reached}</color>");
+                FeedbackManager.PlayError(true);
+                VirtualMascot.ShowContextualFeedback(UIDialogs.Current.explorer_depth_limit_reached, transform as RectTransform, 3.2f);
                 return null;
             }
 
@@ -1719,6 +2041,7 @@ namespace ComputerLearning
             };
 
             target.children.Add(newFolder);
+            RegisterCreatedItemsForUndo(newFolder);
             NotifyFileSystemChanged();
             SetStatusMessage($"Created folder '{uniqueName}'");
             if (!VirtualDesktopGuidedLevels.IsLevelRunning)
@@ -1741,6 +2064,8 @@ namespace ComputerLearning
             if (target.children.Count >= MAX_ITEMS_PER_FOLDER)
             {
                 SetStatusMessage($"<color=#D9534F>{UIDialogs.Current.explorer_folder_limit_reached}</color>");
+                FeedbackManager.PlayError(true);
+                VirtualMascot.ShowContextualFeedback(UIDialogs.Current.explorer_folder_limit_reached, transform as RectTransform, 3.2f);
                 return null;
             }
 
@@ -1755,6 +2080,7 @@ namespace ComputerLearning
             };
 
             target.children.Add(newDoc);
+            RegisterCreatedItemsForUndo(newDoc);
             NotifyFileSystemChanged();
             SetStatusMessage($"Created text file '{uniqueName}'");
             if (!VirtualDesktopGuidedLevels.IsLevelRunning)
@@ -1777,6 +2103,8 @@ namespace ComputerLearning
             if (target.children.Count >= MAX_ITEMS_PER_FOLDER)
             {
                 SetStatusMessage($"<color=#D9534F>{UIDialogs.Current.explorer_folder_limit_reached}</color>");
+                FeedbackManager.PlayError(true);
+                VirtualMascot.ShowContextualFeedback(UIDialogs.Current.explorer_folder_limit_reached, transform as RectTransform, 3.2f);
                 return null;
             }
 
@@ -2109,16 +2437,13 @@ namespace ComputerLearning
             ContextMenuController.Instance.ShowInputModal(title, item.name, "Save", (newName) =>
             {
                 if (string.IsNullOrWhiteSpace(newName)) return;
-                newName = newName.Trim();
-
-                if (item.fileType == ExplorerFileType.TextFile && !newName.EndsWith(".txt", StringComparison.OrdinalIgnoreCase))
+                string reqExt = "";
+                if (item.fileType == ExplorerFileType.TextFile) reqExt = ".txt";
+                else if (item.fileType == ExplorerFileType.ImageFile)
                 {
-                    newName += ".txt";
+                    reqExt = newName.Trim().EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) ? ".jpg" : ".png";
                 }
-                else if (item.fileType == ExplorerFileType.ImageFile && !newName.EndsWith(".png", StringComparison.OrdinalIgnoreCase) && !newName.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase))
-                {
-                    newName += ".png";
-                }
+                newName = ClampAndFormatItemName(newName, reqExt);
 
                 if (currentFolder != null && currentFolder.children != null)
                 {
@@ -2977,9 +3302,11 @@ namespace ComputerLearning
 
         private static string GetUniqueItemNameStatic(ExplorerItemData folder, string baseName, string extension)
         {
-            if (folder == null || folder.children == null) return baseName + extension;
+            string ext = extension ?? string.Empty;
+            string cleanBase = ClampBaseName(baseName, MAX_BASE_NAME_LENGTH);
+            if (folder == null || folder.children == null) return cleanBase + ext;
 
-            string candidate = baseName + extension;
+            string candidate = cleanBase + ext;
             int counter = 0;
             bool exists = true;
 
@@ -2991,7 +3318,9 @@ namespace ComputerLearning
                     if (child.name.Equals(candidate, StringComparison.OrdinalIgnoreCase))
                     {
                         counter++;
-                        candidate = $"{baseName} ({counter}){extension}";
+                        string suffix = $" ({counter})";
+                        string shortBase = ClampBaseName(cleanBase, Mathf.Max(3, MAX_BASE_NAME_LENGTH - suffix.Length));
+                        candidate = $"{shortBase}{suffix}{ext}";
                         exists = true;
                         break;
                     }
@@ -3037,6 +3366,8 @@ namespace ComputerLearning
                 if (win != null)
                 {
                     win.setTitle(winTitle);
+                    Sprite notepadIcon = GetNotepadAppSprite();
+                    if (notepadIcon != null) win.setIcon(notepadIcon);
                     GameObject notepadPrefabToUse = notepadPrefab != null
                         ? notepadPrefab
                         : (StartMenuController.Instance != null ? StartMenuController.Instance.NotepadPrefab : null);
@@ -3083,6 +3414,8 @@ namespace ComputerLearning
             if (win != null)
             {
                 win.setTitle(winTitle);
+                Sprite paintIcon = GetPaintAppSprite();
+                if (paintIcon != null) win.setIcon(paintIcon);
                 GameObject paintContent = Instantiate(paintPrefabToUse);
                 win.SetContent(paintContent);
                 PaintApp app = paintContent.GetComponentInChildren<PaintApp>();
@@ -3623,7 +3956,8 @@ namespace ComputerLearning
                     inputRt.anchorMax = new Vector2(1, 0.85f);
                     inputRt.offsetMin = new Vector2(95, 0);
                     inputRt.offsetMax = new Vector2(-155, 0);
-                    saveDialogInputField.text = initialFileName ?? string.Empty;
+                    saveDialogInputField.characterLimit = MAX_ITEM_NAME_LENGTH;
+                    saveDialogInputField.text = ClampAndFormatItemName(initialFileName ?? string.Empty, saveDialogExtension ?? string.Empty);
                     saveDialogInputField.onSubmit.RemoveAllListeners();
                     saveDialogInputField.onSubmit.AddListener((_) => ConfirmSaveDialog());
                 }
@@ -3673,10 +4007,7 @@ namespace ComputerLearning
                 return;
             }
 
-            if (!string.IsNullOrEmpty(saveDialogExtension) && !enteredName.EndsWith(saveDialogExtension, StringComparison.OrdinalIgnoreCase))
-            {
-                enteredName += saveDialogExtension;
-            }
+            enteredName = ClampAndFormatItemName(enteredName, saveDialogExtension ?? "");
 
             if (currentFolder == null)
             {
@@ -3687,6 +4018,27 @@ namespace ComputerLearning
             if (IsReadOnlySystemFolderStatic(currentFolder))
             {
                 SetStatusMessage($"<color=#D9534F>Cannot save inside '{currentFolder.name}'. Choose Desktop, Documents, Pictures or a user folder.</color>");
+                return;
+            }
+
+            bool isOverwritingExisting = false;
+            if (currentFolder.children != null)
+            {
+                foreach (var child in currentFolder.children)
+                {
+                    if (child != null && child.name.Equals(enteredName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        isOverwritingExisting = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!isOverwritingExisting && IsFolderAtCapacity(currentFolder))
+            {
+                SetStatusMessage($"<color=#D9534F>{UIDialogs.Current.explorer_folder_limit_reached}</color>");
+                FeedbackManager.PlayError(true);
+                VirtualMascot.ShowContextualFeedback(UIDialogs.Current.explorer_folder_limit_reached, transform as RectTransform, 3.2f);
                 return;
             }
 

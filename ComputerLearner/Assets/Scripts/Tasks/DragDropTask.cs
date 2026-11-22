@@ -137,16 +137,19 @@ namespace ComputerLearning
             };
         }
 
+        protected override void ShowTaskInactivityReminder()
+        {
+            VirtualMascot.ShowContextualFeedback(VirtualMascot.FeedbackDialogs.dragInactivityReminder, GetActiveFeedbackTarget(), 3.5f);
+        }
+
+        protected override float GetSubTaskParGraceSeconds()
+        {
+            return 7.5f;
+        }
+
         protected override void Update()
         {
             base.Update();
-            if (IsFinished) return;
-
-            if (!hasShownInactivityReminder && (Time.time - lastInteractionTime) >= 6.0f)
-            {
-                hasShownInactivityReminder = true;
-                VirtualMascot.ShowContextualFeedback(VirtualMascot.FeedbackDialogs.dragInactivityReminder, GetActiveFeedbackTarget(), 3.0f);
-            }
         }
 
         public void OnBackgroundClicked(PointerEventData eventData)

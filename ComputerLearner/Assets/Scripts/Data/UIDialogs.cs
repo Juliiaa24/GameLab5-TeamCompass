@@ -273,7 +273,7 @@ namespace ComputerLearning
         public string assessment_btn_menu = "Menu";
 
         // File Explorer Safety
-        public string explorer_folder_limit_reached = "Folder item limit reached (max 35 items).";
+        public string explorer_folder_limit_reached = "Folder item limit reached (max 16 items).";
         public string explorer_depth_limit_reached = "Maximum folder nesting depth reached.";
         public string explorer_cycle_error = "Cannot move or paste a folder inside itself or its subfolders.";
 

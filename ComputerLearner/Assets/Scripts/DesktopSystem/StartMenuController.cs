@@ -64,6 +64,7 @@ namespace ComputerLearning
         {
             instance = this;
             ResolveFallbackReferences();
+            ApplyAppButtonIcons();
             BindButtons();
 
             if (btnMinigamesHub != null)
@@ -91,6 +92,7 @@ namespace ComputerLearning
         private void Start()
         {
             ResolveFallbackReferences();
+            ApplyAppButtonIcons();
             BindButtons();
 
             if (startMenuPanel != null)
@@ -282,11 +284,27 @@ namespace ComputerLearning
             return null;
         }
 
+        private void ApplyAppButtonIcons()
+        {
+            SetButtonIcon(btnNotepad, FileExplorerApp.GetNotepadAppSprite());
+            SetButtonIcon(btnPaint, FileExplorerApp.GetPaintAppSprite());
+        }
+
+        private static void SetButtonIcon(Button btn, Sprite iconSprite)
+        {
+            if (btn == null || iconSprite == null) return;
+            Transform iconTr = btn.transform.Find("Icon");
+            if (iconTr == null) return;
+            Image img = iconTr.GetComponent<Image>();
+            if (img != null) img.sprite = iconSprite;
+        }
+
         public void OpenNotepad()
         {
             CloseMenu();
             GameObject prefab = notepadPrefab != null ? notepadPrefab : (DesktopManager.Instance != null ? DesktopManager.Instance.NotepadContentPrefab : null);
-            OpenAppWindow("Notepad", prefab, ref notepadWindow, GetButtonIcon(btnNotepad));
+            Sprite notepadIcon = FileExplorerApp.GetNotepadAppSprite() ?? GetButtonIcon(btnNotepad);
+            OpenAppWindow("Notepad", prefab, ref notepadWindow, notepadIcon);
         }
 
         public NotepadApp OpenNotepadWithFile(ExplorerItemData fileItem, ExplorerItemData folder = null)
@@ -294,7 +312,8 @@ namespace ComputerLearning
             CloseMenu();
             string winTitle = fileItem != null ? $"Notepad - {fileItem.name}" : "Notepad";
             GameObject prefab = notepadPrefab != null ? notepadPrefab : (DesktopManager.Instance != null ? DesktopManager.Instance.NotepadContentPrefab : null);
-            OpenAppWindow(winTitle, prefab, ref notepadWindow, GetButtonIcon(btnNotepad));
+            Sprite notepadIcon = FileExplorerApp.GetNotepadAppSprite() ?? GetButtonIcon(btnNotepad);
+            OpenAppWindow(winTitle, prefab, ref notepadWindow, notepadIcon);
             if (notepadWindow != null)
             {
                 notepadWindow.setTitle(winTitle);
@@ -323,7 +342,8 @@ namespace ComputerLearning
             string winTitle = fileItem != null ? $"Paint - {fileItem.name}" : "Paint - Untitled.png";
 
             GameObject prefab = paintPrefab != null ? paintPrefab : (DesktopManager.Instance != null ? DesktopManager.Instance.PaintContentPrefab : null);
-            OpenAppWindow(winTitle, prefab, ref paintWindow, GetButtonIcon(btnPaint));
+            Sprite paintIcon = FileExplorerApp.GetPaintAppSprite() ?? GetButtonIcon(btnPaint);
+            OpenAppWindow(winTitle, prefab, ref paintWindow, paintIcon);
             if (paintWindow != null)
             {
                 paintWindow.setTitle(winTitle);

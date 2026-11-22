@@ -13,10 +13,10 @@ namespace ComputerLearning
     [System.Serializable]
     public class MascotFeedbackDialogs
     {
-        public string companionWelcome = "Hello! I'm your desktop pet! Click on me whenever you want tips.";
+        public string companionWelcome = "Hello! I'm Pointy, your desktop pet! Click on me whenever you want tips.";
         public string[] companionMessages = new string[]
         {
-            "Hello! I'm your desktop pet! Feel free to explore at your own pace.",
+            "Hello! I'm Pointy, your desktop pet! Feel free to explore at your own pace.",
             "Open the Minigames folder to practice your clicking accuracy and speed!",
             "Did you know? Right-click anywhere on the desktop to create a New Folder.",
             "Try opening Notepad to practice typing words on the keyboard!",
@@ -201,6 +201,45 @@ namespace ComputerLearning
         private int lastMessageIndex = -1;
         private static int lastMedalImprovementIndex = -1;
         private RectTransform mascotVisualRect;
+        private bool hasShownCompanionWelcomeThisScene = false;
+        private float companionIdleHintTimer = 0f;
+
+        private bool IsIntroPanelTarget(RectTransform target)
+        {
+            if (LevelRunner.ActiveRunner != null && LevelRunner.ActiveRunner.IsShowingIntroPanel)
+                return true;
+            if (target == null) return false;
+            string n = target.name;
+            return n == "VideoDemoFrame" || n == "Btn-IntroStart" || n == "IntroCard" || n == "LevelIntroPanel";
+        }
+
+        private bool IsOutwardSideTarget(RectTransform target)
+        {
+            if (target == null) return false;
+            if (target.GetComponentInParent<LevelCelebrationModal>() != null) return true;
+            return IsIntroPanelTarget(target);
+        }
+
+        public bool ShouldBeInDesktopCompanionMode()
+        {
+            if (!DesktopManager.HasInstance || DesktopManager.Instance == null || !DesktopManager.Instance.EnableMascotCompanion)
+                return false;
+            if (DesktopManager.Instance.ShouldStartOnboardingTourOnLoad())
+                return false;
+            if (DesktopTour.IsTourRunning || AdvancedDesktopTour.IsTourRunning || VirtualDesktopGuidedLevels.IsLevelRunning)
+                return false;
+            if (Object.FindAnyObjectByType<VirtualDesktopIntro>() != null ||
+                Object.FindAnyObjectByType<FirstDesktopTutorial>() != null ||
+                Object.FindAnyObjectByType<SecondDesktopTutorial>() != null)
+            {
+                return false;
+            }
+            if (LevelRunner.ActiveRunner != null && LevelRunner.ActiveRunner.gameObject.activeInHierarchy && !LevelRunner.ActiveRunner.IsCompleted)
+                return false;
+            if (Object.FindAnyObjectByType<LevelCelebrationModal>() != null)
+                return false;
+            return true;
+        }
 
         private RectTransform GetMascotVisualRect()
         {
@@ -312,7 +351,8 @@ namespace ComputerLearning
 
                 float rawWidth = speechText.preferredWidth;
                 bool isCelebration = targetRect != null && targetRect.GetComponentInParent<LevelCelebrationModal>() != null;
-                float maxBubbleTextWidth = isCelebration ? 240f : 380f;
+                bool isIntroPanel = !isCelebration && IsIntroPanelTarget(targetRect);
+                float maxBubbleTextWidth = isCelebration ? 240f : (isIntroPanel ? 300f : 380f);
                 if (rawWidth > maxBubbleTextWidth)
                 {
                     layoutElement.preferredWidth = maxBubbleTextWidth;
@@ -387,9 +427,9 @@ namespace ComputerLearning
                 if (vis != null) vis.anchoredPosition = new Vector2(0f, floatOffset);
                 Vector3 finalTargetPos = basePos + CanvasOffsetToWorldDelta(currentTargetOffset, canvas);
 
-                bool isCelebrationTarget = targetRect != null && targetRect.GetComponentInParent<LevelCelebrationModal>() != null;
-                float predictedFlipScale = ShouldFaceLeft(finalTargetPos, canvas, isCelebrationTarget) ? -1f : 1f;
-                finalTargetPos = ClampMascotWorldPositionToScreen(finalTargetPos, canvas, predictedFlipScale, isCelebrationTarget);
+                bool isOutwardTarget = IsOutwardSideTarget(targetRect);
+                float predictedFlipScale = ShouldFaceLeft(finalTargetPos, canvas, isOutwardTarget) ? -1f : 1f;
+                finalTargetPos = ClampMascotWorldPositionToScreen(finalTargetPos, canvas, predictedFlipScale, isOutwardTarget);
 
                 mascotRect.position = Vector3.Lerp(mascotRect.position, finalTargetPos, Time.deltaTime * followSpeed);
             }
@@ -573,13 +613,31 @@ namespace ComputerLearning
             return new Vector2(xOffset, verticalOffset);
         }
 
+        private Vector2 GetIntroPanelOffsetForTarget(RectTransform introTarget, Vector2? requestedOffset)
+        {
+            const float defaultSideOffset = 235f;
+            const float sideGap = 65f;
+            float yOff = requestedOffset.HasValue ? requestedOffset.Value.y : 10f;
+
+            if (introTarget == null)
+            {
+                return new Vector2(defaultSideOffset, yOff);
+            }
+
+            float halfW = introTarget.rect.width > 10f && introTarget.rect.width < 600f
+                ? introTarget.rect.width * 0.5f
+                : 165f;
+            float xOff = Mathf.Max(defaultSideOffset, halfW + sideGap);
+            return new Vector2(xOff, yOff);
+        }
+
         private void UpdateSpeechBubblePlacement(Canvas canvas)
         {
             if (mascotRect == null) return;
 
-            bool isCelebrationTarget = targetRect != null && targetRect.GetComponentInParent<LevelCelebrationModal>() != null;
+            bool isOutwardTarget = IsOutwardSideTarget(targetRect);
             Camera cam = canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay ? canvas.worldCamera : null;
-            bool isOnRightSide = ShouldFaceLeft(mascotRect.position, canvas, isCelebrationTarget);
+            bool isOnRightSide = ShouldFaceLeft(mascotRect.position, canvas, isOutwardTarget);
 
             float flipScale = isOnRightSide ? -1f : 1f;
             mascotRect.localScale = new Vector3(flipScale, 1f, 1f);
@@ -689,7 +747,9 @@ namespace ComputerLearning
             if (Instance != null)
             {
                 bool isCelebration = target != null && target.GetComponentInParent<LevelCelebrationModal>() != null;
-                float finalDuration = isCelebration ? (duration > 0f ? duration : 5.5f) : (duration > 0f ? Mathf.Min(duration, 2.0f) : 1.8f);
+                float finalDuration = isCelebration
+                    ? (duration > 0f ? duration : 5.5f)
+                    : (duration > 0f ? Mathf.Clamp(duration, 1.8f, 4.2f) : 2.6f);
                 Instance.ShowTemporaryFeedback(message, target, finalDuration, offset);
             }
         }
@@ -743,7 +803,7 @@ namespace ComputerLearning
             string[] inactivityPool = FeedbackDialogs.inactivityMessages;
             if (inactivityPool == null || inactivityPool.Length == 0) return;
             string msg = inactivityPool[UnityEngine.Random.Range(0, inactivityPool.Length)];
-            ShowContextualFeedback(msg, target, -1f);
+            ShowContextualFeedback(msg, target, 3.5f);
         }
 
         public static string GetRandomMedalImprovementMessage()
@@ -852,7 +912,21 @@ namespace ComputerLearning
             hasAssignedTarget = (target != null);
             isPinnedAtWorldPos = false;
             bool isCelebrationTarget = target != null && target.GetComponentInParent<LevelCelebrationModal>() != null;
-            currentTargetOffset = isCelebrationTarget ? (offset ?? GetCelebrationOffsetForTarget(target)) : Vector2.zero;
+            bool isIntroTarget = !isCelebrationTarget && IsIntroPanelTarget(target);
+            bool isOutwardTarget = isCelebrationTarget || isIntroTarget;
+
+            if (isCelebrationTarget)
+            {
+                currentTargetOffset = offset ?? GetCelebrationOffsetForTarget(target);
+            }
+            else if (isIntroTarget)
+            {
+                currentTargetOffset = GetIntroPanelOffsetForTarget(target, offset);
+            }
+            else
+            {
+                currentTargetOffset = Vector2.zero;
+            }
 
             Canvas canvas = GetComponentInParent<Canvas>();
             float scale = canvas != null ? canvas.scaleFactor : 1f;
@@ -866,14 +940,18 @@ namespace ComputerLearning
                 {
                     mascotRect.anchoredPosition = offset ?? new Vector2(-120f, 60f);
                 }
-                else if ((!wasActive || isCelebrationTarget) && targetRect.gameObject.activeInHierarchy)
+                else if (targetRect.gameObject.activeInHierarchy)
                 {
                     Canvas.ForceUpdateCanvases();
                     Vector3[] corners = new Vector3[4];
                     targetRect.GetWorldCorners(corners);
                     Vector3 desiredPos = ((corners[0] + corners[2]) / 2f) + CanvasOffsetToWorldDelta(currentTargetOffset, canvas);
-                    float flipScale = ShouldFaceLeft(desiredPos, canvas, isCelebrationTarget) ? -1f : 1f;
-                    mascotRect.position = ClampMascotWorldPositionToScreen(desiredPos, canvas, flipScale, isCelebrationTarget);
+                    float flipScale = ShouldFaceLeft(desiredPos, canvas, isOutwardTarget) ? -1f : 1f;
+                    Vector3 clampedPos = ClampMascotWorldPositionToScreen(desiredPos, canvas, flipScale, isOutwardTarget);
+                    if (!wasActive || isOutwardTarget)
+                    {
+                        mascotRect.position = clampedPos;
+                    }
                 }
             }
 
@@ -905,12 +983,19 @@ namespace ComputerLearning
             }
             RectTransform vis = GetMascotVisualRect();
             if (vis != null) vis.localScale = Vector3.one;
-            isDesktopCompanion = false;
             AllowSpaceToSkipDialogue = false;
             hasAssignedTarget = false;
             isPinnedAtWorldPos = false;
             targetRect = null;
             currentTargetOffset = Vector2.zero;
+
+            if (ShouldBeInDesktopCompanionMode())
+            {
+                InitAsDesktopCompanion(!hasShownCompanionWelcomeThisScene);
+                return;
+            }
+
+            isDesktopCompanion = false;
             gameObject.SetActive(false);
         }
 
@@ -918,12 +1003,13 @@ namespace ComputerLearning
         /// <summary>
         /// Initializes the mascot as a persistent, interactive desktop pet in the top-right corner.
         /// </summary>
-        public void InitAsDesktopCompanion()
+        public void InitAsDesktopCompanion(bool showWelcomeBubble = true)
         {
             isDesktopCompanion = true;
             hasAssignedTarget = false;
             isPinnedAtWorldPos = false;
             targetRect = null;
+            companionIdleHintTimer = 0f;
             gameObject.SetActive(true);
 
             EnsureSpeechBubbleLayout();
@@ -957,8 +1043,15 @@ namespace ComputerLearning
                 bubbleRt.anchoredPosition = new Vector2(-110f, -20f);
             }
 
-            // Welcome greeting on desktop startup
-            ShowCompanionMessage(FeedbackDialogs.companionWelcome);
+            if (showWelcomeBubble)
+            {
+                hasShownCompanionWelcomeThisScene = true;
+                ShowCompanionMessage(FeedbackDialogs.companionWelcome);
+            }
+            else if (speechBubble != null)
+            {
+                speechBubble.SetActive(false);
+            }
         }
 
         private void UpdateCompanionPosition()
@@ -971,6 +1064,28 @@ namespace ComputerLearning
             mascotRect.anchoredPosition = companionCornerOffset;
             RectTransform vis = GetMascotVisualRect();
             if (vis != null) vis.anchoredPosition = new Vector2(0f, floatOffset);
+
+            // Periodically offer a friendly desktop hint when Pointy is idle in the corner
+            if (speechBubble == null || !speechBubble.activeSelf)
+            {
+                if (ShouldBeInDesktopCompanionMode())
+                {
+                    companionIdleHintTimer += Time.unscaledDeltaTime;
+                    if (companionIdleHintTimer >= 22f)
+                    {
+                        companionIdleHintTimer = 0f;
+                        TriggerCompanionDialogue();
+                    }
+                }
+                else
+                {
+                    companionIdleHintTimer = 0f;
+                }
+            }
+            else
+            {
+                companionIdleHintTimer = 0f;
+            }
         }
 
         /// <summary>

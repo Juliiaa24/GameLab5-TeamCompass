@@ -116,6 +116,14 @@ namespace ComputerLearning
             if (ActiveWindow == window) FocusTopWindow();
             UpdateTaskbarAndWindowLayering();
             WindowsChanged?.Invoke();
+
+            if (VirtualMascot.Instance != null &&
+                !VirtualMascot.Instance.IsDesktopCompanion &&
+                !VirtualMascot.Instance.gameObject.activeSelf &&
+                VirtualMascot.Instance.ShouldBeInDesktopCompanionMode())
+            {
+                VirtualMascot.Instance.InitAsDesktopCompanion(false);
+            }
         }
 
         public void FocusWindow(Window window)

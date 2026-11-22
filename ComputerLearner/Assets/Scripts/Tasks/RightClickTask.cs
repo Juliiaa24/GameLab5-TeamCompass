@@ -8,16 +8,22 @@ namespace ComputerLearning
         private bool isHovering;
         private float hoverDwellTime;
         private bool hasWarnedHoverStagnant;
+        private TaskTargetMovement targetMover;
 
         protected override void SetupTask(TaskDefinition definition)
         {
             isHovering = false;
             hoverDwellTime = 0f;
             hasWarnedHoverStagnant = false;
-            TaskTargetMovement mover = GetComponent<TaskTargetMovement>();
-            if (mover == null) mover = gameObject.AddComponent<TaskTargetMovement>();
-            mover.Setup(definition);
+            targetMover = GetComponent<TaskTargetMovement>();
+            if (targetMover == null) targetMover = gameObject.AddComponent<TaskTargetMovement>();
+            targetMover.Setup(definition);
             SetupBackgroundClickInterceptor(OnBackgroundClicked);
+        }
+
+        protected override void ShowTaskInactivityReminder()
+        {
+            VirtualMascot.ShowContextualFeedback(VirtualMascot.FeedbackDialogs.rightClickReminder, transform as RectTransform, 3.5f);
         }
 
         protected override void Update()
@@ -31,14 +37,8 @@ namespace ComputerLearning
                 if (hoverDwellTime >= 2.5f && !hasWarnedHoverStagnant)
                 {
                     hasWarnedHoverStagnant = true;
-                    VirtualMascot.ShowContextualFeedback(VirtualMascot.FeedbackDialogs.rightClickHoverStagnant, transform as RectTransform, 3.0f);
+                    VirtualMascot.ShowContextualFeedback(VirtualMascot.FeedbackDialogs.rightClickHoverStagnant, transform as RectTransform, 3.2f);
                 }
-            }
-
-            if (!hasShownInactivityReminder && (Time.time - lastInteractionTime) >= 5.0f)
-            {
-                hasShownInactivityReminder = true;
-                VirtualMascot.ShowContextualFeedback(VirtualMascot.FeedbackDialogs.rightClickReminder, transform as RectTransform, 3.0f);
             }
         }
 
@@ -78,8 +78,9 @@ namespace ComputerLearning
             if (eventData.button == PointerEventData.InputButton.Right)
             {
                 RectTransform rectTransform = transform as RectTransform;
-                int scorePoints = BaseTask.CalculatePrecisionAndSizeScore(rectTransform, eventData.position, eventData.pressEventCamera, out bool isOuterRing);
-                int maxScorePoints = BaseTask.CalculateMaxPossiblePrecisionScore(rectTransform);
+                TargetMovementType moveType = targetMover != null ? targetMover.MovementType : BaseTask.ResolveTargetMovementType(Definition);
+                int scorePoints = BaseTask.CalculatePrecisionAndSizeScore(rectTransform, eventData.position, eventData.pressEventCamera, out bool isOuterRing, moveType);
+                int maxScorePoints = BaseTask.CalculateMaxPossiblePrecisionScore(rectTransform, moveType);
                 if (isOuterRing && rectTransform != null)
                 {
                     VirtualMascot.ShowAlmostOutFeedback(rectTransform);

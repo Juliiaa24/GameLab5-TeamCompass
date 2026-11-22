@@ -229,6 +229,7 @@ namespace ComputerLearning
             // 4. Wipe all PlayerPrefs and restore only global settings + clean initial flags
             DesktopManager.ResetWallpaperPreferences();
             FileExplorerApp.ResetStaticFileSystem();
+            TaskbarClock.ResetClockSettings();
             PlayerPrefs.DeleteAll();
             PlayerPrefs.SetString("SelectedLanguage", activeLanguage);
             PlayerPrefs.SetInt("Playtest_StudentCounter", currentStudentCounter);

@@ -34,6 +34,9 @@ namespace ComputerLearning
 
         /// <summary>Fired while the player is actively hovering.</summary>
         public event Action OnHoverActive;
+
+        public TargetMovementType MovementType { get; private set; } = TargetMovementType.Stationary;
+        public bool IsActivelyHovering => isHovering && hoverTime > 0.25f;
         #endregion
 
         #region Private Variables
@@ -67,8 +70,10 @@ namespace ComputerLearning
         private void Start()
         {
             if (parentRect == null) parentRect = transform.parent as RectTransform;
-            moveDirection = UnityEngine.Random.insideUnitCircle.normalized;
-            if (moveDirection == Vector2.zero) moveDirection = Vector2.right;
+            if (moveDirection == Vector2.zero)
+            {
+                moveDirection = BaseTask.GetRandomDvdDirection();
+            }
             swayTimer = UnityEngine.Random.Range(0f, Mathf.PI * 2f);
 
             if (fillProgressImage != null) fillProgressImage.fillAmount = 0f;
@@ -178,7 +183,7 @@ namespace ComputerLearning
             {
                 completed = true;
                 float avgRatio = hoverRatioSamples > 0 ? (hoverRatioSum / hoverRatioSamples) : 0f;
-                int scorePoints = BaseTask.CalculateRatioAndSizeScore(rectTransform, avgRatio, out bool isOuterRing);
+                int scorePoints = BaseTask.CalculateRatioAndSizeScore(rectTransform, avgRatio, out bool isOuterRing, MovementType);
                 if (isOuterRing && rectTransform != null)
                 {
                     VirtualMascot.ShowAlmostOutFeedback(rectTransform);
@@ -193,12 +198,42 @@ namespace ComputerLearning
         /// <summary>Configure size, required duration, and movement. Call right after spawning.</summary>
         public void Configure(float size, float duration, bool moving, float speed)
         {
+            Configure(size, duration, moving ? TargetMovementType.DvdBounce : TargetMovementType.Stationary, speed);
+        }
+
+        /// <summary>Configure size, required duration, and explicit movement mode (Stationary, Circular, or DvdBounce).</summary>
+        public void Configure(float size, float duration, TargetMovementType movementType, float speed)
+        {
             if (rectTransform == null) rectTransform = GetComponent<RectTransform>();
             rectTransform.sizeDelta = new Vector2(size, size);
             requiredDuration = Mathf.Max(0.1f, duration);
-            isMoving  = moving;
-            isSwayingOnly = !moving;
-            moveSpeed = moving ? ((speed > 0f ? speed : 100f) * 1.2f) : speed;
+            MovementType = movementType;
+            hasRecordedBasePos = false;
+
+            switch (movementType)
+            {
+                case TargetMovementType.DvdBounce:
+                    isMoving = true;
+                    isSwayingOnly = false;
+                    moveSpeed = (speed > 0f ? speed : 80f) * 1.1f;
+                    moveDirection = BaseTask.GetRandomDvdDirection();
+                    break;
+
+                case TargetMovementType.Circular:
+                    isMoving = false;
+                    isSwayingOnly = true;
+                    moveSpeed = 35f;
+                    swayTimer = UnityEngine.Random.Range(0f, Mathf.PI * 2f);
+                    break;
+
+                case TargetMovementType.Stationary:
+                default:
+                    isMoving = false;
+                    isSwayingOnly = false;
+                    moveSpeed = 0f;
+                    break;
+            }
+
             hoverRatioSum = 0f;
             hoverRatioSamples = 0;
         }

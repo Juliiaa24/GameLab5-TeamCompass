@@ -122,6 +122,20 @@ namespace ComputerLearning
             return enableMascotCompanion || UnityEngine.SceneManagement.SceneManager.GetActiveScene().name == "VirtualDesktop";
         }
 
+        public bool ShouldStartOnboardingTourOnLoad()
+        {
+            if (!IsVirtualDesktopScene()) return false;
+            if (PlayerPrefs.GetInt("DesktopTourCompleted", 0) == 0) return true;
+            if (SessionManager.ExistingInstance != null &&
+                SessionManager.ExistingInstance.ActiveLearningPath == LearningPath.Intermediate &&
+                PlayerPrefs.GetInt("AdvancedDesktopTourCompleted", 0) == 0)
+            {
+                return true;
+            }
+            if (PlayerPrefs.GetInt("VirtualDesktopIntroCompleted", 0) == 0) return true;
+            return false;
+        }
+
         #region Unity Methods
         private void Awake()
         {
@@ -195,6 +209,10 @@ namespace ComputerLearning
                     {
                         gameObject.AddComponent<VirtualDesktopIntro>();
                     }
+                }
+                else if (enableMascotCompanion && VirtualMascot.Instance != null && !VirtualMascot.Instance.IsDesktopCompanion)
+                {
+                    VirtualMascot.Instance.InitAsDesktopCompanion(true);
                 }
 
                 // Tutorial 2: Trigger AdvancedDesktopTour after Level 9 is completed
@@ -346,7 +364,8 @@ namespace ComputerLearning
                 }
             }
             if (WindowManager.Instance != null && WindowManager.Instance.ActiveWindow != null &&
-                WindowManager.Instance.ActiveWindow.GetComponentInChildren<NotepadApp>() != null)
+                (WindowManager.Instance.ActiveWindow.GetComponentInChildren<NotepadApp>() != null ||
+                 WindowManager.Instance.ActiveWindow.GetComponentInChildren<PaintApp>() != null))
             {
                 return;
             }
@@ -357,6 +376,8 @@ namespace ComputerLearning
             bool isC = kb != null && kb.cKey.wasPressedThisFrame;
             bool isX = kb != null && kb.xKey.wasPressedThisFrame;
             bool isV = kb != null && kb.vKey.wasPressedThisFrame;
+            bool isD = kb != null && kb.dKey.wasPressedThisFrame;
+            bool isZ = kb != null && kb.zKey.wasPressedThisFrame;
 
 #if ENABLE_LEGACY_INPUT_MANAGER
             if (!deletePressed) deletePressed = Input.GetKeyDown(KeyCode.Delete);
@@ -364,6 +385,8 @@ namespace ComputerLearning
             if (!isC) isC = Input.GetKeyDown(KeyCode.C);
             if (!isX) isX = Input.GetKeyDown(KeyCode.X);
             if (!isV) isV = Input.GetKeyDown(KeyCode.V);
+            if (!isD) isD = Input.GetKeyDown(KeyCode.D);
+            if (!isZ) isZ = Input.GetKeyDown(KeyCode.Z);
 #endif
 
             if (deletePressed && (FileExplorerApp.IsDesktopFocused || !FileExplorerApp.HasActiveFocusedExplorer()))
@@ -405,6 +428,22 @@ namespace ComputerLearning
                     {
                         FeedbackManager.PlaySuccess();
                     }
+                }
+            }
+            else if (isD)
+            {
+                if (DraggableIcon.SelectedIcons != null && DraggableIcon.SelectedIcons.Count > 0 &&
+                    FileExplorerApp.TryConsumeClipboardShortcutFrame())
+                {
+                    DraggableIcon.DuplicateSelectedDesktopIcons();
+                }
+            }
+            else if (isZ)
+            {
+                if (FileExplorerApp.HasCreatedItemsToUndo &&
+                    FileExplorerApp.TryConsumeClipboardShortcutFrame())
+                {
+                    FileExplorerApp.UndoLastCreatedItems();
                 }
             }
         }
@@ -824,7 +863,7 @@ namespace ComputerLearning
             mascotInstance.name = "VirtualMascot";
 
             VirtualMascot mascot = mascotInstance.GetComponent<VirtualMascot>();
-            if (enableMascotCompanion && mascot != null)
+            if (enableMascotCompanion && mascot != null && !ShouldStartOnboardingTourOnLoad())
             {
                 Transform windowsArea = container.Find("WindowsArea");
                 if (windowsArea != null)
@@ -833,7 +872,7 @@ namespace ComputerLearning
                 }
 
                 mascotInstance.SetActive(true);
-                mascot.InitAsDesktopCompanion();
+                mascot.InitAsDesktopCompanion(true);
             }
             else
             {
@@ -1195,7 +1234,17 @@ namespace ComputerLearning
             }
 
             Sprite spriteToUse = iconData.iconSprite;
-            if (iconData.itemType == DesktopItemType.TextDocument &&
+            if (string.Equals(iconData.iconName, "Notepad", System.StringComparison.OrdinalIgnoreCase))
+            {
+                Sprite notepadAppSprite = FileExplorerApp.GetNotepadAppSprite();
+                if (notepadAppSprite != null) spriteToUse = notepadAppSprite;
+            }
+            else if (string.Equals(iconData.iconName, "Paint", System.StringComparison.OrdinalIgnoreCase))
+            {
+                Sprite paintAppSprite = FileExplorerApp.GetPaintAppSprite();
+                if (paintAppSprite != null) spriteToUse = paintAppSprite;
+            }
+            else if (iconData.itemType == DesktopItemType.TextDocument &&
                 !string.Equals(iconData.iconName, "Notepad", System.StringComparison.OrdinalIgnoreCase))
             {
                 Sprite txtSprite = FileExplorerApp.GetTextFileSprite();

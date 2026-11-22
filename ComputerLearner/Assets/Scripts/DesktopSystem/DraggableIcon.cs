@@ -283,6 +283,62 @@ namespace ComputerLearning
             RecycleDesktopIconsList(snapshot, notifyBinEvent: true);
         }
 
+        public static void DuplicateSelectedDesktopIcons()
+        {
+            List<DraggableIcon> snapshot = GetCurrentSelectionSnapshot();
+            if (snapshot.Count == 0) return;
+
+            List<ExplorerItemData> items = new List<ExplorerItemData>();
+            int localProtected = 0;
+            foreach (var ic in snapshot)
+            {
+                if (ic == null) continue;
+                if (ic.IsProtected || ic.GetComponent<RecycleBinIcon>() != null)
+                {
+                    localProtected++;
+                    continue;
+                }
+                ic.EnsureLinkedExplorerItem();
+                if (ic.LinkedExplorerItem != null)
+                {
+                    items.Add(ic.LinkedExplorerItem);
+                }
+            }
+
+            ExplorerItemData desktopFolder = FileExplorerApp.GetDesktopFolder();
+            List<ExplorerItemData> duplicated = FileExplorerApp.DuplicateItemsInFolder(items, desktopFolder, out int fsSkipped, out string errorMessage);
+            int totalSkipped = localProtected + fsSkipped;
+
+            if (duplicated.Count > 0)
+            {
+                ClearSelection();
+                if (DesktopManager.Instance != null)
+                {
+                    foreach (var dup in duplicated)
+                    {
+                        if (dup == null) continue;
+                        DraggableIcon spawnedIcon = DesktopManager.Instance.GetIconByName(dup.name);
+                        if (spawnedIcon != null)
+                        {
+                            ToggleSelection(spawnedIcon);
+                        }
+                    }
+                }
+                FeedbackManager.PlaySuccess();
+                Debug.Log($"[Desktop] Duplicated {duplicated.Count} item(s)" + (totalSkipped > 0 ? $" ({totalSkipped} protected skipped)." : "."));
+            }
+            else if (!string.IsNullOrEmpty(errorMessage))
+            {
+                FeedbackManager.PlayError(true);
+                RectTransform targetRt = DesktopManager.Instance != null ? DesktopManager.Instance.DesktopIconContainer : null;
+                VirtualMascot.ShowContextualFeedback(errorMessage, targetRt, 3.2f);
+            }
+            else if (totalSkipped > 0)
+            {
+                Debug.Log("[Desktop] Protected system items cannot be duplicated.");
+            }
+        }
+
         private static void RecycleDesktopIconsList(List<DraggableIcon> icons, bool notifyBinEvent)
         {
             if (icons == null || icons.Count == 0) return;
@@ -1472,16 +1528,10 @@ namespace ComputerLearning
             ContextMenuController.Instance.ShowInputModal("Rename", currentName, "Save", (newName) =>
             {
                 if (string.IsNullOrWhiteSpace(newName)) return;
-                newName = newName.Trim();
-
-                if (ItemType == DesktopItemType.TextDocument && !newName.EndsWith(".txt", StringComparison.OrdinalIgnoreCase))
-                {
-                    newName += ".txt";
-                }
-                else if (ItemType == DesktopItemType.ImageDocument && !newName.EndsWith(".png", StringComparison.OrdinalIgnoreCase))
-                {
-                    newName += ".png";
-                }
+                string reqExt = "";
+                if (ItemType == DesktopItemType.TextDocument) reqExt = ".txt";
+                else if (ItemType == DesktopItemType.ImageDocument) reqExt = ".png";
+                newName = FileExplorerApp.ClampAndFormatItemName(newName, reqExt);
 
                 gameObject.name = newName;
                 if (label != null) label.text = newName;

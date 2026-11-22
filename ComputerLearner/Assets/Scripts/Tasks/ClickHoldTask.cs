@@ -16,13 +16,25 @@ namespace ComputerLearning
         private Camera lastEventCamera;
         private Color fillImageBaseColor = new Color(0.8f, 0.2f, 0.8f, 1f);
         private bool hasCachedFillColor = false;
+        private TaskTargetMovement targetMover;
 
         protected override void SetupTask(TaskDefinition definition)
         {
-            TaskTargetMovement mover = GetComponent<TaskTargetMovement>();
-            if (mover == null) mover = gameObject.AddComponent<TaskTargetMovement>();
-            mover.Setup(definition);
-            mover.SetMoving(false); // Keep component enabled for bounds clamping, disable movement
+            targetMover = GetComponent<TaskTargetMovement>();
+            if (targetMover == null) targetMover = gameObject.AddComponent<TaskTargetMovement>();
+
+            TargetMovementType holdMoveType = TargetMovementType.Stationary;
+            if (definition != null)
+            {
+                if (definition.difficulty <= 1)
+                    holdMoveType = BaseTask.ResolveTargetMovementType(definition);
+                else if (definition.difficulty <= 3)
+                    holdMoveType = TargetMovementType.Circular;
+                else
+                    holdMoveType = TargetMovementType.DvdBounce;
+            }
+            targetMover.SetCircularRadius(18f, 12f);
+            targetMover.Setup(definition, holdMoveType, defaultDvdSpeed: 42f);
 
             if (definition != null)
             {
@@ -46,6 +58,24 @@ namespace ComputerLearning
             SetupBackgroundClickInterceptor(OnBackgroundClicked);
         }
 
+        protected override bool IsPlayerActivelyProgressing()
+        {
+            return isHolding;
+        }
+
+        protected override void ShowTaskInactivityReminder()
+        {
+            if (!isHolding)
+            {
+                VirtualMascot.ShowContextualFeedback(VirtualMascot.FeedbackDialogs.holdInactivityReminder, transform as RectTransform, 3.5f);
+            }
+        }
+
+        protected override float GetSubTaskParGraceSeconds()
+        {
+            return 7.5f;
+        }
+
         protected override void Update()
         {
             base.Update();
@@ -57,14 +87,8 @@ namespace ComputerLearning
                 if (hoverDwellTime >= 2.5f && !hasWarnedHoverStagnant)
                 {
                     hasWarnedHoverStagnant = true;
-                    VirtualMascot.ShowContextualFeedback(VirtualMascot.FeedbackDialogs.holdHoverStagnant, transform as RectTransform, 3.0f);
+                    VirtualMascot.ShowContextualFeedback(VirtualMascot.FeedbackDialogs.holdHoverStagnant, transform as RectTransform, 3.2f);
                 }
-            }
-
-            if (!isHolding && !hasShownInactivityReminder && (Time.time - lastInteractionTime) >= 5.0f)
-            {
-                hasShownInactivityReminder = true;
-                VirtualMascot.ShowContextualFeedback(VirtualMascot.FeedbackDialogs.holdInactivityReminder, transform as RectTransform, 3.0f);
             }
 
             if (isHolding)
@@ -75,7 +99,7 @@ namespace ComputerLearning
                 }
 
                 currentHoldTime += Time.deltaTime;
-                NotifyUserInteraction();
+                NotifyTaskProgress();
 
                 float progress = Mathf.Clamp01(currentHoldTime / Mathf.Max(0.1f, requiredHoldTime));
                 if (fillImage != null)
@@ -89,8 +113,9 @@ namespace ComputerLearning
                 {
                     isHolding = false;
                     RectTransform rt = transform as RectTransform;
-                    int scorePoints = BaseTask.CalculatePrecisionAndSizeScore(rt, lastPointerScreenPos, lastEventCamera, out bool isOuterRing);
-                    int maxScorePoints = BaseTask.CalculateMaxPossiblePrecisionScore(rt);
+                    TargetMovementType moveType = targetMover != null ? targetMover.MovementType : BaseTask.ResolveTargetMovementType(Definition);
+                    int scorePoints = BaseTask.CalculatePrecisionAndSizeScore(rt, lastPointerScreenPos, lastEventCamera, out bool isOuterRing, moveType);
+                    int maxScorePoints = BaseTask.CalculateMaxPossiblePrecisionScore(rt, moveType);
                     if (isOuterRing && rt != null)
                     {
                         VirtualMascot.ShowAlmostOutFeedback(rt);

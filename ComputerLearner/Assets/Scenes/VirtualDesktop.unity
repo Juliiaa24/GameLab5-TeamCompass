@@ -176,7 +176,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 1a2cf4b2658908e40b13cd6baccd71c4, type: 3}
+  m_Sprite: {fileID: 21300000, guid: e9fc926c64fcf274599cf7503484609c, type: 3}
   m_Type: 0
   m_PreserveAspect: 1
   m_FillCenter: 1
@@ -2747,7 +2747,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 1ee91fb1395357449bc80a3bb4fa13ac, type: 3}
+  m_Sprite: {fileID: 21300000, guid: b81c831d7ad7db04b9efe247f0f68194, type: 3}
   m_Type: 0
   m_PreserveAspect: 1
   m_FillCenter: 1
@@ -4622,7 +4622,7 @@ PrefabInstance:
     - target: {fileID: 1752656936260673201, guid: 8fd5d29b8e6b66b4aa43469e74eaad42, type: 3}
       propertyPath: initialDesktopIcons.Array.data[3].iconSprite
       value: 
-      objectReference: {fileID: 21300000, guid: 1ee91fb1395357449bc80a3bb4fa13ac, type: 3}
+      objectReference: {fileID: 21300000, guid: b81c831d7ad7db04b9efe247f0f68194, type: 3}
     - target: {fileID: 1752656936260673201, guid: 8fd5d29b8e6b66b4aa43469e74eaad42, type: 3}
       propertyPath: initialDesktopIcons.Array.data[4].iconSprite
       value: 
@@ -4630,7 +4630,7 @@ PrefabInstance:
     - target: {fileID: 1752656936260673201, guid: 8fd5d29b8e6b66b4aa43469e74eaad42, type: 3}
       propertyPath: initialDesktopIcons.Array.data[5].iconSprite
       value: 
-      objectReference: {fileID: 21300000, guid: 1a2cf4b2658908e40b13cd6baccd71c4, type: 3}
+      objectReference: {fileID: 21300000, guid: e9fc926c64fcf274599cf7503484609c, type: 3}
     - target: {fileID: 1752656936260673201, guid: 8fd5d29b8e6b66b4aa43469e74eaad42, type: 3}
       propertyPath: initialDesktopIcons.Array.data[0].contentPrefab
       value: 

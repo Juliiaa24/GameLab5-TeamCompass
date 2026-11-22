@@ -86,7 +86,7 @@ namespace ComputerLearning
             // 1. Welcome to the full Virtual Desktop
             string welcomeMsg = (dialogs != null && !string.IsNullOrEmpty(dialogs.virtual_welcome))
                 ? dialogs.virtual_welcome
-                : "Welcome to your full Virtual Desktop! Here you can explore and practice freely.";
+                : "Hi, I'm Pointy! Welcome to your full Virtual Desktop! Here you can explore and practice freely.";
             VirtualMascot.Show(welcomeMsg, centerTarget != null ? centerTarget : levelsTarget, Vector2.zero);
             yield return VirtualMascot.WaitForDialogue(4.5f);
 

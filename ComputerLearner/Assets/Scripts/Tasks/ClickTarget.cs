@@ -31,6 +31,8 @@ namespace ComputerLearning
         public event Action OnWrongButtonClicked;
         /// <summary>Fired when the player hovers over the target for > 2.5s without clicking.</summary>
         public event Action OnHoverStagnant;
+
+        public TargetMovementType MovementType { get; private set; } = TargetMovementType.Stationary;
         #endregion
 
         #region Private Variables
@@ -60,9 +62,11 @@ namespace ComputerLearning
         private void Start()
         {
             if (parentRect == null) parentRect = transform.parent as RectTransform;
-            // Random starting direction
-            moveDirection = UnityEngine.Random.insideUnitCircle.normalized;
-            if (moveDirection == Vector2.zero) moveDirection = Vector2.right;
+            // Diagonal DVD screensaver starting direction
+            if (moveDirection == Vector2.zero)
+            {
+                moveDirection = BaseTask.GetRandomDvdDirection();
+            }
         }
 
         private void Update()
@@ -157,21 +161,43 @@ namespace ComputerLearning
         /// </summary>
         public void Configure(float size, bool moving, float speed)
         {
+            Configure(size, moving ? TargetMovementType.DvdBounce : TargetMovementType.Stationary, speed);
+        }
+
+        /// <summary>
+        /// Configures size and explicit movement mode (Stationary, Circular, or DvdBounce).
+        /// </summary>
+        public void Configure(float size, TargetMovementType movementType, float speed)
+        {
             if (rectTransform == null) rectTransform = GetComponent<RectTransform>();
             rectTransform.sizeDelta = new Vector2(size, size);
-            if (moving)
+            MovementType = movementType;
+            hasRecordedBasePos = false;
+
+            switch (movementType)
             {
-                isMoving = true;
-                isSwayingOnly = false;
-                moveSpeed = (speed > 0f ? speed : 100f) * 1.2f; // +20% speed
+                case TargetMovementType.DvdBounce:
+                    isMoving = true;
+                    isSwayingOnly = false;
+                    moveSpeed = (speed > 0f ? speed : 115f) * 1.15f;
+                    moveDirection = BaseTask.GetRandomDvdDirection();
+                    break;
+
+                case TargetMovementType.Circular:
+                    isMoving = false;
+                    isSwayingOnly = true;
+                    moveSpeed = 35f;
+                    swayTimer = UnityEngine.Random.Range(0f, 6.28f);
+                    break;
+
+                case TargetMovementType.Stationary:
+                default:
+                    isMoving = false;
+                    isSwayingOnly = false;
+                    moveSpeed = 0f;
+                    break;
             }
-            else
-            {
-                isMoving = false;
-                isSwayingOnly = true;
-                moveSpeed = 35f;
-                swayTimer = UnityEngine.Random.Range(0f, 6.28f);
-            }
+
             hasBeenClicked = false;
             isHovering = false;
             hoverDwellTime = 0f;
@@ -213,7 +239,7 @@ namespace ComputerLearning
 
             hasBeenClicked = true;
 
-            int scorePoints = BaseTask.CalculatePrecisionAndSizeScore(rectTransform, eventData.position, eventData.pressEventCamera, out bool isOuterRing);
+            int scorePoints = BaseTask.CalculatePrecisionAndSizeScore(rectTransform, eventData.position, eventData.pressEventCamera, out bool isOuterRing, MovementType);
             if (isOuterRing && rectTransform != null)
             {
                 VirtualMascot.ShowAlmostOutFeedback(rectTransform);

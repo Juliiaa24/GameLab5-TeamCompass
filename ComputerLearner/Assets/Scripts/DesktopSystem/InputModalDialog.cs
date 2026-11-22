@@ -21,6 +21,7 @@ namespace ComputerLearning
 
         private Action<string> onConfirmCallback;
         private Action onCancelCallback;
+        private string initialTextValue = string.Empty;
 
         private void Awake()
         {
@@ -58,9 +59,44 @@ namespace ComputerLearning
 
             if (inputField != null)
             {
-                inputField.text = initialValue ?? string.Empty;
+                inputField.characterLimit = FileExplorerApp.MAX_ITEM_NAME_LENGTH;
+                string safeInit = initialValue ?? string.Empty;
+                if (safeInit.Length > FileExplorerApp.MAX_ITEM_NAME_LENGTH)
+                {
+                    safeInit = safeInit.Substring(0, FileExplorerApp.MAX_ITEM_NAME_LENGTH);
+                }
+                initialTextValue = safeInit;
+                inputField.text = safeInit;
                 inputField.ActivateInputField();
                 inputField.Select();
+            }
+        }
+
+        private void Update()
+        {
+            var kb = UnityEngine.InputSystem.Keyboard.current;
+            bool isCtrl = kb != null && (kb.ctrlKey.isPressed || kb.leftCtrlKey.isPressed || kb.rightCtrlKey.isPressed);
+            bool isZ = kb != null && kb.zKey.wasPressedThisFrame;
+            bool isEsc = kb != null && kb.escapeKey.wasPressedThisFrame;
+#if ENABLE_LEGACY_INPUT_MANAGER
+            if (!isCtrl) isCtrl = Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl);
+            if (!isZ) isZ = Input.GetKeyDown(KeyCode.Z);
+            if (!isEsc) isEsc = Input.GetKeyDown(KeyCode.Escape);
+#endif
+            if (isEsc)
+            {
+                Cancel();
+                return;
+            }
+
+            if (isCtrl && isZ && FileExplorerApp.HasCreatedItemsToUndo)
+            {
+                string currentText = inputField != null ? inputField.text : string.Empty;
+                if (string.Equals(currentText, initialTextValue, StringComparison.Ordinal) &&
+                    FileExplorerApp.TryConsumeClipboardShortcutFrame())
+                {
+                    FileExplorerApp.UndoLastCreatedItems();
+                }
             }
         }
 

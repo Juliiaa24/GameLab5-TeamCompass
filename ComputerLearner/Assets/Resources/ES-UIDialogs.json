@@ -228,7 +228,7 @@
     "net_lock_leave_class_on": "Bloquear salir de clase: SÍ",
     "net_lock_leave_class_off": "Bloquear salir de clase: NO",
     "net_student_name_locked_hint": "Bloqueado por el profesor",
-    "explorer_folder_limit_reached": "Límite de elementos en la carpeta alcanzado (máx. 35).",
+    "explorer_folder_limit_reached": "Límite de elementos en la carpeta alcanzado (máx. 16).",
     "explorer_depth_limit_reached": "Profundidad máxima de carpetas alcanzada.",
     "explorer_cycle_error": "No se puede mover ni pegar una carpeta dentro de sí misma o sus subcarpetas."
 }

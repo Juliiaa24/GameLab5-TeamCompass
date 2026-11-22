@@ -14,8 +14,6 @@ namespace ComputerLearning
         private int spotsCleaned = 0;
         private RectTransform contentArea;
         private Image progressBarFill;
-        private float lastCleanedTime;
-        private bool hasShownBetweenReminder = false;
         private readonly List<RectTransform> activeSpots = new List<RectTransform>();
 
         protected override RectTransform GetActiveFeedbackTarget()
@@ -33,25 +31,23 @@ namespace ComputerLearning
         protected override void SetupTask(TaskDefinition definition)
         {
             contentArea = GetComponent<RectTransform>();
-            lastCleanedTime = Time.time;
-            hasShownBetweenReminder = false;
             activeSpots.Clear();
             NotifySubTaskProgress(0f);
             SpawnDirtSpots();
             SetupBackgroundClickInterceptor(OnBackgroundClicked);
         }
 
+        protected override void ShowTaskInactivityReminder()
+        {
+            if (spotsCleaned < spotsToSpawn)
+            {
+                VirtualMascot.ShowContextualFeedback(VirtualMascot.FeedbackDialogs.moveKeepMoving, GetActiveFeedbackTarget(), 3.5f);
+            }
+        }
+
         protected override void Update()
         {
             base.Update();
-            if (IsFinished) return;
-
-            // Check if player spends > 4.5s without cleaning a dirt spot
-            if (!hasShownBetweenReminder && (Time.time - lastCleanedTime) >= 4.5f && spotsCleaned < spotsToSpawn)
-            {
-                hasShownBetweenReminder = true;
-                VirtualMascot.ShowContextualFeedback(VirtualMascot.FeedbackDialogs.moveKeepMoving, GetActiveFeedbackTarget(), 2.8f);
-            }
         }
 
         public void OnBackgroundClicked(PointerEventData eventData)
@@ -163,9 +159,7 @@ namespace ComputerLearning
         {
             if (IsFinished) return;
             
-            NotifyUserInteraction();
-            lastCleanedTime = Time.time;
-            hasShownBetweenReminder = false;
+            NotifyTaskProgress();
 
             if (spot != null)
             {

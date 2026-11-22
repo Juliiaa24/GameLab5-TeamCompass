@@ -85,6 +85,7 @@ namespace ComputerLearning
             int count = FileExplorerApp.GetRecycleBinCount();
             if (binImage != null)
             {
+                binImage.preserveAspect = true;
                 if (count > 0 && fullBinSprite != null)
                 {
                     binImage.sprite = fullBinSprite;

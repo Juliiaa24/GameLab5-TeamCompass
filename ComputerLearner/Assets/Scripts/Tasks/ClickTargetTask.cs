@@ -19,16 +19,12 @@ namespace ComputerLearning
         private float elapsed;
         private bool  timeLimitActive;
         private float lastTargetHitTime = -10f;
-        private float lastActionTime;
-        private bool hasShownDelayReminder;
         #endregion
 
         #region Unity Methods
         protected override void Start()
         {
             base.Start();
-            lastActionTime = Time.time;
-            hasShownDelayReminder = false;
             Image img = GetComponent<Image>();
             if (img == null) img = gameObject.AddComponent<Image>();
             img.color = new Color(0, 0, 0, 0);
@@ -40,13 +36,6 @@ namespace ComputerLearning
             base.Update();
             if (IsFinished) return;
 
-            // Delayed click reminder (> 5s before first click or between targets)
-            if (!hasShownDelayReminder && (Time.time - lastActionTime) >= 5.0f && targetsRemaining > 0)
-            {
-                hasShownDelayReminder = true;
-                VirtualMascot.ShowContextualFeedback(VirtualMascot.FeedbackDialogs.clickDelayReminder, GetActiveFeedbackTarget(), 2.8f);
-            }
-
             if (!timeLimitActive) return;
             elapsed += Time.deltaTime;
             if (elapsed >= timeLimit) Complete(false, GetActiveFeedbackTarget());
@@ -54,6 +43,14 @@ namespace ComputerLearning
         #endregion
 
         #region Protected Methods
+        protected override void ShowTaskInactivityReminder()
+        {
+            if (targetsRemaining > 0)
+            {
+                VirtualMascot.ShowContextualFeedback(VirtualMascot.FeedbackDialogs.clickDelayReminder, GetActiveFeedbackTarget(), 3.5f);
+            }
+        }
+
         protected override RectTransform GetActiveFeedbackTarget()
         {
             for (int i = 0; i < activeTargets.Count; i++)
@@ -74,14 +71,12 @@ namespace ComputerLearning
             timeLimitActive  = timeLimit > 0f;
             elapsed          = 0f;
             lastTargetHitTime = -10f;
-            lastActionTime   = Time.time;
-            hasShownDelayReminder = false;
             targetsRemaining = Mathf.Max(1, cfg.targetCount);
             totalTargetsInitial = targetsRemaining;
 
             activeTargets.Clear();
             for (int i = 0; i < targetsRemaining; i++)
-                SpawnTarget(cfg);
+                SpawnTarget(cfg, i, targetsRemaining);
         }
         #endregion
 
@@ -113,13 +108,14 @@ namespace ComputerLearning
             }
         }
 
-        private void SpawnTarget(TaskConfig cfg)
+        private void SpawnTarget(TaskConfig cfg, int targetIndex = 0, int totalTargets = 1)
         {
             if (targetPrefab == null || spawnArea == null) return;
 
             ClickTarget target = Instantiate(targetPrefab, spawnArea, false);
             target.SetParentRect(spawnArea);
-            target.Configure(cfg.targetSize, cfg.isMoving, cfg.moveSpeed);
+            TargetMovementType moveType = BaseTask.ResolveTargetMovementType(Definition, targetIndex, totalTargets);
+            target.Configure(cfg.targetSize, moveType, cfg.moveSpeed);
 
             if (spawnArea.rect.width <= 0f || spawnArea.rect.height <= 0f)
             {
@@ -160,11 +156,10 @@ namespace ComputerLearning
             if (IsFinished) return;
 
             lastTargetHitTime = Time.unscaledTime;
-            lastActionTime = Time.time;
-            hasShownDelayReminder = false;
 
             Transform hitTransform = target != null ? target.transform : null;
-            int maxTargetPoints = BaseTask.CalculateMaxPossiblePrecisionScore(hitTransform as RectTransform);
+            TargetMovementType moveType = target != null ? target.MovementType : BaseTask.ResolveTargetMovementType(Definition);
+            int maxTargetPoints = BaseTask.CalculateMaxPossiblePrecisionScore(hitTransform as RectTransform, moveType);
             activeTargets.Remove(target);
             targetsRemaining--;
             NotifySubTaskProgress((float)(totalTargetsInitial - targetsRemaining) / Mathf.Max(1, totalTargetsInitial));

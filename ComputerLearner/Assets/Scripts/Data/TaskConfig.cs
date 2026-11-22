@@ -10,6 +10,18 @@ using UnityEngine;
 namespace ComputerLearning
 {
     /// <summary>
+    /// Movement behavior for interactive target tasks.
+    /// Stationary targets award base points, Circular movement targets award +25 bonus points,
+    /// and DvdBounce targets (bouncing diagonally off window borders like the DVD screensaver) award +50 bonus points.
+    /// </summary>
+    public enum TargetMovementType
+    {
+        Stationary = 0,
+        Circular   = 1,
+        DvdBounce  = 2
+    }
+
+    /// <summary>
     /// Data-only configuration that tells a BaseTask prefab how to behave.
     /// Stored inside a TaskDefinition ScriptableObject and passed to the task on Initialise().
     ///

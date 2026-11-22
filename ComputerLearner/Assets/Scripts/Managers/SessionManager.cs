@@ -154,6 +154,7 @@ namespace ComputerLearning
             {
                 DesktopManager.ResetWallpaperPreferences();
                 FileExplorerApp.ResetStaticFileSystem();
+                TaskbarClock.ResetClockSettings();
                 PlaytestDataManager.ClearCurrentStudentSessionData();
                 if (SkillManager.Instance != null)
                 {

@@ -228,7 +228,7 @@
   "net_lock_leave_class_on": "Lås forlat klasse: PÅ",
   "net_lock_leave_class_off": "Lås forlat klasse: AV",
   "net_student_name_locked_hint": "Låst av lærer",
-  "explorer_folder_limit_reached": "Mappegrensen er nådd (maks 35 elementer).",
+  "explorer_folder_limit_reached": "Mappegrensen er nådd (maks 16 elementer).",
   "explorer_depth_limit_reached": "Maksimal mappedybde er nådd.",
   "explorer_cycle_error": "Kan ikke flytte eller lime inn en mappe i seg selv eller undermappene sine."
 }

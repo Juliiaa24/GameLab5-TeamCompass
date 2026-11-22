@@ -2848,3 +2848,80 @@ To enrich the educational operating system simulation, the Virtual Desktop neede
 * **Group Drag & Drop Across Desktop and Explorer:** Added relative-offset group dragging (`activeDragGroup`, `IconGrid.TryPlaceIconAtCurrentPosition`) on the Desktop grid and into folders, File Explorer windows, or the Recycle Bin (`DraggableIcon.MoveDesktopIconsIntoFolder`, `TryHandleGroupDropOnRecycleBin`, `RecycleBinIcon.OnDrop`/`HandleDesktopIconDropped`), plus batch dragging from File Explorer (`ExplorerItemPointerHandler.GetActiveDragItems` with `CountBadge` overlay when dragging multiple movable items, `MoveItemsToFolder`, `MoveItemsToRecycleBin`).
 * **Unified Focus Routing & Deferred Windows-Style Clipboard (`Ctrl+C` / `Ctrl+X` / `Ctrl+V` / `Delete`):** Added `WindowManager.ClearFocus()`, `DesktopContextMenuTrigger.ClaimDesktopFocus()`, and `DraggableIcon.ClaimDesktopFocus()`, plus `FileExplorerApp.HasActiveFocusedExplorer()` / `IsPrimaryActiveExplorer()` so shortcuts route reliably to Desktop or the focused File Explorer window. Replaced single-item immediate-delete cut with batch clipboard (`CopyItemsToClipboard`, deferred-move `CutItemsToClipboard` dimming cut items at `0.48f` alpha via `IsItemInCutClipboard`, `PasteClipboardBatchIntoFolder`), plus `DraggableIcon.CopySelectedDesktopIcons` / `CutSelectedDesktopIcons` / `DeleteSelectedDesktopIcons` and multi-selection right-click menus (`ShowMultiSelectionContextMenu`).
 * **Protected-Item Handling:** Protected items (`IsProtected`, `IsItemProtectedStatic`) can be moved together with a group on the Desktop grid, while batch Copy/Cut/Delete/folder-move operations automatically skip protected elements, keep them safely in place, act on all non-protected items in mixed selections, and display status notices in File Explorer when any/all selected items are protected.
+
+
+---
+
+### 103. PLAYTEST WEEK 4 IMPROVEMENTS & BUG FIXES: THREE TARGET MOVEMENT MODES WITH POINT SCALING, TWO-CLICK DOUBLE-CLICK PRECISION & INTER-CLICK TIMING PENALTY, INACTIVITY/OVERTIME SCORE PENALTIES & RECURRING MASCOT REMINDERS, FILE/FOLDER NAME LENGTH & CAPACITY LIMITS, POINTY INTRO/CORNER/TUTORIAL FIXES, AND UNIFORM RECYCLE BIN SPRITE DIMENSIONS - 20/11/2026
+
+**Context & Motivation (`Documentation/Specs/Plan_Playtest_Fixes_Week4.md`):**
+* Addressed 11 items from weekly playtest feedback (6 gameplay/file-system improvements and 5 mascot/UI bugs):
+  1. All non-moving targets previously defaulted to `isSwayingOnly = true` (circular motion), leaving 0 stationary targets, while `L_Level2` and `L_Level3` had no DVD-bouncing targets and `CalculateRatioAndSizeScore` awarded identical points regardless of movement mode.
+  2. `DoubleClickTask` only measured the precision of the second click and awarded full points even when the second click was noticeably hesitant (`0.30s–0.65s`).
+  3. Players could sit idle for 1.5 minutes in Levels 1–9 and still earn 100% full points (`X/X`), while `hasShownInactivityReminder` was a one-shot boolean that showed Pointy for 1.8s at 5s and never popped up again.
+  4. File/folder names had no character limit (`characterLimit = 0`), and `SaveOrCreateTextDocument` / `SaveOrCreateImageDocument` / `ConfirmSaveDialog` did not enforce folder item capacity limits.
+  5. Pointy blocked animated tutorial videos (`VideoDemoFrame` on `LevelIntroPanel`), flashed for 0.5s in the top-right corner when loading `VirtualDesktop` for the first time before tours began, and failed to return to the top-right corner as a desktop hint companion after tutorials/levels finished.
+  6. `RecyclingBin_Icon_01_Empty.png` had an `877×877` canvas while `RecyclingBin_Icon_01.png` had a `654×654` canvas around the same `554×611` drawn bin, causing the Recycle Bin icon to shrink by ~25% when emptied.
+
+**Architectural Solutions & Implementation:**
+
+**1. Three Target Movement Modes (`Stationary`, `Circular`, `DvdBounce`) & Point Scaling (`TaskConfig.cs`, `BaseTask.cs`, `ClickTarget.cs`, `ClickTargetTask.cs`, `TaskTargetMovement.cs`, `HoverTarget.cs`, `HoverTargetTask.cs`, `DoubleClickTask.cs`, `RightClickTask.cs`, `ClickHoldTask.cs`):**
+* Added `TargetMovementType` enum (`Stationary = 0`, `Circular = 1`, `DvdBounce = 2`) in `TaskConfig.cs`.
+* Added `BaseTask.ResolveTargetMovementType(TaskDefinition, int, int)`, `BaseTask.GetRandomDvdDirection()` (diagonal angles `28°–62°` across all 4 quadrants for authentic DVD-screensaver wall bouncing), and `BaseTask.GetMovementBonusPoints(TargetMovementType)` (`Stationary` = `+0` pts, `Circular` = `+25` pts, `DvdBounce` = `+50` pts).
+* Updated `CalculatePrecisionAndSizeScore`, `CalculateRatioAndSizeScore`, `CalculateMaxPossiblePrecisionScore`, and `GetStandardizedTargetPoints` to include `GetMovementBonusPoints(movementType)` in both earned points and `maxPossibleScore`.
+
+**2. Double-Click Combined Two-Click Precision & Slight Inter-Click Delay Penalty (`DoubleClickTask.cs`):**
+* Recorded first-click accuracy (`firstClickPrecisionScore`, `firstClickWasOuterRing`) on click 1 and averaged it with second-click accuracy (`secondClickPrecisionScore`) on click 2 so center+center awards full points, mixed hits award intermediate points, and outer+outer awards the lowest points.
+* Added `IMMEDIATE_DOUBLE_CLICK_WINDOW = 0.30f` vs `DOUBLE_CLICK_THRESHOLD = 0.65f`: immediate double-clicks (`<= 0.30s`) receive 100% of their combined precision points, slightly late second clicks (`0.30s–0.65s`) receive a proportional `-5` to `-25` pt deduction, and timeouts (`> 0.65s`) continue triggering the single-click mistake penalty (`-50` pts).
+
+**3. Recurring Task Inactivity Reminders & Time-Taken / Inactivity Point Penalties (`BaseTask.cs`, `LevelRunner.cs`, `VirtualMascot.cs`, all 7 Task scripts):**
+* Replaced one-shot `hasShownInactivityReminder` booleans with periodic reminders in `BaseTask.Update()` (`INITIAL_INACTIVITY_REMINDER_DELAY = 5.5f`, `REPEAT_INACTIVITY_REMINDER_INTERVAL = 7.0f`) calling virtual `ShowTaskInactivityReminder()` overridden by each task class, and extended `VirtualMascot.ShowContextualFeedback` to allow up to `4.2s` readable duration.
+* Updated `HoverTarget` (`IsActivelyHovering`) and `HoverTargetTask` (`IsPlayerActivelyProgressing`) so a moving target drifting past a stationary cursor does not falsely reset inactivity timers.
+* Added periodic inactivity point deductions (`-15` pts every `7s` after a `10s` grace period via `LevelRunner.ApplyTimePenalty`, tracking `pendingTimePenalty` even when `currentLevelScore == 0`) plus per-subtask overtime decay (`ApplySubTaskOvertimeDecay` in `BaseTask.TriggerHitScoreFeedback`), preventing idle players from receiving full points while keeping normal-paced play at 100% full score.
+
+**4. Folder/File Name Length Limit & Per-Folder Item Capacity Limit (`FileExplorerApp.cs`, `InputModalDialog.cs`, `DraggableIcon.cs`, `DesktopContextMenuTrigger.cs`, `UIDialogs.cs` & `*UIDialogs.json`):**
+* Enforced `MAX_BASE_NAME_LENGTH = 16` and `MAX_ITEM_NAME_LENGTH = 20` via `FileExplorerApp.ClampBaseName` and `ClampAndFormatItemName`, applied to `InputModalDialog.Initialize` (`characterLimit = 20`), `saveDialogInputField`, `PromptRenameDesktopIcon`, `PromptRenameItem`, `ConfirmSaveDialog`, `SaveOrCreateTextDocument`, `SaveOrCreateImageDocument`, `GetUniqueItemNameStatic`, and `GetUniqueDesktopItemName`.
+* Set `MAX_ITEMS_PER_FOLDER = 16` (`IsFolderAtCapacity`) across all folder/file creation, paste, move, and `Save As` (`SaveOrCreateTextDocument`, `SaveOrCreateImageDocument`, `ConfirmSaveDialog`) flows with localized status and mascot feedback.
+
+**5. Pointy Animated Tutorial Placement, First-Load Corner Flash Fix & Desktop Companion Restoration (`VirtualMascot.cs`, `DesktopManager.cs`, `LevelRunner.cs`, `WindowManager.cs`):**
+* Positioned Pointy laterally outside `VideoDemoFrame` / `IntroCard` (`IsIntroPanelTarget`, `GetIntroPanelOffsetForTarget`, `IsOutwardSideTarget`) during `LevelRunner.ShowInstructionScreen()` with outward-opening speech bubbles so animated tutorial videos are never obstructed.
+* Added `DesktopManager.ShouldStartOnboardingTourOnLoad()` and suppressed `InitAsDesktopCompanion()` in `SpawnVirtualMascot()` (`Awake()`) whenever an initial tour/intro is pending on `VirtualDesktop`, eliminating the 0.5s top-right corner flash on first load.
+* Added `VirtualMascot.ShouldBeInDesktopCompanionMode()` and updated `VirtualMascot.Hide()` and `WindowManager.UnregisterWindow()` so Pointy automatically returns to the top-right corner in `DesktopCompanion` mode whenever the user is on `VirtualDesktop` outside an active level or tour, offering tips on click and periodically when idle.
+
+**6. Uniform Recycle Bin Empty/Full Sprite Dimensions (`RecyclingBin_Icon_01_Empty.png`, `RecycleBinIcon.cs`):**
+* Cropped `RecyclingBin_Icon_01_Empty.png` (in both `Assets/Art/UI/App icons/` and `Assets/Resources/`) from `877×877` at offset `(121, 110)` to `654×654` to match `RecyclingBin_Icon_01.png` (`654×654`, bin body at `x: 41..595, y_bottom: 633`) pixel-for-pixel, and enabled `binImage.preserveAspect = true` in `RecycleBinIcon.UpdateVisualState()`.
+
+
+---
+
+### 104. PLAYTEST WEEK 4 ROUND 2 ATTENTION-TO-DETAIL IMPROVEMENTS: POINTY SELF-INTRODUCTION BY NAME, PAINT & NOTEPAD DEDICATED APPLICATION ICONS, CTRL+D FILE/FOLDER DUPLICATION & CTRL+Z CREATION UNDO, AND INTERACTIVE TASKBAR CLOCK - 20/11/2026
+
+**Context & Motivation (`Documentation/Specs/Plan_Playtest_Fixes_Week4_Round2.md`):**
+* Addressed 6 "Attention to detail" items from Week 4 playtest feedback:
+  1. Pointy never explicitly introduced himself by name (`"Pointy"`) during onboarding or desktop tours.
+  2. The dedicated Paint (`Paint_App_Icon_01.png`) and Notepad (`Notepad_App_Icon_01.png`) sprites inside `Assets/Art/UI/App icons/` were not wired to the Paint and Notepad application shortcuts on the Desktop, Start Menu, window title bars, or taskbar buttons (which instead showed generic `.png`/`.txt` document sprites).
+  3. Players expected to duplicate a selected folder or file by pressing `Ctrl + D`.
+  4. Players expected to undo the creation of a newly created or duplicated folder/file by pressing `Ctrl + Z`.
+  5. Players requested the ability to interact with and change the taskbar clock.
+
+**Architectural Solutions & Implementation:**
+
+**1. Pointy Self-Introduction by Name (`TutorialDialogs.cs`, `VirtualMascot.cs`, `VirtualDesktopIntro.cs`, `*TutorialDialogs.json`, `*DesktopTourDialogs.json`, `*MascotFeedbackDialogs.json`):**
+* Updated `first_welcome` and `virtual_welcome` in `TutorialDialogs.cs` and `TutorialDialogs.json` / `EN-TutorialDialogs.json` / `ES-TutorialDialogs.json` (`"Hello! I'm Pointy! Welcome to your desktop..."` / `"¡Hola! ¡Soy Pointy! Bienvenido a tu escritorio..."`).
+* Updated `step1_welcome` in `DesktopTourDialogs.json`, `EN-DesktopTourDialogs.json`, `ES-DesktopTourDialogs.json`, and `NO-DesktopTourDialogs.json`, plus fallback `welcomeMsg` in `VirtualDesktopIntro.cs`.
+* Updated `companionWelcome` and `companionMessages[0]` in `VirtualMascot.cs` and `MascotFeedbackDialogs.json`, `EN-MascotFeedbackDialogs.json`, and `ES-MascotFeedbackDialogs.json` so Pointy also introduces himself by name as the desktop companion.
+
+**2. Paint (`Paint_App_Icon_01`) & Notepad (`Notepad_App_Icon_01`) Application Icons (`FileExplorerApp.cs`, `DesktopManager.cs`, `StartMenuController.cs`, `VirtualDesktop.unity`, `Assets/Resources/`):**
+* Copied `Paint_App_Icon_01.png` and `Notepad_App_Icon_01.png` into `Assets/Resources/` for runtime loading and added `FileExplorerApp.GetPaintAppSprite()` (`SharedPaintAppIcon`) and `FileExplorerApp.GetNotepadAppSprite()` (`SharedNotepadAppIcon`).
+* Updated `VirtualDesktop.unity` (`initialDesktopIcons.Array.data[3].iconSprite` for Notepad to `guid: b81c831d7ad7db04b9efe247f0f68194`, `initialDesktopIcons.Array.data[5].iconSprite` for Paint to `guid: e9fc926c64fcf274599cf7503484609c`, and Start Menu `btnNotepad/Icon` & `BtnPaint/Icon` sprites).
+* Updated `DesktopManager.SpawnIcon`, `StartMenuController.ApplyAppButtonIcons` / `OpenNotepad` / `OpenNotepadWithFile` / `OpenPaintWithFile`, and `FileExplorerApp.OpenTextFile` / `OpenImageInPaint` so the Notepad and Paint application shortcuts, Start Menu buttons, window title bars, and taskbar tabs display `Notepad_App_Icon_01` and `Paint_App_Icon_01`, while user-created `.txt` and `.png` files continue using `Text_File_Icon_T01_Scaled` and `Image_File_Icon_01_Scaled`.
+
+**3. `Ctrl + D` Folder/File Duplication & `Ctrl + Z` Creation Undo (`FileExplorerApp.cs`, `DesktopManager.cs`, `DraggableIcon.cs`, `DesktopContextMenuTrigger.cs`, `InputModalDialog.cs`):**
+* **`Ctrl + D` Duplication:** Implemented `FileExplorerApp.DuplicateItemsInFolder` and `DuplicateSelectedItems()`, plus `DraggableIcon.DuplicateSelectedDesktopIcons()` and `Ctrl + D` handling in `FileExplorerApp.Update()` and `DesktopManager.Update()`. Selected non-protected folders (including recursive children) and files are duplicated in-place with `"Copy of ..."` naming, respecting `MAX_ITEMS_PER_FOLDER = 16`, `MAX_FOLDER_DEPTH = 8`, and `MAX_BASE_NAME_LENGTH = 16` / `MAX_ITEM_NAME_LENGTH = 20` without overwriting the clipboard.
+* **`Ctrl + Z` Creation Undo:** Added `createdItemsUndoStack` (`Stack<List<ExplorerItemData>>`), `RegisterCreatedItemsForUndo`, and `UndoLastCreatedItems()` in `FileExplorerApp.cs` (cleared in `ResetStaticFileSystem()`). Registered newly created folders/files across `CreateNewFolder`, `CreateNewTextDocument`, `SaveOrCreateTextDocument`, `SaveOrCreateImageDocument`, `DesktopContextMenuTrigger.CreateFolderOnDesktop`, `PasteClipboardBatchIntoFolder` (`!wasCut`), and `DuplicateItemsInFolder`. Handled `Ctrl + Z` in `FileExplorerApp.Update()`, `DesktopManager.Update()` (guarded when `NotepadApp` or `PaintApp` is the active focused window), and `InputModalDialog.Update()` (when the initial rename popup text has not been edited, automatically closing the rename modal and undoing the creation).
+
+**4. Interactive Taskbar Clock (`TaskbarClock.cs`, `SceneSystem.cs`, `SessionManager.cs`):**
+* Implemented `IPointerClickHandler` on `TaskbarClock` with a retro `"Date & Time"` popup (`TaskbarClockPopup`) positioned above the system tray clock.
+* Added live digital preview (`HH:mm:ss` or `hh:mm:ss tt` + date), controls for **Hour** (`-1h` / `+1h`), **Minute** (`-10m`, `-1m`, `+1m`, `+10m`), **Date** (`-1d` / `+1d`), format toggle (`Format: 24h` / `Format: 12h`), and `Reset Time` button, with automatic closing on outside click or `Escape` and session reset via `TaskbarClock.ResetClockSettings()` in `SceneSystem.ResetProgress()` and `SessionManager.ApplyConfiguration()`.
+
+

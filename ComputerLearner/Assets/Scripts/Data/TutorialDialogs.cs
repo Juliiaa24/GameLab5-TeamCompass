@@ -7,7 +7,7 @@ namespace ComputerLearning
     public class TutorialDialogs
     {
         // First Desktop Tutorial
-        public string first_welcome = "Welcome to the computer! Let's learn how to use it.";
+        public string first_welcome = "Hi! I'm Pointy! Welcome to the computer! Let's learn how to use it.";
         public string first_default = "Watch how I open this folder!";
         public string first_assessment = "Let's start with a quick assessment! Double click the Assessment icon!";
         public string first_move = "Let's start by moving the mouse! Watch how I open the Move app.";
@@ -48,7 +48,7 @@ namespace ComputerLearning
         public string adaptive_done = "Great practice!\nYou can click the 'X' to close this window now.";
 
         // Virtual Desktop Intro
-        public string virtual_welcome = "Welcome to your full Virtual Desktop! Here you can explore and practice freely.";
+        public string virtual_welcome = "Hi, I'm Pointy! Welcome to your full Virtual Desktop! Here you can explore and practice freely.";
         public string virtual_levels = "Double-click the Levels folder anytime to challenge yourself with more tasks.";
         public string virtual_apps = "You can also open fun apps like Paint, Notepad, and Minigames to create and play!";
         public string virtual_start_and_pet = "Use the Start button on the bottom-left for all options, and click me in the corner whenever you want tips!";

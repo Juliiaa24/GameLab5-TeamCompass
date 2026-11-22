@@ -207,9 +207,11 @@ namespace ComputerLearning
             }
 
             ExplorerItemData desktopFolder = FileExplorerApp.GetDesktopFolder();
-            if (desktopFolder != null && desktopFolder.children != null && desktopFolder.children.Count >= FileExplorerApp.MAX_ITEMS_PER_FOLDER)
+            if (FileExplorerApp.IsFolderAtCapacity(desktopFolder))
             {
                 Debug.LogWarning("[DesktopContextMenuTrigger] Desktop folder item limit reached.");
+                FeedbackManager.PlayError(true);
+                VirtualMascot.ShowContextualFeedback(UIDialogs.Current.explorer_folder_limit_reached, desktopMgr.DesktopIconContainer, 3.2f);
                 return;
             }
             ExplorerItemData linkedFolder = new ExplorerItemData
@@ -225,6 +227,7 @@ namespace ComputerLearning
             {
                 desktopFolder.children.Add(linkedFolder);
             }
+            FileExplorerApp.RegisterCreatedItemsForUndo(linkedFolder);
 
             DesktopIconData newIconData = new DesktopIconData
             {
@@ -269,9 +272,11 @@ namespace ComputerLearning
             }
 
             ExplorerItemData desktopFolder = FileExplorerApp.GetDesktopFolder();
-            if (desktopFolder != null && desktopFolder.children != null && desktopFolder.children.Count >= FileExplorerApp.MAX_ITEMS_PER_FOLDER)
+            if (FileExplorerApp.IsFolderAtCapacity(desktopFolder))
             {
                 Debug.LogWarning("[DesktopContextMenuTrigger] Desktop folder item limit reached.");
+                FeedbackManager.PlayError(true);
+                VirtualMascot.ShowContextualFeedback(UIDialogs.Current.explorer_folder_limit_reached, desktopMgr.DesktopIconContainer, 3.2f);
                 return;
             }
             ExplorerItemData linkedDoc = FileExplorerApp.SaveOrCreateTextDocument(docName, "", desktopFolder);
@@ -323,9 +328,11 @@ namespace ComputerLearning
             }
 
             ExplorerItemData desktopFolder = FileExplorerApp.GetDesktopFolder();
-            if (desktopFolder != null && desktopFolder.children != null && desktopFolder.children.Count >= FileExplorerApp.MAX_ITEMS_PER_FOLDER)
+            if (FileExplorerApp.IsFolderAtCapacity(desktopFolder))
             {
                 Debug.LogWarning("[DesktopContextMenuTrigger] Desktop folder item limit reached.");
+                FeedbackManager.PlayError(true);
+                VirtualMascot.ShowContextualFeedback(UIDialogs.Current.explorer_folder_limit_reached, desktopMgr.DesktopIconContainer, 3.2f);
                 return;
             }
             ExplorerItemData linkedImg = FileExplorerApp.SaveOrCreateImageDocument(imgName, null, desktopFolder);
@@ -360,8 +367,10 @@ namespace ComputerLearning
         #region Private Methods
         private string GetUniqueDesktopItemName(DesktopManager mgr, string baseName, string extension)
         {
+            string ext = extension ?? string.Empty;
+            string cleanBase = FileExplorerApp.ClampBaseName(baseName, FileExplorerApp.MAX_BASE_NAME_LENGTH);
             int count = 0;
-            string candidate = baseName + extension;
+            string candidate = cleanBase + ext;
 
             ExplorerItemData desktopFolder = FileExplorerApp.GetDesktopFolder();
 
@@ -393,7 +402,9 @@ namespace ComputerLearning
                 if (exists)
                 {
                     count++;
-                    candidate = $"{baseName} ({count}){extension}";
+                    string suffix = $" ({count})";
+                    string shortBase = FileExplorerApp.ClampBaseName(cleanBase, Mathf.Max(3, FileExplorerApp.MAX_BASE_NAME_LENGTH - suffix.Length));
+                    candidate = $"{shortBase}{suffix}{ext}";
                 }
             }
 

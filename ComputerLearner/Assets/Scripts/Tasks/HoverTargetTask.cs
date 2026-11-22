@@ -34,14 +34,12 @@ namespace ComputerLearning
         private float timeLimit;
         private float elapsed;
         private bool  timeLimitActive;
-        private bool hasShownStartReminder;
         #endregion
 
         #region Unity Methods
         protected override void Start()
         {
             base.Start();
-            hasShownStartReminder = false;
             // Ensure background receives clicks so clicking outside the hover target triggers mascot feedback
             Image img = GetComponent<Image>();
             if (img == null) img = gameObject.AddComponent<Image>();
@@ -54,13 +52,6 @@ namespace ComputerLearning
             base.Update();
             if (IsFinished) return;
 
-            // Delayed start reminder: took > 5 seconds to place mouse inside target
-            if (!hasShownStartReminder && spawnedTarget != null && !spawnedTarget.HasEverHovered && (Time.time - startTime) >= 5.0f)
-            {
-                hasShownStartReminder = true;
-                VirtualMascot.ShowContextualFeedback(VirtualMascot.FeedbackDialogs.hoverStartReminder, GetActiveFeedbackTarget(), 3.0f);
-            }
-
             if (!timeLimitActive) return;
             elapsed += Time.deltaTime;
             if (elapsed >= timeLimit) Complete(false, GetActiveFeedbackTarget()); // Time ran out → failure
@@ -68,6 +59,21 @@ namespace ComputerLearning
         #endregion
 
         #region Protected Methods
+        protected override bool IsPlayerActivelyProgressing()
+        {
+            return spawnedTarget != null && spawnedTarget.IsActivelyHovering;
+        }
+
+        protected override void ShowTaskInactivityReminder()
+        {
+            VirtualMascot.ShowContextualFeedback(VirtualMascot.FeedbackDialogs.hoverStartReminder, GetActiveFeedbackTarget(), 3.5f);
+        }
+
+        protected override float GetSubTaskParGraceSeconds()
+        {
+            return 7.5f;
+        }
+
         protected override RectTransform GetActiveFeedbackTarget()
         {
             if (spawnedTarget != null && spawnedTarget.gameObject.activeInHierarchy)
@@ -85,7 +91,6 @@ namespace ComputerLearning
             timeLimitActive = timeLimit > 0f;
             elapsed         = 0f;
             isTargetMoving  = cfg.isMoving;
-            hasShownStartReminder = false;
 
             if (targetPrefab == null)
             {
@@ -101,7 +106,8 @@ namespace ComputerLearning
             HoverTarget target = Instantiate(targetPrefab, spawnArea, false);
             spawnedTarget = target;
             target.SetParentRect(spawnArea);
-            target.Configure(cfg.targetSize, cfg.requiredHoverDuration, cfg.isMoving, cfg.moveSpeed);
+            TargetMovementType moveType = BaseTask.ResolveTargetMovementType(definition);
+            target.Configure(cfg.targetSize, cfg.requiredHoverDuration, moveType, cfg.moveSpeed);
 
             // Random position within spawn area with safe bounds padding
             if (spawnArea.rect.width <= 0f || spawnArea.rect.height <= 0f)
@@ -122,8 +128,7 @@ namespace ComputerLearning
             RectTransform targetRect = target.GetComponent<RectTransform>();
             targetRect.anchoredPosition = new Vector2(x, y);
 
-            target.OnHoverActive += NotifyUserInteraction;
-            target.OnHoverCompleteWithScore += (score) => Complete(true, targetRect, score, BaseTask.CalculateMaxPossiblePrecisionScore(targetRect));
+            target.OnHoverCompleteWithScore += (score) => Complete(true, targetRect, score, BaseTask.CalculateMaxPossiblePrecisionScore(targetRect, moveType));
             target.OnFailedAttempt += () =>
             {
                 if (IsFinished) return;

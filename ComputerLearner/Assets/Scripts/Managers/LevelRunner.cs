@@ -22,7 +22,9 @@ namespace ComputerLearning
         [SerializeField] private LevelDefinition _currentLevel;
         public LevelDefinition currentLevel => _currentLevel;
         [SerializeField] private int currentTaskIndex = 0;
+        public int CurrentTaskIndex => currentTaskIndex;
         public bool IsCompleted { get; private set; } = false;
+        public bool IsShowingIntroPanel => introPanel != null && introPanel.activeInHierarchy;
         
         public static LevelRunner ActiveRunner { get; private set; }
 
@@ -39,6 +41,7 @@ namespace ComputerLearning
         private int extraTaskMistakes = 0;
         private int currentLevelScore = 0;
         private int maxPossibleScore = 0;
+        private int pendingTimePenalty = 0;
 
         public int CurrentLevelScore => currentLevelScore;
         public int MaxPossibleScore => maxPossibleScore;
@@ -70,8 +73,16 @@ namespace ComputerLearning
         {
             int pts = Mathf.Max(1, exactPoints);
             int maxPts = maxTargetPoints > 0 ? Mathf.Max(pts, maxTargetPoints) : pts;
-            currentLevelScore += pts;
             maxPossibleScore += maxPts;
+
+            if (pendingTimePenalty > 0)
+            {
+                int absorb = Mathf.Min(pendingTimePenalty, Mathf.Max(0, pts - 5));
+                pts -= absorb;
+                pendingTimePenalty -= absorb;
+            }
+
+            currentLevelScore += pts;
             return pts;
         }
 
@@ -84,6 +95,22 @@ namespace ComputerLearning
         {
             int absPenalty = Mathf.Abs(penalty);
             currentLevelScore = Mathf.Max(0, currentLevelScore - absPenalty);
+            return -absPenalty;
+        }
+
+        public int ApplyTimePenalty(int penalty = 15)
+        {
+            int absPenalty = Mathf.Abs(penalty);
+            if (currentLevelScore >= absPenalty)
+            {
+                currentLevelScore -= absPenalty;
+            }
+            else
+            {
+                int remainder = absPenalty - currentLevelScore;
+                currentLevelScore = 0;
+                pendingTimePenalty = Mathf.Min(600, pendingTimePenalty + remainder);
+            }
             return -absPenalty;
         }
 
@@ -126,6 +153,7 @@ namespace ComputerLearning
             extraTaskMistakes = 0;
             currentLevelScore = 0;
             maxPossibleScore = 0;
+            pendingTimePenalty = 0;
             hasRecordedLevelStartTime = false;
             displayedProgress = 0f;
             targetProgress = 0f;
@@ -296,7 +324,10 @@ namespace ComputerLearning
                 else if (lvlId == "level9")
                     livelyMessage = dialogs.intro_mixed;
 
-                VirtualMascot.Show(livelyMessage, appWindow != null ? appWindow.ContentArea : taskContentArea, new Vector2(0, -80));
+                RectTransform introAnchor = (videoDemoFrame != null && videoDemoFrame.activeInHierarchy)
+                    ? videoDemoFrame.GetComponent<RectTransform>()
+                    : (appWindow != null ? appWindow.ContentArea : taskContentArea);
+                VirtualMascot.Show(livelyMessage, introAnchor, new Vector2(235f, 15f));
 
                 // Automatically transition after 5 seconds instead of waiting for a button click
                 StartCoroutine(AutoStartLevelAfterDelay(5f));
@@ -317,7 +348,13 @@ namespace ComputerLearning
                 });
 
                 RectTransform btnRect = introStartButton.GetComponent<RectTransform>();
-                VirtualMascot.Show(dialogs.level_ready_prompt, btnRect, new Vector2(250, 50));
+                RectTransform introAnchor = (videoDemoFrame != null && videoDemoFrame.activeInHierarchy)
+                    ? videoDemoFrame.GetComponent<RectTransform>()
+                    : btnRect;
+                Vector2 introOffset = (videoDemoFrame != null && videoDemoFrame.activeInHierarchy)
+                    ? new Vector2(235f, -30f)
+                    : new Vector2(180f, 30f);
+                VirtualMascot.Show(dialogs.level_ready_prompt, introAnchor, introOffset);
             }
         }
 

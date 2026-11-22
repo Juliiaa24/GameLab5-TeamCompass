@@ -7,7 +7,12 @@ namespace ComputerLearning
     public class DoubleClickTask : BaseTask, IPointerClickHandler, IPointerEnterHandler, IPointerExitHandler
     {
         private float lastClickTime = -10f;
+        private const float IMMEDIATE_DOUBLE_CLICK_WINDOW = 0.30f;
         private const float DOUBLE_CLICK_THRESHOLD = 0.65f;
+        private bool hasValidFirstClick;
+        private int firstClickPrecisionScore;
+        private bool firstClickWasOuterRing;
+        private TaskTargetMovement targetMover;
         private Coroutine pendingSingleClickErrorCoroutine;
         private bool isHovering;
         private float hoverDwellTime;
@@ -16,13 +21,21 @@ namespace ComputerLearning
         protected override void SetupTask(TaskDefinition definition)
         {
             lastClickTime = -10f;
+            hasValidFirstClick = false;
+            firstClickPrecisionScore = 100;
+            firstClickWasOuterRing = false;
             isHovering = false;
             hoverDwellTime = 0f;
             hasWarnedHoverStagnant = false;
-            TaskTargetMovement mover = GetComponent<TaskTargetMovement>();
-            if (mover == null) mover = gameObject.AddComponent<TaskTargetMovement>();
-            mover.Setup(definition);
+            targetMover = GetComponent<TaskTargetMovement>();
+            if (targetMover == null) targetMover = gameObject.AddComponent<TaskTargetMovement>();
+            targetMover.Setup(definition);
             SetupBackgroundClickInterceptor(OnBackgroundClicked);
+        }
+
+        protected override void ShowTaskInactivityReminder()
+        {
+            VirtualMascot.ShowContextualFeedback(VirtualMascot.FeedbackDialogs.doubleClickInactivityReminder, transform as RectTransform, 3.5f);
         }
 
         protected override void Update()
@@ -30,21 +43,14 @@ namespace ComputerLearning
             base.Update();
             if (IsFinished) return;
 
-            if (isHovering && lastClickTime < 0f)
+            if (isHovering && !hasValidFirstClick)
             {
                 hoverDwellTime += Time.deltaTime;
                 if (hoverDwellTime >= 2.5f && !hasWarnedHoverStagnant)
                 {
                     hasWarnedHoverStagnant = true;
-                    VirtualMascot.ShowContextualFeedback(VirtualMascot.FeedbackDialogs.doubleClickHoverStagnant, transform as RectTransform, 3.0f);
+                    VirtualMascot.ShowContextualFeedback(VirtualMascot.FeedbackDialogs.doubleClickHoverStagnant, transform as RectTransform, 3.2f);
                 }
-            }
-
-            // Inactivity reminder if player takes > 6s
-            if (!hasShownInactivityReminder && (Time.time - lastInteractionTime) >= 6.0f)
-            {
-                hasShownInactivityReminder = true;
-                VirtualMascot.ShowContextualFeedback(VirtualMascot.FeedbackDialogs.doubleClickInactivityReminder, transform as RectTransform, 3.0f);
             }
         }
 
@@ -72,13 +78,14 @@ namespace ComputerLearning
             if (IsFinished) return;
 
             // User clicked once inside, but left the target before second click
-            if (lastClickTime > 0f)
+            if (hasValidFirstClick)
             {
                 if (pendingSingleClickErrorCoroutine != null)
                 {
                     StopCoroutine(pendingSingleClickErrorCoroutine);
                     pendingSingleClickErrorCoroutine = null;
                 }
+                hasValidFirstClick = false;
                 lastClickTime = -10f;
                 RegisterAttempt(false);
                 VirtualMascot.ShowContextualFeedback(VirtualMascot.FeedbackDialogs.doubleClickLeftBeforeSecond, transform as RectTransform, 2.8f);
@@ -94,6 +101,7 @@ namespace ComputerLearning
                 StopCoroutine(pendingSingleClickErrorCoroutine);
                 pendingSingleClickErrorCoroutine = null;
             }
+            hasValidFirstClick = false;
             lastClickTime = -10f;
             RegisterAttempt(true);
 
@@ -122,6 +130,7 @@ namespace ComputerLearning
                     StopCoroutine(pendingSingleClickErrorCoroutine);
                     pendingSingleClickErrorCoroutine = null;
                 }
+                hasValidFirstClick = false;
                 lastClickTime = -10f;
                 RegisterAttempt();
                 VirtualMascot.ShowWrongClickFeedback(transform as RectTransform, false);
@@ -132,28 +141,45 @@ namespace ComputerLearning
             {
                 float now = Time.unscaledTime;
                 float timeSinceLastClick = now - lastClickTime;
+                RectTransform rt = transform as RectTransform;
+                TargetMovementType moveType = targetMover != null ? targetMover.MovementType : BaseTask.ResolveTargetMovementType(Definition);
 
-                if (eventData.clickCount >= 2 || (lastClickTime > 0f && timeSinceLastClick <= DOUBLE_CLICK_THRESHOLD))
+                if (hasValidFirstClick && timeSinceLastClick <= DOUBLE_CLICK_THRESHOLD)
                 {
                     if (pendingSingleClickErrorCoroutine != null)
                     {
                         StopCoroutine(pendingSingleClickErrorCoroutine);
                         pendingSingleClickErrorCoroutine = null;
                     }
+                    hasValidFirstClick = false;
                     lastClickTime = -10f;
-                    RectTransform rt = transform as RectTransform;
-                    int scorePoints = BaseTask.CalculatePrecisionAndSizeScore(rt, eventData.position, eventData.pressEventCamera, out bool isOuterRing);
-                    int maxScorePoints = BaseTask.CalculateMaxPossiblePrecisionScore(rt);
-                    if (isOuterRing && rt != null)
+
+                    int secondClickPrecisionScore = BaseTask.CalculatePrecisionAndSizeScore(rt, eventData.position, eventData.pressEventCamera, out bool secondClickWasOuterRing, moveType);
+                    int maxScorePoints = BaseTask.CalculateMaxPossiblePrecisionScore(rt, moveType);
+
+                    // Combine accuracy from both clicks (center+center = max, mixed = intermediate, outer+outer = lowest)
+                    int combinedScore = Mathf.RoundToInt((firstClickPrecisionScore + secondClickPrecisionScore) * 0.5f);
+
+                    // Slight minus if the second click was slightly late (between 0.30s and 0.65s); immediate clicks (<= 0.30s) get full points
+                    if (timeSinceLastClick > IMMEDIATE_DOUBLE_CLICK_WINDOW)
+                    {
+                        float lateRatio = Mathf.Clamp01((timeSinceLastClick - IMMEDIATE_DOUBLE_CLICK_WINDOW) / (DOUBLE_CLICK_THRESHOLD - IMMEDIATE_DOUBLE_CLICK_WINDOW));
+                        int latePenalty = Mathf.Clamp(Mathf.RoundToInt((lateRatio * 25f) / 5f) * 5, 5, 25);
+                        combinedScore = Mathf.Max(20, combinedScore - latePenalty);
+                    }
+
+                    if ((firstClickWasOuterRing || secondClickWasOuterRing) && rt != null)
                     {
                         VirtualMascot.ShowAlmostOutFeedback(rt);
                     }
                     Debug.Log("[DoubleClickTask] Double click detected!");
-                    Complete(true, transform, scorePoints, maxScorePoints);
+                    Complete(true, transform, combinedScore, maxScorePoints);
                 }
                 else
                 {
+                    hasValidFirstClick = true;
                     lastClickTime = now;
+                    firstClickPrecisionScore = BaseTask.CalculatePrecisionAndSizeScore(rt, eventData.position, eventData.pressEventCamera, out firstClickWasOuterRing, moveType);
                     FeedbackManager.PlayClick();
 
                     if (pendingSingleClickErrorCoroutine != null)
@@ -172,6 +198,7 @@ namespace ComputerLearning
 
             if (IsFinished) yield break;
 
+            hasValidFirstClick = false;
             lastClickTime = -10f;
             RegisterAttempt();
             var fb = VirtualMascot.FeedbackDialogs;
