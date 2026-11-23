@@ -1,11 +1,17 @@
 using System.Collections;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.UI;
 
 namespace ComputerLearning
 {
     public class DoubleClickTask : BaseTask, IPointerClickHandler, IPointerEnterHandler, IPointerExitHandler
     {
+        [Header("Glass Target Visuals")]
+        [SerializeField] private Image targetImage;
+        [SerializeField] private Sprite intactGlassSprite;
+        [SerializeField] private Sprite damagedGlassSprite;
+
         private float lastClickTime = -10f;
         private const float IMMEDIATE_DOUBLE_CLICK_WINDOW = 0.30f;
         private const float DOUBLE_CLICK_THRESHOLD = 0.65f;
@@ -27,10 +33,57 @@ namespace ComputerLearning
             isHovering = false;
             hoverDwellTime = 0f;
             hasWarnedHoverStagnant = false;
+
+            if (targetImage == null) targetImage = GetComponent<Image>();
+            if (targetImage != null)
+            {
+                targetImage.enabled = true;
+                targetImage.color = Color.white;
+                if (intactGlassSprite == null && targetImage.sprite != null)
+                {
+                    intactGlassSprite = targetImage.sprite;
+                }
+                ShowIntactGlass();
+            }
+
+            CircleHitbox hitbox = GetComponent<CircleHitbox>();
+            if (hitbox != null && hitbox.RadiusRatio >= 0.49f)
+            {
+                hitbox.SetRadiusRatio(188f / 740f);
+            }
+
             targetMover = GetComponent<TaskTargetMovement>();
             if (targetMover == null) targetMover = gameObject.AddComponent<TaskTargetMovement>();
             targetMover.Setup(definition);
             SetupBackgroundClickInterceptor(OnBackgroundClicked);
+        }
+
+        private void ShowIntactGlass()
+        {
+            if (targetImage == null) return;
+            targetImage.enabled = true;
+            if (intactGlassSprite != null)
+            {
+                targetImage.sprite = intactGlassSprite;
+            }
+        }
+
+        private void ShowDamagedGlass()
+        {
+            if (targetImage == null) return;
+            targetImage.enabled = true;
+            if (damagedGlassSprite != null)
+            {
+                targetImage.sprite = damagedGlassSprite;
+            }
+        }
+
+        private void HideGlassOnBreak()
+        {
+            if (targetImage != null)
+            {
+                targetImage.enabled = false;
+            }
         }
 
         protected override void ShowTaskInactivityReminder()
@@ -87,6 +140,7 @@ namespace ComputerLearning
                 }
                 hasValidFirstClick = false;
                 lastClickTime = -10f;
+                ShowIntactGlass();
                 RegisterAttempt(false);
                 VirtualMascot.ShowContextualFeedback(VirtualMascot.FeedbackDialogs.doubleClickLeftBeforeSecond, transform as RectTransform, 2.8f);
             }
@@ -103,6 +157,7 @@ namespace ComputerLearning
             }
             hasValidFirstClick = false;
             lastClickTime = -10f;
+            ShowIntactGlass();
             RegisterAttempt(true);
 
             if (eventData != null && eventData.button == PointerEventData.InputButton.Right)
@@ -132,6 +187,7 @@ namespace ComputerLearning
                 }
                 hasValidFirstClick = false;
                 lastClickTime = -10f;
+                ShowIntactGlass();
                 RegisterAttempt();
                 VirtualMascot.ShowWrongClickFeedback(transform as RectTransform, false);
                 return;
@@ -153,6 +209,7 @@ namespace ComputerLearning
                     }
                     hasValidFirstClick = false;
                     lastClickTime = -10f;
+                    HideGlassOnBreak();
 
                     int secondClickPrecisionScore = BaseTask.CalculatePrecisionAndSizeScore(rt, eventData.position, eventData.pressEventCamera, out bool secondClickWasOuterRing, moveType);
                     int maxScorePoints = BaseTask.CalculateMaxPossiblePrecisionScore(rt, moveType);
@@ -180,6 +237,7 @@ namespace ComputerLearning
                     hasValidFirstClick = true;
                     lastClickTime = now;
                     firstClickPrecisionScore = BaseTask.CalculatePrecisionAndSizeScore(rt, eventData.position, eventData.pressEventCamera, out firstClickWasOuterRing, moveType);
+                    ShowDamagedGlass();
                     FeedbackManager.PlayClick();
 
                     if (pendingSingleClickErrorCoroutine != null)
@@ -200,6 +258,7 @@ namespace ComputerLearning
 
             hasValidFirstClick = false;
             lastClickTime = -10f;
+            ShowIntactGlass();
             RegisterAttempt();
             var fb = VirtualMascot.FeedbackDialogs;
             string msg = MascotFeedbackDialogs.PickRandom(fb.doubleClickSingleClickMessages, fb.doubleClickFast);

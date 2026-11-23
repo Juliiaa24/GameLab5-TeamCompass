@@ -377,9 +377,14 @@ namespace ComputerLearning
                 bool bubbleClicked = false;
                 if (UnityEngine.InputSystem.Mouse.current != null && UnityEngine.InputSystem.Mouse.current.leftButton.wasPressedThisFrame)
                 {
+                    Vector2 mousePos = UnityEngine.InputSystem.Mouse.current.position.ReadValue();
                     RectTransform bubbleRt = speechBubble.GetComponent<RectTransform>();
                     Camera cam = canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay ? canvas.worldCamera : null;
-                    if (bubbleRt != null && RectTransformUtility.RectangleContainsScreenPoint(bubbleRt, UnityEngine.InputSystem.Mouse.current.position.ReadValue(), cam))
+                    if (bubbleRt != null && RectTransformUtility.RectangleContainsScreenPoint(bubbleRt, mousePos, cam))
+                    {
+                        bubbleClicked = true;
+                    }
+                    else if (mascotRect != null && RectTransformUtility.RectangleContainsScreenPoint(mascotRect, mousePos, cam))
                     {
                         bubbleClicked = true;
                     }
@@ -454,7 +459,7 @@ namespace ComputerLearning
                         yield return null;
                         yield break;
                     }
-                    elapsed += Time.deltaTime;
+                    elapsed += Time.unscaledDeltaTime;
                     yield return null;
                 }
             }
@@ -706,19 +711,80 @@ namespace ComputerLearning
             }
         }
 
-        public static void Show(string message, RectTransform target, Vector2? offset = null)
+        public static VirtualMascot EnsureInstanceOnCanvas(Transform referenceTransform = null)
         {
             if (Instance == null)
             {
-                Instance = Object.FindFirstObjectByType<VirtualMascot>(FindObjectsInactive.Include);
+                Instance = Object.FindAnyObjectByType<VirtualMascot>(FindObjectsInactive.Include);
+            }
 
-                if (Instance == null)
+            if (Instance == null)
+            {
+                Canvas targetCanvas = null;
+                if (referenceTransform != null)
                 {
-                    Debug.LogWarning("[VirtualMascot] Mascot not found in the scene! Ensure DesktopManager has spawned it.");
-                    return;
+                    Canvas parentCanvas = referenceTransform.GetComponentInParent<Canvas>();
+                    if (parentCanvas != null)
+                    {
+                        targetCanvas = parentCanvas.isRootCanvas ? parentCanvas : parentCanvas.rootCanvas;
+                    }
+                }
+
+                if (targetCanvas == null)
+                {
+                    Canvas[] allCanvases = Object.FindObjectsByType<Canvas>(FindObjectsInactive.Include);
+                    for (int i = 0; i < allCanvases.Length; i++)
+                    {
+                        Canvas candidate = allCanvases[i];
+                        if (candidate != null && candidate.gameObject.activeInHierarchy && candidate.GetComponent<TutorialBlocker>() == null)
+                        {
+                            targetCanvas = candidate.isRootCanvas ? candidate : candidate.rootCanvas;
+                            break;
+                        }
+                    }
+                }
+
+                GameObject prefab = Resources.Load<GameObject>("VirtualMascotPrefab");
+#if UNITY_EDITOR
+                if (prefab == null)
+                {
+                    prefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Desktop/VirtualMascotPrefab.prefab");
+                }
+#endif
+                if (prefab != null && targetCanvas != null)
+                {
+                    GameObject mascotInstance = Instantiate(prefab, targetCanvas.transform, false);
+                    mascotInstance.name = "VirtualMascot";
+                    Instance = mascotInstance.GetComponent<VirtualMascot>();
+                    if (Instance != null)
+                    {
+                        Instance.isDesktopCompanion = false;
+                    }
                 }
             }
-            if (Instance != null) Instance.ShowMessage(message, target, offset);
+
+            if (Instance != null && referenceTransform != null)
+            {
+                Canvas refCanvas = referenceTransform.GetComponentInParent<Canvas>();
+                Canvas rootCanvas = refCanvas != null ? (refCanvas.isRootCanvas ? refCanvas : refCanvas.rootCanvas) : null;
+                if (rootCanvas != null && Instance.transform.parent != rootCanvas.transform)
+                {
+                    Instance.transform.SetParent(rootCanvas.transform, false);
+                }
+            }
+
+            return Instance;
+        }
+
+        public static void Show(string message, RectTransform target, Vector2? offset = null)
+        {
+            EnsureInstanceOnCanvas(target);
+            if (Instance == null)
+            {
+                Debug.LogWarning("[VirtualMascot] Mascot not found in the scene! Ensure VirtualMascotPrefab is available.");
+                return;
+            }
+            Instance.ShowMessage(message, target, offset);
         }
 
         public static void HideMascot()
@@ -740,10 +806,7 @@ namespace ComputerLearning
         #region Contextual Mistake & Feedback System
         public static void ShowContextualFeedback(string message, RectTransform target = null, float duration = -1f, Vector2? offset = null)
         {
-            if (Instance == null)
-            {
-                Instance = Object.FindFirstObjectByType<VirtualMascot>(FindObjectsInactive.Include);
-            }
+            EnsureInstanceOnCanvas(target);
             if (Instance != null)
             {
                 bool isCelebration = target != null && target.GetComponentInParent<LevelCelebrationModal>() != null;
@@ -922,6 +985,10 @@ namespace ComputerLearning
             else if (isIntroTarget)
             {
                 currentTargetOffset = GetIntroPanelOffsetForTarget(target, offset);
+            }
+            else if (TeacherModeTutorial.IsTourRunning)
+            {
+                currentTargetOffset = offset ?? Vector2.zero;
             }
             else
             {

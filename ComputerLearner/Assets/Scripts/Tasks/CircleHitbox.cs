@@ -10,6 +10,19 @@ namespace ComputerLearning
     [RequireComponent(typeof(RectTransform))]
     public class CircleHitbox : MonoBehaviour, ICanvasRaycastFilter
     {
+        [Tooltip("Normalized radius of the circular hitbox relative to the RectTransform width/height (0.5 = full rect, 0.25405407 = 376px circle inside 740px canvas).")]
+        [SerializeField] private float radiusRatio = 0.5f;
+
+        /// <summary>
+        /// Effective normalized radius (0..0.5) of the visible target circle inside this RectTransform.
+        /// </summary>
+        public float RadiusRatio => (radiusRatio > 0.01f && radiusRatio <= 0.5f) ? radiusRatio : 0.5f;
+
+        public void SetRadiusRatio(float ratio)
+        {
+            radiusRatio = Mathf.Clamp(ratio, 0.05f, 0.5f);
+        }
+
         public bool IsRaycastLocationValid(Vector2 screenPoint, Camera eventCamera)
         {
             RectTransform rectTransform = (RectTransform)transform;
@@ -24,8 +37,8 @@ namespace ComputerLearning
                     localPoint.y / rectTransform.rect.height + pivot.y
                 ) - new Vector2(0.5f, 0.5f);
 
-                // If distance from center is <= 0.5 (meaning sqrMagnitude <= 0.25), it's inside the circle
-                return normalizedLocal.sqrMagnitude <= 0.25f;
+                float r = RadiusRatio;
+                return normalizedLocal.sqrMagnitude <= (r * r);
             }
             return false;
         }

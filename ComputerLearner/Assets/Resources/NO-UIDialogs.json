@@ -230,5 +230,17 @@
   "net_student_name_locked_hint": "Låst av lærer",
   "explorer_folder_limit_reached": "Mappegrensen er nådd (maks 16 elementer).",
   "explorer_depth_limit_reached": "Maksimal mappedybde er nådd.",
-  "explorer_cycle_error": "Kan ikke flytte eller lime inn en mappe i seg selv eller undermappene sine."
+  "explorer_cycle_error": "Kan ikke flytte eller lime inn en mappe i seg selv eller undermappene sine.",
+  "teacher_btn_tutorial_help": "? Veiledning",
+  "teacher_tut_welcome": "Hei! Jeg heter Pointy! Velkommen til lærerens kontrollvindu. La meg raskt vise deg hvordan alt fungerer! (Trykk MELLOMROM eller klikk på snakkeboblen min for å fortsette).",
+  "teacher_tut_paths": "Her velger du læringsstien for denne PC-en: Nybegynner (full veiledet oppstart fra bunnen av), Viderekommen (vindusveiledning direkte på det virtuelle skrivebordet) eller Avansert (direkte til skrivebordet uten veiledning).",
+  "teacher_tut_assessment": "Bruk denne knappen for å slå startkartleggingen PÅ eller AV. Når den er PÅ, starter eleven med en rask musetest; når den er AV, hopper eleven rett til valgt læringssti!",
+  "teacher_tut_reset": "Når en elev er ferdig, klikker du «Nullstill fremgang». Det eksporterer elevens data automatisk, tømmer filer og medaljer, og bytter elev-ID (f.eks. S01 til S02) for neste elev!",
+  "teacher_tut_export": "Under Elev og fremgang ser du aktiv elev-ID, kan klikke «Eksporter data» når som helst for å lagre rapporter på skrivebordet, eller slå på automatisk lagring.",
+  "teacher_tut_classroom": "Underviser du en hel klasse? Skriv inn klassenavnet her og klikk «Åpne lærerens kontrollpanel» for å starte en økt på lokalnettet der elevene kan bli med fra menyen sin!",
+  "teacher_tut_pin_and_lock": "Nederst kan du når som helst endre din 4-sifrede lærer-PIN. Når PC-en er klar for en elev, klikker du «Lås / Tilbake til elevmodus» helt nederst!",
+  "teacher_tut_dash_server": "Velkommen til lærerens kontrollpanel! Klasseserveren på lokalnettet starter automatisk slik at elevene kan klikke «Bli med i klasse» på sine PC-er. Her oppe kan du også stoppe/starte den eller fjerne frakoblede elever.",
+  "teacher_tut_dash_batch": "Bruk denne raden til å velge standard læringssti og kartlegging for hele klassen. Klikk «Bruk på alle» for å oppdatere alle tilkoblede elever, eller «Start alle» for å starte spillet hos alle samtidig!",
+  "teacher_tut_dash_permissions": "I dette gule feltet kan du endre klassenavn direkte, låse elevnavn så elevene ikke endrer dem, eller låse «Forlat klasse» slik at de forblir tilkoblet gjennom økta.",
+  "teacher_tut_dash_students_inspector": "Tilkoblede elever vises til venstre med egne knapper for Start, Nullstill og læringssti. Klikk på en elev for å se sanntidsfremgang, medaljer og alle 9 ferdighetsmålere til høyre!"
 }

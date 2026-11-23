@@ -852,7 +852,7 @@ MonoBehaviour:
     - line: '|   webGLShowDiagnostics: 0'
     - line: '|   webGLDataCaching: 0'
     - line: '|   webGLDebugSymbols: 0'
-    - line: '|   webGLEmscriptenArgs: '
+    - line: '|   webGLEmscriptenArgs: -sDEFAULT_LIBRARY_FUNCS_TO_INCLUDE=$IDBFS -lidbfs.js'
     - line: '|   webGLModulesDirectory: '
     - line: '|   webGLTemplate: APPLICATION:Default'
     - line: '|   webGLAnalyzeBuildSize: 0'

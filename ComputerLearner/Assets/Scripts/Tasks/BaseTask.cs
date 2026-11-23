@@ -189,7 +189,9 @@ namespace ComputerLearning
             float ratio = 0f;
             if (RectTransformUtility.ScreenPointToLocalPointInRectangle(targetRect, screenPos, eventCamera, out Vector2 localPoint))
             {
-                float radius = Mathf.Max(targetRect.rect.width, targetRect.rect.height) * 0.5f;
+                CircleHitbox hitbox = targetRect.GetComponent<CircleHitbox>();
+                float radiusRatio = hitbox != null ? hitbox.RadiusRatio : 0.5f;
+                float radius = Mathf.Max(targetRect.rect.width, targetRect.rect.height) * radiusRatio;
                 float distFromCenter = (localPoint - targetRect.rect.center).magnitude;
                 ratio = radius > 1f ? (distFromCenter / radius) : 0f;
             }
@@ -222,7 +224,9 @@ namespace ComputerLearning
             int sizeBonus = 0;
             if (targetRect != null)
             {
-                float diameter = Mathf.Max(targetRect.rect.width, targetRect.rect.height);
+                CircleHitbox hitbox = targetRect.GetComponent<CircleHitbox>();
+                float radiusRatio = hitbox != null ? hitbox.RadiusRatio : 0.5f;
+                float diameter = Mathf.Max(targetRect.rect.width, targetRect.rect.height) * (radiusRatio * 2f);
                 if (diameter > 0f && diameter < 130f)
                 {
                     int rawBonus = Mathf.RoundToInt(Mathf.Clamp01((130f - diameter) / 80f) * 50f);

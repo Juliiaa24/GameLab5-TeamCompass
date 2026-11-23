@@ -114,6 +114,10 @@ namespace ComputerLearning
             {
                 if (UnityEngine.InputSystem.Keyboard.current.escapeKey.wasPressedThisFrame)
                 {
+                    if (TeacherModeTutorial.IsTourRunning || TeacherModeTutorial.WasEscapeConsumedThisFrame)
+                    {
+                        return;
+                    }
                     if (TeacherDashboardController.IsDashboardOpen)
                     {
                         TeacherDashboardController.CloseDashboard();
@@ -201,12 +205,18 @@ namespace ComputerLearning
                 PlaytestDataManager.ExportCurrentStudentData("auto_before_reset");
             }
 
-            // 2. Preserve current language, student counter, auto-download setting, selected LearningPath, and Assessment toggle
+            // 2. Preserve current language, student counter, auto-download setting, selected LearningPath, Assessment toggle, and Teacher Mode settings/tutorials
             string activeLanguage = LocalizationManager.CurrentLanguage;
             int currentStudentCounter = Mathf.Max(1, PlayerPrefs.GetInt("Playtest_StudentCounter", 1));
             int autoDownloadSetting = PlayerPrefs.GetInt("Playtest_AutoDownloadEnabled", 0);
             LearningPath selectedPath = SessionManager.Instance.ActiveLearningPath;
             bool assessmentEnabled = SessionManager.Instance.IsAssessmentEnabled;
+            string customTeacherPin = PlayerPrefs.GetString("TeacherMode_CustomPin_v1", string.Empty);
+            int teacherControlTutDone = PlayerPrefs.GetInt(TeacherModeTutorial.ControlPanelTourPrefKey, 0);
+            int teacherDashTutDone = PlayerPrefs.GetInt(TeacherModeTutorial.DashboardTourPrefKey, 0);
+            string customClassName = PlayerPrefs.GetString("TeacherCustomClassName", string.Empty);
+            int lockStudentNames = PlayerPrefs.GetInt("TeacherLockStudentNames", 0);
+            int lockLeaveClass = PlayerPrefs.GetInt("TeacherLockLeaveClass", 0);
 
             // 3. Clear all runtime managers
             if (ProgressData.ExistingInstance != null)
@@ -241,6 +251,16 @@ namespace ComputerLearning
             PlayerPrefs.SetInt("SemiGuidedSequenceCompleted", 0);
             PlayerPrefs.SetInt("AdvancedDesktopTourCompleted", 0);
             PlayerPrefs.SetInt("VirtualDesktopIntroCompleted", 0);
+            if (!string.IsNullOrEmpty(customTeacherPin))
+                PlayerPrefs.SetString("TeacherMode_CustomPin_v1", customTeacherPin);
+            if (teacherControlTutDone == 1)
+                PlayerPrefs.SetInt(TeacherModeTutorial.ControlPanelTourPrefKey, 1);
+            if (teacherDashTutDone == 1)
+                PlayerPrefs.SetInt(TeacherModeTutorial.DashboardTourPrefKey, 1);
+            if (!string.IsNullOrEmpty(customClassName))
+                PlayerPrefs.SetString("TeacherCustomClassName", customClassName);
+            PlayerPrefs.SetInt("TeacherLockStudentNames", lockStudentNames);
+            PlayerPrefs.SetInt("TeacherLockLeaveClass", lockLeaveClass);
             PlayerPrefs.Save();
 
             if (DesktopManager.HasInstance && DesktopManager.Instance != null)

@@ -872,6 +872,13 @@ namespace RetroUIBuilder
                 RetroUITheme.TitlePlum, RetroUITheme.WindowCream, assets.iconGear,
                 "Teacher Control Window", false, out TMP_Text panelTitle, out Transform titleBarTr);
 
+            Button tutHelpBtn = CreateRetroButton("Btn-TeacherTutorialHelp", titleBarTr, assets, font, "? Tutorial", null, RetroUITheme.BtnSkyBlue, RetroUITheme.InkWhite, 15, out TMP_Text tutHelpLbl);
+            RectTransform thRt = tutHelpBtn.GetComponent<RectTransform>();
+            thRt.anchorMin = new Vector2(1f, 0.5f); thRt.anchorMax = new Vector2(1f, 0.5f);
+            thRt.pivot = new Vector2(1f, 0.5f);
+            thRt.anchoredPosition = new Vector2(-64f, 0f);
+            thRt.sizeDelta = new Vector2(138f, 38f);
+
             Button closeBtn = CreateCloseIconButton("Btn-CloseTeacherPanel", titleBarTr, assets);
 
             TMP_Text subtitleTmp = CreateTmp("SubtitleText", win.transform, font, "Classroom setup, learning paths & student tools", 16, FontStyles.Normal, RetroUITheme.InkMuted, TextAlignmentOptions.Left);
@@ -1034,6 +1041,8 @@ namespace RetroUIBuilder
             SetPrivateField(gate, "teacherPanelTitleText", panelTitle);
             SetPrivateField(gate, "teacherPanelSubtitleText", subtitleTmp);
             SetPrivateField(gate, "teacherPanelCloseButton", closeBtn);
+            SetPrivateField(gate, "tutorialHelpButton", tutHelpBtn);
+            SetPrivateField(gate, "tutorialHelpLabel", tutHelpLbl);
             SetPrivateField(gate, "lockTeacherModeButton", lockBtn);
             SetPrivateField(gate, "lockTeacherModeLabel", lockLbl);
             SetPrivateField(gate, "resetProgressButton", resetProgressBtn);
@@ -1090,7 +1099,14 @@ namespace RetroUIBuilder
             TMP_Text serverStatusTmp = CreateTmp("ServerStatusText", titleBarTr, font, "Server: Offline", 16, FontStyles.Bold, RetroUITheme.CardPastelYellow, TextAlignmentOptions.Right);
             RectTransform ssRt = serverStatusTmp.GetComponent<RectTransform>();
             ssRt.anchorMin = new Vector2(0.30f, 0f); ssRt.anchorMax = new Vector2(1f, 1f);
-            ssRt.offsetMin = Vector2.zero; ssRt.offsetMax = new Vector2(-460f, 0f);
+            ssRt.offsetMin = Vector2.zero; ssRt.offsetMax = new Vector2(-600f, 0f);
+
+            Button dashTutHelpBtn = CreateRetroButton("Btn-DashboardTutorialHelp", titleBarTr, assets, font, "? Tutorial", null, RetroUITheme.BtnSkyBlue, RetroUITheme.InkWhite, 14, out TMP_Text dashTutHelpLbl);
+            RectTransform dthRt = dashTutHelpBtn.GetComponent<RectTransform>();
+            dthRt.anchorMin = new Vector2(1f, 0.5f); dthRt.anchorMax = new Vector2(1f, 0.5f);
+            dthRt.pivot = new Vector2(1f, 0.5f);
+            dthRt.anchoredPosition = new Vector2(-458f, 0f);
+            dthRt.sizeDelta = new Vector2(132f, 38f);
 
             Button clearOfflineBtn = CreateRetroButton("Btn-ClearOffline", titleBarTr, assets, font, "Clear Offline", null, RetroUITheme.BtnNeutralCream, RetroUITheme.InkDark, 14, out TMP_Text clearOfflineLbl);
             RectTransform coRt = clearOfflineBtn.GetComponent<RectTransform>();
@@ -1282,6 +1298,8 @@ namespace RetroUIBuilder
 
             SetPrivateField(ctrl, "titleText", titleTmp);
             SetPrivateField(ctrl, "serverStatusText", serverStatusTmp);
+            SetPrivateField(ctrl, "tutorialHelpButton", dashTutHelpBtn);
+            SetPrivateField(ctrl, "tutorialHelpLabel", dashTutHelpLbl);
             SetPrivateField(ctrl, "clearOfflineButton", clearOfflineBtn);
             SetPrivateField(ctrl, "clearOfflineLabel", clearOfflineLbl);
             SetPrivateField(ctrl, "toggleServerButton", toggleServerBtn);

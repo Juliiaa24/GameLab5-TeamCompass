@@ -15,6 +15,8 @@ namespace ComputerLearning
         private bool hasRecordedBasePos;
         private float moveSpeed;
         private Vector2 circularRadius = new Vector2(32f, 22f);
+        private CircleHitbox circleHitbox;
+        private bool hasBottomHoldBar;
 
         public TargetMovementType MovementType { get; private set; } = TargetMovementType.Stationary;
 
@@ -22,18 +24,32 @@ namespace ComputerLearning
         {
             rectTransform = GetComponent<RectTransform>();
             parentRect = transform.parent as RectTransform;
+            circleHitbox = GetComponent<CircleHitbox>();
+            hasBottomHoldBar = GetComponent<ClickHoldTask>() != null;
 
             if (definition == null || parentRect == null || definition.config == null) return;
 
-            // Use data from TaskConfig
-            float size = definition.config.targetSize > 0 ? definition.config.targetSize : 100f;
-            rectTransform.sizeDelta = new Vector2(size, size);
+            float radiusRatio = circleHitbox != null ? circleHitbox.RadiusRatio : 0.5f;
+            float scaleMultiplier = (radiusRatio > 0.01f && radiusRatio < 0.5f) ? (0.5f / radiusRatio) : 1f;
+
+            // Use data from TaskConfig scaled so the visible circle matches targetSize
+            float logicalSize = definition.config.targetSize > 0 ? definition.config.targetSize : 100f;
+            float rectSize = logicalSize * scaleMultiplier;
+            rectTransform.sizeDelta = new Vector2(rectSize, rectSize);
 
             TargetMovementType mode = overrideMovementType ?? BaseTask.ResolveTargetMovementType(definition);
             SetMovementType(mode, definition.config.moveSpeed, defaultDvdSpeed);
 
             // Start at a random position inside the parent
             RandomizePosition();
+        }
+
+        private void GetEffectiveHalfExtents(out float halfW, out float halfH, out float extraBottomMargin)
+        {
+            float radiusRatio = circleHitbox != null ? circleHitbox.RadiusRatio : 0.5f;
+            halfW = rectTransform.rect.width * radiusRatio;
+            halfH = rectTransform.rect.height * radiusRatio;
+            extraBottomMargin = (hasBottomHoldBar && radiusRatio < 0.5f) ? (rectTransform.rect.height * 0.09f) : 0f;
         }
 
         public void SetCircularRadius(float radiusX, float radiusY)
@@ -78,11 +94,12 @@ namespace ComputerLearning
             }
 
             Rect bounds = parentRect.rect;
-            float padding = (Mathf.Max(rectTransform.rect.width, rectTransform.rect.height) * 0.5f) + 24f;
+            GetEffectiveHalfExtents(out float halfW, out float halfH, out float extraBottom);
+            float padding = Mathf.Max(halfW, halfH) + 24f;
 
             float minX = bounds.xMin + padding;
             float maxX = bounds.xMax - padding;
-            float minY = bounds.yMin + padding;
+            float minY = bounds.yMin + padding + extraBottom;
             float maxY = bounds.yMax - padding - 22f;
 
             float rx = (maxX > minX) ? Random.Range(minX, maxX) : bounds.center.x;
@@ -101,6 +118,8 @@ namespace ComputerLearning
         {
             if (parentRect == null || parentRect.rect.width <= 0f || parentRect.rect.height <= 0f) return;
 
+            GetEffectiveHalfExtents(out float halfW, out float halfH, out float extraBottom);
+
             if (isSwayingOnly)
             {
                 if (!hasRecordedBasePos && rectTransform.anchoredPosition != Vector2.zero)
@@ -114,11 +133,11 @@ namespace ComputerLearning
                 Vector2 targetPos = (hasRecordedBasePos ? baseAnchoredPosition : rectTransform.anchoredPosition) + swayOffset;
 
                 Rect swayBounds = parentRect.rect;
-                float sMarginW = (rectTransform.rect.width * 0.5f) + 18f;
-                float sMarginH = (rectTransform.rect.height * 0.5f) + 18f;
+                float sMarginW = halfW + 18f;
+                float sMarginH = halfH + 18f;
                 float sMinX = swayBounds.xMin + sMarginW;
                 float sMaxX = swayBounds.xMax - sMarginW;
-                float sMinY = swayBounds.yMin + sMarginH;
+                float sMinY = swayBounds.yMin + sMarginH + extraBottom;
                 float sMaxY = swayBounds.yMax - sMarginH - 22f;
 
                 targetPos.x = (sMaxX > sMinX) ? Mathf.Clamp(targetPos.x, sMinX, sMaxX) : swayBounds.center.x;
@@ -134,12 +153,12 @@ namespace ComputerLearning
             }
 
             Rect bounds = parentRect.rect;
-            float marginW = (rectTransform.rect.width * 0.5f) + 18f;
-            float marginH = (rectTransform.rect.height * 0.5f) + 18f;
+            float marginW = halfW + 18f;
+            float marginH = halfH + 18f;
 
             float minX = bounds.xMin + marginW;
             float maxX = bounds.xMax - marginW;
-            float minY = bounds.yMin + marginH;
+            float minY = bounds.yMin + marginH + extraBottom;
             float maxY = bounds.yMax - marginH - 22f;
 
             if (maxX > minX)

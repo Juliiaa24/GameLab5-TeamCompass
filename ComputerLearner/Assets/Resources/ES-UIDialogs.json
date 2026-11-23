@@ -230,5 +230,17 @@
     "net_student_name_locked_hint": "Bloqueado por el profesor",
     "explorer_folder_limit_reached": "Límite de elementos en la carpeta alcanzado (máx. 16).",
     "explorer_depth_limit_reached": "Profundidad máxima de carpetas alcanzada.",
-    "explorer_cycle_error": "No se puede mover ni pegar una carpeta dentro de sí misma o sus subcarpetas."
+    "explorer_cycle_error": "No se puede mover ni pegar una carpeta dentro de sí misma o sus subcarpetas.",
+    "teacher_btn_tutorial_help": "? Tutorial",
+    "teacher_tut_welcome": "¡Hola! ¡Soy Pointy! Bienvenido a la Ventana de Control del Profesor. ¡Déjame enseñarte rápidamente cómo funciona todo! (Pulsa ESPACIO o haz clic en mi bocadillo para avanzar).",
+    "teacher_tut_paths": "Aquí puedes elegir la Ruta de Aprendizaje para este PC: Principiante (guía completa paso a paso desde cero), Intermedio (tutoriales de ventanas directamente en el Escritorio Virtual) o Avanzado (Escritorio Virtual directo sin tutoriales).",
+    "teacher_tut_assessment": "Usa este botón para activar o desactivar la Evaluación Inicial. En SÍ, el alumno empieza con una prueba diagnóstica rápida de ratón; en NO, pasa directamente a la ruta elegida.",
+    "teacher_tut_reset": "Cuando un alumno termine, pulsa «Reiniciar Progreso». Guardará automáticamente sus datos, borrará los archivos y medallas, ¡y avanzará el ID al siguiente alumno (ej. de S01 a S02)!",
+    "teacher_tut_export": "En Alumno y Progreso puedes ver el ID del alumno actual, pulsar «Exportar Datos» en cualquier momento para guardar informes detallados en el Escritorio o activar la descarga automática.",
+    "teacher_tut_classroom": "¿Das clase a un grupo? Escribe aquí el Nombre de la Clase y pulsa «Abrir Panel del Profesor» para iniciar una sesión en red local a la que los alumnos se unan desde su menú.",
+    "teacher_tut_pin_and_lock": "Más abajo puedes cambiar tu PIN de 4 dígitos cuando quieras. Y cuando vayas a dejar el ordenador al alumno, ¡pulsa «Bloquear / Modo alumno» abajo del todo!",
+    "teacher_tut_dash_server": "¡Bienvenido al Panel del Profesor! El servidor de clase en red local se inicia automáticamente para que los alumnos pulsen «Unirse a clase» en sus PCs. Desde aquí arriba puedes iniciarlo, detenerlo o limpiar desconectados.",
+    "teacher_tut_dash_batch": "Usa esta barra para elegir la ruta y evaluación para toda la clase. Pulsa «Aplicar a todos» para configurar a todos los alumnos a la vez, o «Iniciar todos» para arrancar sus partidas simultáneamente.",
+    "teacher_tut_dash_permissions": "En esta barra amarilla puedes cambiar el nombre de la clase en vivo, bloquear el cambio de nombre de los alumnos o bloquear el botón «Salir de clase» para que no se desconecten durante la sesión.",
+    "teacher_tut_dash_students_inspector": "Los alumnos conectados aparecen a la izquierda con controles individuales de Inicio, Reinicio y Ruta. ¡Haz clic en cualquier alumno para inspeccionar a la derecha su progreso en vivo, medallas y sus 9 barras de habilidades!"
 }

@@ -277,6 +277,20 @@ namespace ComputerLearning
         public string explorer_depth_limit_reached = "Maximum folder nesting depth reached.";
         public string explorer_cycle_error = "Cannot move or paste a folder inside itself or its subfolders.";
 
+        // Teacher Mode Pointy Tutorial (Control Window & Classroom Dashboard)
+        public string teacher_btn_tutorial_help = "? Tutorial";
+        public string teacher_tut_welcome = "Hi! I'm Pointy! Welcome to the Teacher Control Window. Let me quickly show you how everything works! (Press SPACE or click my speech bubble to continue).";
+        public string teacher_tut_paths = "Here you can choose the Learning Path for this PC: Beginner (full guided onboarding from scratch), Intermediate (window tutorials directly on the Virtual Desktop), or Advanced (direct Virtual Desktop without tutorials).";
+        public string teacher_tut_assessment = "Use this toggle to turn the Initial Assessment ON or OFF. When ON, the student starts with a quick diagnostic mouse test; when OFF, they skip straight into their assigned path!";
+        public string teacher_tut_reset = "When a student finishes, click 'Reset Progress'. It automatically exports their activity data, clears all files and medals, and advances the Student ID (like S01 to S02) for the next student!";
+        public string teacher_tut_export = "In Student & Progress Tools, you can check the current Student ID, click 'Export Data' anytime to save detailed reports to your Desktop folder, or toggle 'Auto Download'.";
+        public string teacher_tut_classroom = "Teaching a whole room? Type your Class Name here and click 'Open Teacher Dashboard' to start a local network class where student PCs can join from their menu!";
+        public string teacher_tut_pin_and_lock = "Below, you can change your 4-digit Teacher PIN anytime. When you're ready to hand the computer to a student, click 'Lock & Student Mode' at the bottom!";
+        public string teacher_tut_dash_server = "Welcome to the Classroom Dashboard! The LAN Class Server starts automatically so students on the same network can click 'Join Class' on their PCs. You can also stop/start it or clear offline students here.";
+        public string teacher_tut_dash_batch = "Use this top bar to set a Class Default learning path and assessment mode. Click 'Apply to All' to configure every connected student at once, or 'Launch All' to start everyone's game simultaneously!";
+        public string teacher_tut_dash_permissions = "In this yellow bar, you can rename your class live, lock student names so kids can't change their ID, or lock 'Leave Class' so they stay connected during the session.";
+        public string teacher_tut_dash_students_inspector = "Connected students appear on the left with individual Start, Reset, and Path controls. Click on any student row to inspect their live level progress, medals, and all 9 skill mastery bars on the right!";
+
         private static UIDialogs cached;
         private static string cachedLang;
 

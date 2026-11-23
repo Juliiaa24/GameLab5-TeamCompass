@@ -2925,3 +2925,58 @@ To enrich the educational operating system simulation, the Virtual Desktop neede
 * Added live digital preview (`HH:mm:ss` or `hh:mm:ss tt` + date), controls for **Hour** (`-1h` / `+1h`), **Minute** (`-10m`, `-1m`, `+1m`, `+10m`), **Date** (`-1d` / `+1d`), format toggle (`Format: 24h` / `Format: 12h`), and `Reset Time` button, with automatic closing on outside click or `Escape` and session reset via `TaskbarClock.ResetClockSettings()` in `SceneSystem.ResetProgress()` and `SessionManager.ApplyConfiguration()`.
 
 
+---
+
+### 105. FIRST-TIME & ON-DEMAND POINTY GUIDED TUTORIAL FOR TEACHER MODE & CLASSROOM DASHBOARD WITH TRILINGUAL LOCALIZATION (`EN`, `ES`, `NO`) - 23/11/2026
+
+**Context & Motivation (`Documentation/Specs/Plan_Teacher_Mode_Pointy_Tutorial.md`):**
+* Teachers unlocking the **Teacher Control Window** (`TeacherModeGate`) or opening the **Classroom Dashboard** (`TeacherDashboardController`) for the first time needed a clear, friendly walkthrough from **Pointy (`VirtualMascot`)** explaining how all teacher tools work (3 Learning Paths, Initial Assessment ON/OFF toggle, Reset Progress for next student, Playtest Data Export & Auto-Download, Custom Class Name, Teacher PIN, LAN Class Server, Batch Controls, Classroom Permissions, Connected Students List, and Live Telemetry Inspector with 9 skill bars), with full localization in **English (`EN`)**, **Spanish (`ES`)**, and **Norwegian (`NO`)**, plus an on-demand **`? Tutorial`** button to replay the tour anytime.
+
+**Architectural Solutions & Implementation:**
+
+**1. Auto-Instantiation of `VirtualMascot` in `Menu.unity` & Offset Support (`VirtualMascot.cs`, `Assets/Resources/VirtualMascotPrefab.prefab`):**
+* Copied `Assets/Prefabs/Desktop/VirtualMascotPrefab.prefab` to `Assets/Resources/VirtualMascotPrefab.prefab` so Pointy is loadable in any scene (including `Menu.unity` where `DesktopManager` is not present).
+* Added `VirtualMascot.EnsureInstanceOnCanvas(Transform referenceTransform = null)` invoked automatically by `VirtualMascot.Show(...)` and `VirtualMascot.ShowContextualFeedback(...)`, resolving the primary active root `Canvas` (excluding `TutorialBlocker`), instantiating `VirtualMascotPrefab` as the top-most sibling over modal overlays, and supporting left-clicking either Pointy or his speech bubble (alongside `Space` / `Enter`) to advance tutorial steps.
+* Updated `VirtualMascot.ShowMessage(...)` to honor explicit `offset` vectors while `TeacherModeTutorial.IsTourRunning` is active.
+
+**2. Trilingual Teacher Tutorial Localization (`UIDialogs.cs`, `UIDialogs.json`, `EN-UIDialogs.json`, `ES-UIDialogs.json`, `NO-UIDialogs.json`):**
+* Added `teacher_btn_tutorial_help` (`"? Tutorial"` / `"? Veiledning"`), 7 control-window tutorial keys (`teacher_tut_welcome`, `teacher_tut_paths`, `teacher_tut_assessment`, `teacher_tut_reset`, `teacher_tut_export`, `teacher_tut_classroom`, `teacher_tut_pin_and_lock`), and 4 classroom-dashboard tutorial keys (`teacher_tut_dash_server`, `teacher_tut_dash_batch`, `teacher_tut_dash_permissions`, `teacher_tut_dash_students_inspector`) across `UIDialogs.cs` and all 4 localized JSON resources.
+
+**3. Guided Teacher Mode & Dashboard Tutorial Controller (`TeacherModeTutorial.cs`, `TeacherModeGate.cs`, `TeacherDashboardController.cs`, `RetroSceneMaterializer.cs`, `SceneSystem.cs`):**
+* Created `TeacherModeTutorial.cs` managing two guided coroutines protected by `TutorialBlocker`:
+  - **`RunControlPanelTourCoroutine` (7 steps):** Automatically launches on first unlock of `TeacherControlWindow` (`TeacherMode_PointyTutorialCompleted_v1 == 0`), guiding the teacher through the window header, the 3 Learning Paths (`Beginner`, `Intermediate`, `Advanced`), the `Initial Assessment` toggle, `Reset Progress`, `Student & Progress Tools` (`Export Data` / `Auto Download`), `Classroom & Dashboard` (`Class Name` / `Open Teacher Dashboard`), and `Teacher PIN` + `Lock & Student Mode`.
+  - **`RunDashboardTourCoroutine` (4 steps):** Automatically launches on first open of `DashboardWindow` (`TeacherDashboard_PointyTutorialCompleted_v1 == 0`), guiding the teacher through the LAN Class Server status/controls, the `Class Default` batch bar (`Apply to All` / `Launch All`), the yellow `PermissionsAndNameBar` (`Lock Student Names` / `Lock Leave Class`), and the `Connected Students` list + right-hand live `Student Telemetry Inspector`.
+* Added **`Btn-TeacherTutorialHelp`** and **`Btn-DashboardTutorialHelp`** (`? Tutorial`) to the title bars of `TeacherControlWindow` and `DashboardWindow` (both at runtime via `EnsureTutorialHelpButton()` and in `RetroSceneMaterializer.cs`) to replay either tour on demand, with live language-switch refreshing and clean `Escape` cancellation (consuming `Escape` without closing the active teacher window).
+* Updated `SceneSystem.ResetProgress()` to preserve `TeacherMode_PointyTutorialCompleted_v1`, `TeacherDashboard_PointyTutorialCompleted_v1`, `TeacherMode_CustomPin_v1`, `TeacherCustomClassName`, `TeacherLockStudentNames`, and `TeacherLockLeaveClass` when resetting progress between students (`S01 -> S02`).
+
+
+---
+
+### 106. TARGET ICONS VISUAL OVERHAUL: `RightClickTarget`, `GlassTarget` / `GlassTargetDamaged` DOUBLE-CLICK SHATTER FLOW, AND `HoldTarget` BOTTOM PROGRESS BAR (`CircleHitbox`, `BaseTask`, `TaskTargetMovement`, `RightClickTask`, `DoubleClickTask`, `ClickHoldTask`) - 23/11/2026
+
+**Context & Motivation (`Documentation/Specs/Plan_Target_Icons_Visual_Overhaul.md`):**
+* Replaced the generic color-tinted bullseye sprite (`Target_Icon_01.png`, `376×376`) on the Right-Click, Double-Click, and Click-and-Hold tasks with dedicated pixel-art sprites in `Assets/Art/UI/Target Icons/`:
+  1. **Right Click (`RightClickTarget.png`):** Orange-red bullseye with a central mouse icon highlighting the right mouse button in blue.
+  2. **Double Click (`GlassTarget.png` & `GlassTargetDamaged.png`):** Intact cyan glass target on spawn, visibly cracking/damaging after the first left-click (`GlassTargetDamaged.png`) and disappearing immediately upon the second left-click.
+  3. **Click and Hold (`HoldTarget.png`):** Green bullseye with `"HOLD"` label and a dedicated horizontal progress bar frame below the circle (`X=[255..482]`, `Y_top=[578..622]`) that fills horizontally from left to right instead of filling the circular target from bottom to top.
+
+**Architectural Solutions & Implementation:**
+
+**1. Sprite Import Configuration & `740×740` Canvas Hitbox/Scale Normalization (`*.png.meta`, `CircleHitbox.cs`, `BaseTask.cs`, `TaskTargetMovement.cs`):**
+* Updated `GlassTargetDamaged.png.meta`, `HoldTarget.png.meta`, and `RightClickTarget.png.meta` to `spriteMode: 1` (`Single`) with `spriteID: 5e97eb03825dee720800000000000000` so Unity exposes sub-asset `{fileID: 21300000}` for prefab binding.
+* Added configurable `[SerializeField] private float radiusRatio = 0.5f` (`RadiusRatio` property and `SetRadiusRatio`) to `CircleHitbox.cs`. Because the `376×376` circle is centered inside a `740×740` canvas on the 4 new sprites (`radiusRatio = 188 / 740 = 0.25405407f`), `CircleHitbox` restricts pointer raycasts strictly to the visible `376×376` circle, while `TaskTargetMovement.Setup` scales `rectTransform.sizeDelta` by `0.5f / radiusRatio` (`740 / 376`) so the visible circle matches `targetSize` 1:1 and uses `GetEffectiveHalfExtents` (including bottom bar margin on `ClickHoldTask`) for wall bouncing and `BaseTask.CalculatePrecisionAndSizeScore` / `CalculateRatioAndSizeScore`.
+
+**2. Right Click Target (`Task_RightClick.prefab`, `RightClickTask.cs`):**
+* Assigned `RightClickTarget.png` (`guid: 1f681aa4d1a600746a4980e06b2f1a51`) with pure white `m_Color: {r: 1, g: 1, b: 1, a: 1}` and `radiusRatio: 0.25405407` on `Target`.
+
+**3. Double Click Glass Damage & Shatter Disappearance (`DoubleClickTask.cs`, `Task_DoubleClick.prefab`):**
+* Added `targetImage`, `intactGlassSprite` (`GlassTarget.png`, `guid: 53c7c3af77b3e2d48bc33f6b4cd9a73f`), and `damagedGlassSprite` (`GlassTargetDamaged.png`, `guid: ff99b07f12d75b74daa260be7138e002`) to `DoubleClickTask.cs` and wired them in `Task_DoubleClick.prefab` with `m_Color: {r: 1, g: 1, b: 1, a: 1}` and `radiusRatio: 0.25405407`.
+* On task setup or when a first click expires/cancels (`WaitAndReportSingleClickError`, `OnPointerExit`, `OnBackgroundClicked`, or right-click), `ShowIntactGlass()` restores `GlassTarget.png`. On the first valid left-click, `ShowDamagedGlass()` switches immediately to `GlassTargetDamaged.png`. On the second valid left-click within `DOUBLE_CLICK_THRESHOLD`, `HideGlassOnBreak()` disables `targetImage` immediately so the shattered glass target disappears as completion feedback plays.
+
+**4. Click and Hold Bottom Progress Bar (`ClickHoldTask.cs`, `Task_ClickHold.prefab`):**
+* Assigned `HoldTarget.png` (`guid: 46f5cef5f61b5854eb34041547728579`) with pure white `m_Color: {r: 1, g: 1, b: 1, a: 1}` and `radiusRatio: 0.25405407` on `Target` in `Task_ClickHold.prefab`.
+* Anchored `FillImage` (and an auto-created white `BarBackground` behind it in `ClickHoldTask.ConfigureHoldBarVisuals()`) to the exact inner cavity of the bottom bar (`BAR_CAVITY_ANCHOR_MIN = [259/740, 129/740] = [0.35, 0.17432432]`, `BAR_CAVITY_ANCHOR_MAX = [479/740, 150/740] = [0.6472973, 0.2027027]`), using a solid rectangular sprite with `Image.Type.Filled` and `Image.FillMethod.Horizontal` (`OriginHorizontal.Left`) so holding left-click smoothly fills the bottom bar from left to right.
+
+
+
+

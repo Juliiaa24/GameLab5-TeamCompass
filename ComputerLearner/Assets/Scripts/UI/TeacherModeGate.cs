@@ -50,6 +50,8 @@ namespace ComputerLearning
         [SerializeField] private TMP_Text teacherPanelTitleText;
         [SerializeField] private TMP_Text teacherPanelSubtitleText;
         [SerializeField] private Button teacherPanelCloseButton;
+        [SerializeField] private Button tutorialHelpButton;
+        [SerializeField] private TMP_Text tutorialHelpLabel;
         [SerializeField] private Button lockTeacherModeButton;
         [SerializeField] private TMP_Text lockTeacherModeLabel;
         [SerializeField] private Button resetProgressButton;
@@ -90,6 +92,7 @@ namespace ComputerLearning
 
         public bool IsPinModalOpen => pinModalRoot != null && pinModalRoot.activeSelf;
         public bool IsTeacherPanelOpen => teacherPanelRoot != null && teacherPanelRoot.activeSelf;
+        public Transform TeacherPanelRootTransform => teacherPanelRoot != null ? teacherPanelRoot.transform : null;
         public bool IsAnyBlockingModalOpen
         {
             get
@@ -164,6 +167,8 @@ namespace ComputerLearning
             }
             else if (IsTeacherPanelOpen && Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
             {
+                if (TeacherModeTutorial.IsTourRunning || TeacherModeTutorial.WasEscapeConsumedThisFrame)
+                    return;
                 if (teacherDashboard == null || !teacherDashboard.IsOpen)
                     CloseTeacherPanel();
             }
@@ -223,6 +228,12 @@ namespace ComputerLearning
                 teacherPanelCloseButton.onClick.RemoveAllListeners();
                 teacherPanelCloseButton.onClick.AddListener(CloseTeacherPanel);
             }
+            EnsureTutorialHelpButton();
+            if (tutorialHelpButton != null)
+            {
+                tutorialHelpButton.onClick.RemoveAllListeners();
+                tutorialHelpButton.onClick.AddListener(() => TeacherModeTutorial.StartControlPanelTour(this, forceReplay: true));
+            }
             if (lockTeacherModeButton != null)
             {
                 lockTeacherModeButton.onClick.RemoveAllListeners();
@@ -277,6 +288,7 @@ namespace ComputerLearning
             if (!allowed)
             {
                 IsTeacherUnlocked = false;
+                TeacherModeTutorial.StopIfRunning(markCompleted: false);
                 if (pinModalRoot != null) pinModalRoot.SetActive(false);
                 if (teacherPanelRoot != null) teacherPanelRoot.SetActive(false);
                 if (teacherDashboard != null && teacherDashboard.IsOpen) teacherDashboard.Close();
@@ -396,22 +408,99 @@ namespace ComputerLearning
             if (pinModalRoot != null) pinModalRoot.SetActive(false);
             if (studentJoinModalRoot != null) studentJoinModalRoot.SetActive(false);
             if (teacherPanelRoot != null) teacherPanelRoot.SetActive(true);
+            EnsureTutorialHelpButton();
+            RefreshLocalization();
             RefreshVisualState();
+            TeacherModeTutorial.TryStartControlPanelTourOnFirstOpen(this);
         }
 
         public void CloseTeacherPanel()
         {
+            TeacherModeTutorial.StopIfRunning(markCompleted: false);
             if (teacherPanelRoot != null) teacherPanelRoot.SetActive(false);
         }
 
         public void LockTeacherMode()
         {
             IsTeacherUnlocked = false;
+            TeacherModeTutorial.StopIfRunning(markCompleted: false);
             if (teacherPanelRoot != null) teacherPanelRoot.SetActive(false);
             if (pinModalRoot != null) pinModalRoot.SetActive(false);
             if (teacherDashboard != null && teacherDashboard.IsOpen) teacherDashboard.Close();
             RefreshVisualState();
             OnTeacherLockChanged?.Invoke(false);
+        }
+
+        private void EnsureTutorialHelpButton()
+        {
+            if (tutorialHelpButton == null && teacherPanelRoot != null)
+            {
+                Transform existing = teacherPanelRoot.transform.Find("TeacherControlWindow/WindowTitleBar/Btn-TeacherTutorialHelp");
+                if (existing != null)
+                {
+                    tutorialHelpButton = existing.GetComponent<Button>();
+                    tutorialHelpLabel = existing.GetComponentInChildren<TMP_Text>(true);
+                }
+            }
+
+            if (tutorialHelpButton == null && teacherPanelRoot != null)
+            {
+                Transform titleBarTr = teacherPanelCloseButton != null
+                    ? teacherPanelCloseButton.transform.parent
+                    : teacherPanelRoot.transform.Find("TeacherControlWindow/WindowTitleBar");
+
+                if (titleBarTr != null)
+                {
+                    RetroThemeAssets assets = RetroThemeAssets.Instance;
+                    GameObject btnObj = new GameObject("Btn-TeacherTutorialHelp", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button));
+                    btnObj.transform.SetParent(titleBarTr, false);
+
+                    Image bgImg = btnObj.GetComponent<Image>();
+                    if (assets != null && assets.button3D != null)
+                    {
+                        bgImg.sprite = assets.button3D;
+                        bgImg.type = Image.Type.Sliced;
+                    }
+                    bgImg.color = RetroUITheme.BtnSkyBlue;
+                    bgImg.raycastTarget = true;
+
+                    tutorialHelpButton = btnObj.GetComponent<Button>();
+                    tutorialHelpButton.targetGraphic = bgImg;
+                    RetroUITheme.ConfigureButtonColors(tutorialHelpButton, RetroUITheme.BtnSkyBlue);
+
+                    RectTransform rt = btnObj.GetComponent<RectTransform>();
+                    rt.anchorMin = new Vector2(1f, 0.5f);
+                    rt.anchorMax = new Vector2(1f, 0.5f);
+                    rt.pivot = new Vector2(1f, 0.5f);
+                    rt.anchoredPosition = new Vector2(-64f, 0f);
+                    rt.sizeDelta = new Vector2(138f, 38f);
+
+                    GameObject lblObj = new GameObject("Label", typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI));
+                    lblObj.transform.SetParent(btnObj.transform, false);
+                    RectTransform lRt = lblObj.GetComponent<RectTransform>();
+                    lRt.anchorMin = Vector2.zero;
+                    lRt.anchorMax = Vector2.one;
+                    lRt.offsetMin = new Vector2(8f, 2f);
+                    lRt.offsetMax = new Vector2(-8f, -2f);
+
+                    TextMeshProUGUI tmp = lblObj.GetComponent<TextMeshProUGUI>();
+                    if (teacherPanelTitleText != null && teacherPanelTitleText.font != null)
+                        tmp.font = teacherPanelTitleText.font;
+                    tmp.text = UIDialogs.Current.teacher_btn_tutorial_help;
+                    tmp.fontSize = 15f;
+                    tmp.fontStyle = FontStyles.Bold;
+                    tmp.color = RetroUITheme.InkWhite;
+                    tmp.alignment = TextAlignmentOptions.Center;
+                    tmp.raycastTarget = false;
+                    tutorialHelpLabel = tmp;
+                }
+            }
+
+            if (tutorialHelpButton != null)
+            {
+                tutorialHelpButton.onClick.RemoveAllListeners();
+                tutorialHelpButton.onClick.AddListener(() => TeacherModeTutorial.StartControlPanelTour(this, forceReplay: true));
+            }
         }
 
         public void AppendPinDigit(char digit)
@@ -577,6 +666,8 @@ namespace ComputerLearning
                 teacherPanelTitleText.text = ui.teacher_panel_title;
             if (teacherPanelSubtitleText != null)
                 teacherPanelSubtitleText.text = ui.teacher_panel_subtitle;
+            if (tutorialHelpLabel != null)
+                tutorialHelpLabel.text = ui.teacher_btn_tutorial_help;
             if (lockTeacherModeLabel != null)
                 lockTeacherModeLabel.text = ui.teacher_btn_lock;
             if (resetProgressLabel != null)

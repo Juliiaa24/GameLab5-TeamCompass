@@ -15,6 +15,19 @@ namespace ComputerLearning
             isHovering = false;
             hoverDwellTime = 0f;
             hasWarnedHoverStagnant = false;
+
+            UnityEngine.UI.Image targetImage = GetComponent<UnityEngine.UI.Image>();
+            if (targetImage != null)
+            {
+                targetImage.color = Color.white;
+            }
+
+            CircleHitbox hitbox = GetComponent<CircleHitbox>();
+            if (hitbox != null && hitbox.RadiusRatio >= 0.49f)
+            {
+                hitbox.SetRadiusRatio(188f / 740f);
+            }
+
             targetMover = GetComponent<TaskTargetMovement>();
             if (targetMover == null) targetMover = gameObject.AddComponent<TaskTargetMovement>();
             targetMover.Setup(definition);

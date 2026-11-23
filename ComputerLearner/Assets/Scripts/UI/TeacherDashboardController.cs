@@ -42,6 +42,8 @@ namespace ComputerLearning
         [Header("Top Bar Controls")]
         [SerializeField] private TMP_Text titleText;
         [SerializeField] private TMP_Text serverStatusText;
+        [SerializeField] private Button tutorialHelpButton;
+        [SerializeField] private TMP_Text tutorialHelpLabel;
         [SerializeField] private Button clearOfflineButton;
         [SerializeField] private TMP_Text clearOfflineLabel;
         [SerializeField] private Button toggleServerButton;
@@ -148,7 +150,11 @@ namespace ComputerLearning
             }
 
             if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
+            {
+                if (TeacherModeTutorial.IsTourRunning || TeacherModeTutorial.WasEscapeConsumedThisFrame)
+                    return;
                 Close();
+            }
         }
 
         public void Open()
@@ -160,14 +166,98 @@ namespace ComputerLearning
 
             gameObject.SetActive(true);
             transform.SetAsLastSibling();
+            EnsureTutorialHelpButton();
             if (!NetworkSessionHost.Instance.IsHosting)
                 NetworkSessionHost.Instance.StartHost();
             RefreshAll();
+            TeacherModeTutorial.TryStartDashboardTourOnFirstOpen(this);
         }
 
         public void Close()
         {
+            TeacherModeTutorial.StopIfRunning(markCompleted: false);
             gameObject.SetActive(false);
+        }
+
+        private void EnsureTutorialHelpButton()
+        {
+            if (tutorialHelpButton == null)
+            {
+                Transform existing = transform.Find("DashboardWindow/WindowTitleBar/Btn-DashboardTutorialHelp");
+                if (existing != null)
+                {
+                    tutorialHelpButton = existing.GetComponent<Button>();
+                    tutorialHelpLabel = existing.GetComponentInChildren<TMP_Text>(true);
+                }
+            }
+
+            if (tutorialHelpButton == null)
+            {
+                Transform titleBarTr = closeButton != null
+                    ? closeButton.transform.parent
+                    : transform.Find("DashboardWindow/WindowTitleBar");
+
+                if (titleBarTr != null)
+                {
+                    RetroThemeAssets assets = RetroThemeAssets.Instance;
+                    GameObject btnObj = new GameObject("Btn-DashboardTutorialHelp", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button));
+                    btnObj.transform.SetParent(titleBarTr, false);
+
+                    Image bgImg = btnObj.GetComponent<Image>();
+                    if (assets != null && assets.button3D != null)
+                    {
+                        bgImg.sprite = assets.button3D;
+                        bgImg.type = Image.Type.Sliced;
+                    }
+                    bgImg.color = RetroUITheme.BtnSkyBlue;
+                    bgImg.raycastTarget = true;
+
+                    tutorialHelpButton = btnObj.GetComponent<Button>();
+                    tutorialHelpButton.targetGraphic = bgImg;
+                    RetroUITheme.ConfigureButtonColors(tutorialHelpButton, RetroUITheme.BtnSkyBlue);
+
+                    RectTransform rt = btnObj.GetComponent<RectTransform>();
+                    rt.anchorMin = new Vector2(1f, 0.5f);
+                    rt.anchorMax = new Vector2(1f, 0.5f);
+                    rt.pivot = new Vector2(1f, 0.5f);
+                    rt.anchoredPosition = new Vector2(-458f, 0f);
+                    rt.sizeDelta = new Vector2(132f, 38f);
+
+                    if (serverStatusText != null)
+                    {
+                        RectTransform ssRt = serverStatusText.GetComponent<RectTransform>();
+                        if (ssRt != null && ssRt.offsetMax.x > -600f)
+                        {
+                            ssRt.offsetMax = new Vector2(-600f, ssRt.offsetMax.y);
+                        }
+                    }
+
+                    GameObject lblObj = new GameObject("Label", typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI));
+                    lblObj.transform.SetParent(btnObj.transform, false);
+                    RectTransform lRt = lblObj.GetComponent<RectTransform>();
+                    lRt.anchorMin = Vector2.zero;
+                    lRt.anchorMax = Vector2.one;
+                    lRt.offsetMin = new Vector2(8f, 2f);
+                    lRt.offsetMax = new Vector2(-8f, -2f);
+
+                    TextMeshProUGUI tmp = lblObj.GetComponent<TextMeshProUGUI>();
+                    if (titleText != null && titleText.font != null)
+                        tmp.font = titleText.font;
+                    tmp.text = UIDialogs.Current.teacher_btn_tutorial_help;
+                    tmp.fontSize = 14f;
+                    tmp.fontStyle = FontStyles.Bold;
+                    tmp.color = RetroUITheme.InkWhite;
+                    tmp.alignment = TextAlignmentOptions.Center;
+                    tmp.raycastTarget = false;
+                    tutorialHelpLabel = tmp;
+                }
+            }
+
+            if (tutorialHelpButton != null)
+            {
+                tutorialHelpButton.onClick.RemoveAllListeners();
+                tutorialHelpButton.onClick.AddListener(() => TeacherModeTutorial.StartDashboardTour(this, forceReplay: true));
+            }
         }
 
         private void BindStaticButtons()
@@ -177,6 +267,8 @@ namespace ComputerLearning
                 closeButton.onClick.RemoveAllListeners();
                 closeButton.onClick.AddListener(Close);
             }
+
+            EnsureTutorialHelpButton();
 
             if (toggleServerButton != null)
             {
@@ -316,6 +408,7 @@ namespace ComputerLearning
         {
             UIDialogs ui = UIDialogs.Current;
             if (titleText != null) titleText.text = ui.dash_title;
+            if (tutorialHelpLabel != null) tutorialHelpLabel.text = ui.teacher_btn_tutorial_help;
             if (clearOfflineLabel != null) clearOfflineLabel.text = ui.dash_btn_clear_offline;
             if (studentsHeaderText != null) studentsHeaderText.text = ui.dash_students_header;
             if (batchLabelText != null) batchLabelText.text = ui.dash_batch_label;
